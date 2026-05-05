@@ -1,9 +1,10 @@
 /**
- * JSON-RPC proxy for Google's official MCP servers.
+ * Generic JSON-RPC proxy for Google's official MCP servers.
  *
- * Each Google MCP endpoint (calendarmcp.googleapis.com, gmailmcp..., etc.) speaks
- * JSON-RPC 2.0 over HTTP and authenticates via Bearer tokens. We forward the user's
- * access token and pass through the result/error.
+ * Each Google MCP endpoint (calendarmcp.googleapis.com, bigquery.googleapis.com,
+ * container.googleapis.com, etc.) speaks JSON-RPC 2.0 over HTTP and authenticates
+ * via Bearer tokens. This helper forwards the user's access token and surfaces
+ * 401 / 403 / JSON-RPC errors with re-auth hints.
  */
 
 interface JsonRpcSuccess {

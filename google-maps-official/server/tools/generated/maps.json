@@ -1,0 +1,957 @@
+{
+  "service": "maps",
+  "url": "https://mapstools.googleapis.com/mcp",
+  "scopes": [
+    "https://www.googleapis.com/auth/maps-platform.mapstools"
+  ],
+  "tools": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "\nCall this tool when the user's request is to find places, businesses, addresses, locations, points of interest, or any other Google Maps related search.\n\n**Input Requirements (CRITICAL):**\n\n1.  **`text_query` (string - MANDATORY):** The primary search query. This must clearly define what the user is looking for.\n\n    *   **Examples:** `'restaurants in New York'`, `'coffee shops near Golden Gate Park'`, `'SF MoMA'`, `'1600 Amphitheatre Pkwy, Mountain View, CA, USA'`, `'pets friendly parks in Manhattan, New York'`, `'date night restaurants in Chicago'`, `'accessible public libraries in Los Angeles'`.\n\n    *   **For specific place details:** Include the requested attribute (e.g., `'Google Store Mountain View opening hours'`, `'SF MoMa phone number'`, `'Shoreline Park Mountain View address'`).\n\n2.  **`location_bias` (object - OPTIONAL):** Use this to prioritize results near a specific geographic area.\n    *   **Format:** `{\"location_bias\": {\"circle\": {\"center\": {\"latitude\": [value], \"longitude\": [value]}, \"radius_meters\": [value (optional)]}}}`\n\n    *   **Usage:**\n        *   **To bias to a 5km radius:** `{\"location_bias\": {\"circle\": {\"center\": {\"latitude\": 34.052235, \"longitude\": -118.243683}, \"radius_meters\": 5000}}}`\n        *   **To bias strongly to the center point:** `{\"location_bias\": {\"circle\": {\"center\": {\"latitude\": 34.052235, \"longitude\": -118.243683}}}}` (omitting `radius_meters`).\n\n3. **`language_code` (string - OPTIONAL):** The language to show the search results summary in.\n    *   **Format:** A two-letter language code (ISO 639-1), optionally followed by an underscore and a two-letter country code (ISO 3166-1 alpha-2), e.g., `en`, `ja`, `en_US`, `zh_CN`, `es_MX`. If the language code is not provided, the results will be in English.\n\n4. **`region_code` (string - OPTIONAL):** The Unicode CLDR region code of the user. This parameter is used to display the place details, like region-specific place name, if available. The parameter canaffect results based on applicable law.\n    *   **Format:** A two-letter country code (ISO 3166-1 alpha-2), e.g., `US`, `CA`.\n\n**Instructions for Tool Call:**\n\n*   Location Information (CRITICAL): The search must contain sufficient location information. If the location is ambiguous (e.g., just \"pizza places\"), *you must* specify it in the `text_query` (e.g., \"pizza places in New York\") or use the `location_bias` parameter. Include city, state/province, and region/country name if needed for disambiguation.\n\n*   Always provide the most specific and contextually rich `text_query` possible.\n\n*   Only use `location_bias` if coordinates are explicitly provided or if inferring a location from a user's known context is appropriate *and* necessary for better results.\n\n*   The grounded output must be attributed to the source using the information from the `attribution` field when available.\n",
+      "inputSchema": {
+        "$defs": {
+          "Circle": {
+            "description": "A circle defined by center point and radius.",
+            "properties": {
+              "center": {
+                "$ref": "#/$defs/LatLng",
+                "description": "Required. The center point of the circle."
+              },
+              "radiusMeters": {
+                "description": "The radius of the circle in meters. The radius must be within 50,000 meters.",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "required": [
+              "center"
+            ],
+            "type": "object"
+          },
+          "LatLng": {
+            "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard <https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version>. Values must be within normalized ranges.",
+            "properties": {
+              "latitude": {
+                "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "LocationBias": {
+            "description": "The region to bias the search results to. Places outside of this region may still be returned.",
+            "properties": {
+              "circle": {
+                "$ref": "#/$defs/Circle",
+                "description": "Optional. A circle defined by center point and radius. The `radius_meters` is optional. If not set, the results will be biased towards the center point."
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Request message for SearchText.",
+        "properties": {
+          "languageCode": {
+            "description": "Optional. The language to request that the summary is returned in. If the language code is unspecified or unrecognized, the summary with a preference for English will be returned. For example, \"en\" for English. Current list of supported languages: https://developers.google.com/maps/faq#languagesupport.",
+            "type": "string"
+          },
+          "locationBias": {
+            "$ref": "#/$defs/LocationBias",
+            "description": "An optional region to bias the search results to. If an explicit location is in `text_query`, it will be used to bias the search results instead of this field."
+          },
+          "regionCode": {
+            "description": "Optional. The Unicode country/region code (CLDR) of the location where the request is coming from. This parameter is used to display the place details, like region-specific place name, if available. The parameter can affect results based on applicable law. For example, \"US\" for United States. For more information, see https://www.unicode.org/cldr/charts/latest/supplemental/territory_language_information.html. Note that 3-digit region codes are not currently supported.",
+            "type": "string"
+          },
+          "textQuery": {
+            "description": "Required. The text query.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "textQuery"
+        ],
+        "type": "object"
+      },
+      "name": "search_places",
+      "outputSchema": {
+        "$defs": {
+          "Attribution": {
+            "description": "Required attribution to show with maps content.",
+            "properties": {
+              "title": {
+                "description": "The title to display for the attribution.",
+                "type": "string"
+              },
+              "url": {
+                "description": "The URL to link to for the attribution.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "GoogleMapsLinks": {
+            "description": "Links to trigger different Google Maps actions.",
+            "properties": {
+              "directionsUrl": {
+                "description": "A link to show the directions to the place. The link only populates the destination location and uses the default travel mode `DRIVE`.",
+                "type": "string"
+              },
+              "photosUrl": {
+                "description": "A link to show photos of this place on Google Maps.",
+                "type": "string"
+              },
+              "placeUrl": {
+                "description": "A link to show this place.",
+                "type": "string"
+              },
+              "reviewsUrl": {
+                "description": "A link to show reviews of this place on Google Maps.",
+                "type": "string"
+              },
+              "writeAReviewUrl": {
+                "description": "A link to write a review for this place on Google Maps.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "LatLng": {
+            "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard <https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version>. Values must be within normalized ranges.",
+            "properties": {
+              "latitude": {
+                "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "PlaceView": {
+            "description": "A view of a place.",
+            "properties": {
+              "attribution": {
+                "$ref": "#/$defs/Attribution",
+                "description": "Required attribution to show with the place."
+              },
+              "googleMapsLinks": {
+                "$ref": "#/$defs/GoogleMapsLinks",
+                "description": "Links to trigger different Google Maps actions."
+              },
+              "id": {
+                "description": "The place ID of the underlying place.",
+                "type": "string"
+              },
+              "location": {
+                "$ref": "#/$defs/LatLng",
+                "description": "The position of this place."
+              },
+              "place": {
+                "description": "The resource name of the underlying place, in the format of \"places/{id}\".",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response message for SearchText.",
+        "properties": {
+          "places": {
+            "description": "Output only. The list of places that are mentioned in the summary.",
+            "items": {
+              "$ref": "#/$defs/PlaceView"
+            },
+            "readOnly": true,
+            "type": "array"
+          },
+          "summary": {
+            "description": "Output only. A natural language summary of the search results. The summary may contain zero-based citations like \"[0]\", \"[1]\", \"[2]\" etc. These citations map to the corresponding places in the `places` field.",
+            "readOnly": true,
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Retrieves comprehensive weather data including current conditions, hourly, and daily forecasts.\n\n**Specific Data Available:** Temperature (Current, Feels Like, Max/Min, Heat Index), Wind (Speed, Gusts, Direction), Celestial Events (Sunrise/Sunset, Moon Phase), Precipitation (Type, Probability, Quantity/QPF), Atmospheric Conditions (UV Index, Humidity, Cloud Cover, Thunderstorm Probability), and Geocoded Location Address.\n\n**Location & Location Rules (CRITICAL):**\n\nThe location for which weather data is requested is specified using the `location` field.\nThis field is a 'oneof' structure, meaning you MUST provide a value for ONLY ONE\nof the three location sub-fields below to ensure an accurate weather data lookup.\n\n1.  Geographic Coordinates (lat_lng)\n    *   Use it when you are provided with exact lat/lng coordinates.\n    *   Example:\n        {\"location\": {\"lat_lng\": {\"latitude\": 34.0522, \"longitude\": -118.2437}}} // Los Angeles\n\n2.  Place ID (place_id)\n    *   An unambiguous string identifier (Google Maps Place ID).\n    *   The place_id can be fetched from the search_places tool.\n    *   Example:\n        {\"location\": {\"place_id\": \"ChIJLU7jZClu5kcR4PcOOO6p3I0\"}} // Eiffel Tower\n\n3.  Address String (address)\n    *   A free-form string that requires specificity for geocoding.\n    *   City & Region: Always include region/country (e.g., \"London, UK\", not \"London\").\n    *   Street Address: Provide the full address (e.g., \"1600 Pennsylvania Ave NW, Washington, DC\").\n    *   Postal/Zip Codes: MUST be accompanied by a country name (e.g., \"90210, USA\", NOT \"90210\").\n    *   Example:\n        {\"location\": {\"address\": \"1600 Pennsylvania Ave NW, Washington, DC\"}}\n\n**Usage Modes:**\n\n*   **Current Weather:** Provide `location` only. Do not specify `date` and `hour`.\n\n*   **Hourly Forecast:** Provide `location`, `date`, and `hour` (0-23). Use for specific times (e.g., \"at 5 PM\") or terms like \"next few hours\" or \"later today\". If the user specifies minute, round down to the nearest hour. Hourly forecast beyond 120 hours from now is not supported. Historical hourly weather is supported up to 24 hours in the past.\n\n*   **Daily Forecast:** Provide `location` and `date`. Do not specify `hour`. Use for general day requests (e.g., \"weather for tomorrow\", \"weather on Friday\", \"weather on 12/25\"). If today's date is not in the context, you should clarify it with the user. Daily forecast beyond 10 days including today is not supported. Historical weather is not supported.\n\n**Parameter Constraints:**\n\n*   **Timezones:** All `date` and `hour` inputs must be relative to the **location's local time zone**, not the user's time zone.\n*   **Date Format:** Inputs must be separated into `{year, month, day}` integers.\n*   **Units:** Defaults to `METRIC`. Set `units_system` to `IMPERIAL` for Fahrenheit/Miles if the user implies US standards or explicitly requests it.\n\n*   The grounded output must be attributed to the source using the information from the `attribution` field when available.\n",
+      "inputSchema": {
+        "$defs": {
+          "Date": {
+            "description": "Represents a whole or partial calendar date, such as a birthday. The time of day and time zone are either specified elsewhere or are insignificant. The date is relative to the Gregorian Calendar. This can represent one of the following: * A full date, with non-zero year, month, and day values. * A month and day, with a zero year (for example, an anniversary). * A year on its own, with a zero month and a zero day. * A year and month, with a zero day (for example, a credit card expiration date). Related types: * google.type.TimeOfDay * google.type.DateTime * google.protobuf.Timestamp",
+            "properties": {
+              "day": {
+                "description": "Day of a month. Must be from 1 to 31 and valid for the year and month, or 0 to specify a year by itself or a year and month where the day isn't significant.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "month": {
+                "description": "Month of a year. Must be from 1 to 12, or 0 to specify a year without a month and day.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "year": {
+                "description": "Year of the date. Must be from 1 to 9999, or 0 to specify a date without a year.",
+                "format": "int32",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "LatLng": {
+            "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard <https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version>. Values must be within normalized ranges.",
+            "properties": {
+              "latitude": {
+                "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "Location": {
+            "description": "Represents a location for the weather request.",
+            "properties": {
+              "address": {
+                "description": "Human readable address or a plus code. See https://plus.codes for details.",
+                "type": "string"
+              },
+              "latLng": {
+                "$ref": "#/$defs/LatLng",
+                "description": "A point specified using geographic coordinates."
+              },
+              "placeId": {
+                "description": "The Place ID associated with the location .",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Request for the LookupWeather method - represents the weather conditions at the requested location.",
+        "properties": {
+          "date": {
+            "$ref": "#/$defs/Date",
+            "description": "Optional. The date of the required weather information. Note: This date is relative to the local timezone of the location specified in the location field. The date must be between 24 hours in the past and the next 10 days."
+          },
+          "hour": {
+            "description": "Optional. The hour of the requested weather information, in 24-hour format (0-23). This value is relative to the local timezone of the location specified in the location field. Hourly forecast beyond 120 hours from now is not supported. Historical hourly weather is supported up to 24 hours in the past.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "location": {
+            "$ref": "#/$defs/Location",
+            "description": "Required. The location to get the weather conditions for."
+          },
+          "unitsSystem": {
+            "description": "Optional. The units system to use for the returned weather conditions. If not provided, the returned weather conditions will be in the metric system (default = METRIC).",
+            "enum": [
+              "UNITS_SYSTEM_UNSPECIFIED",
+              "IMPERIAL",
+              "METRIC"
+            ],
+            "type": "string",
+            "x-google-enum-descriptions": [
+              "The units system is unspecified.",
+              "The imperial units system (e.g. Fahrenheit, miles, etc).",
+              "The metric units system (e.g. Celsius, kilometers, etc)."
+            ]
+          }
+        },
+        "required": [
+          "location"
+        ],
+        "type": "object"
+      },
+      "name": "lookup_weather",
+      "outputSchema": {
+        "$defs": {
+          "AirPressure": {
+            "description": "Represents the atmospheric air pressure conditions.",
+            "properties": {
+              "meanSeaLevelMillibars": {
+                "description": "The mean sea level air pressure in millibars.",
+                "format": "float",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "Attribution": {
+            "description": "Required attribution to show with maps content.",
+            "properties": {
+              "title": {
+                "description": "The title to display for the attribution.",
+                "type": "string"
+              },
+              "url": {
+                "description": "The URL to link to for the attribution.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "LatLng": {
+            "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard <https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version>. Values must be within normalized ranges.",
+            "properties": {
+              "latitude": {
+                "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "LocalizedText": {
+            "description": "Localized variant of a text in a particular language.",
+            "properties": {
+              "languageCode": {
+                "description": "The text's BCP-47 language code, such as \"en-US\" or \"sr-Latn\". For more information, see http://www.unicode.org/reports/tr35/#Unicode_locale_identifier.",
+                "type": "string"
+              },
+              "text": {
+                "description": "Localized string in the language corresponding to language_code below.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "Location": {
+            "description": "Represents a location for the weather request.",
+            "properties": {
+              "address": {
+                "description": "Human readable address or a plus code. See https://plus.codes for details.",
+                "type": "string"
+              },
+              "latLng": {
+                "$ref": "#/$defs/LatLng",
+                "description": "A point specified using geographic coordinates."
+              },
+              "placeId": {
+                "description": "The Place ID associated with the location .",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "MoonEvents": {
+            "description": "Represents the events related to the moon (e.g. moonrise, moonset).",
+            "properties": {
+              "moonPhase": {
+                "description": "The moon phase (a.k.a. lunar phase).",
+                "enum": [
+                  "MOON_PHASE_UNSPECIFIED",
+                  "NEW_MOON",
+                  "WAXING_CRESCENT",
+                  "FIRST_QUARTER",
+                  "WAXING_GIBBOUS",
+                  "FULL_MOON",
+                  "WANING_GIBBOUS",
+                  "LAST_QUARTER",
+                  "WANING_CRESCENT"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "Unspecified moon phase.",
+                  "The moon is not illuminated by the sun.",
+                  "The moon is lit by 0%-50% on its right side in the northern hemisphere 🌒 and on its left side in the southern hemisphere 🌘.",
+                  "The moon is lit by 50.1% on its right side in the northern hemisphere 🌓 and on its left side in the southern hemisphere 🌗.",
+                  "The moon is lit by 50%-100% on its right side in the northern hemisphere 🌔 and on its left side in the southern hemisphere 🌖.",
+                  "The moon is fully illuminated.",
+                  "The moon is lit by 50%-100% on its left side in the northern hemisphere 🌖 and on its right side in the southern hemisphere 🌔.",
+                  "The moon is lit by 50.1% on its left side in the northern hemisphere 🌗 and on its right side in the southern hemisphere 🌓.",
+                  "The moon is lit by 0%-50% on its left side in the northern hemisphere 🌘 and on its right side in the southern hemisphere 🌒."
+                ]
+              },
+              "moonriseTimes": {
+                "description": "The time when the upper limb of the moon appears above the horizon (see https://en.wikipedia.org/wiki/Moonrise_and_moonset). NOTE: For most cases, there'll be a single moon rise time per day. In other cases, the list might be empty (e.g. when the moon rises after next day midnight). However, in unique cases (e.g. in polar regions), the list may contain more than one value. In these cases, the values are sorted in ascending order.",
+                "items": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              "moonsetTimes": {
+                "description": "The time when the upper limb of the moon disappears below the horizon (see https://en.wikipedia.org/wiki/Moonrise_and_moonset). NOTE: For most cases, there'll be a single moon set time per day. In other cases, the list might be empty (e.g. when the moon sets after next day midnight). However, in unique cases (e.g. in polar regions), the list may contain more than one value. In these cases, the values are sorted in ascending order.",
+                "items": {
+                  "format": "date-time",
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "Precipitation": {
+            "description": "Represents a set of precipitation values at a given location.",
+            "properties": {
+              "probability": {
+                "$ref": "#/$defs/PrecipitationProbability",
+                "description": "The probability of precipitation (values from 0 to 100)."
+              },
+              "qpf": {
+                "$ref": "#/$defs/QuantitativePrecipitationForecast",
+                "description": "The amount of precipitation rain, measured as liquid water equivalent, that has accumulated over a period of time. Note: QPF is an abbreviation for Quantitative Precipitation Forecast (please see the QuantitativePrecipitationForecast definition for more details)."
+              },
+              "snowQpf": {
+                "$ref": "#/$defs/QuantitativePrecipitationForecast",
+                "description": "The amount of snow, measured as liquid water equivalent, that has accumulated over a period of time. Note: QPF is an abbreviation for Quantitative Precipitation Forecast (please see the QuantitativePrecipitationForecast definition for more details)."
+              }
+            },
+            "type": "object"
+          },
+          "PrecipitationProbability": {
+            "description": "Represents the probability of precipitation at a given location.",
+            "properties": {
+              "percent": {
+                "description": "A percentage from 0 to 100 that indicates the chances of precipitation.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "type": {
+                "description": "A code that indicates the type of precipitation.",
+                "enum": [
+                  "PRECIPITATION_TYPE_UNSPECIFIED",
+                  "NONE",
+                  "SNOW",
+                  "RAIN",
+                  "LIGHT_RAIN",
+                  "HEAVY_RAIN",
+                  "RAIN_AND_SNOW",
+                  "SLEET",
+                  "FREEZING_RAIN"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "Unspecified precipitation type.",
+                  "No precipitation.",
+                  "Snow precipitation.",
+                  "Rain precipitation.",
+                  "Light rain precipitation.",
+                  "Heavy rain precipitation.",
+                  "Both rain and snow precipitations.",
+                  "Sleet precipitation.",
+                  "Freezing rain precipitation."
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "QuantitativePrecipitationForecast": {
+            "description": "Represents the expected amount of melted precipitation accumulated over a specified time period over a specified area (reference: https://en.wikipedia.org/wiki/Quantitative_precipitation_forecast) - usually abbreviated QPF for short.",
+            "properties": {
+              "quantity": {
+                "description": "The amount of precipitation, measured as liquid water equivalent, that has accumulated over a period of time.",
+                "format": "float",
+                "type": "number"
+              },
+              "unit": {
+                "description": "The code of the unit used to measure the amount of accumulated precipitation.",
+                "enum": [
+                  "UNIT_UNSPECIFIED",
+                  "MILLIMETERS",
+                  "INCHES"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "Unspecified precipitation unit.",
+                  "The amount of precipitation is measured in millimeters.",
+                  "The amount of precipitation is measured in inches."
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "SunEvents": {
+            "description": "Represents the events related to the sun (e.g. sunrise, sunset).",
+            "properties": {
+              "sunriseTime": {
+                "description": "The time when the sun rises. NOTE: In some unique cases (e.g. north of the artic circle) there may be no sunrise time for a day. In these cases, this field will be unset.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "sunsetTime": {
+                "description": "The time when the sun sets. NOTE: In some unique cases (e.g. north of the artic circle) there may be no sunset time for a day. In these cases, this field will be unset.",
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "Temperature": {
+            "description": "Represents a temperature value.",
+            "properties": {
+              "degrees": {
+                "description": "The temperature value (in degrees) in the specified unit.",
+                "format": "float",
+                "type": "number"
+              },
+              "unit": {
+                "description": "The code for the unit used to measure the temperature value.",
+                "enum": [
+                  "TEMPERATURE_UNIT_UNSPECIFIED",
+                  "CELSIUS",
+                  "FAHRENHEIT"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "The temperature unit is unspecified.",
+                  "The temperature is measured in Celsius.",
+                  "The temperature is measured in Fahrenheit."
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "WeatherCondition": {
+            "description": "Represents a weather condition for a given location at a given period of time. Disclaimer: Weather icons and condition codes are subject to change. Google may introduce new codes and icons or update existing ones as needed. We encourage you to refer to this documentation regularly for the most up-to-date information.",
+            "properties": {
+              "description": {
+                "$ref": "#/$defs/LocalizedText",
+                "description": "The textual description for this weather condition (localized)."
+              },
+              "iconBaseUri": {
+                "description": "The base URI for the icon not including the file type extension. To display the icon, append a theme if desired and the file type extension (`.png` or `.svg`) to this URI. By default, the icon is light themed, but `_dark` can be appended for dark mode. For example: \"https://maps.gstatic.com/weather/v1/dust.svg\" or \"https://maps.gstatic.com/weather/v1/dust_dark.svg\", where `icon_base_uri` is \"https://maps.gstatic.com/weather/v1/dust\".",
+                "type": "string"
+              },
+              "type": {
+                "description": "The type of weather condition.",
+                "enum": [
+                  "TYPE_UNSPECIFIED",
+                  "CLEAR",
+                  "MOSTLY_CLEAR",
+                  "PARTLY_CLOUDY",
+                  "MOSTLY_CLOUDY",
+                  "CLOUDY",
+                  "WINDY",
+                  "WIND_AND_RAIN",
+                  "LIGHT_RAIN_SHOWERS",
+                  "CHANCE_OF_SHOWERS",
+                  "SCATTERED_SHOWERS",
+                  "RAIN_SHOWERS",
+                  "HEAVY_RAIN_SHOWERS",
+                  "LIGHT_TO_MODERATE_RAIN",
+                  "MODERATE_TO_HEAVY_RAIN",
+                  "RAIN",
+                  "LIGHT_RAIN",
+                  "HEAVY_RAIN",
+                  "RAIN_PERIODICALLY_HEAVY",
+                  "LIGHT_SNOW_SHOWERS",
+                  "CHANCE_OF_SNOW_SHOWERS",
+                  "SCATTERED_SNOW_SHOWERS",
+                  "SNOW_SHOWERS",
+                  "HEAVY_SNOW_SHOWERS",
+                  "LIGHT_TO_MODERATE_SNOW",
+                  "MODERATE_TO_HEAVY_SNOW",
+                  "SNOW",
+                  "LIGHT_SNOW",
+                  "HEAVY_SNOW",
+                  "SNOWSTORM",
+                  "SNOW_PERIODICALLY_HEAVY",
+                  "HEAVY_SNOW_STORM",
+                  "BLOWING_SNOW",
+                  "RAIN_AND_SNOW",
+                  "HAIL",
+                  "HAIL_SHOWERS",
+                  "THUNDERSTORM",
+                  "THUNDERSHOWER",
+                  "LIGHT_THUNDERSTORM_RAIN",
+                  "SCATTERED_THUNDERSTORMS",
+                  "HEAVY_THUNDERSTORM"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "The weather condition is unspecified.",
+                  "No clouds.",
+                  "Periodic clouds.",
+                  "Party cloudy (some clouds).",
+                  "Mostly cloudy (more clouds than sun).",
+                  "Cloudy (all clouds, no sun).",
+                  "High wind.",
+                  "High wind with precipitation.",
+                  "Light intermittent rain.",
+                  "Chance of intermittent rain.",
+                  "Intermittent rain.",
+                  "Showers are considered to be rainfall that has a shorter duration than rain, and is characterized by suddenness in terms of start and stop times, and rapid changes in intensity.",
+                  "Intense showers.",
+                  "Rain (light to moderate in quantity).",
+                  "Rain (moderate to heavy in quantity).",
+                  "Moderate rain.",
+                  "Light rain.",
+                  "Heavy rain.",
+                  "Rain periodically heavy.",
+                  "Light snow that is falling at varying intensities for brief periods of time.",
+                  "Chance of snow showers.",
+                  "Snow that is falling at varying intensities for brief periods of time.",
+                  "Snow showers.",
+                  "Heavy snow showers.",
+                  "Light to moderate snow.",
+                  "Moderate to heavy snow.",
+                  "Moderate snow.",
+                  "Light snow.",
+                  "Heavy snow.",
+                  "Snow with possible thunder and lightning.",
+                  "Snow, at times heavy.",
+                  "Heavy snow with possible thunder and lightning.",
+                  "Snow with intense wind.",
+                  "Rain and snow mix.",
+                  "Hail.",
+                  "Hail that is falling at varying intensities for brief periods of time.",
+                  "Thunderstorm.",
+                  "A shower of rain accompanied by thunder and lightning.",
+                  "Light thunderstorm rain.",
+                  "Thunderstorms that has rain in various intensities for brief periods of time.",
+                  "Heavy thunderstorm."
+                ]
+              }
+            },
+            "type": "object"
+          },
+          "Wind": {
+            "description": "Represents a set of wind properties.",
+            "properties": {
+              "direction": {
+                "$ref": "#/$defs/WindDirection",
+                "description": "The direction of the wind, the angle it is coming from."
+              },
+              "gust": {
+                "$ref": "#/$defs/WindSpeed",
+                "description": "The wind gust (sudden increase in the wind speed)."
+              },
+              "speed": {
+                "$ref": "#/$defs/WindSpeed",
+                "description": "The speed of the wind."
+              }
+            },
+            "type": "object"
+          },
+          "WindDirection": {
+            "description": "Represents the direction from which the wind originates.",
+            "properties": {
+              "cardinal": {
+                "description": "The code that represents the cardinal direction from which the wind is blowing.",
+                "enum": [
+                  "CARDINAL_DIRECTION_UNSPECIFIED",
+                  "NORTH",
+                  "NORTH_NORTHEAST",
+                  "NORTHEAST",
+                  "EAST_NORTHEAST",
+                  "EAST",
+                  "EAST_SOUTHEAST",
+                  "SOUTHEAST",
+                  "SOUTH_SOUTHEAST",
+                  "SOUTH",
+                  "SOUTH_SOUTHWEST",
+                  "SOUTHWEST",
+                  "WEST_SOUTHWEST",
+                  "WEST",
+                  "WEST_NORTHWEST",
+                  "NORTHWEST",
+                  "NORTH_NORTHWEST"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "The cardinal direction is unspecified.",
+                  "The north cardinal direction.",
+                  "The north-northeast secondary intercardinal direction.",
+                  "The northeast intercardinal direction.",
+                  "The east-northeast secondary intercardinal direction.",
+                  "The east cardinal direction.",
+                  "The east-southeast secondary intercardinal direction.",
+                  "The southeast intercardinal direction.",
+                  "The south-southeast secondary intercardinal direction.",
+                  "The south cardinal direction.",
+                  "The south-southwest secondary intercardinal direction.",
+                  "The southwest intercardinal direction.",
+                  "The west-southwest secondary intercardinal direction.",
+                  "The west cardinal direction.",
+                  "The west-northwest secondary intercardinal direction.",
+                  "The northwest intercardinal direction.",
+                  "The north-northwest secondary intercardinal direction."
+                ]
+              },
+              "degrees": {
+                "description": "The direction of the wind in degrees (values from 0 to 360).",
+                "format": "int32",
+                "type": "integer"
+              }
+            },
+            "type": "object"
+          },
+          "WindSpeed": {
+            "description": "Represents the speed of the wind.",
+            "properties": {
+              "unit": {
+                "description": "The code that represents the unit used to measure the wind speed.",
+                "enum": [
+                  "SPEED_UNIT_UNSPECIFIED",
+                  "KILOMETERS_PER_HOUR",
+                  "MILES_PER_HOUR"
+                ],
+                "type": "string",
+                "x-google-enum-descriptions": [
+                  "The speed unit is unspecified.",
+                  "The speed is measured in kilometers per hour.",
+                  "The speed is measured in miles per hour."
+                ]
+              },
+              "value": {
+                "description": "The value of the wind speed.",
+                "format": "float",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for the LookupWeather RPC - represents the weather conditions at the requested location. This response represent both Hourly and Daily information, therefore the response is split in three sections Hourly, Daily and Shared. Only-Hourly, Only-Daily fields are marked as optional. For fields that are shared between Hourly and Daily information, some are always present so they are not marked as optional while the rest are marked as optional because they are not always available. ",
+        "properties": {
+          "airPressure": {
+            "$ref": "#/$defs/AirPressure",
+            "description": "The hourly air pressure conditions."
+          },
+          "attribution": {
+            "$ref": "#/$defs/Attribution",
+            "description": "Required attribution to show with the weather."
+          },
+          "cloudCover": {
+            "description": "The percentage of the sky covered by clouds (values from 0 to 100). define optional because it is not always available",
+            "format": "int32",
+            "type": "integer"
+          },
+          "feelsLikeMaxTemperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The maximum (high) feels-like temperature throughout the day."
+          },
+          "feelsLikeMinTemperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The minimum (low) feels-like temperature throughout the day."
+          },
+          "feelsLikeTemperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The hourly measure of how the temperature feels like."
+          },
+          "heatIndex": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The hourly heat index temperature."
+          },
+          "maxHeatIndex": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The maximum heat index temperature throughout the day."
+          },
+          "maxTemperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The maximum (high) temperature throughout the day."
+          },
+          "minTemperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The minimum (low) temperature throughout the day."
+          },
+          "moonEvents": {
+            "$ref": "#/$defs/MoonEvents",
+            "description": "The events related to the moon (e.g. moonrise, moonset)."
+          },
+          "precipitation": {
+            "$ref": "#/$defs/Precipitation",
+            "description": "The precipitation probability and amount of precipitation accumulated"
+          },
+          "relativeHumidity": {
+            "description": "The percent of relative humidity (values from 0 to 100). define optional because it is not always available",
+            "format": "int32",
+            "type": "integer"
+          },
+          "returnedLocation": {
+            "$ref": "#/$defs/Location",
+            "description": "Required. The location where the weather information is returned. This location is identical to the location in the request, but can be different from it if the requested location is a free text address that looks up to a coarse location (e.g. \"Mountain View, CA\")."
+          },
+          "sunEvents": {
+            "$ref": "#/$defs/SunEvents",
+            "description": "The events related to the sun (e.g. sunrise, sunset)."
+          },
+          "temperature": {
+            "$ref": "#/$defs/Temperature",
+            "description": "The hourly temperature"
+          },
+          "thunderstormProbability": {
+            "description": "The thunderstorm probability (values from 0 to 100). define optional because it is not always available",
+            "format": "int32",
+            "type": "integer"
+          },
+          "uvIndex": {
+            "description": "The maximum ultraviolet (UV) index. define optional because it is not always available",
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherCondition": {
+            "$ref": "#/$defs/WeatherCondition",
+            "description": "The weather condition"
+          },
+          "wind": {
+            "$ref": "#/$defs/Wind",
+            "description": "The wind conditions"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Computes a travel route between a specified origin and destination. **Supported Travel Modes:** DRIVE (default), WALK.\n\n**Input Requirements (CRITICAL):**\nRequires both **origin** and **destination**. Each must be provided using one of the following methods, nested within its respective field:\n\n*   **address:** (string, e.g., 'Eiffel Tower, Paris'). Note: The more granular or specific the input address is, the better the results will be.\n\n*   **lat_lng:** (object, {\"latitude\": number, \"longitude\": number})\n\n*   **place_id:** (string, e.g., 'ChIJOwE_Id1w5EAR4Q27FkL6T_0') Note: This id can be obtained from the search_places tool.\nAny combination of input types is allowed (e.g., origin by address, destination by lat_lng). If either the origin or destination is missing, **you MUST ask the user for clarification** before attempting to call the tool.\n\n**Example Tool Call:**\n{\"origin\":{\"address\":\"Eiffel Tower\"},\"destination\":{\"place_id\":\"ChIJt_5xIthw5EARoJ71mGq7t74\"},\"travel_mode\":\"DRIVE\"}\n\n*   The grounded output must be attributed to the source using the information from the `attribution` field when available.\n",
+      "inputSchema": {
+        "$defs": {
+          "LatLng": {
+            "description": "An object that represents a latitude/longitude pair. This is expressed as a pair of doubles to represent degrees latitude and degrees longitude. Unless specified otherwise, this object must conform to the WGS84 standard <https://en.wikipedia.org/wiki/World_Geodetic_System#1984_version>. Values must be within normalized ranges.",
+            "properties": {
+              "latitude": {
+                "description": "The latitude in degrees. It must be in the range [-90.0, +90.0].",
+                "format": "double",
+                "type": "number"
+              },
+              "longitude": {
+                "description": "The longitude in degrees. It must be in the range [-180.0, +180.0].",
+                "format": "double",
+                "type": "number"
+              }
+            },
+            "type": "object"
+          },
+          "Waypoint": {
+            "description": "Encapsulates a waypoint. Waypoints mark both the beginning and end of a route.",
+            "properties": {
+              "address": {
+                "description": "Human readable address or a plus code. See https://plus.codes for details.",
+                "type": "string"
+              },
+              "latLng": {
+                "$ref": "#/$defs/LatLng",
+                "description": "A point specified using geographic coordinates."
+              },
+              "placeId": {
+                "description": "The Place ID associated with the waypoint.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "ComputeRoutesRequest.",
+        "properties": {
+          "destination": {
+            "$ref": "#/$defs/Waypoint",
+            "description": "Required. Destination waypoint."
+          },
+          "origin": {
+            "$ref": "#/$defs/Waypoint",
+            "description": "Required. Origin waypoint."
+          },
+          "travelMode": {
+            "description": "Optional. Specifies the mode of transportation.",
+            "enum": [
+              "ROUTE_TRAVEL_MODE_UNSPECIFIED",
+              "DRIVE",
+              "WALK"
+            ],
+            "type": "string",
+            "x-google-enum-descriptions": [
+              "No travel mode specified. Defaults to `DRIVE`.",
+              "Travel by passenger car.",
+              "Travel by walking. NOTE: `WALK` routes are in beta and might sometimes be missing clear sidewalks or pedestrian paths. You must display this warning to the user for all walking that you display in your app."
+            ]
+          }
+        },
+        "required": [
+          "origin",
+          "destination"
+        ],
+        "type": "object"
+      },
+      "name": "compute_routes",
+      "outputSchema": {
+        "$defs": {
+          "Attribution": {
+            "description": "Required attribution to show with maps content.",
+            "properties": {
+              "title": {
+                "description": "The title to display for the attribution.",
+                "type": "string"
+              },
+              "url": {
+                "description": "The URL to link to for the attribution.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          },
+          "Route": {
+            "description": "Details about a route between two locations.",
+            "properties": {
+              "attribution": {
+                "$ref": "#/$defs/Attribution",
+                "description": "Required attribution to show with the route."
+              },
+              "distanceMeters": {
+                "description": "The travel distance of the route, in meters.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "duration": {
+                "description": "The length of time needed to navigate the route.",
+                "format": "google-duration",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "ComputeRoutesResponse.",
+        "properties": {
+          "routes": {
+            "description": "Contains routes between the requested origin and destination. Currently only one route is returned.",
+            "items": {
+              "$ref": "#/$defs/Route"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
+}

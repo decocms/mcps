@@ -1,0 +1,15 @@
+{
+  "bigquery": {
+    "scopes": [
+      "https://www.googleapis.com/auth/bigquery"
+    ],
+    "toolNames": [
+      "list_dataset_ids",
+      "get_dataset_info",
+      "list_table_ids",
+      "get_table_info",
+      "execute_sql_readonly",
+      "execute_sql"
+    ]
+  }
+}

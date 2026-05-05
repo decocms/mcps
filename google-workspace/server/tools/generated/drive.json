@@ -1,5 +1,6 @@
 {
   "service": "drive",
+  "url": "https://drivemcp.googleapis.com/mcp/v1",
   "scopes": [
     "https://www.googleapis.com/auth/drive",
     "https://www.googleapis.com/auth/drive.readonly",

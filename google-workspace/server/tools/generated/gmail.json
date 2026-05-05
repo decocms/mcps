@@ -1,5 +1,6 @@
 {
   "service": "gmail",
+  "url": "https://gmailmcp.googleapis.com/mcp/v1",
   "scopes": [
     "https://mail.google.com/",
     "https://www.googleapis.com/auth/gmail.modify",

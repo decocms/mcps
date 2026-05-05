@@ -22,13 +22,10 @@ export function jsonSchemaToZod(schema: unknown): z.ZodTypeAny {
   if (!schema || typeof schema !== "object") return z.unknown();
   const s = schema as JsonSchema;
 
-  // Tagged unions / polymorphism — pass through; backend validates.
   if (Array.isArray(s.oneOf) || Array.isArray(s.anyOf)) {
     return z.unknown().describe(s.description ?? "");
   }
 
-  // Some Google schemas use type as an array, e.g. ["string", "null"]. Pick the
-  // first non-null type and rely on the backend for nullability.
   const type = Array.isArray(s.type)
     ? (s.type.find((t) => t !== "null") ?? "unknown")
     : s.type;
@@ -61,7 +58,6 @@ function objectSchema(s: JsonSchema): z.ZodTypeAny {
     const child = jsonSchemaToZod(propSchema);
     shape[key] = required.has(key) ? child : child.optional();
   }
-  // passthrough() lets the backend accept fields we may not know about.
   return withDescription(z.object(shape).passthrough(), s.description);
 }
 

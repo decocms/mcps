@@ -1,0 +1,1825 @@
+{
+  "service": "gke",
+  "url": "https://container.googleapis.com/mcp",
+  "scopes": [
+    "https://www.googleapis.com/auth/container"
+  ],
+  "tools": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Retrieves the available API groups and resources from a Kubernetes cluster. This is similar to running `kubectl api-resources`.",
+      "inputSchema": {
+        "description": "Request for retrieving Kubernetes API resources.",
+        "properties": {
+          "parent": {
+            "description": "Required. The cluster, which owns this collection of resource types. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "list_k8s_api_resources",
+      "outputSchema": {
+        "$defs": {
+          "APIGroupDiscovery": {
+            "description": "APIGroupDiscovery is a discovery document for an API group.",
+            "properties": {
+              "name": {
+                "description": "The name of the resource type. e.g. \"pods\", \"deployments\", \"services\".",
+                "type": "string"
+              },
+              "preferredVersion": {
+                "description": "The preferred version for this API group, in the form {group}/{version}.",
+                "type": "string"
+              },
+              "versions": {
+                "description": "The list of versions for this API group, in the form {group}/{version}.",
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              }
+            },
+            "type": "object"
+          },
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "APIGroupDiscoveryList is a list of API group discovery.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during discovery.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "groups": {
+            "description": "The list of API group discovery.",
+            "items": {
+              "$ref": "#/$defs/APIGroupDiscovery"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Checks whether an action is allowed on a Kubernetes resource. This is similar to running `kubectl auth can-i`.",
+      "inputSchema": {
+        "description": "Request for checking authorization for a Kubernetes resource.",
+        "properties": {
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, \"default\" is used for namespace-scoped resources.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The cluster to check authorization against. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "resource": {
+            "description": "Optional. The name of the resource to check.",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of resource to check. e.g. \"pods\", \"deployments\", \"services\".",
+            "type": "string"
+          },
+          "verb": {
+            "description": "Required. The verb to check. e.g. \"get\", \"list\", \"watch\", \"create\", \"update\", \"patch\", \"delete\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "verb",
+          "resourceType"
+        ],
+        "type": "object"
+      },
+      "name": "check_k8s_auth",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for checking authorization for a Kubernetes resource.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during auth check.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "result": {
+            "description": "The result of auth can-i check.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Shows the details of a specific Kubernetes resource. This is similar to running `kubectl describe`.",
+      "inputSchema": {
+        "description": "Request message for KubeDescribe.",
+        "properties": {
+          "labelSelector": {
+            "description": "Optional. A label selector to filter resources.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Optional. The name of the resource.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The parent cluster.",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of the resource.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "resourceType"
+        ],
+        "type": "object"
+      },
+      "name": "describe_k8s_resource",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response message for KubeDescribe.",
+        "properties": {
+          "description": {
+            "description": "The description of the resource.",
+            "type": "string"
+          },
+          "errors": {
+            "description": "Errors encountered during description retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Retrieves events from a Kubernetes cluster. This is similar to running `kubectl events`.",
+      "inputSchema": {
+        "description": "Request message for KubeEvents.",
+        "properties": {
+          "allNamespaces": {
+            "description": "Optional. If true, retrieve events from all namespaces.",
+            "type": "boolean"
+          },
+          "limit": {
+            "description": "Optional. The maximum number of events to return. If not specified, 500 is used.",
+            "format": "int64",
+            "type": "string"
+          },
+          "name": {
+            "description": "Optional. The name of the resource to retrieve events for.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified and all_namespaces is false, \"default\" is used.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The parent cluster. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Optional. The type of the resource to retrieve events for.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "list_k8s_events",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response message for KubeEvents.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during events retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "events": {
+            "description": "The events in string format.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets one or more Kubernetes resources from a cluster. Resources can be filtered by type, name, namespace, and label selectors. Returns the resources in YAML format. This is similar to running `kubectl get`.",
+      "inputSchema": {
+        "description": "Request for retrieving Kubernetes resources.",
+        "properties": {
+          "customColumns": {
+            "description": "Optional. The field mask to specify columns to display. Use a single \"*\" to get all fields. When both custom_columns and output_format are specified, output_format is ignored.",
+            "format": "google-fieldmask",
+            "pattern": "^(\\s*[^,\\s.]+(\\s*[,.]\\s*[^,\\s.]+)*)?$",
+            "type": "string"
+          },
+          "fieldSelector": {
+            "description": "Optional. A field selector to filter resources.",
+            "type": "string"
+          },
+          "labelSelector": {
+            "description": "Optional. A label selector to filter resources.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Optional. The name of the resource to retrieve. If not specified, all resources of the given type are returned.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, all namespaces are searched.",
+            "type": "string"
+          },
+          "outputFormat": {
+            "description": "Optional. The output format. One of: (table, wide, yaml, json). If not specified, defaults to table. When both custom_columns and output_format are specified, output_format is ignored.",
+            "enum": [
+              "OUTPUT_FORMAT_UNSPECIFIED",
+              "TABLE",
+              "WIDE",
+              "YAML",
+              "JSON"
+            ],
+            "type": "string",
+            "x-google-enum-descriptions": [
+              "If not specified, defaults to table.",
+              "Output in table format.",
+              "Output in wide table format.",
+              "Output in yaml format.",
+              "Output in json format."
+            ]
+          },
+          "parent": {
+            "description": "Required. The cluster, which owns this collection of resources. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of resource to retrieve. Kubernetes resource/kind name in singular form, lower case. e.g. \"pod\", \"deployment\", \"service\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "resourceType"
+        ],
+        "type": "object"
+      },
+      "name": "get_k8s_resource",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for retrieving Kubernetes resources.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "output": {
+            "description": "The output of the command in the requested format. It may contain resources in YAML or JSON format, or a table in plain text, or errors.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets cluster endpoint information. This is similar to running `kubectl cluster-info`.",
+      "inputSchema": {
+        "description": "Request message for KubeClusterInfo.",
+        "properties": {
+          "parent": {
+            "description": "Required. The parent cluster. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "get_k8s_cluster_info",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response message for KubeClusterInfo.",
+        "properties": {
+          "clusterInfo": {
+            "description": "The cluster info of the resource. Displays address and port information about the Kubernetes control plane and other services running within the cluster such as CoreDNS and Metrics-server. Example: \"The Kubernetes control plane is at 10.128.0.10:6443. CoreDNS is running at https://192.0.2.1:6443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy Metrics-server is running at 127.0.0.1:8080\"",
+            "type": "string"
+          },
+          "errors": {
+            "description": "Errors encountered during cluster info retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Retrieves Kubernetes client and server versions for a given cluster. This is similar to running `kubectl version`.",
+      "inputSchema": {
+        "description": "KubeVersionRequest is the request message for retrieving Kubernetes server versions.",
+        "properties": {
+          "parent": {
+            "description": "Required. The cluster to get version information from, in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "get_k8s_version",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "KubeVersionResponse is the response message for retrieving Kubernetes server version.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during version retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "serverVersion": {
+            "description": "The server version.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Checks the current rollout status of a Kubernetes resource. This is similar to running `kubectl rollout status`.",
+      "inputSchema": {
+        "description": "Request for checking rollout status of a Kubernetes resource.",
+        "properties": {
+          "name": {
+            "description": "Required. The name of the resource to check.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, \"default\" is used for namespace-scoped resources.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The cluster to check rollout status in. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of resource to check. e.g. \"deployment\", \"daemonset\", \"statefulset\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "resourceType",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "get_k8s_rollout_status",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for checking rollout status of a Kubernetes resource.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during rollout status check.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "result": {
+            "description": "The result of the rollout status check.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Lists GKE clusters in a given project and location. Location can be a region, zone, or '-' for all locations.",
+      "inputSchema": {
+        "description": "MCPListClustersRequest lists clusters.",
+        "properties": {
+          "parent": {
+            "description": "Required. The parent (project and location) where the clusters will be listed. Specified in the format `projects/*/locations/*`. Location \"-\" matches all zones and all regions.",
+            "type": "string"
+          },
+          "readMask": {
+            "description": "Optional. The field mask to specify the fields to be returned in the response. Use a single \"*\" to get all fields. Default: clusters.autopilot,clusters.createTime,clusters.currentMasterVersion,clusters.currentNodeCount,clusters.currentNodeVersion,clusters.description,clusters.endpoint,clusters.fleet,clusters.location,clusters.name,clusters.network,clusters.nodePools.name,clusters.releaseChannel,clusters.resourceLabels,clusters.selfLink,clusters.status,clusters.statusMessage,clusters.subnetwork,missingZones.",
+            "format": "google-fieldmask",
+            "pattern": "^(\\s*[^,\\s.]+(\\s*[,.]\\s*[^,\\s.]+)*)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "list_clusters",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for listing clusters in JSON format. The full cluster object can be found at https://cloud.google.com/container-engine/reference/rest/v1/projects.locations.clusters.",
+        "properties": {
+          "clusters": {
+            "description": "A string representing the ListClustersResponse object.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "errors": {
+            "description": "Errors encountered during cluster listing.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Creates a new GKE cluster in a given project and location. It's recommended to read the [GKE documentation](https://docs.cloud.google.com/kubernetes-engine/docs/concepts/configuration-overview) to understand cluster configuration options. Cluster creation will default to Autopilot mode, as recommended by GKE best practices. If the user explicitly wants to create a Standard cluster, you need to set autopilot.enabled=false in the cluster configuration. This is similar to running `gcloud container clusters create-auto` or `gcloud container clusters create`.\n",
+      "inputSchema": {
+        "description": "MCPCreateClusterRequest creates a new cluster.",
+        "properties": {
+          "cluster": {
+            "description": "Required. A [cluster resource](https://cloud.google.com/container-engine/reference/rest/v1/projects.locations.clusters) represented as a string using JSON format.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The parent (project and location) where the cluster will be created. Specified in the format `projects/*/locations/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "cluster"
+        ],
+        "type": "object"
+      },
+      "name": "create_cluster",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPOperation wraps the GKE Operation with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during the operation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "description": "JSON string of the GKE Operation object. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Updates a specific GKE cluster.",
+      "inputSchema": {
+        "description": "MCPUpdateClusterRequest updates a cluster.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, cluster) of the cluster to update. Specified in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          },
+          "update": {
+            "description": "Required. A description of the update represented as a string using JSON format. The full update request object can be found at https://cloud.google.com/container-engine/reference/rest/v1/projects.locations.clusters/update https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/ClusterUpdate",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "update"
+        ],
+        "type": "object"
+      },
+      "name": "update_cluster",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPOperation wraps the GKE Operation with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during the operation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "description": "JSON string of the GKE Operation object. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets the details of a specific GKE cluster.",
+      "inputSchema": {
+        "description": "MCPGetClusterRequest gets the settings of a cluster.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, cluster) of the cluster to retrieve. Specified in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          },
+          "readMask": {
+            "description": "Optional. The field mask to specify the fields to be returned in the response. Use a single \"*\" to get all fields. Default: autopilot,createTime,currentMasterVersion,currentNodeCount,currentNodeVersion,description,endpoint,fleet,location,name,network,nodePools.locations,nodePools.name,nodePools.status,nodePools.version,releaseChannel,resourceLabels,selfLink,status,statusMessage,subnetwork.",
+            "format": "google-fieldmask",
+            "pattern": "^(\\s*[^,\\s.]+(\\s*[,.]\\s*[^,\\s.]+)*)?$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "get_cluster",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for returned cluster object in JSON format. The full cluster object can be found at https://cloud.google.com/container-engine/reference/rest/v1/projects.locations.clusters.",
+        "properties": {
+          "cluster": {
+            "description": "A string representing the Cluster object in JSON format.",
+            "type": "string"
+          },
+          "errors": {
+            "description": "Errors encountered during cluster retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Lists GKE operations in a given project and location. Location can be a region, zone, or '-' for all locations.",
+      "inputSchema": {
+        "description": "MCPListOperationsRequest lists operations.",
+        "properties": {
+          "parent": {
+            "description": "Required. The parent (project and location) where the operations will be listed. Specified in the format `projects/*/locations/*`. Location \"-\" matches all zones and all regions.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "list_operations",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPListOperationsResponse wraps the list of operations with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during operations listing.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operations": {
+            "description": "A list of JSON strings of GKE Operation objects. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets the details of a specific GKE operation.",
+      "inputSchema": {
+        "description": "MCPGetOperationRequest gets a single operation.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, operation id) of the operation to get. Specified in the format `projects/*/locations/*/operations/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "get_operation",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPOperation wraps the GKE Operation with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during the operation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "description": "JSON string of the GKE Operation object. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Cancels a specific GKE operation.",
+      "inputSchema": {
+        "description": "MCPCancelOperationRequest cancels an operation.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, operation id) of the operation to cancel. Specified in the format `projects/*/locations/*/operations/*`.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The parent cluster of the operation. Specified in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "cancel_operation",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPCancelOperationResponse wraps errors for the CancelOperation RPC.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during operation cancellation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Creates a node pool for a specific GKE cluster.",
+      "inputSchema": {
+        "description": "MCPCreateNodePoolRequest creates a node pool for a cluster.",
+        "properties": {
+          "nodePool": {
+            "description": "Required. The node pool to create represented as a string using JSON format. The full node pool object can be found at https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters.nodePools",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The parent (project, location, cluster name) where the node pool will be created. Specified in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "nodePool"
+        ],
+        "type": "object"
+      },
+      "name": "create_node_pool",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPOperation wraps the GKE Operation with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during the operation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "description": "JSON string of the GKE Operation object. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Lists the node pools for a specific GKE cluster.",
+      "inputSchema": {
+        "description": "MCPListNodePoolsRequest lists the node pool(s) for a cluster.",
+        "properties": {
+          "parent": {
+            "description": "Required. The parent (project, location, cluster name) where the node pools will be listed. Specified in the format `projects/*/locations/*/clusters/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent"
+        ],
+        "type": "object"
+      },
+      "name": "list_node_pools",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for listing node pools in JSON format. The full node pool object can be found at https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters.nodePools",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during node pool listing.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "nodePools": {
+            "description": "A string representing the ListNodePoolsResponse object.",
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets the details of a specific node pool within a GKE cluster.",
+      "inputSchema": {
+        "description": "MCPGetNodePoolRequest retrieves a node pool for a cluster.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, cluster, node pool id) of the node pool to get. Specified in the format `projects/*/locations/*/clusters/*/nodePools/*`.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "get_node_pool",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for returned node pool object in JSON format. The full node pool object can be found at https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.clusters.nodePools",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during node pool retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "nodePool": {
+            "description": "A string representing the NodePool object in JSON format.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Updates a specific node pool within a GKE cluster.",
+      "inputSchema": {
+        "description": "MCPUpdateNodePoolRequest updates a node pool for a cluster.",
+        "properties": {
+          "name": {
+            "description": "Required. The name (project, location, cluster, node pool) of the node pool to update. Specified in the format 'projects/*/locations/*/clusters/*/nodePools/*'.",
+            "type": "string"
+          },
+          "update": {
+            "description": "Required. A [node pool update request](https://cloud.google.com/container-engine/reference/rest/v1/projects.locations.clusters.nodePools/update) represented as a string using JSON format.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "update"
+        ],
+        "type": "object"
+      },
+      "name": "update_node_pool",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "MCPOperation wraps the GKE Operation with an errors field.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during the operation.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "operation": {
+            "description": "JSON string of the GKE Operation object. See: https://docs.cloud.google.com/kubernetes-engine/docs/reference/rest/v1/projects.locations.operations",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Gets logs from a Kubernetes container in a pod. This is similar to running `kubectl logs`.",
+      "inputSchema": {
+        "description": "KubeLogsRequest is the request message for retrieving Kubernetes logs.",
+        "properties": {
+          "allContainers": {
+            "description": "Optional. If true, retrieve logs from all containers in the pod.",
+            "type": "boolean"
+          },
+          "container": {
+            "description": "Optional. The name of the container to retrieve logs from. If not specified, logs from the first container are returned.",
+            "type": "string"
+          },
+          "name": {
+            "description": "Required. The name of the resource to retrieve logs from. This can be a pod name (e.g. \"my-pod\") or a type/name (e.g. \"deployment/my-deployment\"). If a type is not specified, \"pod\" is assumed.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, \"default\" is used.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The cluster to retrieve logs from. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "previous": {
+            "description": "Optional. If true, retrieve logs from the previous instantiation of the container.",
+            "type": "boolean"
+          },
+          "since": {
+            "description": "Optional. Retrieve logs since this duration ago (e.g. \"1h\", \"10m\").",
+            "format": "google-duration",
+            "type": "string"
+          },
+          "sinceTime": {
+            "description": "Optional. Retrieve logs since this time (RFC3339). e.g. \"2024-08-30T06:00:00Z\".",
+            "format": "date-time",
+            "type": "string"
+          },
+          "tail": {
+            "description": "Optional. The number of lines from the end of the logs to show.",
+            "format": "int64",
+            "type": "string"
+          },
+          "timestamps": {
+            "description": "Optional. If true, include timestamps in the log output.",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "parent",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "get_k8s_logs",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "KubeLogsResponse is the response message for retrieving Kubernetes logs.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during log retrieval.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "logs": {
+            "description": "The logs from the resources.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Applies a Kubernetes manifest to a cluster using server-side apply. This is similar to running `kubectl apply --server-side`.",
+      "inputSchema": {
+        "description": "KubeApplyRequest is the request message for applying Kubernetes manifests.",
+        "properties": {
+          "dryRun": {
+            "description": "Optional. If true, run in dry-run mode.",
+            "type": "boolean"
+          },
+          "forceConflicts": {
+            "description": "Optional. If true, force conflicts resolution when applying.",
+            "type": "boolean"
+          },
+          "parent": {
+            "description": "Required. The cluster to apply the manifest to. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "yamlManifest": {
+            "description": "Required. The YAML manifest to apply.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "yamlManifest"
+        ],
+        "type": "object"
+      },
+      "name": "apply_k8s_manifest",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "KubeApplyResponse is the response message for applying Kubernetes manifests.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during apply. If this field is populated, some resources may not have been applied.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "result": {
+            "description": "Result of the apply operation, e.g., resources created/configured. This might be a summary string or structured data.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Deletes a Kubernetes resource from a cluster. This is similar to running `kubectl delete`.",
+      "inputSchema": {
+        "description": "Request for deleting Kubernetes resources.",
+        "properties": {
+          "cascade": {
+            "description": "Optional. The cascading deletion policy to use. If not specified, 'background' is used. Valid values are 'background', 'foreground', and 'orphan'.",
+            "type": "string"
+          },
+          "dryRun": {
+            "description": "Optional. If true, run in dry-run mode.",
+            "type": "boolean"
+          },
+          "name": {
+            "description": "Required. The name of the resource to delete.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, \"default\" is used.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The cluster, which owns this collection of resources. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of resource to delete. Kubernetes resource/kind name in singular form, lower case. e.g. \"pod\", \"deployment\", \"service\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "resourceType",
+          "name"
+        ],
+        "type": "object"
+      },
+      "name": "delete_k8s_resource",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for deleting Kubernetes resources.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during deletion.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "result": {
+            "description": "Result of the delete operation.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "Patches a Kubernetes resource. This is similar to running `kubectl patch`.",
+      "inputSchema": {
+        "description": "Request for patching a Kubernetes resource.",
+        "properties": {
+          "name": {
+            "description": "Required. The name of the resource to patch.",
+            "type": "string"
+          },
+          "namespace": {
+            "description": "Optional. The namespace of the resource. If not specified, \"default\" is used.",
+            "type": "string"
+          },
+          "parent": {
+            "description": "Required. The cluster to patch the resource in. Format: projects/{project}/locations/{location}/clusters/{cluster}",
+            "type": "string"
+          },
+          "patch": {
+            "description": "Required. The patch to apply in JSON format.",
+            "type": "string"
+          },
+          "resourceType": {
+            "description": "Required. The type of resource to patch. e.g. \"pods\", \"deployments\", \"services\".",
+            "type": "string"
+          }
+        },
+        "required": [
+          "parent",
+          "resourceType",
+          "name",
+          "patch"
+        ],
+        "type": "object"
+      },
+      "name": "patch_k8s_resource",
+      "outputSchema": {
+        "$defs": {
+          "Status": {
+            "description": "The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).",
+            "properties": {
+              "code": {
+                "description": "The status code, which should be an enum value of google.rpc.Code.",
+                "format": "int32",
+                "type": "integer"
+              },
+              "details": {
+                "description": "A list of messages that carry the error details. There is a common set of message types for APIs to use.",
+                "items": {
+                  "additionalProperties": {
+                    "description": "Properties of the object. Contains field @type with type URL."
+                  },
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "message": {
+                "description": "A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the google.rpc.Status.details field, or localized by the client.",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response for patching a Kubernetes resource.",
+        "properties": {
+          "errors": {
+            "description": "Errors encountered during patching.",
+            "items": {
+              "$ref": "#/$defs/Status"
+            },
+            "type": "array"
+          },
+          "result": {
+            "description": "The result of the patch operation.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
+}

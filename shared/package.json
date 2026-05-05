@@ -20,6 +20,8 @@
         "./serve": "./serve.ts",
         "./registry": "./registry.ts",
         "./google-oauth": "./google-oauth.ts",
+        "./google-mcp": "./google-mcp/index.ts",
+        "./google-mcp/generate-snapshot": "./google-mcp/generate-snapshot.ts",
         "./whatsapp": "./whatsapp/index.ts",
         "./api-key-manager": "./api-key-manager.ts",
         "./mesh-chat": "./mesh-chat/index.ts"

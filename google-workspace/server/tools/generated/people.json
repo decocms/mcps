@@ -1,5 +1,6 @@
 {
   "service": "people",
+  "url": "https://people.googleapis.com/mcp/v1",
   "scopes": [
     "https://www.googleapis.com/auth/directory.readonly",
     "https://www.googleapis.com/auth/userinfo.profile",

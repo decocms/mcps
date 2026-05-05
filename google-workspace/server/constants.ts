@@ -32,13 +32,7 @@ export const TOOL_SNAPSHOTS: Record<GoogleService, BackendSnapshot> = {
   people: peopleSnap as BackendSnapshot,
 };
 
-export interface BackendToolDefinition {
-  name: string;
-  description?: string;
-  inputSchema?: Record<string, unknown>;
-  outputSchema?: Record<string, unknown>;
-  annotations?: Record<string, unknown>;
-}
+import type { BackendToolDefinition } from "@decocms/mcps-shared/google-mcp";
 
 export interface BackendSnapshot {
   service: GoogleService;
