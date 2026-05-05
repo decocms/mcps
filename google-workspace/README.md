@@ -4,6 +4,19 @@ One OAuth login that fans out to Google's official MCP servers — Calendar, Cha
 
 See [`TOOLS.md`](./TOOLS.md) for the full tool catalog (auto-generated).
 
+## Built-in prompts
+
+The MCP also exposes a set of curated prompts via the standard `prompts/list` and `prompts/get` calls. Agents can pull just the relevant guide on demand instead of stuffing every tool description into the system prompt:
+
+- `GOOGLE_WORKSPACE_AGENT_GUIDE` — entry point covering all 5 services, the tool naming convention, time/timezone handling, destructive-action rules, and pagination.
+- `GOOGLE_WORKSPACE_CALENDAR_GUIDE` — Calendar tool selection, the `primary` calendar convention, scheduling workflows, and pitfalls around recurring events.
+- `GOOGLE_WORKSPACE_GMAIL_GUIDE` — Gmail search syntax (`from:`, `is:unread`, `newer_than:7d`, …), thread vs. message ops, system-label IDs, and the **drafts-only** caveat.
+- `GOOGLE_WORKSPACE_DRIVE_GUIDE` — Drive structured query syntax, MIME types for Docs/Sheets/Slides, content vs. metadata vs. permissions.
+- `GOOGLE_WORKSPACE_CHAT_GUIDE` — Spaces vs. DMs, threading, send-message confirmation patterns.
+- `GOOGLE_WORKSPACE_PEOPLE_GUIDE` — directory (Workspace-only) vs. personal contacts, looking up the user themselves.
+
+Source lives in [`server/prompts.ts`](./server/prompts.ts).
+
 ## How it works
 
 Google's MCP endpoints (`calendarmcp.googleapis.com/mcp/v1`, etc.) don't accept Dynamic Client Registration, so they can't be added to mesh as a generic custom MCP today. This package wraps them: it holds the Google OAuth client ID/secret server-side and proxies JSON-RPC `tools/call` to the right backend with the user's Bearer token.
