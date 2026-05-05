@@ -47,9 +47,38 @@ export interface BackendSnapshot {
 }
 
 /**
- * Union of every scope advertised by every backend's PRM.
- * Sent to Google's authorization endpoint at consent time.
+ * Curated minimal set of OAuth scopes sent to Google's authorization endpoint.
+ *
+ * Each backend's PRM advertises every scope it accepts (e.g. Calendar lists 9
+ * variants like `calendar`, `calendar.readonly`, `calendar.events.owned`...).
+ * Google's scope hierarchy means the broadest scope per service implicitly
+ * grants the narrower ones — so we ask for only the broadest sensible scope
+ * each service actually needs to power its tool catalog. This:
+ *
+ *  - keeps the consent screen short (10 scopes vs 26)
+ *  - reduces the chance of "scope not configured in OAuth client" silent drops
+ *  - matches the principle of least privilege at consent time
+ *
+ * If Google adds a tool requiring a scope not listed here, extend the array
+ * for the relevant service. Re-running `generate-tools` does NOT touch this
+ * list — it's hand-curated against the tool catalog.
  */
-export const GOOGLE_WORKSPACE_SCOPES: string[] = Array.from(
-  new Set(Object.values(TOOL_SNAPSHOTS).flatMap((snap) => snap.scopes)),
-).sort();
+export const GOOGLE_WORKSPACE_SCOPES: string[] = [
+  // Calendar — full read/write covers all .readonly/.events.* sub-scopes.
+  "https://www.googleapis.com/auth/calendar",
+  // Chat — three orthogonal scopes. The .readonly variants are subsets.
+  "https://www.googleapis.com/auth/chat.spaces",
+  "https://www.googleapis.com/auth/chat.messages",
+  "https://www.googleapis.com/auth/chat.memberships",
+  // Drive — full access covers drive.readonly and drive.file.
+  "https://www.googleapis.com/auth/drive",
+  // Gmail — modify covers read+label, compose covers drafts. Together they
+  // satisfy every gmail_* tool we proxy. (mail.google.com/ is broader still
+  // but is a "restricted" scope requiring extra Google verification.)
+  "https://www.googleapis.com/auth/gmail.modify",
+  "https://www.googleapis.com/auth/gmail.compose",
+  // People — three orthogonal scopes for directory, contacts, self profile.
+  "https://www.googleapis.com/auth/contacts.readonly",
+  "https://www.googleapis.com/auth/directory.readonly",
+  "https://www.googleapis.com/auth/userinfo.profile",
+];
