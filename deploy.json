@@ -8,6 +8,15 @@
       "shared/**"
     ]
   },
+  "crazy-egg": {
+    "site": "crazy-egg",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "crazy-egg/**",
+      "shared/**"
+    ]
+  },
   "openrouter": {
     "site": "openrouter",
     "entrypoint": "./dist/server/main.js",
