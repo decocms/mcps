@@ -4,6 +4,10 @@
   "description": "Google Meet MCP Server - Create and manage meetings",
   "private": true,
   "type": "module",
+  "exports": {
+    "./tools": "./server/tools/index.ts",
+    "./constants": "./server/constants.ts"
+  },
   "scripts": {
     "dev": "bun run --hot server/main.ts",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",

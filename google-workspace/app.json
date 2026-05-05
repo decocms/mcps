@@ -6,7 +6,7 @@
     "type": "HTTP",
     "url": "https://sites-google-workspace.decocache.com/mcp"
   },
-  "description": "One login for the entire Google Workspace. Calendar, Chat, Drive, Gmail and People — all powered by Google's official MCP servers.",
+  "description": "One login for the entire Google Workspace. Calendar, Gmail, Drive, Docs, Sheets, Slides, Forms and Meet under a single connection.",
   "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
   "unlisted": false,
   "metadata": {
@@ -18,11 +18,14 @@
       "calendar",
       "gmail",
       "drive",
-      "chat",
-      "people",
+      "docs",
+      "sheets",
+      "slides",
+      "forms",
+      "meet",
       "productivity"
     ],
-    "short_description": "Single OAuth login fanning out to Google's official Calendar, Chat, Drive, Gmail and People MCP servers.",
-    "mesh_description": "The Google Workspace MCP unifies Google's official MCP servers (Calendar, Chat, Drive, Gmail, People) behind a single OAuth login. Authenticate once with Google and gain access to ~35 tools spanning event management, email, file storage, team chat, and contact directory. The MCP proxies JSON-RPC calls to the upstream Google MCP endpoints, so tool definitions stay in sync with Google's official catalog. Adding a new Google service in the future only requires registering its endpoint and scopes — no UI changes, no extra logins."
+    "short_description": "Single OAuth login covering Calendar, Gmail, Drive, Docs, Sheets, Slides, Forms and Meet.",
+    "mesh_description": "The Google Workspace MCP gives an agent access to the full Google productivity suite behind a single OAuth login: Calendar (events, scheduling, free/busy), Gmail (read, label, draft), Drive (files, folders, permissions), Docs (create/edit documents), Sheets (read/write spreadsheets), Slides (create/edit presentations), Forms (create forms, read responses) and Meet (create/manage meeting spaces). Tools are namespaced per service (e.g. `calendar_list_events`, `gmail_search_threads`, `drive_list_files`, `docs_get_document`). Built by composing our existing per-service Google MCPs so the underlying integrations are battle-tested in production."
   }
 }

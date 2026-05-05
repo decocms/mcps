@@ -558,6 +558,14 @@
       "version": "1.0.0",
       "dependencies": {
         "@decocms/runtime": "^1.2.6",
+        "google-calendar": "workspace:*",
+        "google-docs": "workspace:*",
+        "google-drive": "workspace:*",
+        "google-forms": "workspace:*",
+        "google-gmail": "workspace:*",
+        "google-meet": "workspace:*",
+        "google-sheets": "workspace:*",
+        "google-slides": "workspace:*",
         "zod": "^4.0.0",
       },
       "devDependencies": {
@@ -4141,7 +4149,7 @@
 
     "google-big-query/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
-    "google-calendar/@decocms/runtime": ["@decocms/runtime@1.3.0", "", { "dependencies": { "@ai-sdk/provider": "^3.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@decocms/bindings": "^1.0.7", "@modelcontextprotocol/sdk": "1.27.1", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^4.0.0" }, "peerDependencies": { "ai": ">=6.0.0" } }, "sha512-xRFTV9gqrdsUCAkJ3xoBOeDGXps6moZeZB/NNL+XZ7LNa4qzfmL3BGWG42n8xbFyEpprfEfOtOD+tVgWhkPDxQ=="],
+    "google-calendar/@decocms/runtime": ["@decocms/runtime@1.6.0", "", { "dependencies": { "@ai-sdk/provider": "^3.0.0", "@cloudflare/workers-types": "^4.20250617.0", "@decocms/bindings": "^1.0.7", "@modelcontextprotocol/sdk": "1.27.1", "hono": "^4.10.7", "jose": "^6.0.11", "zod": "^4.0.0" }, "peerDependencies": { "ai": ">=6.0.0" } }, "sha512-iVRp3yUvPd5x1nQ+WbsTOHA3KKBRMq6kGnJLoV1oyjIFm1uyxK69IihnYp1B49sQxlWAfPAJco3AZ8TuvF3T6A=="],
 
     "google-calendar/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 

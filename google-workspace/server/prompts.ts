@@ -1,19 +1,13 @@
 /**
  * Google Workspace MCP Prompts
  *
- * Two kinds of prompts:
+ * Two kinds:
  *
  * 1. Agent guides (no arguments) — long-form references the agent pulls on
- *    demand: tool catalog, search syntax, pitfalls. Exposed via `prompts/get`
- *    when the agent decides it needs the docs for a service.
- *
- * 2. User templates (arguments) — slash-command-style entries the user picks
- *    from the prompt menu in their MCP client. Each one expands into a user
- *    message that drives the agent through a common day-to-day workflow.
- *
- * The tool catalog itself comes from Google's upstream MCPs and lives in
- * `server/tools/generated/`. Re-run `bun run generate-tools` whenever Google
- * ships a new tool — the prompts below should stay hand-curated.
+ *    demand. Cover tool selection, query syntax, and pitfalls per service.
+ * 2. User templates (with arguments) — slash-command-style entries the user
+ *    picks from the prompt menu. Each expands into a user message that drives
+ *    the agent through a common workflow.
  */
 
 import { createPrompt } from "@decocms/runtime";
@@ -23,7 +17,7 @@ const agentGuidePrompt = createPrompt({
   name: "GOOGLE_WORKSPACE_AGENT_GUIDE",
   title: "Google Workspace Agent — Main Instructions",
   description:
-    "Entry-point system prompt for an agent using the Google Workspace MCP. Lists the wrapped services, the tool naming convention, the auth model, and points at per-service guides.",
+    "Entry-point prompt covering all 8 services in this MCP, the tool naming convention, time/timezone handling, destructive-action rules and re-auth signals.",
   execute: () => ({
     messages: [
       {
@@ -39,43 +33,43 @@ const agentGuidePrompt = createPrompt({
           type: "text" as const,
           text: `# Google Workspace Agent — Main Instructions
 
-You are an agent backed by the **Google Workspace MCP**, a single connection that fans out to five of Google's official MCP servers:
+You are an agent backed by the **Google Workspace MCP**, a single connection covering eight Google productivity services through one OAuth login:
 
-| Service | Backend | Tool prefix |
+| Service | Tool prefix | What's there |
 |---|---|---|
-| Calendar | \`calendarmcp.googleapis.com\` | \`calendar_*\` |
-| Chat | \`chatmcp.googleapis.com\` | \`chat_*\` |
-| Drive | \`drivemcp.googleapis.com\` | \`drive_*\` |
-| Gmail | \`gmailmcp.googleapis.com\` | \`gmail_*\` |
-| People | \`people.googleapis.com\` | \`people_*\` |
+| Calendar | \`calendar_*\` | Events, scheduling, free/busy |
+| Gmail | \`gmail_*\` | Read, label, draft (no send via MCP — drafts only) |
+| Drive | \`drive_*\` | Files, folders, permissions |
+| Docs | \`docs_*\` | Create, read, edit documents |
+| Sheets | \`sheets_*\` | Read/write spreadsheets, formulas, formatting |
+| Slides | \`slides_*\` | Create and edit presentations |
+| Forms | \`forms_*\` | Build forms, read responses |
+| Meet | \`meet_*\` | Create and manage meeting spaces |
 
-A single OAuth login covers every service — when the user authenticates, you get access to all 33 tools at once.
+A single OAuth flow grants access to every service.
 
 ---
 
 ## 1. Picking a service
 
-| User intent | Service to use |
+| User intent | Service |
 |---|---|
-| "What's on my calendar?", "schedule a meeting", "block 30 min" | **calendar** |
-| "Send/list/search emails", "label this thread", "create draft" | **gmail** |
-| "Find file X", "share doc", "list recent files" | **drive** |
-| "Post to space Y", "search messages in chat" | **chat** |
-| "Look up person", "what's my email", "find colleague" | **people** |
+| "What's on my calendar?", "schedule meeting" | calendar |
+| "Find/triage/draft email", "label thread" | gmail |
+| "Find file X", "list recent files", "share/copy" | drive |
+| "Edit doc", "summarize document" | docs (read content) or drive (find first) |
+| "Read/write spreadsheet", "calculate" | sheets |
+| "Create presentation" | slides |
+| "Build a form", "see responses" | forms |
+| "Create a Meet link" | meet |
 
-When in doubt, retrieve the per-service prompt below for the exact tool set:
-
-- \`GOOGLE_WORKSPACE_CALENDAR_GUIDE\`
-- \`GOOGLE_WORKSPACE_GMAIL_GUIDE\`
-- \`GOOGLE_WORKSPACE_DRIVE_GUIDE\`
-- \`GOOGLE_WORKSPACE_CHAT_GUIDE\`
-- \`GOOGLE_WORKSPACE_PEOPLE_GUIDE\`
+When in doubt, retrieve the per-service guide via \`prompts/get\`.
 
 ---
 
 ## 2. Time and timezone handling
 
-Calendar, Gmail and Chat tools accept ISO 8601 timestamps. **Always include an explicit timezone offset** (\`-03:00\`, \`Z\`, etc.) when the user names a wall-clock time — never silently assume UTC.
+Tools that accept timestamps want ISO 8601 **with explicit offset**. Never assume UTC silently.
 
 \`\`\`text
 ✅  2026-04-24T14:00:00-03:00
@@ -83,45 +77,55 @@ Calendar, Gmail and Chat tools accept ISO 8601 timestamps. **Always include an e
 ❌  2026-04-24T14:00:00       (naive — backend may misinterpret)
 \`\`\`
 
-Date-only inputs (\`2026-04-24\`) are usually treated as UTC midnight by the backends.
+For wall-clock times, attach the user's timezone offset.
 
 ---
 
 ## 3. Identity defaults
 
-- The user's **own** identifier in most tools is implicit (e.g. Calendar's "primary" calendar, Gmail's authenticated account). You do **not** need to look up the user's email before calling those tools.
-- When you do need it (e.g. for a meeting body, an attendee list, a signature), call \`people_get_user_profile\` — cheap, returns name + email.
+- The user's **own** identifier is implicit in most tools (Calendar's \`primary\`, Gmail's authenticated account, Drive's "my files").
+- For meetings/emails that need the user's email (e.g. signature, attendee list, body of an event), look it up via \`drive_get_about\` or one of the user-info tools — don't ask the user.
 
 ---
 
 ## 4. Destructive actions: confirm first
 
-These tools mutate or delete user data. Confirm with the user before invoking unless they explicitly authorized the change in this turn:
+These tools mutate or delete user data. Confirm before invoking unless the user explicitly authorized the change in the same turn:
 
-- \`calendar_delete_event\`, \`calendar_update_event\`, \`calendar_respond_to_event\`
-- \`gmail_label_thread\`, \`gmail_unlabel_thread\`, \`gmail_label_message\`, \`gmail_unlabel_message\`, \`gmail_create_label\`, \`gmail_create_draft\`
-- \`drive_create_file\`, \`drive_copy_file\`
-- \`chat_send_message\`
+- Calendar: \`calendar_create_event\`, \`calendar_update_event\`, \`calendar_delete_event\`, \`calendar_quick_add_event\`, advanced ops (move/duplicate)
+- Gmail: \`gmail_create_draft\`, \`gmail_label_thread\`/\`unlabel_thread\`, \`gmail_create_label\`
+- Drive: \`drive_create_*\`, \`drive_copy_*\`, \`drive_delete_*\`, \`drive_share_*\`
+- Docs/Sheets/Slides/Forms: any \`create_*\`, \`update_*\`, \`delete_*\` (most of these mutate)
+- Meet: \`meet_create_space\`, \`meet_end_active_conference\`
 
-> **Gmail caveat**: there is **no \`gmail_send\` tool** — only \`create_draft\`. Composed emails land in the user's drafts folder for them to review and send manually. Make sure the user knows this before promising "I'll send the email."
+> **Gmail caveat:** there is no \`gmail_send\` tool — only \`gmail_create_draft\`. Composed emails land in the user's drafts folder. Never claim "I sent the email."
 
 ---
 
 ## 5. Pagination
 
-Tools that return lists (\`list_events\`, \`search_threads\`, \`list_recent_files\`, \`list_messages\`, \`search_directory_people\`, …) typically expose a \`pageSize\` and a page-token field (\`pageToken\` / \`nextPageToken\`). Default page sizes are small (often 10–50). For "show me everything" requests, loop with the returned token until empty — but cap the loops to avoid runaway fan-out.
+Tools that return lists (\`list_events\`, \`search_threads\`, \`list_recent_files\`, ...) typically expose \`pageSize\` and a token field (\`pageToken\` / \`nextPageToken\`). Default page sizes are small (10–50). For "show me everything" requests, loop with the returned token until empty — but cap loops to avoid runaway fan-out.
 
 ---
 
 ## 6. Errors and re-auth
 
-If a call returns \`401 Unauthorized\` or \`The access token has been revoked\`, the user needs to re-authenticate. Surface that explicitly — don't retry. \`403 Forbidden\` usually means the token is missing a scope; ask the user to reconnect to grant the new permission.
+If a call returns \`401 Unauthorized\` or "the access token has been revoked", the user must re-authenticate. Surface that explicitly — don't retry. \`403 Forbidden\` usually means the token is missing a scope; ask the user to reconnect to grant the new permission.
 
 ---
 
 ## 7. Further reading
 
-Pull the per-service guide before doing real work in any one service. Each guide includes a tool cheat sheet, common workflows, query syntax (when applicable), and pitfalls. Retrieve via the standard MCP \`prompts/get\` request.
+Pull the per-service guide before doing real work in any one service. Each guide has a tool cheat sheet, common workflows, query syntax (when applicable), and pitfalls. Available:
+
+- \`GOOGLE_WORKSPACE_CALENDAR_GUIDE\`
+- \`GOOGLE_WORKSPACE_GMAIL_GUIDE\`
+- \`GOOGLE_WORKSPACE_DRIVE_GUIDE\`
+- \`GOOGLE_WORKSPACE_DOCS_GUIDE\`
+- \`GOOGLE_WORKSPACE_SHEETS_GUIDE\`
+- \`GOOGLE_WORKSPACE_SLIDES_GUIDE\`
+- \`GOOGLE_WORKSPACE_FORMS_GUIDE\`
+- \`GOOGLE_WORKSPACE_MEET_GUIDE\`
 `,
         },
       },
@@ -129,240 +133,128 @@ Pull the per-service guide before doing real work in any one service. Each guide
   }),
 });
 
-const calendarGuidePrompt = createPrompt({
+/**
+ * Per-service guide factory — keeps the per-service prompts short and
+ * uniform: tool list + key pitfalls. Exhaustive cheat sheets are intentionally
+ * left to each tool's own description (which the agent already sees).
+ */
+function serviceGuide(opts: {
+  name: string;
+  title: string;
+  prefix: string;
+  description: string;
+  body: string;
+}) {
+  return createPrompt({
+    name: opts.name,
+    title: opts.title,
+    description: opts.description,
+    execute: () => ({
+      messages: [
+        {
+          role: "user" as const,
+          content: {
+            type: "text" as const,
+            text: `How do I use the ${opts.prefix}_* tools?`,
+          },
+        },
+        {
+          role: "assistant" as const,
+          content: { type: "text" as const, text: opts.body },
+        },
+      ],
+    }),
+  });
+}
+
+const calendarGuidePrompt = serviceGuide({
   name: "GOOGLE_WORKSPACE_CALENDAR_GUIDE",
   title: "Google Calendar — Tool Guide",
+  prefix: "calendar",
   description:
-    "Practical guide for the calendar_* tools: tool selection, scheduling workflows, time-range syntax, the primary calendar convention, and pitfalls.",
-  execute: () => ({
-    messages: [
-      {
-        role: "user" as const,
-        content: {
-          type: "text" as const,
-          text: "How do I use the calendar_* tools?",
-        },
-      },
-      {
-        role: "assistant" as const,
-        content: {
-          type: "text" as const,
-          text: `# Google Calendar — Tool Guide
+    "Calendar tool selection, the `primary` calendar convention, scheduling workflows and recurring-event pitfalls.",
+  body: `# Google Calendar — Tool Guide
 
-## Tools (8)
+## Core tools
+- \`calendar_list_calendars\` — discover the user's calendars (primary, secondary, shared).
+- \`calendar_list_events\` — most common read; takes time window + optional search.
+- \`calendar_get_event\` — fetch one event by ID after a list/search.
+- \`calendar_get_freebusy\` — busy/free intervals for one or more calendars.
+- \`calendar_quick_add_event\` — natural-language one-liner ("Lunch tomorrow at noon").
+- \`calendar_create_event\` / \`calendar_update_event\` / \`calendar_delete_event\` — explicit CRUD.
+- \`calendar_find_available_slots\` — multi-attendee slot finder.
+- \`calendar_move_event\` / \`calendar_duplicate_event\` — advanced.
 
-| Tool | When to use |
-|---|---|
-| \`calendar_list_calendars\` | Discover which calendars the user has — primary, secondary, shared. |
-| \`calendar_list_events\` | "What's on my schedule from X to Y?" Most common read tool. |
-| \`calendar_get_event\` | Fetch a single event by ID (after a list/search). |
-| \`calendar_suggest_time\` | "Find a 30-min slot when A, B and C are all free next week." |
-| \`calendar_create_event\` | Schedule a new meeting. |
-| \`calendar_update_event\` | Move, rename, change attendees on an existing event. |
-| \`calendar_delete_event\` | Remove an event (destructive — confirm first). |
-| \`calendar_respond_to_event\` | Accept / decline / tentative an invitation. |
-
-## Calendar IDs
-
-- The user's main calendar is identified as **\`"primary"\`** — use this as the default for any "my calendar" request.
-- Secondary calendars use email-shaped IDs (e.g. \`team@group.calendar.google.com\`). Get them via \`calendar_list_calendars\`.
-
-## Time syntax
-
-All times must be ISO 8601 **with an explicit offset**:
-
-\`\`\`json
-{
-  "calendarId": "primary",
-  "startTime": "2026-04-24T09:00:00-03:00",
-  "endTime":   "2026-04-24T18:00:00-03:00"
-}
-\`\`\`
-
-Don't compute epoch ms by hand — pass the ISO string and let Google's backend resolve it.
-
-## Common workflows
-
-### "What's on my calendar tomorrow?"
-\`\`\`json
-{ "tool": "calendar_list_events",
-  "input": { "calendarId": "primary",
-             "startTime": "<tomorrow 00:00 user-tz>",
-             "endTime":   "<tomorrow 23:59 user-tz>" } }
-\`\`\`
-
-### "Find 30 min next week with Bob and Alice"
-\`\`\`json
-{ "tool": "calendar_suggest_time",
-  "input": { "attendee_emails": ["primary","bob@x.com","alice@y.com"],
-             "duration_minutes": 30,
-             "earliest_start_time": "...",
-             "latest_end_time":   "..." } }
-\`\`\`
-Note: \`primary\` works as a special attendee value to include the user themselves.
-
-### "Reschedule the standup to 10am"
-1. \`calendar_list_events\` to find the standup → grab its \`id\`.
-2. \`calendar_update_event\` with the new \`startTime\` / \`endTime\`.
-
-### "Decline that meeting"
-\`calendar_respond_to_event\` with \`responseStatus: "declined"\`.
+## Conventions
+- Use \`"primary"\` as the default calendar id.
+- Times are ISO 8601 **with timezone offset**; pass the user's tz unless they say otherwise.
+- Recurring events are a single object — updating "the standup" updates every instance unless you target a specific instance id.
 
 ## Pitfalls
-
-1. **Recurring events are a single object.** Updating "the standup" updates **every** instance unless you target the specific instance ID. Make sure the user wants that.
-2. **\`updateEvent\` overwrites fields you pass.** Read first if you're only changing one thing — partial updates require sending the whole event.
-3. **Timezones are sticky.** If the user's calendar timezone is \`America/Sao_Paulo\` but you create with \`+00:00\`, the event will appear at the wrong wall-clock hour. Match the user's tz unless they say otherwise.
-4. **\`primary\` is implicit.** Don't ask "which calendar?" if the user just says "my calendar" — use \`primary\`.
-5. **\`suggest_time\` only works inside the user's organization.** Free/busy data for outside emails won't be available.
-`,
-        },
-      },
-    ],
-  }),
+- Free/busy for outside-the-org emails returns empty data.
+- \`update_event\` overwrites the fields you pass; read first if you're only changing one thing.
+- \`quick_add\` ignores attendees — use \`create_event\` when you need to invite people.`,
 });
 
-const gmailGuidePrompt = createPrompt({
+const gmailGuidePrompt = serviceGuide({
   name: "GOOGLE_WORKSPACE_GMAIL_GUIDE",
   title: "Gmail — Tool Guide",
+  prefix: "gmail",
   description:
-    "Practical guide for the gmail_* tools: tool selection, Gmail search query syntax, label vs thread vs message, and pitfalls. Important: this MCP cannot send mail — only create drafts.",
-  execute: () => ({
-    messages: [
-      {
-        role: "user" as const,
-        content: {
-          type: "text" as const,
-          text: "How do I use the gmail_* tools?",
-        },
-      },
-      {
-        role: "assistant" as const,
-        content: {
-          type: "text" as const,
-          text: `# Gmail — Tool Guide
+    "Gmail tool selection, search syntax, thread vs message ops, and the drafts-only caveat (this MCP cannot send mail).",
+  body: `# Gmail — Tool Guide
 
-> **Up front: this MCP cannot send email.** There is no \`gmail_send_message\`. The closest tool is \`gmail_create_draft\`, which leaves the message in the user's drafts folder for them to review and click "Send" themselves. Always set this expectation before promising to "send" anything.
+> **No send tool.** This MCP only creates drafts. The user clicks Send themselves. Never promise to "send" an email.
 
-## Tools (10)
+## Core tools
+- \`gmail_search_messages\` / \`gmail_search_threads\` — Gmail's search syntax (see below).
+- \`gmail_get_message\` / \`gmail_get_thread\` — fetch full content by id.
+- \`gmail_create_draft\` — compose a draft (reply if you pass \`threadId\`).
+- \`gmail_list_drafts\`, \`gmail_get_draft\`, \`gmail_update_draft\`, \`gmail_delete_draft\`.
+- \`gmail_list_labels\`, \`gmail_create_label\`, \`gmail_label_thread\`, \`gmail_unlabel_thread\`, \`gmail_label_message\`, \`gmail_unlabel_message\`.
 
-| Tool | When to use |
-|---|---|
-| \`gmail_search_threads\` | "Find emails about X", "show me unread from Bob". The main read tool. |
-| \`gmail_get_thread\` | After a search, fetch the full conversation by thread ID. |
-| \`gmail_create_draft\` | Compose a reply or new email — leaves it in Drafts for the user. |
-| \`gmail_list_drafts\` | Show what's in Drafts. |
-| \`gmail_list_labels\` | Discover label IDs (you must look up an ID before label/unlabel ops). |
-| \`gmail_create_label\` | New custom label. |
-| \`gmail_label_thread\` / \`gmail_unlabel_thread\` | Apply/remove labels at the thread level. |
-| \`gmail_label_message\` / \`gmail_unlabel_message\` | Same, at the single-message level. |
-
-## Gmail search query syntax
-
-\`gmail_search_threads\` accepts the **same query syntax as the Gmail web UI search box**.
-
-| Operator | Example | Meaning |
-|---|---|---|
-| \`from:\` | \`from:bob@example.com\` | From that sender |
-| \`to:\` | \`to:me\` | Sent to that address |
-| \`subject:\` | \`subject:"Q1 review"\` | Subject contains phrase |
-| \`label:\` | \`label:starred\` | Has that label (system or custom) |
-| \`is:\` | \`is:unread\`, \`is:important\`, \`is:starred\` | State |
-| \`has:\` | \`has:attachment\` | Filter by attachment / link / etc. |
-| \`after:\` / \`before:\` | \`after:2026/04/01 before:2026/04/15\` | Date range (note: \`yyyy/mm/dd\`) |
-| \`newer_than:\` | \`newer_than:7d\` | Relative time (\`d\`, \`m\`, \`y\`) |
-| \`OR\` / \`-\` | \`from:bob OR from:alice -label:archived\` | Boolean / exclusion |
-| \`{}\` | \`{from:bob from:alice}\` | OR shorthand |
-| \`""\` | \`"connection refused"\` | Phrase match |
-
-Combine freely:
-
+## Search syntax cheat sheet
 \`\`\`text
-from:billing@vendor.com after:2026/03/01 has:attachment -label:archived
-is:unread label:inbox -from:noreply@
+from:bob@example.com
+to:me
+subject:"Q1 review"
+label:starred              (or label:INBOX, label:UNREAD, etc.)
+is:unread, is:important, is:starred
+has:attachment, has:link
+after:2026/04/01           (yyyy/mm/dd, NOT ISO 8601)
+newer_than:7d              (d, m, y)
+from:bob OR from:alice -label:archived
+"connection refused"       (phrase)
 \`\`\`
 
-## System label IDs
-
-These are well-known and work without calling \`list_labels\`:
-
-\`INBOX\`, \`SENT\`, \`DRAFT\`, \`TRASH\`, \`SPAM\`, \`STARRED\`, \`UNREAD\`, \`IMPORTANT\`, \`CHAT\`.
-
-For **custom labels**, call \`gmail_list_labels\` first to get the ID — the label name alone won't work.
-
-## Common workflows
-
-### "Find emails about the renewal from billing@vendor.com last 30 days"
-\`\`\`json
-{ "tool": "gmail_search_threads",
-  "input": { "query": "from:billing@vendor.com renewal newer_than:30d" } }
-\`\`\`
-
-### "Reply to the latest message in that thread"
-1. \`gmail_get_thread\` → grab the latest message's \`id\` and \`Message-ID\` header.
-2. \`gmail_create_draft\` with \`threadId\` to keep it in the conversation.
-3. **Tell the user** the draft is in Drafts — they need to send it.
-
-### "Star and label these threads as 'follow-up'"
-1. \`gmail_list_labels\` → find the \`follow-up\` label ID (or call \`gmail_create_label\` first if it doesn't exist).
-2. \`gmail_label_thread\` with both \`STARRED\` and the custom label ID.
-
-### "Archive everything from this newsletter"
-1. \`gmail_search_threads\` with \`from:newsletter@x.com\`.
-2. For each thread → \`gmail_unlabel_thread\` removing \`INBOX\` (Gmail's "archive" is just removing the INBOX label).
+## System label ids
+\`INBOX\`, \`SENT\`, \`DRAFT\`, \`TRASH\`, \`SPAM\`, \`STARRED\`, \`UNREAD\`, \`IMPORTANT\`, \`CHAT\` — use these directly. For custom labels, call \`gmail_list_labels\` first to resolve the id.
 
 ## Pitfalls
-
-1. **No send tool.** Repeat: this MCP creates drafts only. Never claim an email was sent.
-2. **Threads vs messages.** A thread is a conversation; a message is a single email. Most operations should target the thread (\`label_thread\`, \`get_thread\`) unless the user is editing one specific reply.
-3. **Custom labels need IDs, not names.** A user-friendly label like "Receipts" has an internal ID like \`Label_1234567890\`. Always resolve via \`gmail_list_labels\` before label/unlabel ops.
-4. **Date filters use \`yyyy/mm/dd\`.** Not ISO 8601, not US format. \`after:2026/04/01\`, not \`2026-04-01\`.
-5. **\`is:unread\` is per-message, not per-thread.** A thread can be partially unread. \`gmail_search_threads\` returns the thread; check the message states inside.
-6. **Drafts in a thread.** When replying, pass \`threadId\` to keep the draft attached to the conversation; otherwise it becomes a new thread.
-`,
-        },
-      },
-    ],
-  }),
+- Threads vs. messages — most ops should target the thread.
+- Custom labels need ids, not display names.
+- "Archive" = remove the \`INBOX\` label.
+- Drafts in a thread require the \`threadId\` to stay attached to the conversation.`,
 });
 
-const driveGuidePrompt = createPrompt({
+const driveGuidePrompt = serviceGuide({
   name: "GOOGLE_WORKSPACE_DRIVE_GUIDE",
   title: "Google Drive — Tool Guide",
+  prefix: "drive",
   description:
-    "Practical guide for the drive_* tools: tool selection, search query syntax, content vs metadata, MIME types, and pitfalls.",
-  execute: () => ({
-    messages: [
-      {
-        role: "user" as const,
-        content: {
-          type: "text" as const,
-          text: "How do I use the drive_* tools?",
-        },
-      },
-      {
-        role: "assistant" as const,
-        content: {
-          type: "text" as const,
-          text: `# Google Drive — Tool Guide
+    "Drive tool selection, structured query syntax, MIME types, and content vs. metadata vs. permissions.",
+  body: `# Google Drive — Tool Guide
 
-## Tools (8)
+## Core tools
+- \`drive_list_files\` — search via Drive's structured query language.
+- \`drive_get_file\` — metadata + URLs for a single file.
+- \`drive_export_file\` — natural-language extraction (Docs/Sheets/PDFs/etc.).
+- \`drive_download_file\` — raw bytes (base64).
+- \`drive_create_file\`, \`drive_copy_file\`, \`drive_update_file\`, \`drive_delete_file\`.
+- \`drive_list_folders\`, \`drive_create_folder\`, \`drive_move_file\`.
+- \`drive_list_permissions\`, \`drive_create_permission\`, \`drive_delete_permission\`.
 
-| Tool | When to use |
-|---|---|
-| \`drive_search_files\` | "Find a file matching X". Structured query syntax — see below. |
-| \`drive_list_recent_files\` | "What did I work on lately?" Sorted by recency / viewed time / modified. |
-| \`drive_get_file_metadata\` | Title, owner, size, MIME, parents — without downloading. |
-| \`drive_read_file_content\` | Natural-language extraction of the file (works for Docs, Sheets, PDFs, etc.). Use this for "summarize this doc". |
-| \`drive_download_file_content\` | Raw bytes as base64. Use for binary files or when you need the original format. |
-| \`drive_get_file_permissions\` | "Who has access to this?" |
-| \`drive_create_file\` | Upload / create a new file (destructive — confirm). |
-| \`drive_copy_file\` | Duplicate an existing file (destructive — confirm). |
-
-## Search query syntax
-
-\`drive_search_files\` uses Google Drive's structured query language:
-
+## Query syntax
 \`\`\`text
 name contains 'budget'
 mimeType = 'application/pdf'
@@ -370,203 +262,148 @@ modifiedTime > '2026-04-01T00:00:00'
 '<folderId>' in parents
 trashed = false
 sharedWithMe and modifiedTime > '2026-04-01T00:00:00'
+fullText contains 'security incident'
 \`\`\`
 
-Combine with \`and\` / \`or\`:
-
-\`\`\`text
-name contains 'invoice' and mimeType = 'application/pdf' and trashed = false
-fullText contains 'security incident' and modifiedTime > '2026-03-01T00:00:00'
-\`\`\`
-
-## Common MIME types
-
-| Workspace type | MIME |
+## MIME types you'll need
+| Type | MIME |
 |---|---|
-| Google Docs | \`application/vnd.google-apps.document\` |
-| Google Sheets | \`application/vnd.google-apps.spreadsheet\` |
+| Google Doc | \`application/vnd.google-apps.document\` |
+| Google Sheet | \`application/vnd.google-apps.spreadsheet\` |
 | Google Slides | \`application/vnd.google-apps.presentation\` |
-| Google Forms | \`application/vnd.google-apps.form\` |
+| Google Form | \`application/vnd.google-apps.form\` |
 | Folder | \`application/vnd.google-apps.folder\` |
-| Shortcut | \`application/vnd.google-apps.shortcut\` |
 | PDF | \`application/pdf\` |
 
-## Common workflows
-
-### "Find PDFs about Q1 budget from this year"
-\`\`\`json
-{ "tool": "drive_search_files",
-  "input": { "query": "name contains 'budget' and mimeType = 'application/pdf' and modifiedTime > '2026-01-01T00:00:00'" } }
-\`\`\`
-
-### "Summarize this Google Doc"
-1. \`drive_search_files\` (or use the file ID if the user has it).
-2. \`drive_read_file_content\` to get the natural-language extraction.
-3. Summarize the returned text.
-
-### "What's in folder X?"
-1. Resolve folder ID via \`drive_search_files\` (\`mimeType = 'application/vnd.google-apps.folder' and name = 'X'\`).
-2. \`drive_search_files\` with \`'<folderId>' in parents and trashed = false\`.
-
-### "Who has access to this doc?"
-\`drive_get_file_permissions\` with the file ID.
-
 ## Pitfalls
-
-1. **\`read_file_content\` ≠ \`download_file_content\`.** Use \`read\` for "summarize this", \`download\` for "give me the bytes". Reading a Google Doc as raw bytes returns Drive's internal export format — usually not what you want.
-2. **Trashed files match search by default.** Add \`trashed = false\` unless the user wants the bin too.
-3. **\`'<folderId>' in parents\` requires the literal folder ID string with quotes.** Not the folder name.
-4. **\`drive.file\` scope is sandboxed.** If the OAuth client has only \`drive.file\` (not full \`drive\`), the agent can only see files it created — listings will look empty for everything else.
-5. **Download is base64.** Decode before writing; large files will hit token limits in the conversation. For >1MB files, prefer \`read_file_content\` (extracts text) or stream them outside the LLM.
-6. **\`name contains\` is case-insensitive but exact substring.** It does not tokenize — \`name contains 'invoices'\` won't match \`Invoice 042\`. Use \`fullText contains\` for content search.
-`,
-        },
-      },
-    ],
-  }),
+- \`name contains\` is a substring match (case-insensitive). Use \`fullText\` for content.
+- Add \`trashed = false\` to skip the bin.
+- Prefer \`drive_export_file\` over \`drive_download_file\` for "summarize this" — it returns clean text. Download only when you need raw bytes.
+- For deeper editing of Docs/Sheets/Slides/Forms, hand off to the matching service-specific tools instead of \`drive_update_file\`.`,
 });
 
-const chatGuidePrompt = createPrompt({
-  name: "GOOGLE_WORKSPACE_CHAT_GUIDE",
-  title: "Google Chat — Tool Guide",
+const docsGuidePrompt = serviceGuide({
+  name: "GOOGLE_WORKSPACE_DOCS_GUIDE",
+  title: "Google Docs — Tool Guide",
+  prefix: "docs",
   description:
-    "Practical guide for the chat_* tools: spaces vs DMs, message search, sending messages, and pitfalls.",
-  execute: () => ({
-    messages: [
-      {
-        role: "user" as const,
-        content: {
-          type: "text" as const,
-          text: "How do I use the chat_* tools?",
-        },
-      },
-      {
-        role: "assistant" as const,
-        content: {
-          type: "text" as const,
-          text: `# Google Chat — Tool Guide
+    "Tools for creating and editing Google Docs (titles, body content, batch updates).",
+  body: `# Google Docs — Tool Guide
 
-## Tools (4)
+## Core tools
+- \`docs_create_document\` — start a new doc with a title.
+- \`docs_get_document\` — read full structure (paragraphs, tables, lists, embedded objects).
+- \`docs_batch_update\` — apply one or many text/format/table operations atomically.
 
-| Tool | When to use |
-|---|---|
-| \`chat_search_conversations\` | Find a Space or DM by display name. The first step of most workflows. |
-| \`chat_list_messages\` | Read messages from a specific conversation, time range, or thread. |
-| \`chat_search_messages\` | Find messages by keyword across all accessible conversations. |
-| \`chat_send_message\` | Post a message (destructive — confirm before posting). |
-
-## Conversation types
-
-Google Chat has three kinds of conversations:
-
-- **Space**: a named multi-person room (think Slack channel).
-- **Group DM**: ad-hoc multi-person message thread, no name.
-- **DM**: 1-on-1 direct message.
-
-\`chat_search_conversations\` works for **named** ones (Spaces). DMs are usually addressed by the other person's identifier — flow through People MCP to look up the user.
-
-## Common workflows
-
-### "What's been said in #engineering today?"
-1. \`chat_search_conversations\` with \`displayName: "engineering"\` → grab the space ID.
-2. \`chat_list_messages\` with the space ID and a 24h time window.
-
-### "Find messages about the outage"
-\`\`\`json
-{ "tool": "chat_search_messages",
-  "input": { "query": "outage", "scope": "all" } }
-\`\`\`
-
-### "Reply 'yes' in the thread Bob mentioned"
-1. \`chat_search_messages\` with the keyword — grab the \`threadId\` of Bob's message.
-2. \`chat_send_message\` with the same \`threadId\` to keep the reply threaded.
-3. **Confirm with the user before posting** — Chat messages can't be unsent silently.
+## When to use Drive vs. Docs
+- "Find a doc" / "summarize a doc" → \`drive_list_files\` then \`drive_export_file\`.
+- "Edit a doc" / "insert text" / "format" → \`docs_get_document\` then \`docs_batch_update\`.
 
 ## Pitfalls
-
-1. **Private (1:1) DMs may not be indexed.** \`chat_list_messages\` excludes messages visible to a single user only — search will not surface them.
-2. **\`send_message\` is irreversible.** A posted message is visible immediately; editing/deleting requires a separate flow that this MCP doesn't expose. Always confirm.
-3. **Threading matters.** Pass \`threadId\` (or \`threadKey\`) to reply inside an existing thread — without it, the message starts a new thread in the same space.
-4. **Scope: read vs modify.** If the OAuth grant has only \`chat.messages.readonly\` / \`chat.spaces.readonly\`, \`send_message\` will fail with 403. Re-auth with the full \`chat.messages\` / \`chat.spaces\` scopes if so.
-5. **No bot identity.** Messages are sent **as the authenticated user** — they will see "you" posted it in their Chat history. Make sure the user wants that.
-`,
-        },
-      },
-    ],
-  }),
+- \`docs_batch_update\` uses **1-indexed positions** referring to the doc's structural index. Read the doc with \`get_document\` first to find the right insertion index — guessing produces shifted text.
+- Edits are atomic per request: if any sub-operation fails, the entire batch is rolled back.`,
 });
 
-const peopleGuidePrompt = createPrompt({
-  name: "GOOGLE_WORKSPACE_PEOPLE_GUIDE",
-  title: "People — Tool Guide",
+const sheetsGuidePrompt = serviceGuide({
+  name: "GOOGLE_WORKSPACE_SHEETS_GUIDE",
+  title: "Google Sheets — Tool Guide",
+  prefix: "sheets",
   description:
-    "Practical guide for the people_* tools: directory vs personal contacts, looking up the user themselves, and pitfalls.",
-  execute: () => ({
-    messages: [
-      {
-        role: "user" as const,
-        content: {
-          type: "text" as const,
-          text: "How do I use the people_* tools?",
-        },
-      },
-      {
-        role: "assistant" as const,
-        content: {
-          type: "text" as const,
-          text: `# People — Tool Guide
+    "Tools for reading/writing spreadsheets — values, ranges, formulas, formatting, batch updates.",
+  body: `# Google Sheets — Tool Guide
 
-## Tools (3)
+## Core areas
+- Read values: \`sheets_get_values\`, \`sheets_batch_get_values\`.
+- Write values: \`sheets_update_values\`, \`sheets_append_values\`, \`sheets_clear_values\`, \`sheets_batch_update_values\`.
+- Spreadsheet meta: \`sheets_get_spreadsheet\`, \`sheets_create_spreadsheet\`, \`sheets_batch_update\`.
+- Sheet ops (tabs): add, delete, copy, rename via \`sheets_batch_update\` requests.
+- Formatting and formulas via \`sheets_batch_update\` request types.
 
-| Tool | When to use |
-|---|---|
-| \`people_get_user_profile\` | "What's my name and email?" — info about the authenticated user themselves. |
-| \`people_search_directory_people\` | Find a colleague by name within the user's Google Workspace organization. |
-| \`people_search_contacts\` | Find someone in the user's personal address book (people they've emailed before, manually-added contacts). |
-
-## Two namespaces
-
-People MCP queries two distinct sources:
-
-| Source | Tool | Available when |
-|---|---|---|
-| **Workspace directory** | \`search_directory_people\` | The user has a Google Workspace account (work / school). Personal \`@gmail.com\` accounts return nothing here. |
-| **Personal contacts** | \`search_contacts\` | Always available, but only contains people the user has interacted with or saved. |
-
-For "find Maria from the design team", \`search_directory_people\` is the right call. For "find my dentist's email", \`search_contacts\` is the right call.
-
-## Common workflows
-
-### "Who am I?"
-\`people_get_user_profile\` — returns name + email. Useful before composing emails / events that need the user's identity in the body.
-
-### "Find Bob's email"
-1. Try \`people_search_directory_people\` first if the user is on Workspace.
-2. Fall back to \`people_search_contacts\` if no match.
-
-### "Schedule a meeting with the engineering team"
-1. \`people_search_directory_people\` for each name → resolve to email addresses.
-2. Pass the emails into \`calendar_create_event\` as attendees.
+## Conventions
+- Ranges use A1 notation: \`Sheet1!A1:B10\`, \`'My Tab'!A:A\`.
+- For appends, set \`valueInputOption: "USER_ENTERED"\` so formulas like \`=SUM(...)\` are evaluated; use \`"RAW"\` to write literal strings.
+- For multi-sheet operations, batch them in a single \`sheets_batch_update\` rather than serial calls.
 
 ## Pitfalls
+- Empty trailing cells are not returned in value reads — pad client-side if you need a fixed shape.
+- Sheet names with spaces/special chars must be quoted in A1 ranges.
+- Formulas referencing external sheets require the user to have access to the other file.`,
+});
 
-1. **Directory search returns nothing on personal accounts.** Don't suggest "let me look up your colleague" if the user signed in with \`@gmail.com\` — only \`@<workspace-domain>\` accounts can read the directory.
-2. **\`search_contacts\` is incomplete.** It only knows about people the user has saved or interacted with. A first-time recipient won't appear.
-3. **Don't loop name lookups.** If the user types out an email already, just use it — don't make a People search call for verification.
-4. **Privacy.** Surface as little PII as the task needs. If the user asks "what's Bob's email?", reply with the email and don't dump the entire directory entry.
-`,
-        },
-      },
-    ],
-  }),
+const slidesGuidePrompt = serviceGuide({
+  name: "GOOGLE_WORKSPACE_SLIDES_GUIDE",
+  title: "Google Slides — Tool Guide",
+  prefix: "slides",
+  description: "Tools for creating and editing Google Slides presentations.",
+  body: `# Google Slides — Tool Guide
+
+## Core tools
+- \`slides_create_presentation\` — new presentation with a title.
+- \`slides_get_presentation\` — read all slides, layouts and elements.
+- \`slides_get_page\` — read one slide.
+- \`slides_batch_update\` — apply create/replace/style operations atomically.
+
+## Common workflows
+- New deck from scratch: create_presentation → batch_update with createSlide / insertText / createShape requests.
+- Replace placeholder text across slides: batch_update with \`replaceAllText\`.
+- Insert images: \`createImage\` referencing a Drive file or public URL.
+
+## Pitfalls
+- Element IDs are required for most updates — get them via \`get_presentation\` first.
+- Layouts (\`TITLE\`, \`TITLE_AND_BODY\`, etc.) define placeholders; use the placeholder id when inserting text rather than creating fresh shapes.`,
+});
+
+const formsGuidePrompt = serviceGuide({
+  name: "GOOGLE_WORKSPACE_FORMS_GUIDE",
+  title: "Google Forms — Tool Guide",
+  prefix: "forms",
+  description:
+    "Tools for creating Google Forms, configuring questions, and reading responses.",
+  body: `# Google Forms — Tool Guide
+
+## Core tools
+- \`forms_create_form\` — empty form with a title; questions added via batch_update.
+- \`forms_get_form\` — read the structure (sections, items, options).
+- \`forms_batch_update\` — add/edit/remove items, reorder, change settings.
+- \`forms_list_responses\`, \`forms_get_response\` — read submissions.
+
+## Conventions
+- Questions are \`item\` objects with a \`questionItem\` payload. Types: choice, text, scale, date, time, file upload, etc.
+- For multi-page forms, use \`pageBreakItem\`.
+- Quizzes set \`isQuiz\` on the form and \`grading\` on individual questions.
+
+## Pitfalls
+- Once responses exist, certain edits (like changing answer options on a question with submitted answers) may invalidate prior data — read existing responses before destructive edits.
+- The form's "edit URL" and "respond URL" are different; surface the right one when sharing.`,
+});
+
+const meetGuidePrompt = serviceGuide({
+  name: "GOOGLE_WORKSPACE_MEET_GUIDE",
+  title: "Google Meet — Tool Guide",
+  prefix: "meet",
+  description:
+    "Tools for creating and managing Google Meet spaces and conferences.",
+  body: `# Google Meet — Tool Guide
+
+## Core tools
+- \`meet_create_space\` — new persistent meeting space (returns the meeting URL and \`name\`).
+- \`meet_get_space\`, \`meet_update_space\` — inspect / change access settings.
+- \`meet_end_active_conference\` — kick everyone out of the current conference in a space.
+- \`meet_list_conference_records\`, \`meet_get_conference_record\` — historical metadata for past conferences.
+- \`meet_list_participants\`, \`meet_list_recordings\`, \`meet_list_transcripts\` — post-meeting artifacts.
+
+## Common workflows
+- "Schedule a meeting with Bob": call \`meet_create_space\` to get a URL, then \`calendar_create_event\` with that URL in the description / conferenceData.
+- "What did we cover in yesterday's call?" → conference records + transcripts (only if recording/transcription was on).
+
+## Pitfalls
+- Spaces are persistent; the same space can host many conferences over time. Don't conflate "space" with "meeting".
+- Recording/transcript availability depends on the user's Workspace tier and admin policy.`,
 });
 
 // ============================================================================
 // User templates — picked from the prompt menu, accept arguments
 // ============================================================================
-//
-// Each template returns a single user-role message instructing the agent.
-// The agent then orchestrates calls across the 5 services to fulfill it.
 
 const userMessage = (text: string) => ({
   messages: [
@@ -581,14 +418,14 @@ const morningBriefing = createPrompt({
   name: "morning_briefing",
   title: "Morning briefing",
   description:
-    "Summarize the day ahead — calendar, important unread email, and recent chat activity — in one shot.",
+    "Summarize the day ahead — calendar, important unread email, and recent Drive activity — in one shot.",
   execute: () =>
     userMessage(
-      `Give me a morning briefing for today. Use the Google Workspace MCP and combine three sources:
+      `Give me a morning briefing for today. Combine three sources:
 
-1. **Calendar** — call \`calendar_list_events\` on \`primary\` from now until end of day in my timezone. Group as: meetings I'm hosting, meetings I'm attending, blocked focus time.
-2. **Email** — call \`gmail_search_threads\` with \`is:unread is:important newer_than:1d\`. Show subject, sender, one-line summary. Cap at 10.
-3. **Chat** — call \`chat_search_messages\` for the last 24h that mention me. Surface the spaces with the most activity.
+1. **Calendar** — \`calendar_list_events\` on \`primary\` from now until end of day in my timezone. Group as: meetings I'm hosting, meetings I'm attending, blocked focus time.
+2. **Email** — \`gmail_search_threads\` with \`is:unread is:important newer_than:1d\`. Show subject, sender, one-line summary. Cap at 10.
+3. **Drive activity** — \`drive_list_files\` for \`modifiedTime > '<24h ago>' and trashed = false\`, top 5. Surface anything shared with me or that I last touched.
 
 Format as three short sections with bullets. End with one sentence: "What should I tackle first?"`,
     ),
@@ -598,7 +435,7 @@ const prepForMeeting = createPrompt({
   name: "prep_for_meeting",
   title: "Prep for next meeting",
   description:
-    "Pull together context for the next meeting on the calendar — attendees, recent emails with them, and shared docs.",
+    "Pull together context for the next meeting on the calendar — attendees, recent emails with them, shared docs.",
   argsSchema: {
     lookahead: z
       .string()
@@ -610,14 +447,14 @@ const prepForMeeting = createPrompt({
   execute: ({ args }) => {
     const lookahead = args.lookahead ?? "4h";
     return userMessage(
-      `Prep me for my next meeting in the next ${lookahead}. Steps:
+      `Prep me for my next meeting in the next ${lookahead}.
 
 1. \`calendar_list_events\` on \`primary\` from now until ${lookahead} from now. Pick the next event with at least one attendee besides me.
-2. For each attendee email, \`gmail_search_threads\` with \`from:<email> OR to:<email> newer_than:14d\` and pull the latest 3 threads each. Highlight any open questions or commitments.
-3. \`drive_search_files\` for files modified by those people in the last 30 days OR shared in those email threads. List up to 5.
-4. \`gmail_search_threads\` with the meeting title as a query — surface any prior meeting notes / agenda emails.
+2. For each attendee email, \`gmail_search_threads\` with \`from:<email> OR to:<email> newer_than:14d\` and pull the latest 3 threads each. Highlight open questions or commitments.
+3. \`drive_list_files\` for files modified by those people in the last 30 days OR shared in those email threads. List up to 5.
+4. \`gmail_search_threads\` with the meeting title — surface any prior agenda emails / meeting notes.
 
-Output: meeting title and time, attendee list with role hints (org, last interaction), 5 bullets of context, suggested talking points.`,
+Output: meeting title and time, attendee list, 5 bullets of context, suggested talking points.`,
     );
   },
 });
@@ -631,7 +468,7 @@ const whatsOnCalendar = createPrompt({
       .string()
       .optional()
       .describe(
-        "Window to summarize. Free-form, e.g. 'today', 'tomorrow', 'this week', 'next Monday', '2026-04-24'. Default 'today'.",
+        "Window to summarize. e.g. 'today', 'tomorrow', 'this week', '2026-04-24'. Default 'today'.",
       ),
   },
   execute: ({ args }) => {
@@ -639,10 +476,10 @@ const whatsOnCalendar = createPrompt({
     return userMessage(
       `Summarize what's on my calendar for: ${when}.
 
-1. Resolve the window into ISO 8601 timestamps using my local timezone (always include offset — never naive). If the user said something ambiguous like "this week", interpret as Monday–Sunday in my tz.
-2. Call \`calendar_list_events\` on \`primary\` for that window.
+1. Resolve the window to ISO 8601 timestamps in my local timezone (always include offset).
+2. \`calendar_list_events\` on \`primary\` for that window.
 3. Group by day. For each event: time, title, attendee count, location/Meet link. Flag conflicts.
-4. End with: total meeting hours and longest free block per day.`,
+4. End with: total meeting hours and the longest free block per day.`,
     );
   },
 });
@@ -651,12 +488,12 @@ const findMeetingTime = createPrompt({
   name: "find_meeting_time",
   title: "Find a time to meet",
   description:
-    "Find a slot when given attendees are all free — across the user's organization.",
+    "Find a slot when the given attendees are all free, within the user's organization.",
   argsSchema: {
     attendees: z
       .string()
       .describe(
-        "Comma-separated emails (or names — agent will look them up via people_search_directory_people). Always include me as 'primary'.",
+        "Comma-separated emails. Always include 'primary' to represent me.",
       ),
     duration: z
       .string()
@@ -666,7 +503,7 @@ const findMeetingTime = createPrompt({
       .string()
       .optional()
       .describe(
-        "Time window to search. e.g. 'today', 'tomorrow', 'this week', 'next 5 business days'. Default 'next 5 business days'.",
+        "Time window to search. e.g. 'today', 'this week', 'next 5 business days'. Default 'next 5 business days'.",
       ),
   },
   execute: ({ args }) => {
@@ -675,11 +512,10 @@ const findMeetingTime = createPrompt({
     return userMessage(
       `Find a ${duration} meeting slot when these people are all free during ${when}: ${args.attendees}.
 
-1. For any names that aren't emails, resolve via \`people_search_directory_people\`. Always include \`primary\` to represent me.
-2. Resolve the time window into ISO 8601 with my timezone.
-3. Call \`calendar_suggest_time\` with the attendee_emails list, duration, and window.
-4. Return up to 5 candidate slots (start time in my tz). For each, note which attendees confirmed availability.
-5. Ask me which slot to book — do NOT call \`calendar_create_event\` until I confirm.`,
+1. Resolve the time window into ISO 8601 with my timezone offset.
+2. \`calendar_find_available_slots\` (or \`calendar_get_freebusy\` if the former isn't available) with the attendee emails, duration, and window.
+3. Return up to 5 candidate slots in my tz. For each, note any caveats (e.g. attendee outside org → no free/busy data).
+4. Ask which slot to book — do NOT call \`calendar_create_event\` until I confirm.`,
     );
   },
 });
@@ -687,8 +523,7 @@ const findMeetingTime = createPrompt({
 const blockFocusTime = createPrompt({
   name: "block_focus_time",
   title: "Block focus time",
-  description:
-    "Reserve a focus block on the user's primary calendar. Confirms before creating.",
+  description: "Reserve a focus block on the user's primary calendar.",
   argsSchema: {
     duration: z
       .string()
@@ -697,7 +532,7 @@ const blockFocusTime = createPrompt({
       .string()
       .optional()
       .describe(
-        "When to block. e.g. 'tomorrow morning', 'today 14:00 GMT-3', 'next free slot'. Default 'next free slot today'.",
+        "When to block. e.g. 'tomorrow morning', 'today 14:00 GMT-3', 'next free slot today'. Default 'next free slot today'.",
       ),
     title: z.string().optional().describe("Block title. Default 'Focus time'."),
   },
@@ -707,13 +542,9 @@ const blockFocusTime = createPrompt({
     return userMessage(
       `Block ${args.duration} of focus time on my calendar for: "${title}". When: ${when}.
 
-1. Resolve "${when}" into a concrete start time (ISO 8601 with my timezone offset). If it says "next free slot", first call \`calendar_list_events\` for the rest of today and pick the earliest gap of at least ${args.duration}.
-2. Show me the proposed start/end times and ask for confirmation.
-3. **Only after I confirm**, call \`calendar_create_event\` on \`primary\` with:
-   - summary: "${title}"
-   - the resolved start/end
-   - visibility: "private"
-   - no attendees
+1. Resolve "${when}" into a concrete start (ISO 8601 with my timezone). For "next free slot", \`calendar_list_events\` first and pick the earliest gap of at least ${args.duration}.
+2. Show me proposed start/end and ask for confirmation.
+3. **After I confirm**, \`calendar_create_event\` on \`primary\` with summary "${title}", visibility "private", no attendees.
 4. Confirm the event was created and show me the link.`,
     );
   },
@@ -722,8 +553,7 @@ const blockFocusTime = createPrompt({
 const inboxTriage = createPrompt({
   name: "inbox_triage",
   title: "Triage my inbox",
-  description:
-    "Summarize unread email by importance and suggest what needs a reply.",
+  description: "Summarize unread email by importance and what needs a reply.",
   argsSchema: {
     timeframe: z
       .string()
@@ -741,14 +571,14 @@ const inboxTriage = createPrompt({
     return userMessage(
       `Triage my Gmail inbox for the last ${timeframe}.
 
-1. \`gmail_search_threads\` with: \`is:unread ${newerThan} -category:promotions -category:social\`.
-2. For each thread, get the latest message via \`gmail_get_thread\` and classify it as:
+1. \`gmail_search_threads\` with \`is:unread ${newerThan} -category:promotions -category:social\`.
+2. For each thread, \`gmail_get_thread\` and classify as:
    - **Reply needed** — direct question or @-mention
    - **FYI** — informational, no action
    - **Action item** — task assigned to me
-   - **Noise** — newsletters, automated, etc.
-3. Output a table with columns: From, Subject, Class, One-line gist.
-4. End with: how many need a reply, and which 1–3 are the most time-sensitive. Do NOT draft replies yet — just the triage.`,
+   - **Noise** — newsletters, automated
+3. Output a table: From, Subject, Class, One-line gist.
+4. End with: how many need a reply, and which 1–3 are most time-sensitive. Don't draft replies — just triage.`,
     );
   },
 });
@@ -772,14 +602,14 @@ const draftReply = createPrompt({
     userMessage(
       `Draft a reply to a Gmail thread.
 
-1. \`gmail_search_threads\` with query: \`${args.thread_query}\`. If multiple match, pick the most recent and tell me which one.
-2. \`gmail_get_thread\` to read the latest message in that thread.
+1. \`gmail_search_threads\` with: \`${args.thread_query}\`. If multiple match, pick the most recent and tell me which.
+2. \`gmail_get_thread\` to read the latest message.
 3. Compose a reply that says: ${args.instruction}
-   - Match the existing tone and language.
+   - Match the existing tone.
    - Keep it concise unless the original was long.
-   - Sign off with my first name (look it up via \`people_get_user_profile\` if you don't already know it).
+   - Sign off with my first name.
 4. \`gmail_create_draft\` with the threadId so it stays in the conversation.
-5. Tell me where to find the draft. **Remember: this MCP cannot send mail — the user must click Send themselves.**`,
+5. Tell me where to find the draft. **Remember: this MCP cannot send mail — I must click Send.**`,
     ),
 });
 
@@ -791,21 +621,20 @@ const findFiles = createPrompt({
     query: z
       .string()
       .describe(
-        "Natural-language description of what to find. e.g. 'PDFs about Q1 budget from this year', 'spreadsheets shared by Alice last month'.",
+        "Natural-language description. e.g. 'PDFs about Q1 budget from this year', 'spreadsheets shared by Alice last month'.",
       ),
   },
   execute: ({ args }) =>
     userMessage(
       `Find files in my Drive matching: ${args.query}.
 
-1. Translate the request into Drive structured query syntax. Examples:
+1. Translate the request to Drive structured query syntax. Examples:
    - PDFs → \`mimeType = 'application/pdf'\`
    - Sheets → \`mimeType = 'application/vnd.google-apps.spreadsheet'\`
    - "this year" → \`modifiedTime > 'YYYY-01-01T00:00:00'\`
-   - "shared by X" → resolve email via \`people_search_directory_people\` then \`'<email>' in owners\`
-   - Always add \`trashed = false\` unless the user wants the bin.
-2. Call \`drive_search_files\` with the structured query.
-3. List up to 10 results: title, type (Doc/Sheet/PDF/…), owner, last modified. Include the file ID for follow-ups.`,
+   - Always add \`trashed = false\`.
+2. \`drive_list_files\` with the structured query.
+3. List up to 10 results: title, type, owner, last modified. Include the file id.`,
     ),
 });
 
@@ -818,75 +647,120 @@ const summarizeDoc = createPrompt({
     document: z
       .string()
       .describe(
-        "Document name or keyword. The agent searches Drive and confirms the match before summarizing.",
+        "Document name or keyword. The agent confirms before summarizing.",
       ),
   },
   execute: ({ args }) =>
     userMessage(
       `Summarize a document from my Drive: ${args.document}.
 
-1. \`drive_search_files\` with \`name contains '${args.document}' and trashed = false\`. If multiple results, list the top 3 with last-modified dates and ask me to pick.
-2. \`drive_read_file_content\` (NOT download) on the chosen file — this returns natural-language extraction that handles Docs/Sheets/PDFs.
-3. Produce:
-   - 3-sentence executive summary
-   - Bullet list of key points (max 7)
-   - Open questions / TODOs flagged in the doc
+1. \`drive_list_files\` with \`name contains '${args.document}' and trashed = false\`. If multiple, list the top 3 with last-modified dates and ask me to pick.
+2. \`drive_export_file\` on the chosen file (preferred over download — handles Docs/Sheets/PDFs).
+3. Produce: 3-sentence executive summary, bullet list of key points (max 7), open questions/TODOs.
 4. End with the doc URL.`,
     ),
 });
 
-const catchUpChat = createPrompt({
-  name: "catch_up_chat",
-  title: "Catch up on a Chat space",
-  description: "Summarize recent activity in a Google Chat space or DM.",
+const newDeck = createPrompt({
+  name: "new_deck_from_outline",
+  title: "Create a slide deck from an outline",
+  description:
+    "Generate a Google Slides deck from a bullet outline. Confirms before mutating.",
   argsSchema: {
-    space: z
+    title: z.string().describe("Deck title."),
+    outline: z
       .string()
       .describe(
-        "Space display name or keyword. e.g. 'engineering', 'design-team'.",
+        "Bullet outline. One slide per top-level bullet; nested bullets are speaker notes.",
       ),
-    timeframe: z
-      .string()
-      .optional()
-      .describe("How far back to read. e.g. '24h', '3d'. Default '24h'."),
-  },
-  execute: ({ args }) => {
-    const timeframe = args.timeframe ?? "24h";
-    return userMessage(
-      `Catch me up on the "${args.space}" Google Chat space — last ${timeframe}.
-
-1. \`chat_search_conversations\` with displayName containing "${args.space}". If multiple match, pick the one with the most recent activity and tell me which.
-2. \`chat_list_messages\` on that space, scoped to the last ${timeframe}.
-3. Summarize as:
-   - **Decisions** — anything that sounds like a conclusion or commitment
-   - **Action items** — tasks called out, with owner if mentioned
-   - **Open threads** — questions still hanging
-   - **FYI** — links, announcements
-4. Highlight any messages that mention me (use my email from \`people_get_user_profile\` if needed).`,
-    );
-  },
-});
-
-const findPerson = createPrompt({
-  name: "find_person",
-  title: "Find someone's contact info",
-  description:
-    "Look up a person across the Workspace directory and personal contacts.",
-  argsSchema: {
-    name: z.string().describe("Name or partial name to search for."),
   },
   execute: ({ args }) =>
     userMessage(
-      `Find contact info for: ${args.name}.
+      `Create a Google Slides deck titled "${args.title}" from this outline:
 
-1. Try \`people_search_directory_people\` first — this hits the user's Workspace org directory.
-2. If no match (or the user has a personal account), fall back to \`people_search_contacts\`.
-3. Return: full name, email, job title (if available), department/team. If multiple matches, list up to 5.
-4. Don't dump every directory field — only what's useful for "send them an email" or "schedule a meeting".`,
+${args.outline}
+
+Steps:
+1. \`slides_create_presentation\` with the title.
+2. Parse the outline: each top-level bullet = one slide; nested bullets = speaker notes.
+3. \`slides_batch_update\` with createSlide + insertText requests in one batch.
+4. Show me the deck URL when done.
+
+Confirm with me before step 3 if the outline is ambiguous (e.g. inconsistent indentation).`,
     ),
 });
 
-const userPrompts = [
+const createForm = createPrompt({
+  name: "create_form",
+  title: "Build a form from a question list",
+  description:
+    "Create a Google Form with the given title and questions. Confirms before mutating.",
+  argsSchema: {
+    title: z.string().describe("Form title."),
+    questions: z
+      .string()
+      .describe(
+        "One question per line. Prefix with type: 'short:', 'long:', 'choice:', 'multi:', 'scale:1-5'. Default short text.",
+      ),
+  },
+  execute: ({ args }) =>
+    userMessage(
+      `Build a Google Form titled "${args.title}" with these questions:
+
+${args.questions}
+
+Steps:
+1. \`forms_create_form\` with the title.
+2. Parse each line into the right item type:
+   - \`short:Q\` → SHORT_ANSWER
+   - \`long:Q\` → PARAGRAPH
+   - \`choice:Q | A | B | C\` → RADIO with three options
+   - \`multi:Q | A | B | C\` → CHECKBOX
+   - \`scale:1-5 Q\` → linear scale 1–5
+   - bare line → SHORT_ANSWER
+3. \`forms_batch_update\` with all items in one batch.
+4. Show me the form's edit URL and respond URL.
+
+Confirm before step 3 if any line is ambiguous.`,
+    ),
+});
+
+const meetingLink = createPrompt({
+  name: "create_meet_for_event",
+  title: "Add a Meet link to a calendar event",
+  description:
+    "Create a Google Meet space and attach it to an existing or new calendar event.",
+  argsSchema: {
+    event_query: z
+      .string()
+      .describe(
+        "Either 'new' to create an event, or a calendar search to find one (e.g. 'Q1 sync this Friday').",
+      ),
+  },
+  execute: ({ args }) =>
+    userMessage(
+      `Create a Google Meet space and attach it to a calendar event: ${args.event_query}.
+
+1. \`meet_create_space\` to get a Meet URL.
+2. If "${args.event_query}" is "new":
+   - Ask me for title, attendees, time. Then \`calendar_create_event\` with the Meet URL in the description.
+3. Otherwise, \`calendar_list_events\` with the query, pick the matching event, then \`calendar_update_event\` to add the Meet URL.
+4. Confirm the event was updated and show me the Meet URL.`,
+    ),
+});
+
+export const prompts = [
+  // Agent guides
+  agentGuidePrompt,
+  calendarGuidePrompt,
+  gmailGuidePrompt,
+  driveGuidePrompt,
+  docsGuidePrompt,
+  sheetsGuidePrompt,
+  slidesGuidePrompt,
+  formsGuidePrompt,
+  meetGuidePrompt,
+  // User templates
   morningBriefing,
   prepForMeeting,
   whatsOnCalendar,
@@ -896,18 +770,7 @@ const userPrompts = [
   draftReply,
   findFiles,
   summarizeDoc,
-  catchUpChat,
-  findPerson,
-];
-
-export const prompts = [
-  // Agent guides
-  agentGuidePrompt,
-  calendarGuidePrompt,
-  gmailGuidePrompt,
-  driveGuidePrompt,
-  chatGuidePrompt,
-  peopleGuidePrompt,
-  // User templates
-  ...userPrompts,
+  newDeck,
+  createForm,
+  meetingLink,
 ];
