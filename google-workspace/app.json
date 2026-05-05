@@ -1,0 +1,28 @@
+{
+  "scopeName": "deco",
+  "name": "google-workspace",
+  "friendlyName": "Google Workspace",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-workspace.decocache.com/mcp"
+  },
+  "description": "One login for the entire Google Workspace. Calendar, Chat, Drive, Gmail and People — all powered by Google's official MCP servers.",
+  "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Productivity"],
+    "official": false,
+    "tags": [
+      "google",
+      "workspace",
+      "calendar",
+      "gmail",
+      "drive",
+      "chat",
+      "people",
+      "productivity"
+    ],
+    "short_description": "Single OAuth login fanning out to Google's official Calendar, Chat, Drive, Gmail and People MCP servers.",
+    "mesh_description": "The Google Workspace MCP unifies Google's official MCP servers (Calendar, Chat, Drive, Gmail, People) behind a single OAuth login. Authenticate once with Google and gain access to ~35 tools spanning event management, email, file storage, team chat, and contact directory. The MCP proxies JSON-RPC calls to the upstream Google MCP endpoints, so tool definitions stay in sync with Google's official catalog. Adding a new Google service in the future only requires registering its endpoint and scopes — no UI changes, no extra logins."
+  }
+}
