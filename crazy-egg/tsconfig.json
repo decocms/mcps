@@ -14,7 +14,6 @@
 		"isolatedModules": true,
 		"allowImportingTsExtensions": true,
 		"noEmit": true,
-		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./web/*"]
 		}
