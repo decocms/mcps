@@ -6,7 +6,11 @@ See [`TOOLS.md`](./TOOLS.md) for the full tool catalog (auto-generated).
 
 ## Built-in prompts
 
-The MCP also exposes a set of curated prompts via the standard `prompts/list` and `prompts/get` calls. Agents can pull just the relevant guide on demand instead of stuffing every tool description into the system prompt:
+Two flavors, both exposed through the standard `prompts/list` and `prompts/get` calls.
+
+### Agent guides (no arguments)
+
+Long-form references the agent pulls on demand instead of stuffing every tool description into the system prompt:
 
 - `GOOGLE_WORKSPACE_AGENT_GUIDE` — entry point covering all 5 services, the tool naming convention, time/timezone handling, destructive-action rules, and pagination.
 - `GOOGLE_WORKSPACE_CALENDAR_GUIDE` — Calendar tool selection, the `primary` calendar convention, scheduling workflows, and pitfalls around recurring events.
@@ -14,6 +18,24 @@ The MCP also exposes a set of curated prompts via the standard `prompts/list` an
 - `GOOGLE_WORKSPACE_DRIVE_GUIDE` — Drive structured query syntax, MIME types for Docs/Sheets/Slides, content vs. metadata vs. permissions.
 - `GOOGLE_WORKSPACE_CHAT_GUIDE` — Spaces vs. DMs, threading, send-message confirmation patterns.
 - `GOOGLE_WORKSPACE_PEOPLE_GUIDE` — directory (Workspace-only) vs. personal contacts, looking up the user themselves.
+
+### User templates (with arguments)
+
+Slash-command-style entries the user picks from the prompt menu in their MCP client. Each one expands into a user message that drives the agent through a common day-to-day workflow:
+
+| Template | Arguments | Does |
+|---|---|---|
+| `morning_briefing` | — | Calendar + important unread email + recent chat activity, in three short sections. |
+| `prep_for_meeting` | `lookahead?` | Pulls attendees, last emails with them, and shared docs for the next meeting. |
+| `whats_on_calendar` | `when?` | Summarizes the schedule for any free-form window. |
+| `find_meeting_time` | `attendees`, `duration?`, `when?` | Finds slots when everyone is free; asks before booking. |
+| `block_focus_time` | `duration`, `when?`, `title?` | Reserves a private focus block; confirms before creating. |
+| `inbox_triage` | `timeframe?` | Classifies unread email (Reply / FYI / Action / Noise) and surfaces what's urgent. |
+| `draft_reply` | `thread_query`, `instruction` | Finds a thread and creates a draft reply (user must click Send). |
+| `find_files` | `query` | Translates natural-language to Drive structured query and searches. |
+| `summarize_doc` | `document` | Finds a doc by name and produces an exec summary + key points. |
+| `catch_up_chat` | `space`, `timeframe?` | Summarizes a Chat space as Decisions / Action items / Open threads / FYI. |
+| `find_person` | `name` | Looks up contact info across directory + personal contacts. |
 
 Source lives in [`server/prompts.ts`](./server/prompts.ts).
 
