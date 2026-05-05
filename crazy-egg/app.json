@@ -3,7 +3,7 @@
 	"name": "crazy-egg",
 	"friendlyName": "Crazy Egg",
 	"description": "Crazy Egg analytics: track conversions and visualize heatmap snapshots, A/B tests, funnels, recordings, surveys, and traffic in an embedded dashboard.",
-	"icon": "https://www.crazyegg.com/favicon-32x32.png",
+	"icon": "https://www.google.com/s2/favicons?domain=crazyegg.com&sz=128",
 	"connection": {
 		"type": "HTTP",
 		"url": "https://sites-crazy-egg.decocache.com/api/mcp"

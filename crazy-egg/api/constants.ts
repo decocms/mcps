@@ -5,6 +5,3 @@
  * decide which page to render.
  */
 export const CRAZY_EGG_RESOURCE_URI = "ui://crazy-egg/dashboard";
-
-/** Public icon URL displayed in the Mesh Studio app store. */
-export const CRAZY_EGG_ICON_URL = "https://www.crazyegg.com/favicon-32x32.png";
