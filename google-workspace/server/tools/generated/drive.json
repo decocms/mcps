@@ -1,0 +1,702 @@
+{
+  "service": "drive",
+  "scopes": [
+    "https://www.googleapis.com/auth/drive",
+    "https://www.googleapis.com/auth/drive.readonly",
+    "https://www.googleapis.com/auth/drive.file"
+  ],
+  "tools": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Call this tool to copy an existing File in Google Drive.\nThe tool allows specifying a new title and a parent folder for the copy.\nIf the tile is not specified, the copy title will be 'Copy of {original title}'If the parent folder is not specified, the copy will be created in the same folder as the original file, unless the requesting user does not have write access to that folder, in which case the copy will be created in the user's root folder.Returns the newly created File object upon successful copying.\n",
+      "inputSchema": {
+        "description": "Request to copy a file.",
+        "properties": {
+          "fileId": {
+            "description": "Required. The ID of the file to copy.",
+            "type": "string"
+          },
+          "parentId": {
+            "description": "The parent id of the newly created file. If empty, the file will be created with the same parent as the original file.",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the newly created file. If empty, the title will be 'Copy of [original file title]'.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "name": "copy_file",
+      "outputSchema": {
+        "description": "A file resource.",
+        "properties": {
+          "contentSnippet": {
+            "description": "Generated snippet about the content of the file.",
+            "type": "string"
+          },
+          "createdTime": {
+            "description": "The time that the file was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "The description of the file.",
+            "type": "string"
+          },
+          "fileExtension": {
+            "description": "The original file extension of the file, this is only populated for files with content stored in Drive.",
+            "type": "string"
+          },
+          "fileSize": {
+            "description": "The size in bytes of the file.",
+            "format": "int64",
+            "type": "string"
+          },
+          "id": {
+            "description": "The id of the file that was fetched.",
+            "type": "string"
+          },
+          "mimeType": {
+            "description": "The mime type of the file.",
+            "type": "string"
+          },
+          "modifiedTime": {
+            "description": "The most recent time at which the file was modified.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "owner": {
+            "description": "The email address of the owner of the file.",
+            "type": "string"
+          },
+          "parentId": {
+            "description": "The (optional) id of the parent of the file.",
+            "type": "string"
+          },
+          "sharedWithMeTime": {
+            "description": "The time that the file was shared with the requester.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the file.",
+            "type": "string"
+          },
+          "viewUrl": {
+            "description": "The URL to view the file.",
+            "type": "string"
+          },
+          "viewedByMeTime": {
+            "description": "The most recent time at which the file was viewed by requester.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": true,
+        "readOnlyHint": false
+      },
+      "description": "Call this tool to create or upload a File to Google Drive.\n\nIf uploading content, prefer \"text_content\" for text content. For non-UTF8 contents, use the \"base64_content\" field and base64 encode the data to set on that field.\n\nReturns a single File object upon successful creation.\n\nThe following Google Drive first-party mime types can be created without providing content:\n\n - `application/vnd.google-apps.document` \n - `application/vnd.google-apps.spreadsheet` \n - `application/vnd.google-apps.presentation` \n\nBy default, the following conversions will be made for the following mime types:\n\n - `text/plain` to `application/vnd.google-apps.document` \n - `text/csv` to `application/vnd.google-apps.spreadsheet` \n\nTo disable conversions for first-party mime types, set `disable_conversion_to_google_type` to true.\n\nFolders can be created by setting the mime type to `application/vnd.google-apps.folder`.\n\nWhen uploading content, the `content_mime_type` field is required and should match the type of the content being uploaded.\n",
+      "inputSchema": {
+        "description": "Request to upload a file.",
+        "properties": {
+          "base64Content": {
+            "description": "Optional. The base64 encoded content to upload. It's an error to set this and text_content.",
+            "type": "string"
+          },
+          "content": {
+            "description": "The content of the file encoded as base64. The content field should always be base64 encoded regardless of the mime type of the file. DEPRECATED. Use base64_content or text_content instead.",
+            "type": "string"
+          },
+          "contentMimeType": {
+            "description": "The mime type of the content being uploaded. Required when any type of content is provided.",
+            "type": "string"
+          },
+          "disableConversionToGoogleType": {
+            "description": "Set to true to retain the passed in content mime type and not convert to a Google type. For example, without this a text/plain content mime type will be converted to to an application/vnd.google-apps.document. Has no effect for types that do not have a Google equivalent.",
+            "type": "boolean"
+          },
+          "mimeType": {
+            "description": "DEPRECATED. DO NOT USE!! Set content_mime_type instead.",
+            "type": "string"
+          },
+          "parentId": {
+            "description": "The parent id of the file.",
+            "type": "string"
+          },
+          "textContent": {
+            "description": "Optional. The (UTF-8) text content to upload. It's an error to set this and base64_content.",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the file.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "create_file",
+      "outputSchema": {
+        "description": "A file resource.",
+        "properties": {
+          "contentSnippet": {
+            "description": "Generated snippet about the content of the file.",
+            "type": "string"
+          },
+          "createdTime": {
+            "description": "The time that the file was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "The description of the file.",
+            "type": "string"
+          },
+          "fileExtension": {
+            "description": "The original file extension of the file, this is only populated for files with content stored in Drive.",
+            "type": "string"
+          },
+          "fileSize": {
+            "description": "The size in bytes of the file.",
+            "format": "int64",
+            "type": "string"
+          },
+          "id": {
+            "description": "The id of the file that was fetched.",
+            "type": "string"
+          },
+          "mimeType": {
+            "description": "The mime type of the file.",
+            "type": "string"
+          },
+          "modifiedTime": {
+            "description": "The most recent time at which the file was modified.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "owner": {
+            "description": "The email address of the owner of the file.",
+            "type": "string"
+          },
+          "parentId": {
+            "description": "The (optional) id of the parent of the file.",
+            "type": "string"
+          },
+          "sharedWithMeTime": {
+            "description": "The time that the file was shared with the requester.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the file.",
+            "type": "string"
+          },
+          "viewUrl": {
+            "description": "The URL to view the file.",
+            "type": "string"
+          },
+          "viewedByMeTime": {
+            "description": "The most recent time at which the file was viewed by requester.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Call this tool to download the content of a Drive file as a base64 encoded string.\n\nIf the file is a Google Drive first-party mime type, the `exportMimeType` field is required and will determine the format of the downloaded file.\n\nIf the file is not found, try using other tools like `search_files` to find the file the user is requesting.\n\nIf the user wants a natural language representation of their Drive content, use the `read_file_content` tool (`read_file_content` should be smaller and easier to parse).\n",
+      "inputSchema": {
+        "description": "Defines a request to download a file's content.",
+        "properties": {
+          "exportMimeType": {
+            "description": "Optional. For Google native files, the MIME type to export the file to, ignored otherwise. Defaults to text if not specified.",
+            "type": "string"
+          },
+          "fileId": {
+            "description": "Required. The ID of the file to retrieve.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "name": "download_file_content",
+      "outputSchema": {
+        "description": "The response for a file download request.",
+        "properties": {
+          "content": {
+            "description": "The base64 encoded content of the file.",
+            "type": "string"
+          },
+          "id": {
+            "description": "The ID of the file.",
+            "type": "string"
+          },
+          "mimeType": {
+            "description": "The MIME type of the file.",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the file.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Call this tool to find general metadata about a user's Drive file.\n\nIf the file is not found, try using other tools like `search_files` to find the file the user is requesting.\n",
+      "inputSchema": {
+        "description": "Request to get the file.",
+        "properties": {
+          "excludeContentSnippets": {
+            "description": "If true, the content snippet will be excluded from the response.",
+            "type": "boolean"
+          },
+          "fileId": {
+            "description": "Required. The ID of the file to retrieve.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "name": "get_file_metadata",
+      "outputSchema": {
+        "description": "A file resource.",
+        "properties": {
+          "contentSnippet": {
+            "description": "Generated snippet about the content of the file.",
+            "type": "string"
+          },
+          "createdTime": {
+            "description": "The time that the file was created.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "description": "The description of the file.",
+            "type": "string"
+          },
+          "fileExtension": {
+            "description": "The original file extension of the file, this is only populated for files with content stored in Drive.",
+            "type": "string"
+          },
+          "fileSize": {
+            "description": "The size in bytes of the file.",
+            "format": "int64",
+            "type": "string"
+          },
+          "id": {
+            "description": "The id of the file that was fetched.",
+            "type": "string"
+          },
+          "mimeType": {
+            "description": "The mime type of the file.",
+            "type": "string"
+          },
+          "modifiedTime": {
+            "description": "The most recent time at which the file was modified.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "owner": {
+            "description": "The email address of the owner of the file.",
+            "type": "string"
+          },
+          "parentId": {
+            "description": "The (optional) id of the parent of the file.",
+            "type": "string"
+          },
+          "sharedWithMeTime": {
+            "description": "The time that the file was shared with the requester.",
+            "format": "date-time",
+            "type": "string"
+          },
+          "title": {
+            "description": "The title of the file.",
+            "type": "string"
+          },
+          "viewUrl": {
+            "description": "The URL to view the file.",
+            "type": "string"
+          },
+          "viewedByMeTime": {
+            "description": "The most recent time at which the file was viewed by requester.",
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Call this tool to list the permissions of a Drive File.\n",
+      "inputSchema": {
+        "description": "Request to get file permissions.",
+        "properties": {
+          "fileId": {
+            "description": "Required. The ID of the file to get permissions for.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "name": "get_file_permissions",
+      "outputSchema": {
+        "$defs": {
+          "Permission": {
+            "description": "A permission for a file.",
+            "properties": {
+              "displayName": {
+                "description": "Output only. The \"pretty\" name of the value of the permission. The following is a list of examples for each type of permission: * `user` - User's full name, as defined for their Google Account, such as \"Dana A.\" * `group` - Name of the Google Group, such as \"The Company Administrators.\" * `domain` - String domain name, such as \"cymbalgroup.com.\" * `anyone` - No `displayName` is present.",
+                "type": "string"
+              },
+              "emailAddress": {
+                "description": "The email address of the user or group to which this permission refers.",
+                "type": "string"
+              },
+              "role": {
+                "description": "The role of the grantee for the file. The possible roles include: * `owner` * `organizer` * `fileOrganizer` * `writer` * `commenter` * `reader`",
+                "type": "string"
+              },
+              "type": {
+                "description": "The type of the grantee. Supported values include: * `user` * `group` * `domain` * `anyone`",
+                "type": "string"
+              },
+              "view": {
+                "description": "Specifies the view to which this permission applies, if any. Supported values include: * `published` * `metadata`",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response to get file permissions.",
+        "properties": {
+          "permissions": {
+            "description": "The list of permissions.",
+            "items": {
+              "$ref": "#/$defs/Permission"
+            },
+            "type": "array"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Call this tool to find recent files for a user specified a sort order. Default sort order is `recency`.\n\nSupported sort orders are:\n\n - `recency`: The most recent timestamp from the file's date-time fields.\n - `lastModified`: The last time the file was modified by anyone.\n - `lastModifiedByMe`: The last time the file was modified by the user.\n\nThe default page size is 10. Utilize `next_page_token` to paginate through the results.\n",
+      "inputSchema": {
+        "description": "Request to list files.",
+        "properties": {
+          "excludeContentSnippets": {
+            "description": "If true, the content snippet will be excluded from the response.",
+            "type": "boolean"
+          },
+          "orderBy": {
+            "description": "The sort order for the files.",
+            "type": "string"
+          },
+          "pageSize": {
+            "description": "The maximum number of files to return.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "pageToken": {
+            "description": "The page token to use for pagination.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "list_recent_files",
+      "outputSchema": {
+        "$defs": {
+          "File": {
+            "description": "A file resource.",
+            "properties": {
+              "contentSnippet": {
+                "description": "Generated snippet about the content of the file.",
+                "type": "string"
+              },
+              "createdTime": {
+                "description": "The time that the file was created.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "description": {
+                "description": "The description of the file.",
+                "type": "string"
+              },
+              "fileExtension": {
+                "description": "The original file extension of the file, this is only populated for files with content stored in Drive.",
+                "type": "string"
+              },
+              "fileSize": {
+                "description": "The size in bytes of the file.",
+                "format": "int64",
+                "type": "string"
+              },
+              "id": {
+                "description": "The id of the file that was fetched.",
+                "type": "string"
+              },
+              "mimeType": {
+                "description": "The mime type of the file.",
+                "type": "string"
+              },
+              "modifiedTime": {
+                "description": "The most recent time at which the file was modified.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "owner": {
+                "description": "The email address of the owner of the file.",
+                "type": "string"
+              },
+              "parentId": {
+                "description": "The (optional) id of the parent of the file.",
+                "type": "string"
+              },
+              "sharedWithMeTime": {
+                "description": "The time that the file was shared with the requester.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "title": {
+                "description": "The title of the file.",
+                "type": "string"
+              },
+              "viewUrl": {
+                "description": "The URL to view the file.",
+                "type": "string"
+              },
+              "viewedByMeTime": {
+                "description": "The most recent time at which the file was viewed by requester.",
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response to list files.",
+        "properties": {
+          "files": {
+            "description": "The list of files.",
+            "items": {
+              "$ref": "#/$defs/File"
+            },
+            "type": "array"
+          },
+          "nextPageToken": {
+            "description": "The next page token.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Call this tool to fetch a natural language representation of a Drive file.\n\nThe file content may be incomplete for very large files. The text representation will change over time, so don't make assumptions about the particular format of the text returned by this tool.\n\nSupported Mime Types:\n\n - `application/vnd.google-apps.document` \n - `application/vnd.google-apps.presentation` \n - `application/vnd.google-apps.spreadsheet` \n - `application/pdf` \n - `application/msword` \n - `application/vnd.openxmlformats-officedocument.wordprocessingml.document` \n - `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` \n - `application/vnd.openxmlformats-officedocument.presentationml.presentation` \n - `application/vnd.oasis.opendocument.spreadsheet` \n - `application/vnd.oasis.opendocument.presentation` \n - `application/x-vnd.oasis.opendocument.text` \n - `image/png` \n - `image/jpeg` \n - `image/jpg` \n\nIf the file is not found, try using other tools like `search_files` to find the file the user is requesting using keywords.\n",
+      "inputSchema": {
+        "description": "Request to read file content.",
+        "properties": {
+          "fileId": {
+            "description": "Required. The ID of the file to retrieve.",
+            "type": "string"
+          }
+        },
+        "required": [
+          "fileId"
+        ],
+        "type": "object"
+      },
+      "name": "read_file_content",
+      "outputSchema": {
+        "description": "Response to read file content.",
+        "properties": {
+          "fileContent": {
+            "description": "Drive file content returned in text format.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "Search for Drive files using a structured query (synatax: `query_term operator values`).\nCombine clauses with `and`, `or`, `not`, and parentheses. String values must be single-quoted; escape embedded quotes as `\\'`. \n\nQuery terms & operators:\n - `title` (ops: contains, =, !=) — file title\n - `fullText` (ops: contains) — title or body text\n - `mimeType` (ops: contains, =, !=) — MIME type\n - `modifiedTime`, `viewedByMeTime`, `createdTime` (ops: `<=`, `<`, `=`, `!=`, `>`, `>=`). Use RFC 3339 UTC, e.g., `2012-06-04T12:00:00-08:00`. Date types not comparable.\n - `parentId` (ops: `=`, `!=`). Use `'root'` for the user's \"My Drive\".\n - `owner` (ops: `=`, `!=`). Use `'me'` for the requesting user.\n - `sharedWithMe` (ops: `=`, `!=`). Values: `true` or `false`.\nOther operators: `and`, `or`, `not`.\nExamples:\n - `title contains 'hello' and title contains 'goodbye'`\n - `modifiedTime > '2024-01-01T00:00:00Z' and (mimeType contains 'image/' or mimeType contains 'video/')`\n - `parentId = '1234567'`\n - `fullText contains 'hello'`\n - `owner = 'test@example.org'`\n - `sharedWithMe = true`\n - `owner = 'me'` (for files owned by the user)\n\nUse `next_page_token` to paginate. An empty response means no more results.\n",
+      "inputSchema": {
+        "description": "Request to search files.",
+        "properties": {
+          "excludeContentSnippets": {
+            "description": "If true, the content snippet will be excluded from the response.",
+            "type": "boolean"
+          },
+          "pageSize": {
+            "description": "The maximum number of files to return in each page.",
+            "format": "int32",
+            "type": "integer"
+          },
+          "pageToken": {
+            "description": "The page token to use for pagination.",
+            "type": "string"
+          },
+          "query": {
+            "description": "The search query.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "name": "search_files",
+      "outputSchema": {
+        "$defs": {
+          "File": {
+            "description": "A file resource.",
+            "properties": {
+              "contentSnippet": {
+                "description": "Generated snippet about the content of the file.",
+                "type": "string"
+              },
+              "createdTime": {
+                "description": "The time that the file was created.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "description": {
+                "description": "The description of the file.",
+                "type": "string"
+              },
+              "fileExtension": {
+                "description": "The original file extension of the file, this is only populated for files with content stored in Drive.",
+                "type": "string"
+              },
+              "fileSize": {
+                "description": "The size in bytes of the file.",
+                "format": "int64",
+                "type": "string"
+              },
+              "id": {
+                "description": "The id of the file that was fetched.",
+                "type": "string"
+              },
+              "mimeType": {
+                "description": "The mime type of the file.",
+                "type": "string"
+              },
+              "modifiedTime": {
+                "description": "The most recent time at which the file was modified.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "owner": {
+                "description": "The email address of the owner of the file.",
+                "type": "string"
+              },
+              "parentId": {
+                "description": "The (optional) id of the parent of the file.",
+                "type": "string"
+              },
+              "sharedWithMeTime": {
+                "description": "The time that the file was shared with the requester.",
+                "format": "date-time",
+                "type": "string"
+              },
+              "title": {
+                "description": "The title of the file.",
+                "type": "string"
+              },
+              "viewUrl": {
+                "description": "The URL to view the file.",
+                "type": "string"
+              },
+              "viewedByMeTime": {
+                "description": "The most recent time at which the file was viewed by requester.",
+                "format": "date-time",
+                "type": "string"
+              }
+            },
+            "type": "object"
+          }
+        },
+        "description": "Response to search files.",
+        "properties": {
+          "files": {
+            "description": "Output only. The list of files.",
+            "items": {
+              "$ref": "#/$defs/File"
+            },
+            "readOnly": true,
+            "type": "array"
+          },
+          "nextPageToken": {
+            "description": "The next page token.",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      }
+    }
+  ]
+}
