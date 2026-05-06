@@ -2,7 +2,7 @@
   "compilerOptions": {
     "target": "ES2022",
     "useDefineForClassFields": true,
-    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "lib": ["ES2023"],
     "module": "ESNext",
     "skipLibCheck": true,
     "moduleResolution": "bundler",
@@ -11,15 +11,14 @@
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
-    "jsx": "react-jsx",
     "allowJs": true,
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["@cloudflare/workers-types", "bun"]
+    "types": ["@types/node", "@cloudflare/workers-types", "bun"]
   },
-  "include": ["server", "shared", "scripts"],
+  "include": ["server"],
   "exclude": ["server/generated"]
 }
