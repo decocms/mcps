@@ -4,7 +4,7 @@
   "friendlyName": "VTEX Commerce APIs",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-vtex.decocache.com/mcp",
+    "url": "https://vtex-mcp.decocms.com/mcp",
     "configSchema": {
       "type": "object",
       "properties": {
