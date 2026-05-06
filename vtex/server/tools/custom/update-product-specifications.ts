@@ -1,6 +1,9 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { resolveCredentials } from "../../lib/client-factory.ts";
+import {
+  assertValidCredentials,
+  resolveCredentials,
+} from "../../lib/client-factory.ts";
 import type { Env } from "../../types/env.ts";
 
 const inputSchema = z.object({
@@ -44,7 +47,8 @@ export const updateProductSpecifications = (env: Env) =>
     inputSchema,
     outputSchema,
     execute: async ({ context }) => {
-      const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
+      const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
+      assertValidCredentials(credentials, "VTEX_UPDATE_PRODUCT_SPECIFICATIONS");
       const url = `https://${credentials.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/products/${context.productId}/specification`;
       console.log("[VTEX] POST", url);
 

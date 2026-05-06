@@ -5,7 +5,11 @@ import type { ToolAnnotations } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import type { VTEXCredentials } from "../types/env.ts";
-import { createVtexClient, resolveCredentials } from "./client-factory.ts";
+import {
+  assertValidCredentials,
+  createVtexClient,
+  resolveCredentials,
+} from "./client-factory.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Schema introspection helpers
@@ -294,7 +298,23 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
       annotations: config.annotations,
       inputSchema: flatInput,
       execute: async ({ context }) => {
-        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
+        const meshCtx = env.MESH_REQUEST_CONTEXT;
+        console.log(
+          `[VTEX] tool=${config.id} mesh-context-shape:`,
+          JSON.stringify({
+            hasMeshContext: Boolean(meshCtx),
+            hasToken: Boolean(meshCtx?.token),
+            hasConnectionId: Boolean(meshCtx?.connectionId),
+            hasMeshUrl: Boolean(meshCtx?.meshUrl),
+            stateKeys: meshCtx?.state ? Object.keys(meshCtx.state) : [],
+            stateAccountNamePresent: Boolean(
+              (meshCtx?.state as { accountName?: unknown } | undefined)
+                ?.accountName,
+            ),
+          }),
+        );
+        const creds = resolveCredentials(meshCtx?.state);
+        assertValidCredentials(creds, config.id);
         const factory = config.clientFactory ?? createVtexClient;
         const client = factory(creds);
         const structured = unflattenToStructured(
@@ -306,13 +326,20 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
         );
         if (result.error) {
           const err = result.error;
-          const message =
+          const baseMessage =
             err instanceof Error
               ? err.message
               : typeof err === "string"
                 ? err
                 : JSON.stringify(err);
-          throw new Error(message);
+          const ctx = [
+            `tool=${config.id}`,
+            `account=${creds.accountName || "<empty>"}`,
+            `accountSource=${creds.sources.accountName}`,
+            `appKeySource=${creds.sources.appKey}`,
+            `appTokenSource=${creds.sources.appToken}`,
+          ].join(" ");
+          throw new Error(`${baseMessage} [${ctx}]`);
         }
         const data = Array.isArray(result.data)
           ? { items: result.data }

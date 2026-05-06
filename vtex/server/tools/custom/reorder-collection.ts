@@ -1,6 +1,9 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { resolveCredentials } from "../../lib/client-factory.ts";
+import {
+  assertValidCredentials,
+  resolveCredentials,
+} from "../../lib/client-factory.ts";
 import type { Env } from "../../types/env.ts";
 
 /**
@@ -273,7 +276,8 @@ export const reorderCollection = (env: Env) =>
     outputSchema: reorderCollectionOutputSchema,
     execute: async ({ context }) => {
       const reorderPromise = (async () => {
-        const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT.state);
+        const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
+        assertValidCredentials(credentials, "VTEX_REORDER_COLLECTION");
         const directSkuIds = context.skuIds ?? [];
         const productIds = context.productIds ?? [];
 
