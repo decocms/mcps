@@ -39,14 +39,18 @@ const outputSchema = z.object({
   productId: z.number().int().positive(),
 });
 
-export const updateProductSpecifications = (env: Env) =>
+// Read per-request env from `runtimeContext` — see comment in
+// lib/tool-adapter.ts for why the factory's captured env is unsafe to read
+// inside execute (cached registrations + fresh per-request bindings).
+export const updateProductSpecifications = (_env: Env) =>
   createTool({
     id: "VTEX_UPDATE_PRODUCT_SPECIFICATIONS",
     description:
       "Replace all specifications for a product. Pass the complete set — values not included are removed. Caller does GET → merge → POST for partial updates. Counterpart of VTEX_GET_PRODUCT_SPECIFICATIONS.",
     inputSchema,
     outputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
       assertValidCredentials(credentials, "VTEX_UPDATE_PRODUCT_SPECIFICATIONS");
       const url = `https://${credentials.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/products/${context.productId}/specification`;

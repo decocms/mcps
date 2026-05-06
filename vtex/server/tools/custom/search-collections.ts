@@ -2,7 +2,10 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../types/env.ts";
 
-export const searchCollections = (env: Env) =>
+// Read per-request env from `runtimeContext` — see comment in
+// lib/tool-adapter.ts for why the factory's captured env is unsafe to read
+// inside execute (cached registrations + fresh per-request bindings).
+export const searchCollections = (_env: Env) =>
   createTool({
     id: "VTEX_SEARCH_COLLECTIONS",
     description: "Search collections by name or other terms.",
@@ -10,7 +13,8 @@ export const searchCollections = (env: Env) =>
     inputSchema: z.object({
       searchTerms: z.string().describe("Search terms to find collections"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const credentials = env.MESH_REQUEST_CONTEXT.state;
       const { accountName, appKey, appToken } = credentials;
 

@@ -291,28 +291,22 @@ export interface ToolFromOperationConfig {
 export function createToolFromOperation(config: ToolFromOperationConfig) {
   const flatInput = flattenRequestSchema(config.requestSchema);
 
-  return (env: Env) =>
+  // The factory's `env` is captured ONCE when the runtime resolves tool
+  // registrations on the first request, then cached for the process lifetime
+  // (see @decocms/runtime tools.ts: `let cached: Registrations | null`).
+  // Reading `env.MESH_REQUEST_CONTEXT` from this closure pins every tool call
+  // to the FIRST request's context — so an unauthenticated tools/list at pod
+  // start would poison every subsequent state read with `state: {}`.
+  // Read per-request env from `runtimeContext` instead — the runtime fills
+  // it from AsyncLocalStorage on every execute call.
+  return (_env: Env) =>
     createTool({
       id: config.id,
       description: config.description,
       annotations: config.annotations,
       inputSchema: flatInput,
-      execute: async ({ context }) => {
-        const meshCtx = env.MESH_REQUEST_CONTEXT;
-        console.log(
-          `[VTEX] tool=${config.id} mesh-context-shape:`,
-          JSON.stringify({
-            hasMeshContext: Boolean(meshCtx),
-            hasToken: Boolean(meshCtx?.token),
-            hasConnectionId: Boolean(meshCtx?.connectionId),
-            hasMeshUrl: Boolean(meshCtx?.meshUrl),
-            stateKeys: meshCtx?.state ? Object.keys(meshCtx.state) : [],
-            stateAccountNamePresent: Boolean(
-              (meshCtx?.state as { accountName?: unknown } | undefined)
-                ?.accountName,
-            ),
-          }),
-        );
+      execute: async ({ context, runtimeContext }) => {
+        const meshCtx = (runtimeContext.env as Env).MESH_REQUEST_CONTEXT;
         const creds = resolveCredentials(meshCtx?.state);
         assertValidCredentials(creds, config.id);
         const factory = config.clientFactory ?? createVtexClient;

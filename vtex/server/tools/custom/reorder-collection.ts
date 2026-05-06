@@ -267,14 +267,18 @@ async function uploadCollectionFile(params: {
   }
 }
 
-export const reorderCollection = (env: Env) =>
+// Read per-request env from `runtimeContext` — see comment in
+// lib/tool-adapter.ts for why the factory's captured env is unsafe to read
+// inside execute (cached registrations + fresh per-request bindings).
+export const reorderCollection = (_env: Env) =>
   createTool({
     id: "VTEX_REORDER_COLLECTION",
     description:
       "Overwrite collection contents by removing current SKUs and importing a new ordered SKU list via spreadsheet file.",
     inputSchema: reorderCollectionInputSchema,
     outputSchema: reorderCollectionOutputSchema,
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const reorderPromise = (async () => {
         const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
         assertValidCredentials(credentials, "VTEX_REORDER_COLLECTION");
