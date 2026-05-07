@@ -9,6 +9,7 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createHyperDXClient } from "../lib/client.ts";
+import { arr, num } from "../lib/coerce.ts";
 import { getHyperDXApiKey } from "../lib/env.ts";
 import {
   resolveTime,
@@ -43,8 +44,7 @@ export const createSearchLogsTool = (_env: Env) =>
       endTime: TimeInputSchema.optional()
         .default(() => Date.now())
         .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
-      limit: z
-        .number()
+      limit: num()
         .optional()
         .default(50)
         .describe("Max number of distinct messages to return. Defaults to 50."),
@@ -112,13 +112,11 @@ export const createGetLogDetailsTool = (_env: Env) =>
       query: z
         .string()
         .describe("Search query (e.g., 'level:error service:admin')."),
-      groupBy: z
-        .array(z.string())
-        .optional()
-        .default(DEFAULT_GROUP_BY)
-        .describe(
-          "Fields to group by and return. Defaults to ['body', 'service', 'site']. Other useful fields: trace_id, span_id, userEmail, env, level.",
-        ),
+      groupBy: arr(
+        z.array(z.string()).optional().default(DEFAULT_GROUP_BY),
+      ).describe(
+        "Fields to group by and return. Defaults to ['body', 'service', 'site']. Other useful fields: trace_id, span_id, userEmail, env, level.",
+      ),
       startTime: TimeInputSchema.optional()
         .default(() => Date.now() - 15 * 60 * 1000)
         .describe(
@@ -127,8 +125,7 @@ export const createGetLogDetailsTool = (_env: Env) =>
       endTime: TimeInputSchema.optional()
         .default(() => Date.now())
         .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
-      limit: z
-        .number()
+      limit: num()
         .optional()
         .default(20)
         .describe("Max entries to return. Defaults to 20."),
@@ -264,13 +261,11 @@ export const createQuerySpansTool = (_env: Env) =>
         .describe(
           "Field to aggregate. Defaults to 'duration' (span duration in ms). Use 'duration' for latency analysis.",
         ),
-      groupBy: z
-        .array(z.string())
-        .optional()
-        .default(["span_name", "service"])
-        .describe(
-          "Fields to group by. Defaults to ['span_name', 'service']. Other useful fields: http.method, http.status_code, db.system.",
-        ),
+      groupBy: arr(
+        z.array(z.string()).optional().default(["span_name", "service"]),
+      ).describe(
+        "Fields to group by. Defaults to ['span_name', 'service']. Other useful fields: http.method, http.status_code, db.system.",
+      ),
       granularity: z
         .enum([
           "30 second",
@@ -296,8 +291,7 @@ export const createQuerySpansTool = (_env: Env) =>
       endTime: TimeInputSchema.optional()
         .default(() => Date.now())
         .describe(`End time. ${TIME_INPUT_DESCRIPTION} Defaults to now.`),
-      limit: z
-        .number()
+      limit: num()
         .optional()
         .default(20)
         .describe("Max entries to return. Defaults to 20."),
@@ -388,13 +382,9 @@ export const createQueryMetricsTool = (_env: Env) =>
         .describe(
           "Filter query (e.g., 'host:web-01', 'k8s.namespace:production'). Leave empty to query all.",
         ),
-      groupBy: z
-        .array(z.string())
-        .optional()
-        .default([])
-        .describe(
-          "Fields to group by (e.g., ['host'], ['k8s.pod.name'], ['service']). Leave empty for a single aggregated series.",
-        ),
+      groupBy: arr(z.array(z.string()).optional().default([])).describe(
+        "Fields to group by (e.g., ['host'], ['k8s.pod.name'], ['service']). Leave empty for a single aggregated series.",
+      ),
       granularity: z
         .enum([
           "30 second",
@@ -571,11 +561,9 @@ export const createCompareTimeRangesTool = (_env: Env) =>
       priorEnd: TimeInputSchema.describe(
         `End of the prior/baseline period. ${TIME_INPUT_DESCRIPTION}`,
       ),
-      groupBy: z
-        .array(z.string())
-        .optional()
-        .default([])
-        .describe("Fields to group the comparison by (e.g., ['service'])."),
+      groupBy: arr(z.array(z.string()).optional().default([])).describe(
+        "Fields to group the comparison by (e.g., ['service']).",
+      ),
     }),
     outputSchema: z.object({
       description: z.string(),

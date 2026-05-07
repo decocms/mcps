@@ -3,6 +3,7 @@
  */
 
 import { z } from "zod";
+import { arr } from "./coerce.ts";
 import { TIME_INPUT_DESCRIPTION, TimeInputSchema } from "./time.ts";
 
 // ============================================================================
@@ -122,7 +123,7 @@ const SerieSchema = z.object({
     .describe(
       "Search query filter (e.g., 'level:error service:\"my-service\"').",
     ),
-  groupBy: z.array(z.string()).describe("Fields to group results by."),
+  groupBy: arr(z.array(z.string())).describe("Fields to group results by."),
   metricDataType: z
     .enum(["Sum", "Gauge", "Histogram"])
     .optional()
@@ -141,7 +142,7 @@ export const queryChartDataInputSchema = z.object({
   granularity: GranularitySchema.optional()
     .default("1 minute")
     .describe("Time bucket granularity for aggregation. Defaults to 1 minute."),
-  series: z.array(SerieSchema).describe("Array of series to query."),
+  series: arr(z.array(SerieSchema)).describe("Array of series to query."),
   seriesReturnType: z
     .enum(["column", "ratio"])
     .optional()
