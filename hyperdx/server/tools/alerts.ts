@@ -9,6 +9,7 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createHyperDXClient } from "../lib/client.ts";
+import { arr, num } from "../lib/coerce.ts";
 import { getHyperDXApiKey } from "../lib/env.ts";
 
 // ============================================================================
@@ -29,7 +30,7 @@ const AlertIntervalSchema = z.enum([
 const AlertChannelSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("email"),
-    recipients: z.array(z.string()).describe("Email addresses to notify."),
+    recipients: arr(z.array(z.string())).describe("Email addresses to notify."),
   }),
   z.object({
     type: z.literal("slack"),
@@ -125,9 +126,9 @@ export const createCreateAlertTool = (_env: Env) =>
         interval: AlertIntervalSchema.describe(
           "How often to evaluate the alert condition.",
         ),
-        threshold: z
-          .number()
-          .describe("Numeric threshold value that triggers the alert."),
+        threshold: num().describe(
+          "Numeric threshold value that triggers the alert.",
+        ),
         threshold_type: z
           .enum(["above", "below"])
           .describe("Fire when the value is 'above' or 'below' the threshold."),
@@ -196,7 +197,7 @@ export const createUpdateAlertTool = (_env: Env) =>
     inputSchema: z.object({
       id: z.string().describe("The alert ID to update."),
       interval: AlertIntervalSchema.optional(),
-      threshold: z.number().optional(),
+      threshold: num().optional(),
       threshold_type: z.enum(["above", "below"]).optional(),
       source: z.enum(["chart", "search"]).optional(),
       channel: AlertChannelSchema.optional(),

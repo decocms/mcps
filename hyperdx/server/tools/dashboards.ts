@@ -8,6 +8,7 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { createHyperDXClient } from "../lib/client.ts";
+import { arr, num } from "../lib/coerce.ts";
 import { getHyperDXApiKey } from "../lib/env.ts";
 
 // ============================================================================
@@ -48,7 +49,7 @@ const DashboardSeriesSchema = z.object({
   aggFn: DashboardAggFnSchema.describe("Aggregation function."),
   field: z.string().optional().describe("Field to aggregate."),
   where: z.string().describe("Search filter query."),
-  groupBy: z.array(z.string()).describe("Fields to group by."),
+  groupBy: arr(z.array(z.string())).describe("Fields to group by."),
   metricDataType: z
     .enum(["Sum", "Gauge", "Histogram"])
     .optional()
@@ -58,13 +59,13 @@ const DashboardSeriesSchema = z.object({
 const DashboardChartSchema = z.object({
   id: z.string().optional().describe("Chart ID (auto-generated on create)."),
   name: z.string().describe("Chart display name."),
-  x: z.number().describe("Grid column position (0-based)."),
-  y: z.number().describe("Grid row position (0-based)."),
-  w: z.number().describe("Width in grid units."),
-  h: z.number().describe("Height in grid units."),
-  series: z
-    .array(DashboardSeriesSchema)
-    .describe("Data series for this chart (up to 5)."),
+  x: num().describe("Grid column position (0-based)."),
+  y: num().describe("Grid row position (0-based)."),
+  w: num().describe("Width in grid units."),
+  h: num().describe("Height in grid units."),
+  series: arr(z.array(DashboardSeriesSchema)).describe(
+    "Data series for this chart (up to 5).",
+  ),
 });
 
 // ============================================================================
@@ -128,16 +129,12 @@ export const createCreateDashboardTool = (_env: Env) =>
         .describe(
           "Global filter applied to all charts on the dashboard (e.g., 'env:production').",
         ),
-      tags: z
-        .array(z.string())
-        .optional()
-        .default([])
-        .describe("Organizational tags for the dashboard."),
-      charts: z
-        .array(DashboardChartSchema)
-        .describe(
-          "Array of charts to include. Each chart needs a name, grid position (x/y/w/h), and series. Charts are placed on a grid — typical width is 12 units total.",
-        ),
+      tags: arr(z.array(z.string()).optional().default([])).describe(
+        "Organizational tags for the dashboard.",
+      ),
+      charts: arr(z.array(DashboardChartSchema)).describe(
+        "Array of charts to include. Each chart needs a name, grid position (x/y/w/h), and series. Charts are placed on a grid — typical width is 12 units total.",
+      ),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
     execute: async ({ context, runtimeContext }) => {
@@ -164,10 +161,10 @@ export const createUpdateDashboardTool = (_env: Env) =>
         .optional()
         .default("")
         .describe("Global filter applied to all charts."),
-      tags: z.array(z.string()).optional().default([]),
-      charts: z
-        .array(DashboardChartSchema)
-        .describe("Full replacement chart array."),
+      tags: arr(z.array(z.string()).optional().default([])),
+      charts: arr(z.array(DashboardChartSchema)).describe(
+        "Full replacement chart array.",
+      ),
     }),
     outputSchema: z.record(z.string(), z.unknown()),
     execute: async ({ context, runtimeContext }) => {
