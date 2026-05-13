@@ -400,8 +400,14 @@ export async function handleSlackEvent(
 
   switch (type) {
     case "app_mention":
-      publishAppMention(connectionId, payload);
-      if (!triggerOnly) {
+      // Trigger publish and direct LLM handling are mutually exclusive:
+      // in normal mode, handleAppMention runs the LLM and only falls back
+      // to publishing a trigger inside handleLLMCall if the LLM call fails.
+      // Publishing here AND running the LLM caused every message to be
+      // answered twice (once by the LLM, once by the trigger subscriber).
+      if (triggerOnly) {
+        publishAppMention(connectionId, payload);
+      } else {
         await handleAppMention(
           payload as SlackAppMentionEvent,
           teamConfig,
@@ -410,8 +416,9 @@ export async function handleSlackEvent(
       }
       break;
     case "message":
-      publishMessageReceived(connectionId, payload);
-      if (!triggerOnly) {
+      if (triggerOnly) {
+        publishMessageReceived(connectionId, payload);
+      } else {
         await handleMessage(
           payload as SlackMessageEvent,
           teamConfig,
