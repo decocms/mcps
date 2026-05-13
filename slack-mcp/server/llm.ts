@@ -105,18 +105,15 @@ async function getDirectHttpAgent(
 
       let response = await send(initialThreadId);
 
-      // If the thread_id is not accessible (decopilot returns permission/forbidden),
-      // retry once with a temp thread_id derived from the original (name) + timestamp.
-      if (
-        !response.ok &&
-        initialThreadId &&
-        isThreadPermissionStatus(response.status)
-      ) {
+      // If the thread_id can't be used (decopilot doesn't auto-create threads,
+      // and rejects with 401/403/404 for permission or 500 "Thread not found"),
+      // retry once with a temp thread_id = <name>-<timestamp>.
+      if (!response.ok && initialThreadId) {
         const peek = await response.clone().text();
-        if (isThreadPermissionMessage(peek)) {
+        if (isThreadAccessFailure(response.status, peek)) {
           const tempThreadId = `${initialThreadId}-${Date.now()}`;
           console.log(
-            `[LLM] thread_id=${initialThreadId} returned ${response.status} (permission). Retrying with temp thread_id=${tempThreadId}`,
+            `[LLM] thread_id=${initialThreadId} returned ${response.status} (${peek.slice(0, 120)}). Retrying with temp thread_id=${tempThreadId}`,
           );
           response = await send(tempThreadId);
         }
@@ -134,14 +131,17 @@ async function getDirectHttpAgent(
   };
 }
 
-function isThreadPermissionStatus(status: number): boolean {
-  return status === 401 || status === 403 || status === 404;
-}
-
-function isThreadPermissionMessage(body: string): boolean {
-  return /permission|forbidden|unauthor|not[\s_-]?allowed|access denied|not[\s_-]?found/i.test(
-    body,
-  );
+function isThreadAccessFailure(status: number, body: string): boolean {
+  // 401/403/404 → almost always a thread access issue; trust the status alone.
+  if (status === 401 || status === 403 || status === 404) return true;
+  // 500 → only retry if the body explicitly mentions thread issues, to avoid
+  // looping on unrelated server errors.
+  if (status === 500) {
+    return /thread[^"]{0,40}(not[\s_-]?found|permission|forbidden|unauthor|access denied|not[\s_-]?allowed)/i.test(
+      body,
+    );
+  }
+  return false;
 }
 
 /**
