@@ -69,50 +69,22 @@ async function getAgentClient(
 
   return {
     STREAM: async (params, opts) => {
-      const initialThreadId = params.thread_id;
-
-      try {
-        console.log(
-          `[LLM] streamAgent ${streamUrl} (thread_id=${initialThreadId ?? "none"})`,
-        );
-        return await streamAgent(streamUrl, token, agentConfig, params, opts);
-      } catch (err) {
-        // The decopilot endpoint does not auto-create threads — it returns
-        // an error like "Thread not found: <name>" (and also rejects with
-        // permission errors for threads owned by other principals). Retry
-        // once with a temp thread_id derived from the original.
-        if (initialThreadId && isThreadAccessFailure(err)) {
-          const tempThreadId = `${initialThreadId}-${Date.now()}`;
-          console.log(
-            `[LLM] thread_id=${initialThreadId} failed (${stringifyError(err).slice(0, 120)}). Retrying with temp thread_id=${tempThreadId}`,
-          );
-          return await streamAgent(
-            streamUrl,
-            token,
-            agentConfig,
-            { ...params, thread_id: tempThreadId },
-            opts,
-          );
-        }
-        throw err;
-      }
+      // We deliberately strip `thread_id` from the request: the decopilot
+      // endpoint does not auto-create threads — passing an unknown id (the
+      // user's name, a temp `<name>-<ts>`, anything not minted by studio)
+      // results in 500 "Thread not found". Without a thread_id, the
+      // decopilot allocates a fresh thread per call. Slack-side context
+      // is already rebuilt every webhook via `buildContextMessages`
+      // (channel/thread history → 1 system message), so the agent stays
+      // coherent within a conversation without depending on decopilot's
+      // own thread memory. Per-person decopilot memory would require us
+      // to call a thread-create API and cache the returned id — out of
+      // scope here.
+      const { thread_id: _ignored, ...rest } = params;
+      console.log(`[LLM] streamAgent ${streamUrl} (no thread_id)`);
+      return await streamAgent(streamUrl, token, agentConfig, rest, opts);
     },
   };
-}
-
-function stringifyError(err: unknown): string {
-  if (err instanceof Error) return err.message;
-  return String(err);
-}
-
-function isThreadAccessFailure(err: unknown): boolean {
-  const message = stringifyError(err);
-  // `streamAgent` throws Error(message) where message is `body.error` (when
-  // the response was JSON) or the raw body text — see runtime/decopilot.ts.
-  // We match on the patterns the decopilot uses for thread access failures.
-  return /thread[^"]{0,40}(not[\s_-]?found|permission|forbidden|unauthor|access[\s_-]?denied|not[\s_-]?allowed)/i.test(
-    message,
-  );
 }
 
 // ============================================================================
