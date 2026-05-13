@@ -23,7 +23,7 @@ export interface ContextConfig {
 }
 
 export interface MessageWithImages {
-  role: "user" | "assistant";
+  role: "system" | "user" | "assistant";
   content: string;
   images?: Array<{
     type: "image" | "audio";
@@ -211,27 +211,24 @@ export function formatMessagesForLLM(
 ): MessageWithImages[] {
   const allMessages: MessageWithImages[] = [];
 
-  // Add context with explicit markers (if any)
+  // The decopilot endpoint enforces "exactly one non-system message" per call,
+  // so we collapse all prior conversation turns into a single system message
+  // and emit a single user message with the current request.
   if (contextMessages.length > 0) {
+    const history = contextMessages
+      .map((m) => `[${m.role}]: ${m.content}`)
+      .join("\n");
     allMessages.push({
-      role: "user",
+      role: "system",
       content:
-        "<previous_conversation>\n" +
-        "The messages below are the previous conversation history for context. " +
-        "Respond ONLY to <current_request>, use the context only to understand the conversation.\n" +
-        "</previous_conversation>",
-    });
-    allMessages.push(...contextMessages);
-    allMessages.push({
-      role: "user",
-      content: "<end_previous_conversation>",
+        "Previous conversation history (for context only — respond only to the user's current message):\n" +
+        history,
     });
   }
 
-  // Add current request with explicit marker
   allMessages.push({
     role: "user",
-    content: `<current_request>\n${currentContent}\n</current_request>`,
+    content: currentContent,
     images: media && media.length > 0 ? media : undefined,
   });
 

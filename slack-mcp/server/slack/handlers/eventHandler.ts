@@ -336,6 +336,21 @@ async function processAttachedFiles(
 }
 
 /**
+ * Resolve a Slack user's display name (display_name → real_name → name → userId).
+ * Used as the stable decopilot thread_id so the agent has memory per person.
+ */
+async function resolveUserName(userId: string): Promise<string> {
+  try {
+    const info = await getUserInfo(userId);
+    return (
+      info?.profile?.display_name || info?.real_name || info?.name || userId
+    );
+  } catch {
+    return userId;
+  }
+}
+
+/**
  * Build messages for LLM with context
  */
 async function buildLLMMessages(
@@ -502,6 +517,7 @@ async function handleAppMention(
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      userName: await resolveUserName(user),
       slackEvent: { text: fullText, user, ts, thread_ts },
     });
   } catch (error) {
@@ -632,19 +648,12 @@ async function handleDirectMessage(
     await removeReaction(channel, ts, "eyes");
   }
 
-  // Resolve sender name
-  let senderText = text;
-  try {
-    const userInfo = await getUserInfo(user);
-    const senderName = userInfo
-      ? userInfo.profile?.display_name || userInfo.real_name || userInfo.name
-      : null;
-    if (senderName) {
-      senderText = `[Mensagem de ${senderName}]\n${text}`;
-    }
-  } catch (err) {
-    console.warn(`[EventHandler] Failed to resolve DM sender name:`, err);
-  }
+  // Resolve sender name (used both as a prefix for the LLM and as the thread_id)
+  const senderName = await resolveUserName(user);
+  const senderText =
+    senderName && senderName !== user
+      ? `[Mensagem de ${senderName}]\n${text}`
+      : text;
 
   const messages = await buildLLMMessages(
     channel,
@@ -673,6 +682,7 @@ async function handleDirectMessage(
       channel,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      userName: senderName,
       slackEvent: { text, user, ts, channel_type: "im" },
     });
   } catch (error) {
@@ -745,6 +755,7 @@ async function handleThreadReply(
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
+      userName: await resolveUserName(user),
       slackEvent: { text, user, ts, thread_ts: threadTs },
     });
   } catch (error) {
