@@ -51,6 +51,13 @@ export interface LLMResponseOptions {
   thinkingMessageTs?: string;
   useBlocks?: boolean;
   streamingEnabled?: boolean;
+  /**
+   * Stable identifier for the decopilot thread.
+   * We use the Slack user's resolved name so the agent has memory per person.
+   * The HTTP layer auto-falls back to `<userName>-<timestamp>` when the
+   * decopilot rejects access to the thread.
+   */
+  userName?: string;
   /** Original Slack event context — used for trigger fallback when STREAM fails */
   slackEvent?: {
     text: string;
@@ -110,7 +117,7 @@ async function callWithStreaming(
   messages: MessageWithImages[],
   options: LLMResponseOptions,
 ): Promise<string> {
-  const { channel, thinkingMessageTs, useBlocks = true } = options;
+  const { channel, thinkingMessageTs, useBlocks = true, userName } = options;
 
   if (!thinkingMessageTs) {
     return callWithoutStreaming(connectionId, messages, options);
@@ -119,7 +126,7 @@ async function callWithStreaming(
   const animation = startThinkingAnimation(channel, thinkingMessageTs);
 
   try {
-    const stream = await streamAgentResponse(connectionId, messages);
+    const stream = await streamAgentResponse(connectionId, messages, userName);
     const rawText = await collectStreamText(stream);
 
     animation.stop();
@@ -157,9 +164,15 @@ async function callWithoutStreaming(
   messages: MessageWithImages[],
   options: LLMResponseOptions,
 ): Promise<string> {
-  const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
+  const {
+    channel,
+    replyTo,
+    thinkingMessageTs,
+    useBlocks = true,
+    userName,
+  } = options;
 
-  const stream = await streamAgentResponse(connectionId, messages);
+  const stream = await streamAgentResponse(connectionId, messages, userName);
   const response = cleanAgentResponse(await collectStreamText(stream));
 
   if (!response.trim()) {

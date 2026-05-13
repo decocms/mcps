@@ -76,25 +76,51 @@ async function getDirectHttpAgent(
 
   const { meshUrl, agentId } = config;
 
+  const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
+
   return {
     STREAM: async (params) => {
-      const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
-      console.log(`[LLM] Direct HTTP call to ${url}`);
+      const initialThreadId = params.thread_id;
 
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-          Accept: "application/json, text/event-stream",
-        },
-        body: JSON.stringify({
-          messages: params.messages,
-          agent: { id: agentId },
-          stream: true,
-          toolApprovalLevel: params.toolApprovalLevel ?? "auto",
-        }),
-      });
+      const send = async (threadId: string | undefined) => {
+        console.log(
+          `[LLM] Direct HTTP call to ${url} (thread_id=${threadId ?? "none"})`,
+        );
+        return fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json, text/event-stream",
+          },
+          body: JSON.stringify({
+            messages: params.messages,
+            agent: { id: agentId },
+            stream: true,
+            toolApprovalLevel: params.toolApprovalLevel ?? "auto",
+            ...(threadId ? { thread_id: threadId } : {}),
+          }),
+        });
+      };
+
+      let response = await send(initialThreadId);
+
+      // If the thread_id is not accessible (decopilot returns permission/forbidden),
+      // retry once with a temp thread_id derived from the original (name) + timestamp.
+      if (
+        !response.ok &&
+        initialThreadId &&
+        isThreadPermissionStatus(response.status)
+      ) {
+        const peek = await response.clone().text();
+        if (isThreadPermissionMessage(peek)) {
+          const tempThreadId = `${initialThreadId}-${Date.now()}`;
+          console.log(
+            `[LLM] thread_id=${initialThreadId} returned ${response.status} (permission). Retrying with temp thread_id=${tempThreadId}`,
+          );
+          response = await send(tempThreadId);
+        }
+      }
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -106,6 +132,16 @@ async function getDirectHttpAgent(
       return sseResponseToAsyncIterable(response);
     },
   };
+}
+
+function isThreadPermissionStatus(status: number): boolean {
+  return status === 401 || status === 403 || status === 404;
+}
+
+function isThreadPermissionMessage(body: string): boolean {
+  return /permission|forbidden|unauthor|not[\s_-]?allowed|access denied|not[\s_-]?found/i.test(
+    body,
+  );
 }
 
 /**
