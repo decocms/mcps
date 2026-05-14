@@ -44,7 +44,13 @@ export const triggers = createTriggers({
   definitions: [
     {
       type: "slack.message.received",
-      description: "Triggered when a message is sent in a Slack channel or DM",
+      description:
+        "Triggered when a message is sent in a Slack channel or DM. " +
+        "The payload carries `channel_id`, `reply_in_thread_ts`, `text`, " +
+        "`user_name`, and (when applicable) `thread_messages` with the full " +
+        "thread history. To respond, ALWAYS call SLACK_REPLY_IN_THREAD with " +
+        "channel=channel_id and thread_ts=reply_in_thread_ts so every answer " +
+        "lives inside the user's thread and each subject stays isolated.",
       params: z.object({
         channel_id: z
           .string()
@@ -58,7 +64,13 @@ export const triggers = createTriggers({
     },
     {
       type: "slack.app_mention",
-      description: "Triggered when the bot is mentioned with @",
+      description:
+        "Triggered when the bot is @mentioned in a channel. The payload " +
+        "carries `channel_id`, `reply_in_thread_ts`, `text`, `user_name`, " +
+        "and (when applicable) `thread_messages`. To respond, ALWAYS call " +
+        "SLACK_REPLY_IN_THREAD with channel=channel_id and " +
+        "thread_ts=reply_in_thread_ts so the answer lives inside the user's " +
+        "thread.",
       params: z.object({
         channel_id: z
           .string()
