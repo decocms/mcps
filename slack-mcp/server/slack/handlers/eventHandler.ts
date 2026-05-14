@@ -406,7 +406,7 @@ export async function handleSlackEvent(
       // Publishing here AND running the LLM caused every message to be
       // answered twice (once by the LLM, once by the trigger subscriber).
       if (triggerOnly) {
-        publishAppMention(connectionId, payload);
+        await publishAppMention(connectionId, payload);
       } else {
         await handleAppMention(
           payload as SlackAppMentionEvent,
@@ -417,7 +417,7 @@ export async function handleSlackEvent(
       break;
     case "message":
       if (triggerOnly) {
-        publishMessageReceived(connectionId, payload);
+        await publishMessageReceived(connectionId, payload);
       } else {
         await handleMessage(
           payload as SlackMessageEvent,
@@ -598,7 +598,22 @@ async function handleMessage(
   const mediaForLLM =
     transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
-  if (isDM) {
+  // A DM that is a reply inside an existing thread continues in that thread;
+  // a fresh top-level DM starts a brand-new thread under the user's message
+  // (see handleDirectMessage). Channel messages only reach this branch when
+  // thread_ts is set AND the bot has participated in that thread.
+  if (isDM && thread_ts) {
+    await handleThreadReply(
+      channel,
+      user,
+      fullText,
+      ts,
+      thread_ts,
+      mediaForLLM,
+      teamConfig,
+      connectionId,
+    );
+  } else if (isDM) {
     await handleDirectMessage(
       channel,
       user,
@@ -646,16 +661,24 @@ async function handleDirectMessage(
     await addReaction(channel, ts, "eyes");
   }
 
+  // Every top-level DM kicks off a brand-new thread under the user's
+  // message — bot's thinking message and final reply both live inside that
+  // thread. Subsequent replies from the user in the thread continue there
+  // (handled by handleThreadReply), so each subject stays isolated.
+  const replyTo = ts;
+
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  const thinkingMsg = showThinking ? await sendThinkingMessage(channel) : null;
+  const thinkingMsg = showThinking
+    ? await sendThinkingMessage(channel, replyTo)
+    : null;
 
   if (!showOnlyFinal) {
     await removeReaction(channel, ts, "eyes");
   }
 
-  // Resolve sender name (used both as a prefix for the LLM and as the thread_id)
+  // Resolve sender name (used as a prefix for the LLM context)
   const senderName = await resolveUserName(user);
   const senderText =
     senderName && senderName !== user
@@ -673,7 +696,7 @@ async function handleDirectMessage(
   if (!(await isLLMAvailable(connectionId))) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
-    await sendMessage({ channel, text: warningMsg });
+    await replyInThread(channel, replyTo, warningMsg);
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
     }
@@ -687,6 +710,7 @@ async function handleDirectMessage(
   try {
     await handleLLMCall(connectionId, messages, {
       channel,
+      replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
       userName: senderName,
