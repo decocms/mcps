@@ -45,6 +45,9 @@ async function fetchThreadMessages(
   channel: string | undefined,
   threadTs: string | undefined,
 ): Promise<ThreadMessageSummary[] | undefined> {
+  // Top-level messages (no thread_ts) do NOT pay this RTT — only thread
+  // continuations fetch history. Returning undefined here also avoids
+  // hitting Slack's conversations.replies when there is nothing to fetch.
   if (!channel || !threadTs) return undefined;
   try {
     const replies = await getThreadReplies(channel, threadTs);
@@ -80,11 +83,27 @@ function replyInThreadTs(event: SlackEvent): string | undefined {
  * Reply instruction baked into the trigger payload so a trigger-driven
  * agent knows exactly how to respond without prompt engineering on the
  * subscriber side.
+ *
+ * When a "Pensando..." placeholder is already in the thread (thinkingTs
+ * present), we want the agent to EDIT it instead of stacking another
+ * message — keeps the thread clean (one final message per turn).
  */
 function buildReplyInstruction(
   channelId: string | undefined,
   threadTs: string | undefined,
+  thinkingTs: string | undefined,
 ): string {
+  if (thinkingTs) {
+    return [
+      "A 'Pensando...' placeholder is already in the thread. To respond:",
+      "  Call SLACK_EDIT_MESSAGE with:",
+      `    channel = "${channelId ?? ""}"`,
+      `    ts = "${thinkingTs}"`,
+      "    text = <your final answer>",
+      "This replaces the placeholder with the answer in place, keeping the",
+      "thread free of bot clutter.",
+    ].join("\n");
+  }
   return [
     "When you respond, ALWAYS call the SLACK_REPLY_IN_THREAD tool with:",
     `  channel = "${channelId ?? ""}"`,
@@ -94,10 +113,21 @@ function buildReplyInstruction(
   ].join("\n");
 }
 
+export interface PublishExtras {
+  /** Marks this notification as fired from a fallback path. */
+  fallback?: boolean;
+  /**
+   * ts of the "Pensando..." placeholder the agent should edit with its
+   * final answer (via SLACK_EDIT_MESSAGE). When omitted, the agent should
+   * post a fresh reply via SLACK_REPLY_IN_THREAD.
+   */
+  thinking_message_ts?: string;
+}
+
 export async function publishMessageReceived(
   connectionId: string,
   event: SlackEvent,
-  extras?: { fallback?: boolean },
+  extras?: PublishExtras,
 ): Promise<void> {
   const [user_name, thread_messages] = await Promise.all([
     resolveUserName(event.user),
@@ -115,7 +145,12 @@ export async function publishMessageReceived(
     ts: event.ts,
     thread_ts: event.thread_ts,
     reply_in_thread_ts,
-    reply_instruction: buildReplyInstruction(event.channel, reply_in_thread_ts),
+    thinking_message_ts: extras?.thinking_message_ts,
+    reply_instruction: buildReplyInstruction(
+      event.channel,
+      reply_in_thread_ts,
+      extras?.thinking_message_ts,
+    ),
     is_dm:
       event.channel?.startsWith("D") || (event as any).channel_type === "im",
     has_files: !!(event as any).files?.length,
@@ -131,6 +166,7 @@ export async function publishMessageReceived(
 export async function publishAppMention(
   connectionId: string,
   event: SlackEvent,
+  extras?: PublishExtras,
 ): Promise<void> {
   const [user_name, thread_messages] = await Promise.all([
     resolveUserName(event.user),
@@ -148,7 +184,12 @@ export async function publishAppMention(
     ts: event.ts,
     thread_ts: event.thread_ts,
     reply_in_thread_ts,
-    reply_instruction: buildReplyInstruction(event.channel, reply_in_thread_ts),
+    thinking_message_ts: extras?.thinking_message_ts,
+    reply_instruction: buildReplyInstruction(
+      event.channel,
+      reply_in_thread_ts,
+      extras?.thinking_message_ts,
+    ),
     has_files: !!(event as any).files?.length,
     thread_messages,
     timestamp: new Date().toISOString(),
