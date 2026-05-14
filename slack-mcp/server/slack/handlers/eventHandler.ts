@@ -336,6 +336,20 @@ async function processAttachedFiles(
 }
 
 /**
+ * Add 👀 then remove it without blocking the response path.
+ *
+ * The reaction is purely visual feedback while the bot is thinking — the
+ * "Pensando..." message provides the real signal — so we never await
+ * either Slack RTT. Errors are swallowed: a failed reaction is harmless.
+ */
+function fireReactionCycle(skip: boolean, channel: string, ts: string): void {
+  if (skip) return;
+  addReaction(channel, ts, "eyes")
+    .then(() => removeReaction(channel, ts, "eyes"))
+    .catch(() => {});
+}
+
+/**
  * Resolve a Slack user's display name (display_name → real_name → name → userId).
  * Used as the stable decopilot thread_id so the agent has memory per person.
  */
@@ -453,21 +467,21 @@ async function handleAppMention(
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
   const replyTo = thread_ts ?? ts;
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  const thinkingMsg = showThinking
-    ? await sendThinkingMessage(channel, replyTo)
-    : null;
 
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
+  // Kick off the thinking message immediately — its Slack RTT is the
+  // user-visible latency, so we don't gate it behind anything. The 👀
+  // reaction is pure UI feedback, fire-and-forget. resolveUserName and
+  // file processing happen in parallel; we only await everything just
+  // before the LLM call (when we need their values).
+  fireReactionCycle(showOnlyFinal, channel, ts);
+  const thinkingPromise = showThinking
+    ? sendThinkingMessage(channel, replyTo)
+    : Promise.resolve(null);
+  const userNamePromise = resolveUserName(user);
 
   const { media, textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
@@ -498,19 +512,20 @@ async function handleAppMention(
   const mediaForLLM =
     transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
 
-  const messages = await buildLLMMessages(
-    channel,
-    fullText,
-    ts,
-    thread_ts,
-    mediaForLLM,
-    true,
-  );
+  const [messages, isAvailable, thinkingMsg, userName] = await Promise.all([
+    buildLLMMessages(channel, fullText, ts, thread_ts, mediaForLLM, true),
+    isLLMAvailable(connectionId),
+    thinkingPromise,
+    userNamePromise,
+  ]);
 
-  if (!(await isLLMAvailable(connectionId))) {
+  if (!isAvailable) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, replyTo, warningMsg);
+    if (thinkingMsg?.ts) {
+      await deleteMessage(channel, thinkingMsg.ts);
+    }
     return;
   }
 
@@ -524,7 +539,7 @@ async function handleAppMention(
       replyTo,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
-      userName: await resolveUserName(user),
+      userName,
       slackEvent: { text: fullText, user, ts, thread_ts },
     });
   } catch (error) {
@@ -657,43 +672,35 @@ async function handleDirectMessage(
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
 
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
   // Every top-level DM kicks off a brand-new thread under the user's
   // message — bot's thinking message and final reply both live inside that
   // thread. Subsequent replies from the user in the thread continue there
   // (handled by handleThreadReply), so each subject stays isolated.
   const replyTo = ts;
-
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  const thinkingMsg = showThinking
-    ? await sendThinkingMessage(channel, replyTo)
-    : null;
 
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
-
-  // Resolve sender name (used as a prefix for the LLM context)
+  // Fire thinking + reactions + name lookup in parallel. The thinking msg
+  // RTT is the user-visible latency for "Pensando..." appearing in the
+  // thread, so we don't gate it behind anything.
+  fireReactionCycle(showOnlyFinal, channel, ts);
+  const thinkingPromise = showThinking
+    ? sendThinkingMessage(channel, replyTo)
+    : Promise.resolve(null);
   const senderName = await resolveUserName(user);
   const senderText =
     senderName && senderName !== user
       ? `[Mensagem de ${senderName}]\n${text}`
       : text;
 
-  const messages = await buildLLMMessages(
-    channel,
-    senderText,
-    ts,
-    undefined,
-    media,
-  );
+  const [messages, isAvailable, thinkingMsg] = await Promise.all([
+    buildLLMMessages(channel, senderText, ts, undefined, media),
+    isLLMAvailable(connectionId),
+    thinkingPromise,
+  ]);
 
-  if (!(await isLLMAvailable(connectionId))) {
+  if (!isAvailable) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, replyTo, warningMsg);
@@ -748,25 +755,28 @@ async function handleThreadReply(
 ): Promise<void> {
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
-
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  const thinkingMsg = showThinking
-    ? await sendThinkingMessage(channel, threadTs)
-    : null;
 
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
+  // Same parallelization as handleAppMention / handleDirectMessage:
+  // thinking RTT defines user-visible latency, so don't gate it on
+  // anything; reactions are cosmetic and fire-and-forget; name lookup
+  // and message building run alongside the Slack RTT.
+  fireReactionCycle(showOnlyFinal, channel, ts);
+  const thinkingPromise = showThinking
+    ? sendThinkingMessage(channel, threadTs)
+    : Promise.resolve(null);
+  const userNamePromise = resolveUserName(user);
 
-  const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
+  const [messages, isAvailable, thinkingMsg, userName] = await Promise.all([
+    buildLLMMessages(channel, text, ts, threadTs, media),
+    isLLMAvailable(connectionId),
+    thinkingPromise,
+    userNamePromise,
+  ]);
 
-  if (!(await isLLMAvailable(connectionId))) {
+  if (!isAvailable) {
     const warningMsg =
       "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
     await replyInThread(channel, threadTs, warningMsg);
@@ -786,7 +796,7 @@ async function handleThreadReply(
       replyTo: threadTs,
       thinkingMessageTs: thinkingMsg?.ts,
       streamingEnabled: enableStreaming,
-      userName: await resolveUserName(user),
+      userName,
       slackEvent: { text, user, ts, thread_ts: threadTs },
     });
   } catch (error) {
