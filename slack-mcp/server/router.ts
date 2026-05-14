@@ -90,6 +90,7 @@ app.get("/temp-files/:id", async (c) => {
 // ============================================================================
 
 app.post("/slack/events/:connectionId", async (c) => {
+  const receivedAt = Date.now();
   const connectionId = c.req.param("connectionId");
   const traceId = HyperDXLogger.generateTraceId();
   const rawBody = await c.req.text();
@@ -149,7 +150,7 @@ app.post("/slack/events/:connectionId", async (c) => {
     );
   }
 
-  const { verified, payload } = await logger.measure(
+  const verified = await logger.measure(
     () =>
       verifySlackRequest(
         rawBody,
@@ -161,7 +162,7 @@ app.post("/slack/events/:connectionId", async (c) => {
     { connectionId, trace_id: traceId },
   );
 
-  if (!verified || !payload) {
+  if (!verified) {
     logger.error("Invalid signature", {
       connectionId,
       trace_id: traceId,
@@ -173,19 +174,22 @@ app.post("/slack/events/:connectionId", async (c) => {
 
   const botUserId =
     connectionConfig.botUserId ?? botUserIdCache.get(connectionId);
-  if (shouldIgnoreEvent(payload, botUserId)) {
+  if (shouldIgnoreEvent(parsedPayload, botUserId)) {
     return c.json({ ok: true });
   }
 
-  processConnectionEventAsync(payload, connectionConfig, traceId).catch(
-    (error) => {
-      logger.error("Event processing failed", {
-        connectionId,
-        trace_id: traceId,
-        error: String(error),
-      });
-    },
-  );
+  processConnectionEventAsync(
+    parsedPayload,
+    connectionConfig,
+    traceId,
+    receivedAt,
+  ).catch((error) => {
+    logger.error("Event processing failed", {
+      connectionId,
+      trace_id: traceId,
+      error: String(error),
+    });
+  });
 
   return c.json({ ok: true });
 });
@@ -258,6 +262,7 @@ async function processConnectionEventAsync(
   payload: SlackWebhookPayload,
   connectionConfig: SlackConnectionConfig,
   traceId: string,
+  receivedAt: number,
 ): Promise<void> {
   if (!payload.event) {
     return;
@@ -314,6 +319,8 @@ async function processConnectionEventAsync(
         },
         teamId: payload.team_id,
         apiAppId: payload.api_app_id,
+        traceId,
+        receivedAt,
       },
       teamConfig,
       connectionId,
