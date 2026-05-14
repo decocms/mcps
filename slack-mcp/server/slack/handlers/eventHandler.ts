@@ -329,6 +329,37 @@ async function processAttachedFiles(
 }
 
 /**
+ * Per-handler timing metadata threaded in from the webhook router.
+ *
+ * `receivedAt` is the wall-clock ms the webhook hit the pod; `traceId`
+ * matches the router-side log entries. Used only for perf-debug logs
+ * — see `logPerfStep`. Optional so unit tests don't have to fake it.
+ */
+interface HandlerMeta {
+  traceId?: string;
+  receivedAt?: number;
+}
+
+/**
+ * Emit a debug-level perf marker tagged with the cumulative pod time
+ * since the webhook was received. Only flows to HyperDX when LOG_LEVEL=debug
+ * (`logger.debug` is dropped below the configured min level — see logger.ts).
+ */
+function logPerfStep(
+  step: string,
+  meta: HandlerMeta,
+  extras: Record<string, unknown> = {},
+): void {
+  if (!meta.receivedAt) return;
+  logger.debug(`perf:${step}`, {
+    step,
+    trace_id: meta.traceId,
+    duration_ms: Date.now() - meta.receivedAt,
+    ...extras,
+  });
+}
+
+/**
  * Append transcribed audio + text-file contents to the user's original text
  * so they flow through the trigger payload's `text` field. The lazy import of
  * `getLanguageFromFilename` mirrors the original eventHandler path and keeps
@@ -370,7 +401,8 @@ export async function handleSlackEvent(
   teamConfig: SlackTeamConfig,
   connectionId: string,
 ): Promise<void> {
-  const { type, payload } = context;
+  const { type, payload, traceId, receivedAt } = context;
+  const meta: HandlerMeta = { traceId, receivedAt };
 
   const triggerOnly = teamConfig.responseConfig?.triggerOnly ?? false;
 
@@ -383,22 +415,32 @@ export async function handleSlackEvent(
       // answered twice (once by the LLM, once by the trigger subscriber).
       if (triggerOnly) {
         await publishAppMention(connectionId, payload);
+        logPerfStep("trigger_published", meta, {
+          mode: "triggerOnly",
+          event_type: type,
+        });
       } else {
         await handleAppMention(
           payload as SlackAppMentionEvent,
           teamConfig,
           connectionId,
+          meta,
         );
       }
       break;
     case "message":
       if (triggerOnly) {
         await publishMessageReceived(connectionId, payload);
+        logPerfStep("trigger_published", meta, {
+          mode: "triggerOnly",
+          event_type: type,
+        });
       } else {
         await handleMessage(
           payload as SlackMessageEvent,
           teamConfig,
           connectionId,
+          meta,
         );
       }
       break;
@@ -429,6 +471,7 @@ async function handleAppMention(
   event: SlackAppMentionEvent,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
   const { channel, text, ts, thread_ts, files } = event;
 
@@ -442,6 +485,11 @@ async function handleAppMention(
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, replyTo)
     : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "app_mention",
+  });
 
   const { textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
@@ -463,6 +511,10 @@ async function handleAppMention(
     { ...event, text: fullText },
     { thinking_message_ts: thinkingMsg?.ts },
   );
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "app_mention",
+  });
 }
 
 /**
@@ -477,6 +529,7 @@ async function handleMessage(
   event: SlackMessageEvent,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
   const { channel, text, thread_ts, channel_type } = event;
   const isDM = channel_type === "im" || channel?.startsWith("D");
@@ -504,11 +557,11 @@ async function handleMessage(
   // (see handleDirectMessage). Channel messages only reach this branch when
   // thread_ts is set AND the bot has participated in that thread.
   if (isDM && thread_ts) {
-    await handleThreadReply(event, thread_ts, teamConfig, connectionId);
+    await handleThreadReply(event, thread_ts, teamConfig, connectionId, meta);
   } else if (isDM) {
-    await handleDirectMessage(event, teamConfig, connectionId);
+    await handleDirectMessage(event, teamConfig, connectionId, meta);
   } else if (thread_ts) {
-    await handleThreadReply(event, thread_ts, teamConfig, connectionId);
+    await handleThreadReply(event, thread_ts, teamConfig, connectionId, meta);
   }
 }
 
@@ -523,6 +576,7 @@ async function handleDirectMessage(
   event: SlackMessageEvent,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
   const { channel, text, ts, files } = event;
 
@@ -536,6 +590,11 @@ async function handleDirectMessage(
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, replyTo)
     : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "direct_message",
+  });
 
   const { textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
@@ -557,6 +616,10 @@ async function handleDirectMessage(
     { ...event, text: fullText },
     { thinking_message_ts: thinkingMsg?.ts },
   );
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "direct_message",
+  });
 }
 
 /**
@@ -567,6 +630,7 @@ async function handleThreadReply(
   threadTs: string,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
   const { channel, text, files } = event;
 
@@ -579,6 +643,11 @@ async function handleThreadReply(
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, threadTs)
     : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "thread_reply",
+  });
 
   const { textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
@@ -600,6 +669,10 @@ async function handleThreadReply(
     { ...event, text: fullText },
     { thinking_message_ts: thinkingMsg?.ts },
   );
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "thread_reply",
+  });
 }
 
 // ============================================================================

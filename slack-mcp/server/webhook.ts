@@ -8,17 +8,22 @@
 import type { SlackWebhookPayload } from "./lib/types.ts";
 
 /**
- * Verify a Slack webhook request using the signing secret
+ * Verify a Slack webhook request using the signing secret.
+ *
+ * Returns only a boolean — the caller is responsible for parsing the body
+ * once (typically before calling this) and reusing that parsed payload.
+ * We deliberately do NOT JSON.parse the rawBody here: it was already
+ * parsed in the router, and parsing twice on every webhook is wasteful.
  */
 export async function verifySlackRequest(
   rawBody: string,
   signature: string | null,
   timestamp: string | null,
   signingSecret: string,
-): Promise<{ verified: boolean; payload: SlackWebhookPayload | null }> {
+): Promise<boolean> {
   if (!signature || !timestamp) {
     console.error("[Slack Webhook] Missing signature or timestamp");
-    return { verified: false, payload: null };
+    return false;
   }
 
   // Check timestamp to prevent replay attacks (5 minutes tolerance)
@@ -26,7 +31,7 @@ export async function verifySlackRequest(
   const now = Math.floor(Date.now() / 1000);
   if (Math.abs(now - requestTimestamp) > 300) {
     console.error("[Slack Webhook] Request timestamp too old");
-    return { verified: false, payload: null };
+    return false;
   }
 
   // Construct the signature base string
@@ -60,7 +65,7 @@ export async function verifySlackRequest(
 
   // Constant-time comparison
   if (computedSignature.length !== signature.length) {
-    return { verified: false, payload: null };
+    return false;
   }
 
   let result = 0;
@@ -72,16 +77,9 @@ export async function verifySlackRequest(
 
   if (!verified) {
     console.error("[Slack Webhook] Signature verification failed");
-    return { verified: false, payload: null };
   }
 
-  try {
-    const payload = JSON.parse(rawBody) as SlackWebhookPayload;
-    return { verified: true, payload };
-  } catch {
-    console.error("[Slack Webhook] Failed to parse payload as JSON");
-    return { verified: false, payload: null };
-  }
+  return verified;
 }
 
 /**

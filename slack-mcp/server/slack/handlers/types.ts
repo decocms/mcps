@@ -27,13 +27,20 @@ export const SLACK_EVENT_TYPES = {
 } as const;
 
 /**
- * Context for a Slack event
+ * Context for a Slack event.
+ *
+ * `traceId` and `receivedAt` are populated by the webhook router and used
+ * by handlers to emit perf-timing logs (`logger.debug("perf:…")`) so we
+ * can measure pod overhead from webhook receipt to "Pensando..." being
+ * sent and to the trigger being published.
  */
 export interface SlackEventContext {
   type: string;
   payload: SlackEvent & { original_text?: string };
   teamId?: string;
   apiAppId?: string;
+  traceId?: string;
+  receivedAt?: number;
 }
 
 /**
