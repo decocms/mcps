@@ -61,6 +61,39 @@ async function fetchThreadMessages(
   }
 }
 
+/**
+ * The thread_ts the agent must use when replying.
+ *
+ * - If the user message is already inside a thread → that thread's ts.
+ * - If the user message is top-level → its own ts, which starts a new
+ *   thread under it (Slack's "first reply with thread_ts=parent" rule).
+ *
+ * Pre-computing this on the publisher side guarantees that the agent
+ * NEVER has to decide whether to start or continue a thread — every
+ * reply is anchored to a single thread per subject.
+ */
+function replyInThreadTs(event: SlackEvent): string | undefined {
+  return event.thread_ts ?? event.ts;
+}
+
+/**
+ * Reply instruction baked into the trigger payload so a trigger-driven
+ * agent knows exactly how to respond without prompt engineering on the
+ * subscriber side.
+ */
+function buildReplyInstruction(
+  channelId: string | undefined,
+  threadTs: string | undefined,
+): string {
+  return [
+    "When you respond, ALWAYS call the SLACK_REPLY_IN_THREAD tool with:",
+    `  channel = "${channelId ?? ""}"`,
+    `  thread_ts = "${threadTs ?? ""}"`,
+    "Never send a top-level message — every reply must live in this thread",
+    "so each subject stays isolated.",
+  ].join("\n");
+}
+
 export async function publishMessageReceived(
   connectionId: string,
   event: SlackEvent,
@@ -71,6 +104,8 @@ export async function publishMessageReceived(
     fetchThreadMessages(event.channel, event.thread_ts),
   ]);
 
+  const reply_in_thread_ts = replyInThreadTs(event);
+
   triggers.notify(connectionId, "slack.message.received", {
     event: "slack.message.received",
     channel_id: event.channel,
@@ -79,6 +114,8 @@ export async function publishMessageReceived(
     text: event.text ?? "",
     ts: event.ts,
     thread_ts: event.thread_ts,
+    reply_in_thread_ts,
+    reply_instruction: buildReplyInstruction(event.channel, reply_in_thread_ts),
     is_dm:
       event.channel?.startsWith("D") || (event as any).channel_type === "im",
     has_files: !!(event as any).files?.length,
@@ -100,6 +137,8 @@ export async function publishAppMention(
     fetchThreadMessages(event.channel, event.thread_ts),
   ]);
 
+  const reply_in_thread_ts = replyInThreadTs(event);
+
   triggers.notify(connectionId, "slack.app_mention", {
     event: "slack.app_mention",
     channel_id: event.channel,
@@ -108,6 +147,8 @@ export async function publishAppMention(
     text: event.text ?? "",
     ts: event.ts,
     thread_ts: event.thread_ts,
+    reply_in_thread_ts,
+    reply_instruction: buildReplyInstruction(event.channel, reply_in_thread_ts),
     has_files: !!(event as any).files?.length,
     thread_messages,
     timestamp: new Date().toISOString(),
