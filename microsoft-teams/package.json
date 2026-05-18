@@ -1,0 +1,29 @@
+{
+  "name": "microsoft-teams-mcp",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "description": "Microsoft Teams MCP — send messages and react to Teams events via Microsoft Graph API",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
+    "dev:link": "deco link -p 3004 -- PORT=3004 bun run dev"
+  },
+  "dependencies": {
+    "@decocms/bindings": "^1.0.8",
+    "@decocms/runtime": "1.3.0",
+    "hono": "^4.7.4",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2"
+  },
+  "overrides": {
+    "zod": "^4.0.0"
+  }
+}

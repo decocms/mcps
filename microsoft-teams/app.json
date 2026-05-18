@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "microsoft-teams",
+  "friendlyName": "Microsoft Teams",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-microsoft-teams.decocache.com/mcp"
+  },
+  "description": "Microsoft Teams integration — send messages to channels and trigger agents on Teams events via Microsoft Graph API.",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Microsoft_Office_Teams_%282018%E2%80%93present%29.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Communication", "Automation"],
+    "official": false,
+    "tags": ["teams", "microsoft", "bot", "messaging", "ai-agent", "webhooks", "automation", "channels", "azure"],
+    "short_description": "Microsoft Teams bot — send messages and react to channel events via Microsoft Graph API.",
+    "mesh_description": "The Microsoft Teams MCP provides integration with Microsoft Teams via the Microsoft Graph API and Azure AD authentication. Agents can send messages to any Teams channel, reply to threads, and react to incoming messages via webhook notifications (Graph Change Notifications). The trigger system fires when new messages are posted in configured channels, giving the agent full context (sender, channel, thread) so it can respond with TEAMS_SEND_MESSAGE or TEAMS_REPLY_TO_MESSAGE. Authentication uses Azure AD Client Credentials (app permissions), so no user login is needed — ideal for automated bots and workflows."
+  }
+}
