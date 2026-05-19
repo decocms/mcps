@@ -40,8 +40,8 @@ export const triggers = createTriggers({
         "Payload includes: `team_id`, `channel_id`, `message_id`, `text` (plain-text body), " +
         "`sender_name`, `sender_id`, `reply_to_id` (set when the message is a reply in a thread), " +
         "and `web_url` (direct link to the message). " +
-        "To respond: call TEAMS_SEND_MESSAGE with team_id and channel_id, or " +
-        "TEAMS_REPLY_TO_MESSAGE with team_id, channel_id, and message_id to reply in the same thread.",
+        "To respond: call SEND_MESSAGE with team_id and channel_id, or " +
+        "REPLY_TO_MESSAGE with team_id, channel_id, and message_id to reply in the same thread.",
       params: z.object({
         team_id: z
 

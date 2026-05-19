@@ -15,19 +15,33 @@ import {
   getMyUserId,
   createOneOnOneChat,
   createGroupChat,
+  editChatMessage,
+  reactToChatMessage,
+  buildChatMessageWebUrl,
+  type ReactionType,
 } from "../lib/graph-client.ts";
+import { toErrorResponse } from "../lib/errors.ts";
 
 async function token(env: Env): Promise<string> {
   return getAccessToken(env);
 }
 
-// ─── TEAMS_LIST_CHATS ─────────────────────────────────────────────────────────
+// ─── LIST_CHATS ─────────────────────────────────────────────────────────
 
 export const createListChatsTool = (env: Env) =>
   createTool({
-    id: "TEAMS_LIST_CHATS",
+    id: "LIST_CHATS",
     description:
-      "List all Microsoft Teams chats the authenticated user is part of (1-on-1, group chats, and meeting chats). Returns chat IDs that can be used with TEAMS_SEND_CHAT_MESSAGE.",
+      "List all PRIVATE/GROUP CHATS the authenticated user is part of " +
+      "(1-on-1, group, and meeting chats — NOT channels). " +
+      "Each chat returns `{ id, topic, chat_type, last_updated, web_url }`. " +
+      "For 1-on-1 chats with no explicit topic, `topic` is auto-filled with " +
+      "the OTHER person's display name so you can identify them. " +
+      "Use the `id` (format: `19:...@thread.v2`) as `chat_id` in " +
+      "SEND_CHAT_MESSAGE / LIST_CHAT_MESSAGES. " +
+      "Useful when the user says 'send a DM to X' and you need to find " +
+      "the existing chat with X (otherwise create a new one with " +
+      "FIND_USER + CREATE_PRIVATE_CHAT).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z.object({
@@ -44,6 +58,9 @@ export const createListChatsTool = (env: Env) =>
         )
         .optional(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async () => {
       try {
@@ -71,22 +88,22 @@ export const createListChatsTool = (env: Env) =>
           }),
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_GET_CHAT_MEMBERS ───────────────────────────────────────────────────
+// ─── GET_CHAT_MEMBERS ───────────────────────────────────────────────────
 
 export const createGetChatMembersTool = (env: Env) =>
   createTool({
-    id: "TEAMS_GET_CHAT_MEMBERS",
+    id: "GET_CHAT_MEMBERS",
     description:
       "List the members of a chat (useful for 1-on-1 chats with no topic so you can identify who you are talking to).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        chat_id: z.string().describe("Chat ID from TEAMS_LIST_CHATS."),
+        chat_id: z.string().describe("Chat ID from LIST_CHATS."),
       })
       .strict(),
     outputSchema: z.object({
@@ -101,6 +118,9 @@ export const createGetChatMembersTool = (env: Env) =>
         )
         .optional(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const { chat_id } = context as { chat_id: string };
@@ -116,19 +136,25 @@ export const createGetChatMembersTool = (env: Env) =>
           })),
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_SEND_CHAT_MESSAGE ──────────────────────────────────────────────────
+// ─── SEND_CHAT_MESSAGE ──────────────────────────────────────────────────
 
 export const createSendChatMessageTool = (env: Env) =>
   createTool({
-    id: "TEAMS_SEND_CHAT_MESSAGE",
+    id: "SEND_CHAT_MESSAGE",
     description:
-      "Send a message to an existing Microsoft Teams chat (1-on-1 or group). " +
-      "Use chat_id from TEAMS_LIST_CHATS or from TEAMS_CREATE_PRIVATE_CHAT / TEAMS_CREATE_GROUP_CHAT.",
+      "Send a message to an EXISTING chat (1-on-1 or group — NOT a channel). " +
+      "Get `chat_id` from one of: LIST_CHATS (existing chats), " +
+      "CREATE_PRIVATE_CHAT (new 1-on-1) or CREATE_GROUP_CHAT " +
+      "(new group). " +
+      "Pass `reply_to_message_id` to render the new message as a QUOTED " +
+      "REPLY (the original is shown in a gray block above your text) — " +
+      "useful in busy chats to make clear which message you are answering. " +
+      "Get the id from LIST_CHAT_MESSAGES.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
@@ -138,6 +164,13 @@ export const createSendChatMessageTool = (env: Env) =>
           .enum(["text", "html"])
           .default("text")
           .describe("Content type: 'text' (default) or 'html'."),
+        reply_to_message_id: z
+          .string()
+          .optional()
+          .describe(
+            "Optional id of an earlier message in this chat to quote-reply to. " +
+              "Get the id from LIST_CHAT_MESSAGES.",
+          ),
       })
       .strict(),
     outputSchema: z.object({
@@ -145,12 +178,16 @@ export const createSendChatMessageTool = (env: Env) =>
       message_id: z.string().nullish(),
       web_url: z.string().nullish(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as {
         chat_id: string;
         content: string;
         content_type?: "text" | "html";
+        reply_to_message_id?: string;
       };
       try {
         const accessToken = await token(env);
@@ -159,28 +196,32 @@ export const createSendChatMessageTool = (env: Env) =>
           input.content,
           input.content_type ?? "text",
           accessToken,
+          input.reply_to_message_id,
         );
+        const tenantId = process.env.MICROSOFT_TENANT_ID;
         return {
           success: true,
           message_id: msg.id,
-          web_url: msg.webUrl ?? null,
+          web_url:
+            msg.webUrl ??
+            buildChatMessageWebUrl(input.chat_id, msg.id, tenantId),
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_LIST_CHAT_MESSAGES ─────────────────────────────────────────────────
+// ─── LIST_CHAT_MESSAGES ─────────────────────────────────────────────────
 
 export const createListChatMessagesTool = (env: Env) =>
   createTool({
-    id: "TEAMS_LIST_CHAT_MESSAGES",
+    id: "LIST_CHAT_MESSAGES",
     description: "List recent messages from a Teams chat (useful for context).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
-        chat_id: z.string().describe("Chat ID from TEAMS_LIST_CHATS."),
+        chat_id: z.string().describe("Chat ID from LIST_CHATS."),
         top: z
           .number()
           .default(20)
@@ -200,6 +241,9 @@ export const createListChatMessagesTool = (env: Env) =>
         )
         .optional(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const { chat_id, top } = context as { chat_id: string; top?: number };
@@ -232,20 +276,20 @@ export const createListChatMessagesTool = (env: Env) =>
           }),
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_FIND_USER ──────────────────────────────────────────────────────────
+// ─── FIND_USER ──────────────────────────────────────────────────────────
 
 export const createFindUserTool = (env: Env) =>
   createTool({
-    id: "TEAMS_FIND_USER",
+    id: "FIND_USER",
     description:
       "Look up a user in the Azure AD directory by email or user-principal-name. " +
-      "Returns their AAD id. Use this to get the id needed by TEAMS_CREATE_PRIVATE_CHAT " +
-      "or TEAMS_CREATE_GROUP_CHAT.",
+      "Returns their AAD id. Use this to get the id needed by CREATE_PRIVATE_CHAT " +
+      "or CREATE_GROUP_CHAT.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
@@ -265,6 +309,9 @@ export const createFindUserTool = (env: Env) =>
         })
         .nullish(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const { email } = context as { email: string };
@@ -284,29 +331,27 @@ export const createFindUserTool = (env: Env) =>
           },
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_CREATE_PRIVATE_CHAT ────────────────────────────────────────────────
+// ─── CREATE_PRIVATE_CHAT ────────────────────────────────────────────────
 
 export const createCreatePrivateChatTool = (env: Env) =>
   createTool({
-    id: "TEAMS_CREATE_PRIVATE_CHAT",
+    id: "CREATE_PRIVATE_CHAT",
     description:
       "Open a 1-on-1 private chat with another user. Microsoft Graph deduplicates: " +
       "calling this with the same user returns the existing chat. " +
-      "Returns the chat_id to use with TEAMS_SEND_CHAT_MESSAGE. " +
-      "Pass the other user's Azure AD id (from TEAMS_FIND_USER).",
+      "Returns the chat_id to use with SEND_CHAT_MESSAGE. " +
+      "Pass the other user's Azure AD id (from FIND_USER).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         user_id: z
           .string()
-          .describe(
-            "Azure AD id of the other user (obtained from TEAMS_FIND_USER).",
-          ),
+          .describe("Azure AD id of the other user (obtained from FIND_USER)."),
       })
       .strict(),
     outputSchema: z.object({
@@ -314,6 +359,9 @@ export const createCreatePrivateChatTool = (env: Env) =>
       chat_id: z.string().nullish(),
       web_url: z.string().nullish(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const { user_id } = context as { user_id: string };
@@ -327,18 +375,26 @@ export const createCreatePrivateChatTool = (env: Env) =>
           web_url: chat.webUrl ?? null,
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
       }
     },
   });
 
-// ─── TEAMS_CREATE_GROUP_CHAT ──────────────────────────────────────────────────
+// ─── CREATE_GROUP_CHAT ──────────────────────────────────────────────────
 
 export const createCreateGroupChatTool = (env: Env) =>
   createTool({
-    id: "TEAMS_CREATE_GROUP_CHAT",
+    id: "CREATE_GROUP_CHAT",
     description:
-      "Create a group chat with multiple users (3 or more including yourself). Returns the chat_id for sending messages.",
+      "Create a NEW group chat with 3 or more people (you + 2+ others). " +
+      "Workflow: call FIND_USER for each invitee's email to get their " +
+      "AAD ids, then pass them here as `user_ids` (array) with a `topic` " +
+      "(the chat's display name). Returns `chat_id` to use with " +
+      "SEND_CHAT_MESSAGE. " +
+      "If you only have 1 other person, use CREATE_PRIVATE_CHAT " +
+      "(1-on-1 instead). " +
+      "`user_ids` accepts both array (`[id1, id2]`) and comma-separated " +
+      "string (`'id1,id2'`) for LLM convenience.",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
@@ -363,6 +419,9 @@ export const createCreateGroupChatTool = (env: Env) =>
       chat_id: z.string().nullish(),
       web_url: z.string().nullish(),
       error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
     }),
     execute: async ({ context }: { context: unknown }) => {
       const input = context as { user_ids: string[]; topic: string };
@@ -381,7 +440,102 @@ export const createCreateGroupChatTool = (env: Env) =>
           web_url: chat.webUrl ?? null,
         };
       } catch (err) {
-        return { success: false, error: String(err) };
+        return toErrorResponse(err);
+      }
+    },
+  });
+
+// ─── EDIT_CHAT_MESSAGE ──────────────────────────────────────────────────
+
+export const createEditChatMessageTool = (env: Env) =>
+  createTool({
+    id: "EDIT_CHAT_MESSAGE",
+    description:
+      "Edit a chat message you previously sent. Teams shows an 'Edited' label.",
+    annotations: { destructiveHint: false, openWorldHint: true },
+    inputSchema: z
+      .object({
+        chat_id: z.string().describe("Chat ID."),
+        message_id: z.string().describe("ID of the message to edit."),
+        content: z.string().describe("New message text or HTML."),
+        content_type: z
+          .enum(["text", "html"])
+          .default("text")
+          .describe("Content type."),
+      })
+      .strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
+    }),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        chat_id: string;
+        message_id: string;
+        content: string;
+        content_type?: "text" | "html";
+      };
+      try {
+        const accessToken = await token(env);
+        await editChatMessage(
+          input.chat_id,
+          input.message_id,
+          input.content,
+          input.content_type ?? "text",
+          accessToken,
+        );
+        return { success: true };
+      } catch (err) {
+        return toErrorResponse(err);
+      }
+    },
+  });
+
+// ─── REACT_TO_CHAT_MESSAGE ──────────────────────────────────────────────
+
+export const createReactToChatMessageTool = (env: Env) =>
+  createTool({
+    id: "REACT_TO_CHAT_MESSAGE",
+    description:
+      "Add an emoji reaction to a chat message. " +
+      "Allowed: like, heart, laugh, surprised, sad, angry.",
+    annotations: { destructiveHint: false, openWorldHint: true },
+    inputSchema: z
+      .object({
+        chat_id: z.string().describe("Chat ID."),
+        message_id: z.string().describe("ID of the message to react to."),
+        reaction: z
+          .enum(["like", "heart", "laugh", "surprised", "sad", "angry"])
+          .describe("Reaction emoji."),
+      })
+      .strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
+    }),
+    execute: async ({ context }: { context: unknown }) => {
+      const input = context as {
+        chat_id: string;
+        message_id: string;
+        reaction: ReactionType;
+      };
+      try {
+        const accessToken = await token(env);
+        await reactToChatMessage(
+          input.chat_id,
+          input.message_id,
+          input.reaction,
+          accessToken,
+        );
+        return { success: true };
+      } catch (err) {
+        return toErrorResponse(err);
       }
     },
   });
@@ -394,4 +548,6 @@ export const chatTools = [
   createFindUserTool,
   createCreatePrivateChatTool,
   createCreateGroupChatTool,
+  createEditChatMessageTool,
+  createReactToChatMessageTool,
 ];

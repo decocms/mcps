@@ -130,6 +130,140 @@ export async function getMessage(
   }
 }
 
+/** List top-level messages of a channel (newest first by default). */
+export async function listChannelMessages(
+  teamId: string,
+  channelId: string,
+  accessToken: string,
+  top = 20,
+  expandReplies = false,
+): Promise<(GraphMessage & { replies?: GraphMessage[] })[]> {
+  const expand = expandReplies ? "&$expand=replies" : "";
+  const data = await graphFetch<{
+    value: (GraphMessage & { replies?: GraphMessage[] })[];
+  }>(
+    `${GRAPH}/teams/${teamId}/channels/${channelId}/messages?$top=${top}${expand}`,
+    accessToken,
+  );
+  return data.value ?? [];
+}
+
+// ─── Edit / Delete / React (channel + chat) ──────────────────────────────────
+
+export async function editChannelMessage(
+  teamId: string,
+  channelId: string,
+  messageId: string,
+  content: string,
+  contentType: "text" | "html",
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(
+    `${GRAPH}/teams/${teamId}/channels/${channelId}/messages/${messageId}`,
+    accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ body: { contentType, content } }),
+    },
+  );
+}
+
+export async function editChatMessage(
+  chatId: string,
+  messageId: string,
+  content: string,
+  contentType: "text" | "html",
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(
+    `${GRAPH}/chats/${chatId}/messages/${messageId}`,
+    accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ body: { contentType, content } }),
+    },
+  );
+}
+
+export type ReactionType =
+  | "like"
+  | "heart"
+  | "laugh"
+  | "surprised"
+  | "sad"
+  | "angry";
+
+/**
+ * Graph setReaction requires the Unicode emoji as `reactionType`, not the
+ * friendly name. We accept both: callers pass a friendly name and we map
+ * it to the emoji before sending.
+ */
+const REACTION_EMOJI: Record<ReactionType, string> = {
+  like: "👍",
+  heart: "❤️",
+  laugh: "😂",
+  surprised: "😮",
+  sad: "😢",
+  angry: "😡",
+};
+
+export async function reactToChannelMessage(
+  teamId: string,
+  channelId: string,
+  messageId: string,
+  reactionType: ReactionType,
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(
+    `${GRAPH}/teams/${teamId}/channels/${channelId}/messages/${messageId}/setReaction`,
+    accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({ reactionType: REACTION_EMOJI[reactionType] }),
+    },
+  );
+}
+
+export async function reactToChatMessage(
+  chatId: string,
+  messageId: string,
+  reactionType: ReactionType,
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(
+    `${GRAPH}/chats/${chatId}/messages/${messageId}/setReaction`,
+    accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify({ reactionType: REACTION_EMOJI[reactionType] }),
+    },
+  );
+}
+
+/** Build a deep-link to a chat message (Graph doesn't return webUrl for chats). */
+export function buildChatMessageWebUrl(
+  chatId: string,
+  messageId: string,
+  tenantId?: string,
+): string {
+  const base = `https://teams.microsoft.com/l/message/${encodeURIComponent(chatId)}/${encodeURIComponent(messageId)}`;
+  return tenantId ? `${base}?tenantId=${encodeURIComponent(tenantId)}` : base;
+}
+
+/** List the replies under a specific channel message (thread). */
+export async function listMessageReplies(
+  teamId: string,
+  channelId: string,
+  messageId: string,
+  accessToken: string,
+): Promise<GraphMessage[]> {
+  const data = await graphFetch<{ value: GraphMessage[] }>(
+    `${GRAPH}/teams/${teamId}/channels/${channelId}/messages/${messageId}/replies`,
+    accessToken,
+  );
+  return data.value ?? [];
+}
+
 // ─── Users (directory lookup) ────────────────────────────────────────────────
 
 export interface GraphUser {
@@ -267,19 +401,125 @@ export async function getChatMembers(
   return data.value ?? [];
 }
 
-/** Send a message to an existing chat. */
+/** Get a single chat message by id (used to build reply quote references). */
+export async function getChatMessage(
+  chatId: string,
+  messageId: string,
+  accessToken: string,
+): Promise<GraphMessage | null> {
+  try {
+    return await graphFetch<GraphMessage>(
+      `${GRAPH}/chats/${chatId}/messages/${messageId}`,
+      accessToken,
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Send a message to an existing chat.
+ *
+ * If `replyToMessageId` is provided, the original message is fetched and a
+ * `messageReference` attachment is built so Teams renders the new message
+ * as a "quoted reply" of the original (this is how chat replies work — chat
+ * messages don't support the channel-style `replyToId` threading).
+ */
 export async function sendChatMessage(
   chatId: string,
   content: string,
   contentType: "text" | "html" = "text",
   accessToken: string,
+  replyToMessageId?: string,
 ): Promise<GraphMessage> {
+  // Simple path — no reply target
+  if (!replyToMessageId) {
+    return graphFetch<GraphMessage>(
+      `${GRAPH}/chats/${chatId}/messages`,
+      accessToken,
+      {
+        method: "POST",
+        body: JSON.stringify({ body: { contentType, content } }),
+      },
+    );
+  }
+
+  // Reply with quote — fetch the original and build the messageReference attachment
+  const original = await getChatMessage(chatId, replyToMessageId, accessToken);
+  if (!original) {
+    throw new Error(
+      `Cannot reply: message ${replyToMessageId} not found in chat ${chatId}`,
+    );
+  }
+
+  const attachmentId = crypto.randomUUID();
+  const senderUser = original.from?.user;
+  const senderApp = original.from?.application;
+  const sender = senderUser
+    ? {
+        application: null,
+        device: null,
+        user: {
+          userIdentityType: "aadUser",
+          id: senderUser.id,
+          displayName: senderUser.displayName,
+        },
+      }
+    : {
+        application: senderApp
+          ? {
+              applicationIdentityType: "bot",
+              id: senderApp.id,
+              displayName: senderApp.displayName,
+            }
+          : null,
+        device: null,
+        user: null,
+      };
+
+  // Build a short preview from the original body
+  const previewSource =
+    original.body.contentType === "text"
+      ? original.body.content
+      : original.body.content
+          .replace(/<[^>]+>/g, "")
+          .replace(/&nbsp;/g, " ")
+          .trim();
+  const messagePreview = previewSource.slice(0, 120);
+
+  // The body must reference the attachment inline
+  const bodyContent = `<attachment id="${attachmentId}"></attachment>${
+    contentType === "html"
+      ? content
+      : // Escape minimal HTML chars when wrapping plain text into HTML
+        content
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+  }`;
+
   return graphFetch<GraphMessage>(
     `${GRAPH}/chats/${chatId}/messages`,
     accessToken,
     {
       method: "POST",
-      body: JSON.stringify({ body: { contentType, content } }),
+      body: JSON.stringify({
+        body: { contentType: "html", content: bodyContent },
+        attachments: [
+          {
+            id: attachmentId,
+            contentType: "messageReference",
+            contentUrl: null,
+            content: JSON.stringify({
+              messageId: replyToMessageId,
+              messagePreview,
+              messageSender: sender,
+            }),
+            name: null,
+            thumbnailUrl: null,
+          },
+        ],
+      }),
     },
   );
 }

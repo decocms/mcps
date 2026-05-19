@@ -42,6 +42,7 @@ function getOAuthCredentials(): {
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   oauth: {
+    mode: "PKCE",
     authorizationServer: "https://login.microsoftonline.com",
 
     authorizationUrl: (callbackUrl) => {
@@ -65,14 +66,15 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       return url.toString();
     },
 
-    exchangeCode: async ({ code, redirect_uri }) => {
+    exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
       const { tenantId, clientId, clientSecret } = getOAuthCredentials();
       const tokens = await exchangeAuthCode(
         tenantId,
         clientId,
         clientSecret,
         code,
-        redirect_uri,
+        redirect_uri ?? "",
+        code_verifier,
       );
       return {
         access_token: tokens.access_token,

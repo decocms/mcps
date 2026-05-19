@@ -4,6 +4,8 @@
 
 import { triggers } from "./trigger-store.ts";
 import type { GraphMessage } from "./graph-client.ts";
+import { logEvent } from "./event-log.ts";
+import { logger } from "./logger.ts";
 
 /** Strip HTML tags from Graph message body when contentType is html. */
 function toPlainText(body: GraphMessage["body"]): string {
@@ -32,6 +34,7 @@ export function publishMessageReceived(
   teamId: string,
   channelId: string,
   message: GraphMessage,
+  trace_id?: string,
 ): void {
   const senderId =
     message.from?.user?.id ?? message.from?.application?.id ?? "unknown";
@@ -41,7 +44,7 @@ export function publishMessageReceived(
     "Unknown";
   const text = toPlainText(message.body);
 
-  triggers.notify(connectionId, "teams.message.received", {
+  const payload = {
     event: "teams.message.received",
     team_id: teamId,
     channel_id: channelId,
@@ -54,11 +57,22 @@ export function publishMessageReceived(
     created_at: message.createdDateTime,
     timestamp: new Date().toISOString(),
     reply_instruction: message.replyToId
-      ? `To reply in this thread call TEAMS_REPLY_TO_MESSAGE with team_id="${teamId}", channel_id="${channelId}", message_id="${message.replyToId ?? message.id}".`
-      : `To reply call TEAMS_REPLY_TO_MESSAGE with team_id="${teamId}", channel_id="${channelId}", message_id="${message.id}".`,
-  });
+      ? `To reply in this thread call REPLY_TO_MESSAGE with team_id="${teamId}", channel_id="${channelId}", message_id="${message.replyToId ?? message.id}".`
+      : `To reply call REPLY_TO_MESSAGE with team_id="${teamId}", channel_id="${channelId}", message_id="${message.id}".`,
+  };
 
-  console.log(
-    `[Teams Triggers] Notified teams.message.received: channel=${channelId} sender=${senderName}`,
+  triggers.notify(connectionId, "teams.message.received", payload);
+
+  // Diagnostic log (best-effort, never throws)
+  logEvent(connectionId, "teams.message.received", payload, trace_id).catch(
+    (err) => logger.debug("logEvent failed", { error: String(err) }),
   );
+
+  logger.info("Trigger notified", {
+    connectionId,
+    trace_id,
+    event_type: "teams.message.received",
+    channelId,
+    sender: senderName,
+  });
 }

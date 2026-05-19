@@ -11,7 +11,6 @@
 
 import type { Env } from "../types/env.ts";
 import { getKvStore } from "./kv.ts";
-import { exchangeRefreshToken } from "./oauth.ts";
 
 /** Pull the user's bearer token off the per-request mesh context. */
 export function getAccessToken(env: Env): string {
@@ -26,49 +25,35 @@ export function getAccessToken(env: Env): string {
 }
 
 /**
- * For webhook handlers (Graph notifications) — no MESH context available.
- * Reads a refresh token cached per-connection in KV and exchanges it for
- * a fresh access token. Requires that the connection has been set up via
- * a tool call first (so the refresh token was stored).
+ * For webhook handlers (no MESH request context, so we can't read
+ * MESH_REQUEST_CONTEXT.authorization). Reads an access token cached by
+ * SUBSCRIBE_TO_CHANNEL / REFRESH_SUBSCRIPTIONS.
+ *
+ * Throws if the cache is missing or expired — the agent must call
+ * REFRESH_SUBSCRIPTIONS to reseed the cache (and renew the Graph
+ * subscription itself, which expires every ~60 min anyway).
  */
 export async function getDelegatedTokenForConnection(
   connectionId: string,
 ): Promise<string> {
   const kv = getKvStore();
-  const stored = await kv.get<{
-    accessToken: string;
-    refreshToken: string;
-    tokenExpiresAt: number;
-    tenantId: string;
-    clientId: string;
-    clientSecret: string;
-  }>(`webhook-token:${connectionId}`);
+  const cached = await kv.get<{ accessToken: string; expiresAt: number }>(
+    `webhook-token:${connectionId}`,
+  );
 
-  if (!stored?.refreshToken) {
+  if (!cached) {
     throw new Error(
-      `No webhook token cached for connection ${connectionId}. ` +
-        `Call any tool from this connection first to seed the cache.`,
+      `No cached webhook token for connection ${connectionId}. ` +
+        `Call SUBSCRIBE_TO_CHANNEL or REFRESH_SUBSCRIPTIONS to seed it.`,
     );
   }
 
-  const now = Date.now();
-  if (stored.accessToken && now < stored.tokenExpiresAt - 60_000) {
-    return stored.accessToken;
+  if (Date.now() > cached.expiresAt - 60_000) {
+    throw new Error(
+      `Webhook token for connection ${connectionId} is expired. ` +
+        `Call REFRESH_SUBSCRIPTIONS to renew.`,
+    );
   }
 
-  const tokens = await exchangeRefreshToken(
-    stored.tenantId,
-    stored.clientId,
-    stored.clientSecret,
-    stored.refreshToken,
-  );
-
-  await kv.set(`webhook-token:${connectionId}`, {
-    ...stored,
-    accessToken: tokens.access_token,
-    refreshToken: tokens.refresh_token ?? stored.refreshToken,
-    tokenExpiresAt: now + tokens.expires_in * 1000,
-  });
-
-  return tokens.access_token;
+  return cached.accessToken;
 }
