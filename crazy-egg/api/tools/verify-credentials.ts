@@ -1,6 +1,5 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { CRAZY_EGG_RESOURCE_URI } from "../constants.ts";
 import { verifyCredentials } from "../lib/client.ts";
 import { getApiKey, getAppKey } from "../lib/env.ts";
 import type { Env } from "../types/env.ts";
@@ -19,7 +18,7 @@ export const verifyCredentialsTool = (_env: Env) =>
       "Check whether the configured CRAZY_EGG_API_KEY + CRAZY_EGG_APP_KEY pair can authenticate against the legacy v2 API. Use this first to diagnose 'unauthorized' errors from the read tools.",
     inputSchema,
     outputSchema,
-    _meta: { ui: { resourceUri: CRAZY_EGG_RESOURCE_URI } },
+
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,

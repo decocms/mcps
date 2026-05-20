@@ -25,9 +25,7 @@ describe("listSnapshotsTool", () => {
     const tool = listSnapshotsTool(makeEnv());
     expect(tool.id).toBe("crazy_egg_list_snapshots");
     expect(tool.description).toMatch(/undocumented|unstable|legacy/i);
-    expect(tool._meta).toMatchObject({
-      ui: { resourceUri: "ui://crazy-egg/dashboard" },
-    });
+    expect(tool._meta).toBeUndefined();
   });
 
   test("returns snapshots and supports limit/filter clientside", async () => {

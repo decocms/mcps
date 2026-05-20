@@ -24,9 +24,7 @@ describe("verifyCredentialsTool", () => {
   test("has expected metadata", () => {
     const tool = verifyCredentialsTool(makeEnv());
     expect(tool.id).toBe("crazy_egg_verify_credentials");
-    expect(tool._meta).toMatchObject({
-      ui: { resourceUri: "ui://crazy-egg/dashboard" },
-    });
+    expect(tool._meta).toBeUndefined();
   });
 
   test("hits /authenticate.json with both keys signed", async () => {

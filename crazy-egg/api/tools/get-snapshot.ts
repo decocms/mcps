@@ -1,7 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { CRAZY_EGG_RESOURCE_URI } from "../constants.ts";
-import { getSnapshot } from "../lib/client.ts";
+import { listSnapshots } from "../lib/client.ts";
 import { getApiKey, getAppKey } from "../lib/env.ts";
 import type { Env } from "../types/env.ts";
 
@@ -35,7 +34,7 @@ export const getSnapshotTool = (_env: Env) =>
       "⚠️ Uses the undocumented legacy v2 API (may break without notice). Fetch detailed metadata for a single heatmap snapshot, including the heatmap_url and screenshot_url you can render in the UI.",
     inputSchema,
     outputSchema,
-    _meta: { ui: { resourceUri: CRAZY_EGG_RESOURCE_URI } },
+
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -47,12 +46,17 @@ export const getSnapshotTool = (_env: Env) =>
       const apiKey = getApiKey(env);
       const appKey = getAppKey(env);
 
-      const snapshot = await getSnapshot({
-        apiKey,
-        appKey,
-        snapshotId: context.snapshotId,
-      });
+      const all = await listSnapshots({ apiKey, appKey });
+      const snapshot = all.find(
+        (s) => String(s.id) === context.snapshotId,
+      );
 
-      return { snapshot };
+      if (!snapshot) {
+        throw new Error(
+          `Snapshot with ID "${context.snapshotId}" not found.`,
+        );
+      }
+
+      return { snapshot: { ...snapshot, id: String(snapshot.id) } };
     },
   });
