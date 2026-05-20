@@ -292,6 +292,28 @@ export async function findUserByEmail(
 }
 
 /**
+ * Search the directory for users by display name (or email fragment).
+ * Uses Graph $search, which requires the ConsistencyLevel: eventual header.
+ * Returns the best matches so the caller can resolve a name → email/id.
+ */
+export async function searchUsers(
+  query: string,
+  accessToken: string,
+  top = 10,
+): Promise<GraphUser[]> {
+  const search = encodeURIComponent(
+    `"displayName:${query}" OR "mail:${query}"`,
+  );
+  const url =
+    `${GRAPH}/users?$search=${search}&$top=${top}` +
+    `&$select=id,displayName,userPrincipalName,mail`;
+  const data = await graphFetch<{ value: GraphUser[] }>(url, accessToken, {
+    headers: { ConsistencyLevel: "eventual" },
+  });
+  return data.value ?? [];
+}
+
+/**
  * Get the currently authenticated user's id (needed when creating chats —
  * the creator must be listed as one of the members).
  */
@@ -618,5 +640,215 @@ export async function deleteSubscription(
     `${GRAPH}/subscriptions/${subscriptionId}`,
     accessToken,
     { method: "DELETE" },
+  );
+}
+
+// ─── Calendar / Meetings ──────────────────────────────────────────────────────
+
+export interface GraphDateTime {
+  dateTime: string; // e.g. "2026-05-21T15:00:00"
+  timeZone: string; // e.g. "America/Sao_Paulo" or "UTC"
+}
+
+export interface GraphAttendee {
+  emailAddress: { address: string; name?: string };
+  type?: "required" | "optional" | "resource";
+  status?: { response?: string; time?: string };
+}
+
+export interface GraphEvent {
+  id: string;
+  subject?: string;
+  bodyPreview?: string;
+  body?: { contentType: string; content: string };
+  start?: GraphDateTime;
+  end?: GraphDateTime;
+  location?: { displayName?: string };
+  attendees?: GraphAttendee[];
+  organizer?: { emailAddress: { address: string; name?: string } };
+  isOnlineMeeting?: boolean;
+  onlineMeeting?: { joinUrl?: string };
+  webLink?: string;
+  isCancelled?: boolean;
+  responseStatus?: { response?: string; time?: string };
+}
+
+export interface CreateEventInput {
+  subject: string;
+  start: GraphDateTime;
+  end: GraphDateTime;
+  attendees?: { address: string; name?: string; optional?: boolean }[];
+  bodyHtml?: string;
+  locationName?: string;
+  isOnlineMeeting?: boolean;
+}
+
+function buildAttendees(
+  attendees?: { address: string; name?: string; optional?: boolean }[],
+): GraphAttendee[] | undefined {
+  if (!attendees?.length) return undefined;
+  return attendees.map((a) => ({
+    emailAddress: { address: a.address, name: a.name },
+    type: a.optional ? "optional" : "required",
+  }));
+}
+
+/** List calendar events / meetings within an optional time window. */
+export async function listEvents(
+  accessToken: string,
+  opts: { start?: string; end?: string; top?: number } = {},
+): Promise<GraphEvent[]> {
+  const top = opts.top ?? 20;
+  // Use calendarView when a window is given (expands recurrences), else /events
+  if (opts.start && opts.end) {
+    const url =
+      `${GRAPH}/me/calendarView?startDateTime=${encodeURIComponent(opts.start)}` +
+      `&endDateTime=${encodeURIComponent(opts.end)}&$top=${top}&$orderby=start/dateTime`;
+    const data = await graphFetch<{ value: GraphEvent[] }>(url, accessToken);
+    return data.value ?? [];
+  }
+  const data = await graphFetch<{ value: GraphEvent[] }>(
+    `${GRAPH}/me/events?$top=${top}&$orderby=start/dateTime`,
+    accessToken,
+  );
+  return data.value ?? [];
+}
+
+export async function getEvent(
+  eventId: string,
+  accessToken: string,
+): Promise<GraphEvent | null> {
+  try {
+    return await graphFetch<GraphEvent>(
+      `${GRAPH}/me/events/${eventId}`,
+      accessToken,
+    );
+  } catch {
+    return null;
+  }
+}
+
+/** Create a calendar event. Set isOnlineMeeting to attach a Teams join link. */
+export async function createEvent(
+  input: CreateEventInput,
+  accessToken: string,
+): Promise<GraphEvent> {
+  const payload: Record<string, unknown> = {
+    subject: input.subject,
+    start: input.start,
+    end: input.end,
+  };
+  if (input.bodyHtml) {
+    payload.body = { contentType: "HTML", content: input.bodyHtml };
+  }
+  if (input.locationName) {
+    payload.location = { displayName: input.locationName };
+  }
+  const attendees = buildAttendees(input.attendees);
+  if (attendees) payload.attendees = attendees;
+  if (input.isOnlineMeeting) {
+    payload.isOnlineMeeting = true;
+    payload.onlineMeetingProvider = "teamsForBusiness";
+  }
+
+  return graphFetch<GraphEvent>(`${GRAPH}/me/events`, accessToken, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export interface UpdateEventInput {
+  subject?: string;
+  start?: GraphDateTime;
+  end?: GraphDateTime;
+  attendees?: { address: string; name?: string; optional?: boolean }[];
+  bodyHtml?: string;
+  locationName?: string;
+}
+
+/** Patch an event — used for editing details and rescheduling (start/end). */
+export async function updateEvent(
+  eventId: string,
+  input: UpdateEventInput,
+  accessToken: string,
+): Promise<GraphEvent> {
+  const payload: Record<string, unknown> = {};
+  if (input.subject !== undefined) payload.subject = input.subject;
+  if (input.start) payload.start = input.start;
+  if (input.end) payload.end = input.end;
+  if (input.bodyHtml !== undefined) {
+    payload.body = { contentType: "HTML", content: input.bodyHtml };
+  }
+  if (input.locationName !== undefined) {
+    payload.location = { displayName: input.locationName };
+  }
+  const attendees = buildAttendees(input.attendees);
+  if (attendees) payload.attendees = attendees;
+
+  return graphFetch<GraphEvent>(`${GRAPH}/me/events/${eventId}`, accessToken, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Delete an event from the calendar (no cancellation notice sent). */
+export async function deleteEvent(
+  eventId: string,
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(`${GRAPH}/me/events/${eventId}`, accessToken, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Cancel an event you organize — sends a cancellation message to attendees.
+ * Only valid for the organizer.
+ */
+export async function cancelEvent(
+  eventId: string,
+  comment: string | undefined,
+  accessToken: string,
+): Promise<void> {
+  await graphFetch<void>(`${GRAPH}/me/events/${eventId}/cancel`, accessToken, {
+    method: "POST",
+    body: JSON.stringify(comment ? { comment } : {}),
+  });
+}
+
+export type EventResponse = "accept" | "decline" | "tentativelyAccept";
+
+/**
+ * Respond to a meeting invitation. Optionally propose a new time
+ * (decline / tentativelyAccept support proposedNewTime).
+ */
+export async function respondToEvent(
+  eventId: string,
+  response: EventResponse,
+  accessToken: string,
+  opts: {
+    comment?: string;
+    sendResponse?: boolean;
+    proposedNewTime?: { start: GraphDateTime; end: GraphDateTime };
+  } = {},
+): Promise<void> {
+  const payload: Record<string, unknown> = {
+    sendResponse: opts.sendResponse ?? true,
+  };
+  if (opts.comment) payload.comment = opts.comment;
+  if (opts.proposedNewTime && response !== "accept") {
+    payload.proposedNewTime = {
+      start: opts.proposedNewTime.start,
+      end: opts.proposedNewTime.end,
+    };
+  }
+
+  await graphFetch<void>(
+    `${GRAPH}/me/events/${eventId}/${response}`,
+    accessToken,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    },
   );
 }

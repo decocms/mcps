@@ -17,6 +17,8 @@ export const SCOPES = [
   "Chat.ReadWrite",
   "ChatMessage.Send",
   "User.ReadBasic.All",
+  // Calendar / meetings (create, update, cancel, accept/decline invites)
+  "Calendars.ReadWrite",
 ];
 
 export interface TokenResponse {

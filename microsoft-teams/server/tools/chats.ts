@@ -12,6 +12,7 @@ import {
   sendChatMessage,
   listChatMessages,
   findUserByEmail,
+  searchUsers,
   getMyUserId,
   createOneOnOneChat,
   createGroupChat,
@@ -41,7 +42,7 @@ export const createListChatsTool = (env: Env) =>
       "SEND_CHAT_MESSAGE / LIST_CHAT_MESSAGES. " +
       "Useful when the user says 'send a DM to X' and you need to find " +
       "the existing chat with X (otherwise create a new one with " +
-      "FIND_USER + CREATE_PRIVATE_CHAT).",
+      "GET_USER_BY_EMAIL + CREATE_PRIVATE_CHAT).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z.object({}).strict(),
     outputSchema: z.object({
@@ -281,11 +282,11 @@ export const createListChatMessagesTool = (env: Env) =>
     },
   });
 
-// ─── FIND_USER ──────────────────────────────────────────────────────────
+// ─── GET_USER_BY_EMAIL ──────────────────────────────────────────────────────────
 
 export const createFindUserTool = (env: Env) =>
   createTool({
-    id: "FIND_USER",
+    id: "GET_USER_BY_EMAIL",
     description:
       "Look up a user in the Azure AD directory by email or user-principal-name. " +
       "Returns their AAD id. Use this to get the id needed by CREATE_PRIVATE_CHAT " +
@@ -336,6 +337,70 @@ export const createFindUserTool = (env: Env) =>
     },
   });
 
+// ─── SEARCH_USERS_BY_NAME ───────────────────────────────────────────────────────
+
+export const createSearchUsersTool = (env: Env) =>
+  createTool({
+    id: "SEARCH_USERS_BY_NAME",
+    description:
+      "Search the directory for people by NAME (or partial name/email) when you " +
+      "don't know the exact email. Returns up to `top` matches with their email " +
+      "and AAD id. Use this to resolve 'send a message to João Silva' into an " +
+      "actual address, then pass the email to GET_USER_BY_EMAIL / CREATE_PRIVATE_CHAT / " +
+      "CREATE_MEETING. If multiple people match, present the options to the user.",
+    annotations: {
+      destructiveHint: false,
+      openWorldHint: true,
+      readOnlyHint: true,
+    },
+    inputSchema: z
+      .object({
+        query: z
+          .string()
+          .describe("Name or partial name/email to search for, e.g. 'Joao'."),
+        top: z
+          .number()
+          .default(10)
+          .describe("Max matches to return (default 10)."),
+      })
+      .strict(),
+    outputSchema: z.object({
+      success: z.boolean(),
+      users: z
+        .array(
+          z.object({
+            id: z.string(),
+            display_name: z.string(),
+            user_principal_name: z.string(),
+            email: z.string().nullish(),
+          }),
+        )
+        .optional(),
+      error: z.string().nullish(),
+      error_code: z.string().nullish(),
+      error_hint: z.string().nullish(),
+      request_id: z.string().nullish(),
+    }),
+    execute: async ({ context }: { context: unknown }) => {
+      const { query, top } = context as { query: string; top?: number };
+      try {
+        const accessToken = await token(env);
+        const users = await searchUsers(query, accessToken, top ?? 10);
+        return {
+          success: true,
+          users: users.map((u) => ({
+            id: u.id,
+            display_name: u.displayName,
+            user_principal_name: u.userPrincipalName,
+            email: u.mail ?? null,
+          })),
+        };
+      } catch (err) {
+        return toErrorResponse(err);
+      }
+    },
+  });
+
 // ─── CREATE_PRIVATE_CHAT ────────────────────────────────────────────────
 
 export const createCreatePrivateChatTool = (env: Env) =>
@@ -345,13 +410,15 @@ export const createCreatePrivateChatTool = (env: Env) =>
       "Open a 1-on-1 private chat with another user. Microsoft Graph deduplicates: " +
       "calling this with the same user returns the existing chat. " +
       "Returns the chat_id to use with SEND_CHAT_MESSAGE. " +
-      "Pass the other user's Azure AD id (from FIND_USER).",
+      "Pass the other user's Azure AD id (from GET_USER_BY_EMAIL).",
     annotations: { destructiveHint: false, openWorldHint: true },
     inputSchema: z
       .object({
         user_id: z
           .string()
-          .describe("Azure AD id of the other user (obtained from FIND_USER)."),
+          .describe(
+            "Azure AD id of the other user (obtained from GET_USER_BY_EMAIL).",
+          ),
       })
       .strict(),
     outputSchema: z.object({
@@ -387,7 +454,7 @@ export const createCreateGroupChatTool = (env: Env) =>
     id: "CREATE_GROUP_CHAT",
     description:
       "Create a NEW group chat with 3 or more people (you + 2+ others). " +
-      "Workflow: call FIND_USER for each invitee's email to get their " +
+      "Workflow: call GET_USER_BY_EMAIL for each invitee's email to get their " +
       "AAD ids, then pass them here as `user_ids` (array) with a `topic` " +
       "(the chat's display name). Returns `chat_id` to use with " +
       "SEND_CHAT_MESSAGE. " +
@@ -546,6 +613,7 @@ export const chatTools = [
   createSendChatMessageTool,
   createListChatMessagesTool,
   createFindUserTool,
+  createSearchUsersTool,
   createCreatePrivateChatTool,
   createCreateGroupChatTool,
   createEditChatMessageTool,
