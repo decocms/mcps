@@ -22,7 +22,6 @@ export interface Snapshot {
   [k: string]: unknown;
 }
 
-
 // ─── Internal helpers ──────────────────────────────────────────────────────
 
 async function readResponseBody(res: Response): Promise<string> {
@@ -68,4 +67,3 @@ export async function verifyCredentials(
 export async function listSnapshots(creds: CrazyEggCreds): Promise<Snapshot[]> {
   return getSignedJson<Snapshot[]>("/snapshots.json", creds);
 }
-

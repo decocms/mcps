@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, mock, test } from "bun:test";
 import { createHmac } from "node:crypto";
-import {
-  listSnapshots,
-  verifyCredentials,
-} from "./client.ts";
+import { listSnapshots, verifyCredentials } from "./client.ts";
 
 const realFetch = globalThis.fetch;
 const APP_KEY = "test-app-secret";
@@ -96,4 +93,3 @@ describe("listSnapshots", () => {
     ).rejects.toThrow(/401/);
   });
 });
-

@@ -47,14 +47,10 @@ export const getSnapshotTool = (_env: Env) =>
       const appKey = getAppKey(env);
 
       const all = await listSnapshots({ apiKey, appKey });
-      const snapshot = all.find(
-        (s) => String(s.id) === context.snapshotId,
-      );
+      const snapshot = all.find((s) => String(s.id) === context.snapshotId);
 
       if (!snapshot) {
-        throw new Error(
-          `Snapshot with ID "${context.snapshotId}" not found.`,
-        );
+        throw new Error(`Snapshot with ID "${context.snapshotId}" not found.`);
       }
 
       return { snapshot: { ...snapshot, id: String(snapshot.id) } };

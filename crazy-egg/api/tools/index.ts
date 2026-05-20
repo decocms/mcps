@@ -4,8 +4,8 @@ import { listSnapshotsTool } from "./list-snapshots.ts";
 import { verifyCredentialsTool } from "./verify-credentials.ts";
 
 export const tools = [
-	verifyCredentialsTool,
-	listSnapshotsTool,
-	getSnapshotTool,
-	getTrafficTool,
+  verifyCredentialsTool,
+  listSnapshotsTool,
+  getSnapshotTool,
+  getTrafficTool,
 ];
