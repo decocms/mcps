@@ -17,7 +17,7 @@ export const StateSchema = z.object({
   WEBHOOK_URL: z
     .string()
     .default(
-      "https://sites-microsoft-teams.decocache.com/teams/notifications/{connectionId}",
+      "https://microsoft-teams-mcp.decocms.com/teams/notifications/{connectionId}",
     )
     .readonly()
     .describe(
@@ -53,5 +53,32 @@ export const StateSchema = z.object({
     ),
 });
 
-export type Env = DefaultEnv<typeof StateSchema, Registry>;
+/** Minimal Cloudflare Workers KV namespace surface we rely on. */
+export interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
+  delete(key: string): Promise<void>;
+  list(options?: { prefix?: string; cursor?: string }): Promise<{
+    keys: Array<{ name: string }>;
+    list_complete: boolean;
+    cursor?: string;
+  }>;
+}
+
+/**
+ * Environment combining Deco bindings with the Workers KV namespace and the
+ * Azure AD secrets. Secrets arrive via `wrangler secret put` and are exposed
+ * through `process.env` under `nodejs_compat`.
+ */
+export type Env = DefaultEnv<typeof StateSchema, Registry> & {
+  TEAMS_KV?: KVNamespace;
+  MICROSOFT_TENANT_ID?: string;
+  MICROSOFT_CLIENT_ID?: string;
+  MICROSOFT_CLIENT_SECRET?: string;
+};
+
 export type { Registry };

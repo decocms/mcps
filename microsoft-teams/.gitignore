@@ -1,6 +1,11 @@
-node_modules/
-dist/
-data/
+node_modules
+dist
 .env
-.env.local
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.secrets.json
+.wrangler/
 *.log

@@ -1,0 +1,30 @@
+name = "microsoft-teams-mcp"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "microsoft-teams-mcp.decocms.com", custom_domain = true },
+]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Durable storage for the MCP. Workers isolates are ephemeral, so an in-memory
+# Map would lose data between webhook deliveries and cold starts. This single
+# namespace holds several prefixes:
+#   - triggers:*        connection id -> trigger subscription state
+#   - webhook-config:*  connection id -> { clientState, subscriptions }
+#   - webhook-token:*   connection id -> cached delegated access token
+#   - event:*           recent events log (for diagnostics)
+#   - dedup:*           Graph notification fingerprints (TTL'd)
+#
+# Create with: bunx wrangler kv namespace create TEAMS_KV
+# Then paste the returned id below.
+[[kv_namespaces]]
+binding = "TEAMS_KV"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"

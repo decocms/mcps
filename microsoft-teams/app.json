@@ -4,10 +4,10 @@
   "friendlyName": "Microsoft Teams",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-microsoft-teams.decocache.com/mcp"
+    "url": "https://microsoft-teams-mcp.decocms.com/mcp"
   },
   "description": "Microsoft Teams integration — send channel and private chat messages, manage meetings, and trigger agents on new Teams messages via the Microsoft Graph API.",
-  "icon": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Microsoft_Office_Teams_%282018%E2%80%93present%29.svg",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/9/94/Microsoft_Office_Teams_%282019%E2%80%932025%29.svg",
   "unlisted": false,
   "metadata": {
     "categories": ["Communication", "Automation"],

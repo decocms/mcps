@@ -89,8 +89,7 @@ function getConnectionId(env: Env): string {
 
 function buildNotificationUrl(connectionId: string): string {
   const base =
-    process.env.SERVER_PUBLIC_URL ??
-    `https://sites-microsoft-teams.decocache.com`;
+    process.env.SERVER_PUBLIC_URL ?? `https://microsoft-teams-mcp.decocms.com`;
   return `${base.replace(/\/$/, "")}/teams/notifications/${connectionId}`;
 }
 

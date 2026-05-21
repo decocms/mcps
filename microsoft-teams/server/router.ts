@@ -24,7 +24,6 @@ import { logger } from "./lib/logger.ts";
 import {
   fingerprintNotification,
   isDuplicateNotification,
-  getDedupCacheSize,
 } from "./lib/dedup.ts";
 
 export const app = new Hono();
@@ -34,7 +33,6 @@ app.get("/health", (c) =>
     status: "ok",
     service: "microsoft-teams-mcp",
     ts: new Date().toISOString(),
-    dedup_cache_size: getDedupCacheSize(),
   }),
 );
 
@@ -103,7 +101,7 @@ app.post("/teams/notifications/:connectionId", async (c) => {
     return c.json({ ok: true }, 202);
   }
 
-  processNotificationsAsync(
+  const work = processNotificationsAsync(
     connectionId,
     payload,
     subInfo.clientState,
@@ -116,6 +114,15 @@ app.post("/teams/notifications/:connectionId", async (c) => {
       error: String(err),
     });
   });
+
+  // On Cloudflare Workers, background work is cancelled once the response
+  // returns unless it is registered with the execution context. Locally
+  // (no executionCtx) the promise just runs to completion.
+  try {
+    c.executionCtx.waitUntil(work);
+  } catch {
+    // No execution context available — let the promise run unmanaged.
+  }
 
   return c.json({ ok: true }, 202);
 });
@@ -151,7 +158,7 @@ async function processNotificationsAsync(
 
     // Dedup — skip notifications we've already processed
     const fp = fingerprintNotification(notification);
-    if (isDuplicateNotification(fp)) {
+    if (await isDuplicateNotification(fp)) {
       logger.info("Duplicate notification skipped", {
         connectionId,
         trace_id,
@@ -165,7 +172,8 @@ async function processNotificationsAsync(
     ).getTime();
     const minutesLeft = (expiresAt - Date.now()) / 60_000;
     if (minutesLeft < 10) {
-      logger
+      // Awaited so the renewal completes within the ctx.waitUntil() window.
+      await logger
         .measure(
           () => renewSubscription(notification.subscriptionId, accessToken),
           "Subscription renewed",
@@ -230,7 +238,7 @@ async function processNotificationsAsync(
       end_to_end_duration_ms: Date.now() - receivedAt,
     });
 
-    publishMessageReceived(
+    await publishMessageReceived(
       connectionId,
       parsed.teamId,
       parsed.channelId,

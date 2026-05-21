@@ -3,25 +3,29 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Microsoft Teams MCP — send messages and react to Teams events via Microsoft Graph API",
+  "description": "Microsoft Teams MCP — send messages, manage meetings and react to Teams events via Microsoft Graph API",
   "scripts": {
-    "dev": "bun run --hot server/main.ts",
+    "dev": "bunx wrangler dev",
     "check": "tsc --noEmit",
-    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
-    "build": "bun run build:server",
-    "publish": "cat app.json | deco registry publish -w /shared/deco -y",
-    "dev:link": "deco link -p 3004 -- PORT=3004 bun run dev"
+    "build": "bunx wrangler deploy --dry-run --outdir=dist",
+    "deploy": "bunx wrangler deploy",
+    "publish": "cat app.json | deco registry publish -w /shared/deco -y"
   },
   "dependencies": {
-    "@decocms/bindings": "^1.0.8",
+    "@decocms/bindings": "^1.4.0",
     "@decocms/runtime": "^1.6.0",
     "hono": "^4.7.4",
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20251014.0",
     "@decocms/mcps-shared": "1.0.0",
-    "deco-cli": "^0.28.0",
-    "typescript": "^5.7.2"
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^4.28.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
   },
   "overrides": {
     "zod": "^4.0.0"

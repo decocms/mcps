@@ -1,31 +1,21 @@
 /**
- * In-memory event deduplication for Microsoft Graph notifications.
+ * Event deduplication for Microsoft Graph notifications, backed by KV.
  *
  * Graph occasionally redelivers the same change notification (network blips,
- * subscription renewals, mesh restarts). Without dedup, the agent would
- * receive the trigger twice and reply twice. We fingerprint each
- * notification and skip duplicates seen within a TTL window.
+ * subscription renewals, isolate restarts). Without dedup the agent would
+ * receive the trigger twice and reply twice. We fingerprint each notification
+ * and skip duplicates seen within a TTL window.
  *
- * Strategy:
- *  - Fingerprint = `${subscriptionId}|${changeType}|${resourceId}`
- *    (a single resource change can only happen once per (sub, type) tuple).
- *  - In-memory Map with TTL eviction on every check.
- *  - Single-pod only — for multi-pod, swap to Redis/Supabase later.
+ * Backed by Workers KV (not an in-memory Map) so dedup survives across the
+ * ephemeral isolates that handle webhook deliveries.
  */
 
-const DEFAULT_TTL_MS = 60 * 60 * 1000; // 1h — Graph normally retries within minutes
-const MAX_ENTRIES = 10_000;
+import { getKvStore } from "./kv.ts";
 
-interface DedupEntry {
-  seenAt: number;
-}
+const PREFIX = "dedup:";
+const DEFAULT_TTL_MS = 60 * 60 * 1000; // 1h — Graph retries within minutes
 
-const cache = new Map<string, DedupEntry>();
-
-/**
- * Build a fingerprint for a single Graph notification.
- * Uses the most stable identifying fields available.
- */
+/** Build a fingerprint for a single Graph notification. */
 export function fingerprintNotification(notification: {
   subscriptionId: string;
   changeType: string;
@@ -38,44 +28,17 @@ export function fingerprintNotification(notification: {
 }
 
 /**
- * Check whether we've seen this fingerprint within the TTL window.
- * If new, records it and returns false (caller should process the event).
- * If duplicate, returns true (caller should skip).
+ * Returns true if this fingerprint was already seen within the TTL window.
+ * If new, records it (with TTL) and returns false so the caller processes it.
  */
-export function isDuplicateNotification(
+export async function isDuplicateNotification(
   fingerprint: string,
   ttlMs: number = DEFAULT_TTL_MS,
-): boolean {
-  evictExpired(ttlMs);
-
-  const entry = cache.get(fingerprint);
-  const now = Date.now();
-
-  if (entry && now - entry.seenAt < ttlMs) {
-    return true;
-  }
-
-  cache.set(fingerprint, { seenAt: now });
-
-  // Safety cap — prevent unbounded growth if eviction lags
-  if (cache.size > MAX_ENTRIES) {
-    const oldestKey = cache.keys().next().value;
-    if (oldestKey) cache.delete(oldestKey);
-  }
-
+): Promise<boolean> {
+  const kv = getKvStore();
+  const key = `${PREFIX}${fingerprint}`;
+  const seen = await kv.get<number>(key);
+  if (seen) return true;
+  await kv.set(key, Date.now(), ttlMs);
   return false;
-}
-
-function evictExpired(ttlMs: number): void {
-  // Cheap sampling: only scan when cache exceeds a small threshold
-  if (cache.size < 100) return;
-  const cutoff = Date.now() - ttlMs;
-  for (const [key, entry] of cache.entries()) {
-    if (entry.seenAt < cutoff) cache.delete(key);
-  }
-}
-
-/** Test helper / metric — exposed for /health debug. */
-export function getDedupCacheSize(): number {
-  return cache.size;
 }
