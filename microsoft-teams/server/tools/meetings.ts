@@ -51,6 +51,47 @@ const errorFields = {
   request_id: z.string().nullish(),
 };
 
+interface ProposedTime {
+  start: { dateTime: string; timeZone: string };
+  end: { dateTime: string; timeZone: string };
+}
+
+type ProposedTimeResult =
+  | { ok: true; value: ProposedTime | undefined }
+  | { ok: false };
+
+/**
+ * Build the optional proposedNewTime for decline / tentative responses.
+ * Contract: both proposed_start and proposed_end together, or neither.
+ * Returns { ok: false } for a partial pair so the caller can surface a
+ * validation error instead of silently dropping the input.
+ */
+function resolveProposedNewTime(
+  start: string | undefined,
+  end: string | undefined,
+  tz: string,
+): ProposedTimeResult {
+  if (!start && !end) return { ok: true, value: undefined };
+  if (!start || !end) return { ok: false };
+  return {
+    ok: true,
+    value: {
+      start: { dateTime: start, timeZone: tz },
+      end: { dateTime: end, timeZone: tz },
+    },
+  };
+}
+
+const PROPOSED_TIME_ERROR = {
+  success: false as const,
+  error:
+    "Provide both proposed_start and proposed_end together, or neither — a partial pair cannot be sent to the organizer.",
+  error_code: "ValidationError",
+  error_hint:
+    "To propose a new time, include BOTH proposed_start and proposed_end (with time_zone). Omit both to respond without proposing a time.",
+  request_id: null,
+};
+
 /** Strip HTML to plain text (Graph returns the meeting body as HTML). */
 function bodyToPlainText(body?: {
   contentType: string;
@@ -466,182 +507,117 @@ export const createDeleteMeetingTool = (env: Env) =>
     },
   });
 
-// ─── ACCEPT_MEETING ───────────────────────────────────────────────────────────
+// ─── Invitation responses (ACCEPT / DECLINE / TENTATIVELY_ACCEPT) ─────────────
 
-export const createAcceptMeetingTool = (env: Env) =>
-  createTool({
-    id: "ACCEPT_MEETING",
-    description:
-      "Accept a meeting invitation. Optionally include a comment that is sent " +
-      "to the organizer.",
-    annotations: { destructiveHint: false, openWorldHint: true },
-    inputSchema: z
-      .object({
-        meeting_id: z.string().describe("Calendar event / meeting id."),
-        comment: z
-          .string()
-          .optional()
-          .describe("Optional reply to the organizer."),
-        send_response: z
-          .boolean()
-          .default(true)
-          .describe("Whether to notify the organizer (default true)."),
-      })
-      .strict(),
-    outputSchema: z.object({ success: z.boolean(), ...errorFields }),
-    execute: async ({ context }: { context: unknown }) => {
-      const { meeting_id, comment, send_response } = context as {
-        meeting_id: string;
-        comment?: string;
-        send_response?: boolean;
-      };
-      try {
-        await respondToEvent(meeting_id, "accept", token(env), {
-          comment,
-          sendResponse: send_response ?? true,
-        });
-        return { success: true };
-      } catch (err) {
-        return toErrorResponse(err);
-      }
-    },
-  });
+type ResponseAction = "accept" | "decline" | "tentativelyAccept";
 
-// ─── DECLINE_MEETING ──────────────────────────────────────────────────────────
-
-export const createDeclineMeetingTool = (env: Env) =>
-  createTool({
-    id: "DECLINE_MEETING",
-    description:
-      "Decline a meeting invitation. Optionally propose a new time " +
-      "(proposed_start / proposed_end + time_zone) so the organizer can " +
-      "reschedule, and optionally include a comment.",
-    annotations: { destructiveHint: false, openWorldHint: true },
-    inputSchema: z
-      .object({
-        meeting_id: z.string().describe("Calendar event / meeting id."),
-        comment: z
-          .string()
-          .optional()
-          .describe("Optional reply to the organizer."),
-        send_response: z
-          .boolean()
-          .default(true)
-          .describe("Whether to notify the organizer (default true)."),
-        proposed_start: z
-          .string()
-          .optional()
-          .describe("Optional proposed new start date-time."),
-        proposed_end: z
-          .string()
-          .optional()
-          .describe("Optional proposed new end date-time."),
-        time_zone: z
-          .string()
-          .default(DEFAULT_TZ)
-          .describe("Time zone for the proposed times."),
-      })
-      .strict(),
-    outputSchema: z.object({ success: z.boolean(), ...errorFields }),
-    execute: async ({ context }: { context: unknown }) => {
-      const input = context as {
-        meeting_id: string;
-        comment?: string;
-        send_response?: boolean;
-        proposed_start?: string;
-        proposed_end?: string;
-        time_zone?: string;
-      };
-      try {
-        const tz = input.time_zone ?? DEFAULT_TZ;
-        const proposedNewTime =
-          input.proposed_start && input.proposed_end
+/**
+ * Factory for the three "respond to an invitation" tools. They share the same
+ * meeting_id / comment / send_response inputs; decline and tentative also allow
+ * proposing a new time. `allowProposedTime` toggles those fields and the
+ * "both-or-neither" validation (Graph's accept action ignores proposed times).
+ */
+function createRespondTool(opts: {
+  id: string;
+  action: ResponseAction;
+  description: string;
+  allowProposedTime: boolean;
+}) {
+  return (env: Env) =>
+    createTool({
+      id: opts.id,
+      description: opts.description,
+      annotations: { destructiveHint: false, openWorldHint: true },
+      inputSchema: z
+        .object({
+          meeting_id: z.string().describe("Calendar event / meeting id."),
+          comment: z
+            .string()
+            .optional()
+            .describe("Optional reply to the organizer."),
+          send_response: z
+            .boolean()
+            .default(true)
+            .describe("Whether to notify the organizer (default true)."),
+          ...(opts.allowProposedTime
             ? {
-                start: { dateTime: input.proposed_start, timeZone: tz },
-                end: { dateTime: input.proposed_end, timeZone: tz },
+                proposed_start: z
+                  .string()
+                  .optional()
+                  .describe("Optional proposed new start date-time."),
+                proposed_end: z
+                  .string()
+                  .optional()
+                  .describe("Optional proposed new end date-time."),
+                time_zone: z
+                  .string()
+                  .default(DEFAULT_TZ)
+                  .describe("Time zone for the proposed times."),
               }
-            : undefined;
-        await respondToEvent(input.meeting_id, "decline", token(env), {
-          comment: input.comment,
-          sendResponse: input.send_response ?? true,
-          proposedNewTime,
-        });
-        return { success: true };
-      } catch (err) {
-        return toErrorResponse(err);
-      }
-    },
-  });
-
-// ─── TENTATIVELY_ACCEPT_MEETING ───────────────────────────────────────────────
-
-export const createTentativelyAcceptMeetingTool = (env: Env) =>
-  createTool({
-    id: "TENTATIVELY_ACCEPT_MEETING",
-    description:
-      "Respond 'tentative' (maybe) to a meeting invitation. Optionally propose " +
-      "a new time and include a comment.",
-    annotations: { destructiveHint: false, openWorldHint: true },
-    inputSchema: z
-      .object({
-        meeting_id: z.string().describe("Calendar event / meeting id."),
-        comment: z
-          .string()
-          .optional()
-          .describe("Optional reply to the organizer."),
-        send_response: z
-          .boolean()
-          .default(true)
-          .describe("Whether to notify the organizer (default true)."),
-        proposed_start: z
-          .string()
-          .optional()
-          .describe("Optional proposed new start date-time."),
-        proposed_end: z
-          .string()
-          .optional()
-          .describe("Optional proposed new end date-time."),
-        time_zone: z
-          .string()
-          .default(DEFAULT_TZ)
-          .describe("Time zone for the proposed times."),
-      })
-      .strict(),
-    outputSchema: z.object({ success: z.boolean(), ...errorFields }),
-    execute: async ({ context }: { context: unknown }) => {
-      const input = context as {
-        meeting_id: string;
-        comment?: string;
-        send_response?: boolean;
-        proposed_start?: string;
-        proposed_end?: string;
-        time_zone?: string;
-      };
-      try {
-        const tz = input.time_zone ?? DEFAULT_TZ;
-        const proposedNewTime =
-          input.proposed_start && input.proposed_end
-            ? {
-                start: { dateTime: input.proposed_start, timeZone: tz },
-                end: { dateTime: input.proposed_end, timeZone: tz },
-              }
-            : undefined;
-        await respondToEvent(
-          input.meeting_id,
-          "tentativelyAccept",
-          token(env),
-          {
+            : {}),
+        })
+        .strict(),
+      outputSchema: z.object({ success: z.boolean(), ...errorFields }),
+      execute: async ({ context }: { context: unknown }) => {
+        const input = context as {
+          meeting_id: string;
+          comment?: string;
+          send_response?: boolean;
+          proposed_start?: string;
+          proposed_end?: string;
+          time_zone?: string;
+        };
+        try {
+          let proposedNewTime: ProposedTime | undefined;
+          if (opts.allowProposedTime) {
+            const proposed = resolveProposedNewTime(
+              input.proposed_start,
+              input.proposed_end,
+              input.time_zone ?? DEFAULT_TZ,
+            );
+            if (!proposed.ok) return PROPOSED_TIME_ERROR;
+            proposedNewTime = proposed.value;
+          }
+          await respondToEvent(input.meeting_id, opts.action, token(env), {
             comment: input.comment,
             sendResponse: input.send_response ?? true,
             proposedNewTime,
-          },
-        );
-        return { success: true };
-      } catch (err) {
-        return toErrorResponse(err);
-      }
-    },
-  });
+          });
+          return { success: true };
+        } catch (err) {
+          return toErrorResponse(err);
+        }
+      },
+    });
+}
+
+export const createAcceptMeetingTool = createRespondTool({
+  id: "ACCEPT_MEETING",
+  action: "accept",
+  description:
+    "Accept a meeting invitation. Optionally include a comment that is sent " +
+    "to the organizer.",
+  allowProposedTime: false,
+});
+
+export const createDeclineMeetingTool = createRespondTool({
+  id: "DECLINE_MEETING",
+  action: "decline",
+  description:
+    "Decline a meeting invitation. Optionally propose a new time " +
+    "(proposed_start / proposed_end + time_zone) so the organizer can " +
+    "reschedule, and optionally include a comment.",
+  allowProposedTime: true,
+});
+
+export const createTentativelyAcceptMeetingTool = createRespondTool({
+  id: "TENTATIVELY_ACCEPT_MEETING",
+  action: "tentativelyAccept",
+  description:
+    "Respond 'tentative' (maybe) to a meeting invitation. Optionally propose " +
+    "a new time and include a comment.",
+  allowProposedTime: true,
+});
 
 export const meetingTools = [
   createCreateMeetingTool,

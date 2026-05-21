@@ -31,7 +31,10 @@ function getOAuthCredentials(): {
   clientId: string;
   clientSecret: string;
 } {
-  const tenantId = process.env.MICROSOFT_TENANT_ID || "common";
+  // Default to "organizations" (work/school accounts only). Teams Graph APIs
+  // are not available to personal Microsoft accounts, so we avoid "common"
+  // which would also admit consumer (MSA) sign-ins that then fail at runtime.
+  const tenantId = process.env.MICROSOFT_TENANT_ID || "organizations";
   const clientId = process.env.MICROSOFT_CLIENT_ID || "";
   const clientSecret = process.env.MICROSOFT_CLIENT_SECRET || "";
 
@@ -88,7 +91,10 @@ function getRuntime(): Runtime {
             access_token: tokens.access_token,
             token_type: tokens.token_type,
             expires_in: tokens.expires_in,
-            refresh_token: tokens.refresh_token ?? "",
+            // Leave undefined (not "") when Microsoft omits a refresh token —
+            // an empty string would persist as an invalid token and break
+            // future refreshes. offline_access scope is required to get one.
+            refresh_token: tokens.refresh_token,
             scope: tokens.scope || SCOPES.join(" "),
           };
         },

@@ -36,15 +36,54 @@ export interface LogContext {
   [key: string]: unknown;
 }
 
+/**
+ * Safe JSON serialization for log lines. A logging call must never throw —
+ * circular references, a throwing `toJSON`, or a bigint in the context would
+ * otherwise crash the handler or mask the original error.
+ *
+ * `core` carries the authoritative level/ts/message (always plain strings, not
+ * caller-supplied context values) so the fallback can never re-serialize a
+ * poisoned value. The fallback itself is wrapped so it cannot throw either.
+ */
+function safeStringify(
+  entry: Record<string, unknown>,
+  core: { level: string; ts: string; message: string },
+): string {
+  const seen = new WeakSet<object>();
+  try {
+    return JSON.stringify(entry, (_key, value) => {
+      if (typeof value === "object" && value !== null) {
+        if (seen.has(value)) return "[Circular]";
+        seen.add(value);
+      }
+      if (typeof value === "bigint") return value.toString();
+      return value;
+    });
+  } catch (err) {
+    try {
+      return JSON.stringify({
+        level: core.level,
+        ts: core.ts,
+        message: core.message,
+        log_serialization_error: String(err),
+      });
+    } catch {
+      // Ultimate fallback — built only from the safe string core fields.
+      return JSON.stringify({
+        level: core.level,
+        ts: core.ts,
+        message: "log serialization failed",
+      });
+    }
+  }
+}
+
 function emit(level: string, message: string, ctx?: LogContext) {
   if (!shouldLog(level)) return;
-  const entry = {
-    level,
-    ts: new Date().toISOString(),
-    message,
-    ...ctx,
-  };
-  const line = JSON.stringify(entry);
+  const ts = new Date().toISOString();
+  // Spread ctx FIRST so it can never clobber the authoritative core fields.
+  const entry = { ...ctx, level, ts, message };
+  const line = safeStringify(entry, { level, ts, message });
   if (level === "error") {
     console.error(line);
   } else if (level === "warn") {

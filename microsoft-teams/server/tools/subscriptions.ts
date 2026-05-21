@@ -52,9 +52,9 @@ async function getOrCreateConfig(
   const existing = await kv.get<WebhookConfig>(configKey(connectionId));
   if (existing) return existing;
   return {
-    clientState:
-      clientStateOverride ??
-      `teams-mcp-${Math.random().toString(36).slice(2, 10)}`,
+    // clientState is the ONLY verification for the unauthenticated Graph
+    // webhook, so it must be cryptographically random and unguessable.
+    clientState: clientStateOverride ?? `teams-mcp-${crypto.randomUUID()}`,
     subscriptions: {},
   };
 }

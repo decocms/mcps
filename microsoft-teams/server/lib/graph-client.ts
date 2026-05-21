@@ -67,8 +67,12 @@ async function graphFetch<T>(
     throw new Error(`Graph API error ${response.status} ${url}: ${body}`);
   }
 
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  // Action endpoints (e.g. /cancel, /accept, /decline, setReaction) return
+  // 202/204 with an empty body. Read as text and only JSON-parse when there
+  // is content, so empty-body successes don't throw on response.json().
+  const text = await response.text();
+  if (!text) return undefined as T;
+  return JSON.parse(text) as T;
 }
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
@@ -301,8 +305,11 @@ export async function searchUsers(
   accessToken: string,
   top = 10,
 ): Promise<GraphUser[]> {
+  // Escape backslashes and double quotes so they don't break the quoted
+  // $search expression ("displayName:...") per Microsoft Graph search syntax.
+  const safeQuery = query.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
   const search = encodeURIComponent(
-    `"displayName:${query}" OR "mail:${query}"`,
+    `"displayName:${safeQuery}" OR "mail:${safeQuery}"`,
   );
   const url =
     `${GRAPH}/users?$search=${search}&$top=${top}` +
@@ -559,13 +566,15 @@ export async function listChatMessages(
   return data.value ?? [];
 }
 
-// ─── Teams & Channels (requires admin consent — currently disabled) ──────────
+// ─── Teams & Channels ─────────────────────────────────────────────────────────
 
 export async function listJoinedTeams(
   accessToken: string,
 ): Promise<GraphTeam[]> {
+  // /me/joinedTeams lists the teams the signed-in user is a member of.
+  // (/teams lists all teams in the org and needs admin/app permissions.)
   const data = await graphFetch<{ value: GraphTeam[] }>(
-    `${GRAPH}/teams`,
+    `${GRAPH}/me/joinedTeams`,
     accessToken,
   );
   return data.value ?? [];

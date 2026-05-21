@@ -93,12 +93,32 @@ function pickHint(
 }
 
 /**
+ * Normalize any thrown value to a string without losing detail or throwing.
+ * Error → message; string → itself; objects → JSON (so we don't get the
+ * useless "[object Object]"); falls back through String() to a constant if a
+ * hostile value's toJSON/toString throws.
+ */
+function normalizeThrown(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  if (typeof err === "string") return err;
+  try {
+    return JSON.stringify(err) ?? "Unknown error";
+  } catch {
+    try {
+      return String(err);
+    } catch {
+      return "Unknown error";
+    }
+  }
+}
+
+/**
  * Parse an unknown thrown value (usually an Error from our graph-client) into
  * a structured tool error response.
  */
 export function formatToolError(err: unknown): FormattedError {
   // Webhook-token cache miss — our auth.ts message
-  const raw = err instanceof Error ? err.message : String(err);
+  const raw = normalizeThrown(err);
 
   // Our graph-client throws: `Graph API error <status> <url>: <body>`
   // Body always starts with `{` so we anchor on `: {` to skip past the
