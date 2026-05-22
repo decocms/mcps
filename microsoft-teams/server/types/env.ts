@@ -17,7 +17,7 @@ export const StateSchema = z.object({
   WEBHOOK_URL: z
     .string()
     .default(
-      "https://microsoft-teams-mcp.decocms.com/teams/notifications/{connectionId}",
+      "https://graph-mcp.decocms.com/teams/notifications/{connectionId}",
     )
     .readonly()
     .describe(
