@@ -88,8 +88,7 @@ function getConnectionId(env: Env): string {
 }
 
 function buildNotificationUrl(connectionId: string): string {
-  const base =
-    process.env.SERVER_PUBLIC_URL ?? `https://graph-mcp.decocms.com`;
+  const base = process.env.SERVER_PUBLIC_URL ?? `https://graph-mcp.decocms.com`;
   return `${base.replace(/\/$/, "")}/teams/notifications/${connectionId}`;
 }
 
