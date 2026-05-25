@@ -16,9 +16,7 @@ export const StateSchema = z.object({
   // Webhook URL shown to the user so they know where Graph notifications land
   WEBHOOK_URL: z
     .string()
-    .default(
-      "https://microsoft-teams-mcp.decocms.com/teams/notifications/{connectionId}",
-    )
+    .default("https://graph-mcp.decocms.com/teams/notifications/{connectionId}")
     .readonly()
     .describe(
       "Endpoint where Microsoft Graph change notifications are delivered. When developing locally, expose this via ngrok.",

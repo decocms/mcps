@@ -4,7 +4,7 @@ compatibility_date = "2025-06-17"
 compatibility_flags = ["nodejs_compat"]
 
 routes = [
-  { pattern = "microsoft-teams-mcp.decocms.com", custom_domain = true },
+  { pattern = "graph-mcp.decocms.com", custom_domain = true },
 ]
 
 [observability]
