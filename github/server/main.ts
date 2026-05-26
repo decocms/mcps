@@ -19,6 +19,7 @@ import {
   ensureInstallationMappings,
   getInstallationStore,
 } from "./lib/installation-map.ts";
+import { parseMeshOAuthClientState } from "./lib/oauth-state.ts";
 import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
 import { setTriggerKV } from "./lib/trigger-store.ts";
 import { getTools } from "./tools/index.ts";
@@ -80,14 +81,15 @@ async function getRuntime(): Promise<Runtime> {
             return url.toString();
           },
 
-          exchangeCode: async ({ code, redirect_uri }) => {
+          exchangeCode: async ({ code, redirect_uri, state }) => {
             const { clientId, clientSecret } = getOAuthCredentials();
+            const { repositoryId } = parseMeshOAuthClientState(state);
 
             const tokenResponse = await exchangeCodeForToken(
               code,
               clientId,
               clientSecret,
-              redirect_uri,
+              { redirectUri: redirect_uri, repositoryId },
             );
 
             return {
@@ -152,6 +154,13 @@ async function getRuntime(): Promise<Runtime> {
  * Intercept webhook and MCP resource requests before they reach runtime.fetch.
  * The Deco runtime doesn't support resources natively, so we proxy them upstream.
  */
+function normalizeMcpPathname(pathname: string): string {
+  if (pathname === "/api/mcp" || pathname === "/api/mcp/") {
+    return "/mcp";
+  }
+  return pathname;
+}
+
 async function handle(
   req: Request,
   env: Env,
@@ -162,6 +171,11 @@ async function handle(
   setTriggerKV(env.INSTALLATIONS);
 
   const url = new URL(req.url);
+  const normalizedPathname = normalizeMcpPathname(url.pathname);
+  if (normalizedPathname !== url.pathname) {
+    url.pathname = normalizedPathname;
+    req = new Request(url, req);
+  }
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {

@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { OAuthInvalidGrantError } from "@decocms/runtime";
-import { refreshAccessToken } from "./github-client.ts";
+import {
+  refreshAccessToken,
+  scopeUserAccessTokenToRepository,
+} from "./github-client.ts";
 
 const realFetch = globalThis.fetch;
 
@@ -147,5 +150,47 @@ describe("refreshAccessToken", () => {
     expect(result.access_token).toBe("new-access");
     expect(result.refresh_token).toBe("new-refresh");
     expect(result.scope).toBe("repo");
+  });
+});
+
+describe("scopeUserAccessTokenToRepository", () => {
+  beforeEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  test("uses GitHub App basic auth for /token/scoped", async () => {
+    let authHeader: string | null = null;
+    let requestBody: Record<string, unknown> | null = null;
+
+    mockFetch(async (_input, init) => {
+      const headers = new Headers(init?.headers);
+      authHeader = headers.get("Authorization");
+      requestBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({ token: "scoped-token", expires_in: 28800 }),
+        { status: 200, headers: { "Content-Type": "application/json" } },
+      );
+    });
+
+    const result = await scopeUserAccessTokenToRepository(
+      "ghu_user_token",
+      "Iv1.client",
+      "client_secret",
+      { repositoryId: 1016852701, target: "deco" },
+    );
+
+    expect(result.token).toBe("scoped-token");
+    expect(authHeader).toBe(
+      `Basic ${Buffer.from("Iv1.client:client_secret").toString("base64")}`,
+    );
+    expect(requestBody).toEqual({
+      access_token: "ghu_user_token",
+      target: "deco",
+      repository_ids: [1016852701],
+    });
   });
 });

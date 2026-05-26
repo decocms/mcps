@@ -20,6 +20,14 @@ interface RawGitHubTokenResponse extends GitHubTokenResponse {
 
 const GITHUB_TOKEN_ENDPOINT = "https://github.com/login/oauth/access_token";
 
+function githubAppBasicAuthHeader(
+  clientId: string,
+  clientSecret: string,
+): string {
+  const encoded = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  return `Basic ${encoded}`;
+}
+
 async function postToGitHub(
   body: Record<string, string>,
 ): Promise<GitHubTokenResponse> {
@@ -63,11 +71,17 @@ async function postToGitHub(
  * `refresh_token`, `expires_in`, and `refresh_token_expires_in` alongside
  * the `access_token`; all fields are forwarded unchanged.
  */
+export interface GitHubOAuthOptions {
+  redirectUri?: string;
+  /** GitHub App user token: limit access to a single repository. */
+  repositoryId?: number;
+}
+
 export function exchangeCodeForToken(
   code: string,
   clientId: string,
   clientSecret: string,
-  redirectUri?: string,
+  options?: GitHubOAuthOptions,
 ): Promise<GitHubTokenResponse> {
   const body: Record<string, string> = {
     client_id: clientId,
@@ -75,8 +89,12 @@ export function exchangeCodeForToken(
     code,
   };
 
-  if (redirectUri) {
-    body.redirect_uri = redirectUri;
+  if (options?.redirectUri) {
+    body.redirect_uri = options.redirectUri;
+  }
+
+  if (options?.repositoryId !== undefined) {
+    body.repository_id = String(options.repositoryId);
   }
 
   return postToGitHub(body);
@@ -96,7 +114,19 @@ export async function refreshAccessToken(
   refreshToken: string,
   clientId: string,
   clientSecret: string,
+  options?: Pick<GitHubOAuthOptions, "repositoryId">,
 ): Promise<GitHubTokenResponse> {
+  const payload: Record<string, string> = {
+    client_id: clientId,
+    client_secret: clientSecret,
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+  };
+
+  if (options?.repositoryId !== undefined) {
+    payload.repository_id = String(options.repositoryId);
+  }
+
   const response = await fetch(GITHUB_TOKEN_ENDPOINT, {
     method: "POST",
     headers: {
@@ -104,12 +134,7 @@ export async function refreshAccessToken(
       "Content-Type": "application/json",
       "User-Agent": "deco-cms-github-mcp",
     },
-    body: JSON.stringify({
-      client_id: clientId,
-      client_secret: clientSecret,
-      grant_type: "refresh_token",
-      refresh_token: refreshToken,
-    }),
+    body: JSON.stringify(payload),
   });
 
   // Per RFC 6749 §5.2 the canonical signal is the body's `error` field, not
@@ -144,4 +169,61 @@ export async function refreshAccessToken(
     refresh_token_expires_in: data.refresh_token_expires_in,
     scope: data.scope,
   };
+}
+
+export interface ScopedUserTokenResponse {
+  token: string;
+  expires_in?: number;
+}
+
+/**
+ * Mint a repository-scoped user access token from an existing user token.
+ * @see https://docs.github.com/en/rest/apps/apps#create-a-scoped-access-token
+ */
+export async function scopeUserAccessTokenToRepository(
+  accessToken: string,
+  clientId: string,
+  clientSecret: string,
+  options: {
+    repositoryId: number;
+    /** GitHub user or organization login that owns the repository. */
+    target: string;
+  },
+): Promise<ScopedUserTokenResponse> {
+  const response = await fetch(
+    `https://api.github.com/applications/${clientId}/token/scoped`,
+    {
+      method: "POST",
+      headers: {
+        Accept: "application/vnd.github+json",
+        Authorization: githubAppBasicAuthHeader(clientId, clientSecret),
+        "Content-Type": "application/json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "deco-cms-github-mcp",
+      },
+      body: JSON.stringify({
+        access_token: accessToken,
+        target: options.target,
+        repository_ids: [options.repositoryId],
+      }),
+    },
+  );
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(
+      `GitHub scoped token failed: ${response.status} - ${errorText}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    token: string;
+    expires_in?: number;
+  };
+
+  if (!data.token) {
+    throw new Error("GitHub scoped token response missing token");
+  }
+
+  return { token: data.token, expires_in: data.expires_in };
 }

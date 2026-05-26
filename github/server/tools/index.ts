@@ -8,6 +8,7 @@
 
 import { buildUpstreamTools, getUpstreamToolDefs } from "../lib/mcp-proxy.ts";
 import { triggers } from "../lib/trigger-store.ts";
+import { GITHUB_SCOPE_TOKEN } from "./scope-token.ts";
 
 /**
  * Resolve the full tool set. Cached for the isolate's lifetime once
@@ -15,5 +16,9 @@ import { triggers } from "../lib/trigger-store.ts";
  */
 export async function getTools() {
   const toolDefs = await getUpstreamToolDefs();
-  return [...buildUpstreamTools(toolDefs), ...triggers.tools()];
+  return [
+    ...buildUpstreamTools(toolDefs),
+    GITHUB_SCOPE_TOKEN,
+    ...triggers.tools(),
+  ];
 }
