@@ -54,8 +54,18 @@ async function checkMcp(
   name: string,
 ): Promise<{ name: string; ok: boolean; errors: string[] }> {
   const cwd = path.join(root, name);
+  const packageJsonPath = path.join(cwd, "package.json");
+  let packageName = name;
+
+  if (existsSync(packageJsonPath)) {
+    const packageJson = (await Bun.file(packageJsonPath).json()) as {
+      name?: string;
+    };
+    packageName = packageJson.name ?? name;
+  }
+
   try {
-    await $`bun install`.cwd(cwd).quiet();
+    await $`bun install --filter ${packageName}`.cwd(root).quiet();
     await $`tsc --noEmit`.cwd(cwd).quiet();
     return { name, ok: true, errors: [] };
   } catch (e) {
