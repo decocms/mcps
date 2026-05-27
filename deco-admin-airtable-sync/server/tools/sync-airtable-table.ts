@@ -6,7 +6,7 @@ import { getApiKey } from "../lib/env.ts";
 const SYNC_URL =
   "https://admin.deco.cx/live/invoke/deco-sites/admin/actions/airtable/sync.ts";
 
-export const createSyncAirtableTable = (env: Env) =>
+export const createSyncAirtableTable = (_env: Env) =>
   createPrivateTool({
     id: "syncAirtableTable",
     description:
@@ -32,8 +32,8 @@ export const createSyncAirtableTable = (env: Env) =>
       status: z.number(),
       body: z.unknown(),
     }),
-    execute: async ({ context }) => {
-      const apiKey = getApiKey(env);
+    execute: async ({ context, runtimeContext }) => {
+      const apiKey = getApiKey(runtimeContext.env as Env);
       const { table, shouldStartWorkflow, mode } = context;
 
       const res = await fetch(SYNC_URL, {
