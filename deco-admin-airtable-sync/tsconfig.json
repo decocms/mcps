@@ -26,8 +26,7 @@
     "baseUrl": ".",
     "paths": {
       "server/*": ["./server/*"],
-      "@decocms/mcps-shared/*": ["../shared/*"],
-      "zod": ["../node_modules/.bun/zod@4.3.6/node_modules/zod"]
+      "@decocms/mcps-shared/*": ["../shared/*"]
     }
   },
   "include": ["server"]
