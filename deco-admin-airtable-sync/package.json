@@ -12,11 +12,11 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@decocms/runtime": "1.2.8",
+    "@decocms/mcps-shared": "workspace:*",
+    "@decocms/runtime": "1.3.1",
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@decocms/mcps-shared": "workspace:*",
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   }
