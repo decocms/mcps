@@ -1,6 +1,19 @@
-import type { Env } from "../../shared/deco.gen.ts";
+import type { Env } from "../types/env.ts";
 
 export function getApiKey(env: Env): string {
-  const auth = env.MESH_REQUEST_CONTEXT?.authorization ?? "";
-  return auth.startsWith("Bearer ") ? auth.slice(7) : auth;
+  const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
+
+  if (!authorization) {
+    throw new Error("Unauthorized: Missing authorization header");
+  }
+
+  const token = authorization.startsWith("Bearer ")
+    ? authorization.slice(7)
+    : authorization;
+
+  if (!token) {
+    throw new Error("Unauthorized: Invalid authorization format");
+  }
+
+  return token;
 }

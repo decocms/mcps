@@ -1,6 +1,6 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../../shared/deco.gen.ts";
+import type { Env } from "../types/env.ts";
 import { getApiKey } from "../lib/env.ts";
 
 const SYNC_URL =

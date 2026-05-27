@@ -16,7 +16,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
-    "@decocms/mcps-shared": "1.0.0",
+    "@decocms/mcps-shared": "workspace:*",
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   }
