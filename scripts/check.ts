@@ -55,9 +55,7 @@ async function checkMcp(
 ): Promise<{ name: string; ok: boolean; errors: string[] }> {
   const cwd = path.join(root, name);
   try {
-    if (!existsSync(path.join(cwd, "node_modules"))) {
-      await $`bun install`.cwd(cwd).quiet();
-    }
+    await $`bun install`.cwd(cwd).quiet();
     await $`tsc --noEmit`.cwd(cwd).quiet();
     return { name, ok: true, errors: [] };
   } catch (e) {
