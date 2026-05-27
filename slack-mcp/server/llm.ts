@@ -1,15 +1,22 @@
 /**
  * LLM Module - AI Agent Integration for Slack MCP
  *
- * Resolution order:
- * 1. AgentOf() binding (fast, in-process — but depends on onChange)
- * 2. Direct HTTP to Mesh Decopilot API (reliable, same as health check)
+ * The Slack webhook path runs OUTSIDE @decocms/runtime's request context
+ * (no JWT, no per-request binding resolution), so the AgentOf() proxy
+ * cannot be picked up from `env.MESH_REQUEST_CONTEXT.state.AGENT`. We
+ * also cannot use the runtime's `streamAgent`, which targets
+ * `/decopilot/runtime/stream` — that endpoint is the "resume a task"
+ * path and requires a pre-existing `taskId`.
  *
- * The direct HTTP path uses the persisted meshApiKey + organizationSlug
- * from Supabase, bypassing the runtime entirely.
+ * Instead we call the user-facing chat endpoint `/decopilot/stream`
+ * directly, using the persisted `meshApiKey` for auth, and parse the
+ * custom SSE stream the endpoint emits (data: { type, text/delta, ... }).
+ * We deliberately omit `thread_id`: the endpoint rejects any id that
+ * was not minted by studio, and we already rebuild conversation context
+ * from Slack history on every webhook (`buildContextMessages` → 1 system
+ * message), so the agent stays coherent without depending on
+ * decopilot-side thread memory.
  */
-
-import { getInstance } from "./connection-instance.ts";
 import { getCachedConnectionConfig } from "./lib/config-cache.ts";
 
 // ============================================================================
@@ -29,58 +36,48 @@ export interface SlackChatMessage {
   images?: MessageImage[];
 }
 
-// ============================================================================
-// Agent Binding
-// ============================================================================
+interface UIMessagePart {
+  type: string;
+  text?: string;
+  url?: string;
+  filename?: string;
+  mediaType?: string;
+}
 
-/** Resolved agent client shape after binding resolution */
+interface UIMessageLike {
+  role: string;
+  parts: UIMessagePart[];
+}
+
 interface AgentClient {
   STREAM: (params: {
-    messages: Array<{
-      role: string;
-      parts: Array<Record<string, unknown>>;
-    }>;
-    thread_id?: string;
+    messages: UIMessageLike[];
     toolApprovalLevel?: "auto" | "readonly" | "plan";
   }) => Promise<
     AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>
   >;
 }
 
-function getAgent(connectionId: string): AgentClient | null {
-  const instance = getInstance(connectionId);
-  if (!instance) return null;
-  const agent = (
-    instance.env.MESH_REQUEST_CONTEXT?.state as Record<string, unknown>
-  )?.AGENT;
-  if (agent && typeof (agent as AgentClient).STREAM === "function") {
-    return agent as AgentClient;
-  }
-  return null;
-}
+// ============================================================================
+// Agent client
+// ============================================================================
 
-/**
- * Direct HTTP agent — calls the Mesh Decopilot API directly.
- * Same approach as the /health check: fetch + SSE parsing.
- * Uses persisted meshApiKey (never expires) from Supabase.
- */
-async function getDirectHttpAgent(
+async function getAgentClient(
   connectionId: string,
 ): Promise<AgentClient | null> {
   const config = await getCachedConnectionConfig(connectionId);
-  const token = config?.meshApiKey || config?.meshToken;
-  const orgPath = config?.organizationSlug || config?.organizationId;
-  if (!token || !orgPath || !config?.meshUrl || !config?.agentId) {
+  const token = config?.meshApiKey ?? config?.meshToken;
+  const orgSlug = config?.organizationSlug ?? config?.organizationId;
+  if (!token || !orgSlug || !config?.meshUrl || !config?.agentId) {
     return null;
   }
 
   const { meshUrl, agentId } = config;
+  const url = `${meshUrl}/api/${orgSlug}/decopilot/stream`;
 
   return {
     STREAM: async (params) => {
-      const url = `${meshUrl}/api/${orgPath}/decopilot/stream`;
-      console.log(`[LLM] Direct HTTP call to ${url}`);
-
+      console.log(`[LLM] POST ${url}`);
       const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -99,7 +96,7 @@ async function getDirectHttpAgent(
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(
-          `Direct HTTP decopilot call failed (${response.status}): ${errorText}`,
+          `decopilot stream failed (${response.status}): ${errorText}`,
         );
       }
 
@@ -109,8 +106,10 @@ async function getDirectHttpAgent(
 }
 
 /**
- * Convert an SSE Response into an async iterable of message objects
- * compatible with the AgentClient STREAM interface.
+ * Parse the decopilot's custom SSE stream into the same shape the
+ * AI SDK `readUIMessageStream` would produce: one yield carrying a
+ * `parts: [{ type: "text", text }]` array with the accumulated text.
+ * Tool-call events reset the buffer so we never surface them to Slack.
  */
 async function* sseResponseToAsyncIterable(
   response: Response,
@@ -161,30 +160,36 @@ async function* sseResponseToAsyncIterable(
   yield { parts: [{ type: "text", text: textContent }] };
 }
 
+// ============================================================================
+// Public API
+// ============================================================================
+
 /**
- * Check if the agent binding is available and configured.
+ * Sync availability check (no I/O).
+ * Kept for API compatibility — the actual config lookup is async, so this
+ * always returns true and lets the caller hit the agent and handle failures.
  */
-export function isAgentAvailable(connectionId: string): boolean {
-  return getAgent(connectionId) !== null;
+export function isAgentAvailable(_connectionId: string): boolean {
+  return true;
 }
 
 /**
- * Check if agent is available (binding or direct HTTP fallback).
+ * Async availability check — verifies the connection has the credentials
+ * needed to build an agent client.
  */
 export async function isAgentAvailableAsync(
   connectionId: string,
 ): Promise<boolean> {
-  if (getAgent(connectionId)) return true;
-  const direct = await getDirectHttpAgent(connectionId);
-  return direct !== null;
+  return (await getAgentClient(connectionId)) !== null;
 }
 
 /**
- * Convert SlackChatMessage[] to the message format expected by STREAM API.
+ * Convert SlackChatMessage[] to the UIMessage-like shape the decopilot
+ * `/stream` endpoint accepts.
  */
-function toUIMessages(messages: SlackChatMessage[]) {
+function toUIMessages(messages: SlackChatMessage[]): UIMessageLike[] {
   return messages.map((m) => ({
-    role: m.role as "system" | "user" | "assistant",
+    role: m.role,
     parts: [
       { type: "text" as const, text: m.content },
       ...(m.images?.map((img) => ({
@@ -200,89 +205,36 @@ function toUIMessages(messages: SlackChatMessage[]) {
 /**
  * Stream an agent response.
  *
- * 1. Try AgentOf() binding (fast, in-process)
- *    - If it returns empty text, retry with Direct HTTP
- * 2. Fall back to direct HTTP (same path as health check — always works)
- * 3. If both fail, caller publishes a trigger as last resort
+ * `threadId` is accepted for caller-side bookkeeping/logs but is NOT sent
+ * to the decopilot — see the file-level note on thread_id handling.
  */
 export async function streamAgentResponse(
   connectionId: string,
   messages: SlackChatMessage[],
-  threadId?: string,
+  _threadId?: string,
 ) {
-  const streamParams = {
+  const client = await getAgentClient(connectionId);
+  if (!client) {
+    throw new Error(
+      "Agent not configured.\n\n" +
+        "How to fix:\n" +
+        "1. Open Mesh Dashboard\n" +
+        "2. Go to this MCP's configuration\n" +
+        "3. Configure the AGENT binding (and save) so we have an agentId\n",
+    );
+  }
+
+  return client.STREAM({
     messages: toUIMessages(messages),
-    toolApprovalLevel: "auto" as const,
-    ...(threadId ? { thread_id: threadId } : {}),
-  };
-
-  // 1. Try AgentOf() binding
-  const bindingAgent = getAgent(connectionId);
-  if (bindingAgent) {
-    try {
-      const stream = await bindingAgent.STREAM(streamParams);
-      // Consume the stream and check if it has text
-      const text = await collectStreamTextInternal(stream);
-      if (text.trim()) {
-        // Re-wrap as async iterable with the collected text
-        return textToAsyncIterable(text);
-      }
-      console.log(
-        `[LLM] AgentOf() binding returned empty for ${connectionId}, trying direct HTTP`,
-      );
-    } catch (err) {
-      console.log(
-        `[LLM] AgentOf() STREAM failed for ${connectionId}: ${err}, trying direct HTTP`,
-      );
-    }
-  }
-
-  // 2. Direct HTTP — same reliable path as /health check
-  console.log(`[LLM] Using direct HTTP for ${connectionId}`);
-  const directAgent = await getDirectHttpAgent(connectionId);
-  if (directAgent) {
-    return await directAgent.STREAM(streamParams);
-  }
-
-  throw new Error(
-    "Agent not configured.\n\n" +
-      "How to fix:\n" +
-      "1. Open Mesh Dashboard\n" +
-      "2. Go to this MCP's configuration\n" +
-      "3. Configure AGENT binding\n" +
-      "4. Click Save to apply",
-  );
+    toolApprovalLevel: "auto",
+  });
 }
 
 /**
- * Internal helper to collect text from a stream (same as collectStreamText).
- */
-async function collectStreamTextInternal(
-  stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,
-): Promise<string> {
-  let text = "";
-  for await (const message of stream) {
-    for (const part of message.parts) {
-      if (part.type === "text" && part.text) {
-        text = part.text;
-      }
-    }
-  }
-  return text;
-}
-
-/**
- * Wrap already-collected text back into the async iterable format.
- */
-async function* textToAsyncIterable(
-  text: string,
-): AsyncGenerator<{ parts: Array<{ type: string; text?: string }> }> {
-  yield { parts: [{ type: "text", text }] };
-}
-
-/**
- * Collect full text from an agent stream.
- * Convenience helper for non-streaming mode.
+ * Collect the final text from an agent stream.
+ *
+ * Each yield carries the cumulative `parts` array; we keep the last text
+ * part of the last yield, which equals the final assistant message.
  */
 export async function collectStreamText(
   stream: AsyncIterable<{ parts: Array<{ type: string; text?: string }> }>,

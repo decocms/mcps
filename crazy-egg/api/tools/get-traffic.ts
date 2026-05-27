@@ -1,6 +1,5 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { CRAZY_EGG_RESOURCE_URI } from "../constants.ts";
 import { listSnapshots } from "../lib/client.ts";
 import { getApiKey, getAppKey } from "../lib/env.ts";
 import type { Env } from "../types/env.ts";
@@ -31,7 +30,7 @@ export const getTrafficTool = (_env: Env) =>
       "⚠️ Derived from the undocumented v2 snapshots endpoint. Aggregate traffic metrics across all snapshots: total visits, total clicks, and per-snapshot click-through rate. Useful as a lightweight web-analytics summary.",
     inputSchema,
     outputSchema,
-    _meta: { ui: { resourceUri: CRAZY_EGG_RESOURCE_URI } },
+
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -54,7 +53,7 @@ export const getTrafficTool = (_env: Env) =>
         totalClicks += clicks;
         const clickThroughRate = visits > 0 ? clicks / visits : 0;
         return {
-          id: s.id,
+          id: String(s.id),
           name: s.name,
           visits,
           clicks,

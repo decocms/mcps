@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "microsoft-teams",
+  "friendlyName": "Microsoft Teams",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://graph-mcp.decocms.com/mcp"
+  },
+  "description": "Microsoft Teams integration — send channel and private chat messages, manage meetings, and trigger agents on new Teams messages via the Microsoft Graph API.",
+  "icon": "https://upload.wikimedia.org/wikipedia/commons/9/94/Microsoft_Office_Teams_%282019%E2%80%932025%29.svg",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Communication", "Automation"],
+    "official": false,
+    "tags": ["teams", "microsoft", "bot", "messaging", "ai-agent", "webhooks", "automation", "channels", "chats", "meetings", "calendar", "azure"],
+    "short_description": "Microsoft Teams bot — channel & private messages, meetings, and message-received triggers via Microsoft Graph.",
+    "mesh_description": "The Microsoft Teams MCP integrates with Microsoft Teams through the Microsoft Graph API. Authentication uses Azure AD delegated OAuth (Authorization Code flow with PKCE) — users sign in with the 'Connect to Microsoft' button in deco Studio, and all actions run on behalf of that work or school account (Microsoft 365). Capabilities include: channel messaging (list teams and channels, send and reply to messages, read channel history and threads, edit and react to messages); private chats (find or search users by email or name, open 1-on-1 and group chats, send and quote-reply to chat messages, read chat history); and meeting management (create Teams meetings with join links, list, get, update, reschedule, cancel, and respond to invitations with accept/decline/tentative). A trigger system delivers the 'teams.message.received' event whenever a new message is posted in a subscribed channel via Graph change notifications, giving the agent full context (sender, text, thread, web link) so it can respond. Note: Teams APIs require a Microsoft 365 work or school account; personal Microsoft accounts are not supported."
+  }
+}

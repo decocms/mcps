@@ -1,0 +1,31 @@
+name = "microsoft-teams-mcp"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "graph-mcp.decocms.com", custom_domain = true },
+]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Durable storage for the MCP. Workers isolates are ephemeral, so an in-memory
+# Map would lose data between webhook deliveries and cold starts. This single
+# namespace holds several prefixes:
+#   - triggers:*        connection id -> trigger subscription state
+#   - webhook-config:*  connection id -> { clientState, subscriptions }
+#   - webhook-token:*   connection id -> cached delegated access token
+#   - event:*           recent events log (for diagnostics)
+#   - dedup:*           Graph notification fingerprints (TTL'd)
+#
+# Namespace title in the Cloudflare dashboard: TEAMS_MCP_KV.
+# The `binding` is what the code reads (env.TEAMS_KV) and is independent of
+# the namespace title — only the `id` must match the created namespace.
+[[kv_namespaces]]
+binding = "TEAMS_KV"
+id = "ae86971fe831489987e058cf9695ae3f"

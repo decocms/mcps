@@ -28,6 +28,40 @@ import {
 const CONFIG_PREFIX = "config:";
 
 /**
+ * In-process hot cache for connection configs.
+ *
+ * Every webhook hit calls getCachedConnectionConfig — without this layer that
+ * is one Supabase/Redis/KV round-trip per Slack event (~50-200ms each). The
+ * config rarely changes (only on `onChange` from studio), so we cache it in
+ * memory for 24h and invalidate on writes/deletes.
+ *
+ * Write-through: cacheConnectionConfig populates memCache; remove…Config
+ * clears it. A pod restart clears the cache naturally.
+ */
+const MEM_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const memCache = new Map<
+  string,
+  { config: ConnectionConfig; expiresAt: number }
+>();
+
+function memCacheGet(key: string): ConnectionConfig | null {
+  const entry = memCache.get(key);
+  if (!entry) return null;
+  if (entry.expiresAt <= Date.now()) {
+    memCache.delete(key);
+    return null;
+  }
+  return entry.config;
+}
+
+function memCacheSet(key: string, config: ConnectionConfig): void {
+  memCache.set(key, {
+    config,
+    expiresAt: Date.now() + MEM_CACHE_TTL_MS,
+  });
+}
+
+/**
  * Connection configuration stored in KV
  */
 export interface ConnectionConfig {
@@ -95,6 +129,9 @@ export async function cacheConnectionConfig(
   } else {
     await _saveToRedisOrKV(key, configWithTimestamps);
   }
+
+  // Write-through to in-memory cache — fresh writes always win.
+  memCacheSet(key, configWithTimestamps);
 }
 
 /**
@@ -151,13 +188,22 @@ async function _getConfig(key: string): Promise<ConnectionConfig | null> {
 }
 
 /**
- * Read config from persistent storage (used by webhook router)
+ * Read config from persistent storage (used by webhook router).
+ *
+ * Hits the in-process memCache first (24h TTL). On miss falls through to
+ * Supabase → Redis → KV. The memCache is populated on first read and on
+ * every write via cacheConnectionConfig.
  */
 export async function getCachedConnectionConfig(
   connectionId: string,
 ): Promise<ConnectionConfig | null> {
   const key = `${CONFIG_PREFIX}${connectionId}`;
-  return await _getConfig(key);
+  const cached = memCacheGet(key);
+  if (cached) return cached;
+
+  const config = await _getConfig(key);
+  if (config) memCacheSet(key, config);
+  return config;
 }
 
 /**
@@ -189,6 +235,8 @@ export async function removeCachedConnectionConfig(
 
     const kv = getKvStore();
     await kv.delete(key);
+
+    memCache.delete(key);
   }
 }
 

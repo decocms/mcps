@@ -1,6 +1,5 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { CRAZY_EGG_RESOURCE_URI } from "../constants.ts";
 import { listSnapshots } from "../lib/client.ts";
 import { getApiKey, getAppKey } from "../lib/env.ts";
 import type { Env } from "../types/env.ts";
@@ -43,7 +42,7 @@ export const listSnapshotsTool = (_env: Env) =>
       "⚠️ Uses the undocumented legacy v2 API (may break without notice). List all heatmap snapshots on the account, with optional status filter and limit. Each snapshot includes thumbnail, heatmap, and screenshot URLs you can render in the UI.",
     inputSchema,
     outputSchema,
-    _meta: { ui: { resourceUri: CRAZY_EGG_RESOURCE_URI } },
+
     annotations: {
       readOnlyHint: true,
       destructiveHint: false,
@@ -66,6 +65,9 @@ export const listSnapshotsTool = (_env: Env) =>
         filtered = filtered.slice(0, context.limit);
       }
 
-      return { snapshots: filtered, total };
+      return {
+        snapshots: filtered.map((s) => ({ ...s, id: String(s.id) })),
+        total,
+      };
     },
   });

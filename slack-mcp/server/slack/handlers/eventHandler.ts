@@ -1,8 +1,11 @@
 /**
  * Slack Event Handler
  *
- * Main event router for Slack events.
- * Uses modular handlers for context building and LLM calls.
+ * Main event router for Slack events. For chat-style events (app_mention,
+ * message) the handlers send a "Pensando..." placeholder and publish an
+ * enriched trigger so a subscribed agent answers via SLACK_EDIT_MESSAGE
+ * (or SLACK_REPLY_IN_THREAD). The legacy direct-LLM path (handleLLMCall,
+ * buildLLMMessages) is no longer wired up — see PR description.
  */
 
 import {
@@ -16,17 +19,12 @@ import { appendAssistantMessage } from "../../lib/thread.ts";
 import {
   sendMessage,
   replyInThread,
-  getBotInfo,
   getThreadReplies,
   sendThinkingMessage,
   processSlackFiles,
-  addReaction,
-  removeReaction,
   deleteMessage,
-  getUserInfo,
 } from "../../lib/slack-client.ts";
 import type {
-  SlackEvent,
   SlackAppMentionEvent,
   SlackMessageEvent,
 } from "../../lib/types.ts";
@@ -37,13 +35,8 @@ import { shouldIgnoreEvent } from "../../webhook.ts";
 import {
   configureContext as setContextConfig,
   setBotUserId as setContextBotUserId,
-  buildContextMessages,
-  formatMessagesForLLM,
-  buildCurrentContent,
-  isContextEnabled,
   type ContextConfig,
 } from "./context-builder.ts";
-import { isLLMAvailable, handleLLMCall } from "./llm-handler.ts";
 
 // Whisper configuration
 interface WhisperConfig {
@@ -336,35 +329,64 @@ async function processAttachedFiles(
 }
 
 /**
- * Build messages for LLM with context
+ * Per-handler timing metadata threaded in from the webhook router.
+ *
+ * `receivedAt` is the wall-clock ms the webhook hit the pod; `traceId`
+ * matches the router-side log entries. Used only for perf-debug logs
+ * — see `logPerfStep`. Optional so unit tests don't have to fake it.
  */
-async function buildLLMMessages(
-  channel: string,
+interface HandlerMeta {
+  traceId?: string;
+  receivedAt?: number;
+}
+
+/**
+ * Emit a debug-level perf marker tagged with the cumulative pod time
+ * since the webhook was received. Only flows to HyperDX when LOG_LEVEL=debug
+ * (`logger.debug` is dropped below the configured min level — see logger.ts).
+ */
+function logPerfStep(
+  step: string,
+  meta: HandlerMeta,
+  extras: Record<string, unknown> = {},
+): void {
+  if (!meta.receivedAt) return;
+  logger.debug(`perf:${step}`, {
+    step,
+    trace_id: meta.traceId,
+    duration_ms: Date.now() - meta.receivedAt,
+    ...extras,
+  });
+}
+
+/**
+ * Append transcribed audio + text-file contents to the user's original text
+ * so they flow through the trigger payload's `text` field. The lazy import of
+ * `getLanguageFromFilename` mirrors the original eventHandler path and keeps
+ * the language map out of the hot path when there are no files.
+ */
+async function appendFileContext(
   text: string,
-  ts: string,
-  threadTs: string | undefined,
-  media: Array<{
-    type: "image" | "audio";
-    data: string;
-    mimeType: string;
-    name: string;
-  }>,
-  cleanMention: boolean = false,
-) {
-  let contextMessages: Array<{ role: "user" | "assistant"; content: string }> =
-    [];
-
-  if (isContextEnabled()) {
-    contextMessages = await buildContextMessages(channel, threadTs, ts);
+  textFiles: Array<{ name: string; content: string; mimeType: string }>,
+  transcriptions: string[],
+): Promise<string> {
+  let out = text;
+  if (transcriptions.length > 0) {
+    out += `\n\n${transcriptions.join("\n\n")}`;
   }
-
-  const currentContent = buildCurrentContent(text, media.length, cleanMention);
-
-  return formatMessagesForLLM(
-    contextMessages,
-    currentContent,
-    media.length > 0 ? media : undefined,
-  );
+  if (textFiles.length > 0) {
+    const { getLanguageFromFilename } = await import(
+      "../../lib/slack-client.ts"
+    );
+    const textFileContent = textFiles
+      .map(
+        (file) =>
+          `[File: ${file.name}]\n\`\`\`${getLanguageFromFilename(file.name)}\n${file.content}\n\`\`\``,
+      )
+      .join("\n\n");
+    out += `\n\n${textFileContent}`;
+  }
+  return out;
 }
 
 // ============================================================================
@@ -379,28 +401,46 @@ export async function handleSlackEvent(
   teamConfig: SlackTeamConfig,
   connectionId: string,
 ): Promise<void> {
-  const { type, payload } = context;
+  const { type, payload, traceId, receivedAt } = context;
+  const meta: HandlerMeta = { traceId, receivedAt };
 
   const triggerOnly = teamConfig.responseConfig?.triggerOnly ?? false;
 
   switch (type) {
     case "app_mention":
-      publishAppMention(connectionId, payload);
-      if (!triggerOnly) {
+      // Trigger publish and direct LLM handling are mutually exclusive:
+      // in normal mode, handleAppMention runs the LLM and only falls back
+      // to publishing a trigger inside handleLLMCall if the LLM call fails.
+      // Publishing here AND running the LLM caused every message to be
+      // answered twice (once by the LLM, once by the trigger subscriber).
+      if (triggerOnly) {
+        await publishAppMention(connectionId, payload);
+        logPerfStep("trigger_published", meta, {
+          mode: "triggerOnly",
+          event_type: type,
+        });
+      } else {
         await handleAppMention(
           payload as SlackAppMentionEvent,
           teamConfig,
           connectionId,
+          meta,
         );
       }
       break;
     case "message":
-      publishMessageReceived(connectionId, payload);
-      if (!triggerOnly) {
+      if (triggerOnly) {
+        await publishMessageReceived(connectionId, payload);
+        logPerfStep("trigger_published", meta, {
+          mode: "triggerOnly",
+          event_type: type,
+        });
+      } else {
         await handleMessage(
           payload as SlackMessageEvent,
           teamConfig,
           connectionId,
+          meta,
         );
       }
       break;
@@ -419,109 +459,79 @@ export async function handleSlackEvent(
 }
 
 /**
- * Handle @bot mentions
+ * Handle @bot mentions.
+ *
+ * Fast path: send the "Pensando..." placeholder (which also creates the
+ * thread under the user's message) and publish the enriched trigger so a
+ * subscribed agent can answer. We do NOT call the LLM directly — that path
+ * has been broken in production and the trigger flow is the source of truth
+ * for the response now.
  */
 async function handleAppMention(
   event: SlackAppMentionEvent,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
-  const { channel, user, text, ts, thread_ts, files } = event;
+  const { channel, text, ts, thread_ts, files } = event;
 
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
-
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
   const replyTo = thread_ts ?? ts;
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, replyTo)
     : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "app_mention",
+  });
 
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
-
-  const { media, textFiles, transcriptions, audioWithoutWhisper } =
+  const { textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
   if (audioWithoutWhisper) {
     const warningMsg =
       "Audio detectado! Para processar arquivos de audio, e necessario ativar a integracao **Whisper** no Mesh.";
     await replyInThread(channel, replyTo, warningMsg);
+    if (thinkingMsg?.ts) {
+      await deleteMessage(channel, thinkingMsg.ts);
+    }
     return;
   }
 
-  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
-  const textFileContent = textFiles
-    .map((file) => {
-      const language = getLanguageFromFilename(file.name);
-      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
-    })
-    .join("\n\n");
+  const fullText = await appendFileContext(text, textFiles, transcriptions);
 
-  let fullText = text;
-  if (transcriptions.length > 0) {
-    fullText += `\n\n${transcriptions.join("\n\n")}`;
-  }
-  if (textFileContent) {
-    fullText += `\n\n${textFileContent}`;
-  }
-
-  const mediaForLLM =
-    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
-
-  const messages = await buildLLMMessages(
-    channel,
-    fullText,
-    ts,
-    thread_ts,
-    mediaForLLM,
-    true,
+  await publishAppMention(
+    connectionId,
+    { ...event, text: fullText },
+    { thinking_message_ts: thinkingMsg?.ts },
   );
-
-  if (!(await isLLMAvailable(connectionId))) {
-    const warningMsg =
-      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
-    await replyInThread(channel, replyTo, warningMsg);
-    return;
-  }
-
-  const enableStreaming = showOnlyFinal
-    ? false
-    : (teamConfig.responseConfig?.enableStreaming ?? true);
-
-  try {
-    await handleLLMCall(connectionId, messages, {
-      channel,
-      replyTo,
-      thinkingMessageTs: thinkingMsg?.ts,
-      streamingEnabled: enableStreaming,
-      slackEvent: { text: fullText, user, ts, thread_ts },
-    });
-  } catch (error) {
-    logger.error("App mention LLM error", {
-      channel,
-      userId: user,
-      error: String(error),
-    });
-  }
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "app_mention",
+  });
 }
 
 /**
- * Handle direct messages and channel messages
+ * Handle direct messages and channel messages.
+ *
+ * Routes by event shape — the handlers themselves are responsible for
+ * sending "Pensando..." and publishing the trigger. We deliberately do NOT
+ * process attached files here so the thinking message can fire before any
+ * Whisper / file-download work.
  */
 async function handleMessage(
   event: SlackMessageEvent,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
-  const { channel, user, text, ts, thread_ts, channel_type, files } = event;
+  const { channel, text, thread_ts, channel_type } = event;
   const isDM = channel_type === "im" || channel?.startsWith("D");
   const botUserId = globalBotUserId ?? teamConfig.botUserId;
 
@@ -530,7 +540,7 @@ async function handleMessage(
     return;
   }
 
-  // For threads, check if bot participated
+  // For channel threads, only respond if the bot has participated
   if (thread_ts && !isDM) {
     const botParticipated = await botParticipatedInThread(
       channel,
@@ -542,192 +552,109 @@ async function handleMessage(
     }
   }
 
-  const { media, textFiles, transcriptions, audioWithoutWhisper } =
+  // A DM that is a reply inside an existing thread continues in that thread;
+  // a fresh top-level DM starts a brand-new thread under the user's message
+  // (see handleDirectMessage). Channel messages only reach this branch when
+  // thread_ts is set AND the bot has participated in that thread.
+  if (isDM && thread_ts) {
+    await handleThreadReply(event, thread_ts, teamConfig, connectionId, meta);
+  } else if (isDM) {
+    await handleDirectMessage(event, teamConfig, connectionId, meta);
+  } else if (thread_ts) {
+    await handleThreadReply(event, thread_ts, teamConfig, connectionId, meta);
+  }
+}
+
+/**
+ * Handle top-level direct messages.
+ *
+ * Every top-level DM kicks off a brand-new thread under the user's message
+ * — "Pensando..." is sent with thread_ts=ts, which is what visually creates
+ * the thread. Each subject ends up in its own thread.
+ */
+async function handleDirectMessage(
+  event: SlackMessageEvent,
+  teamConfig: SlackTeamConfig,
+  connectionId: string,
+  meta: HandlerMeta = {},
+): Promise<void> {
+  const { channel, text, ts, files } = event;
+
+  const showOnlyFinal =
+    teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
+  const replyTo = ts;
+  const showThinking = showOnlyFinal
+    ? false
+    : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+
+  const thinkingMsg = showThinking
+    ? await sendThinkingMessage(channel, replyTo)
+    : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "direct_message",
+  });
+
+  const { textFiles, transcriptions, audioWithoutWhisper } =
     await processAttachedFiles(files);
 
   if (audioWithoutWhisper) {
     const warningMsg =
       "Audio detectado! Para processar arquivos de audio, e necessario ativar a integracao **Whisper** no Mesh.";
-    if (isDM) {
-      await sendMessage({ channel, text: warningMsg });
-    } else if (thread_ts) {
-      await replyInThread(channel, thread_ts, warningMsg);
-    }
-    return;
-  }
-
-  const { getLanguageFromFilename } = await import("../../lib/slack-client.ts");
-  const textFileContent = textFiles
-    .map((file) => {
-      const language = getLanguageFromFilename(file.name);
-      return `[File: ${file.name}]\n\`\`\`${language}\n${file.content}\n\`\`\``;
-    })
-    .join("\n\n");
-
-  let fullText = text;
-  if (transcriptions.length > 0) {
-    fullText += `\n\n${transcriptions.join("\n\n")}`;
-  }
-  if (textFileContent) {
-    fullText += `\n\n${textFileContent}`;
-  }
-
-  const mediaForLLM =
-    transcriptions.length > 0 ? media.filter((m) => m.type === "image") : media;
-
-  if (isDM) {
-    await handleDirectMessage(
-      channel,
-      user,
-      fullText,
-      ts,
-      mediaForLLM,
-      teamConfig,
-      connectionId,
-    );
-  } else if (thread_ts) {
-    await handleThreadReply(
-      channel,
-      user,
-      fullText,
-      ts,
-      thread_ts,
-      mediaForLLM,
-      teamConfig,
-      connectionId,
-    );
-  }
-}
-
-/**
- * Handle direct messages
- */
-async function handleDirectMessage(
-  channel: string,
-  user: string,
-  text: string,
-  ts: string,
-  media: Array<{
-    type: "image" | "audio";
-    data: string;
-    mimeType: string;
-    name: string;
-  }>,
-  teamConfig: SlackTeamConfig,
-  connectionId: string,
-): Promise<void> {
-  const showOnlyFinal =
-    teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
-
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
-  const showThinking = showOnlyFinal
-    ? false
-    : (teamConfig.responseConfig?.showThinkingMessage ?? true);
-  const thinkingMsg = showThinking ? await sendThinkingMessage(channel) : null;
-
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
-
-  // Resolve sender name
-  let senderText = text;
-  try {
-    const userInfo = await getUserInfo(user);
-    const senderName = userInfo
-      ? userInfo.profile?.display_name || userInfo.real_name || userInfo.name
-      : null;
-    if (senderName) {
-      senderText = `[Mensagem de ${senderName}]\n${text}`;
-    }
-  } catch (err) {
-    console.warn(`[EventHandler] Failed to resolve DM sender name:`, err);
-  }
-
-  const messages = await buildLLMMessages(
-    channel,
-    senderText,
-    ts,
-    undefined,
-    media,
-  );
-
-  if (!(await isLLMAvailable(connectionId))) {
-    const warningMsg =
-      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
-    await sendMessage({ channel, text: warningMsg });
+    await replyInThread(channel, replyTo, warningMsg);
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
     }
     return;
   }
 
-  const enableStreaming = showOnlyFinal
-    ? false
-    : (teamConfig.responseConfig?.enableStreaming ?? true);
+  const fullText = await appendFileContext(text, textFiles, transcriptions);
 
-  try {
-    await handleLLMCall(connectionId, messages, {
-      channel,
-      thinkingMessageTs: thinkingMsg?.ts,
-      streamingEnabled: enableStreaming,
-      slackEvent: { text, user, ts, channel_type: "im" },
-    });
-  } catch (error) {
-    logger.error("Direct message LLM error", {
-      channel,
-      userId: user,
-      error: String(error),
-      errorStack: error instanceof Error ? error.stack : undefined,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      messagesCount: messages.length,
-    });
-  }
+  await publishMessageReceived(
+    connectionId,
+    { ...event, text: fullText },
+    { thinking_message_ts: thinkingMsg?.ts },
+  );
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "direct_message",
+  });
 }
 
 /**
- * Handle thread replies
+ * Handle thread replies (in a channel or inside a DM thread).
  */
 async function handleThreadReply(
-  channel: string,
-  user: string,
-  text: string,
-  ts: string,
+  event: SlackMessageEvent,
   threadTs: string,
-  media: Array<{
-    type: "image" | "audio";
-    data: string;
-    mimeType: string;
-    name: string;
-  }>,
   teamConfig: SlackTeamConfig,
   connectionId: string,
+  meta: HandlerMeta = {},
 ): Promise<void> {
+  const { channel, text, files } = event;
+
   const showOnlyFinal =
     teamConfig.responseConfig?.showOnlyFinalResponse ?? false;
-
-  if (!showOnlyFinal) {
-    await addReaction(channel, ts, "eyes");
-  }
-
   const showThinking = showOnlyFinal
     ? false
     : (teamConfig.responseConfig?.showThinkingMessage ?? true);
+
   const thinkingMsg = showThinking
     ? await sendThinkingMessage(channel, threadTs)
     : null;
+  logPerfStep("thinking_sent", meta, {
+    channel,
+    has_thinking: Boolean(thinkingMsg?.ts),
+    event_type: "thread_reply",
+  });
 
-  if (!showOnlyFinal) {
-    await removeReaction(channel, ts, "eyes");
-  }
+  const { textFiles, transcriptions, audioWithoutWhisper } =
+    await processAttachedFiles(files);
 
-  const messages = await buildLLMMessages(channel, text, ts, threadTs, media);
-
-  if (!(await isLLMAvailable(connectionId))) {
+  if (audioWithoutWhisper) {
     const warningMsg =
-      "Bot ainda inicializando. Por favor, tente novamente em alguns segundos.";
+      "Audio detectado! Para processar arquivos de audio, e necessario ativar a integracao **Whisper** no Mesh.";
     await replyInThread(channel, threadTs, warningMsg);
     if (thinkingMsg?.ts) {
       await deleteMessage(channel, thinkingMsg.ts);
@@ -735,26 +662,17 @@ async function handleThreadReply(
     return;
   }
 
-  const enableStreaming = showOnlyFinal
-    ? false
-    : (teamConfig.responseConfig?.enableStreaming ?? true);
+  const fullText = await appendFileContext(text, textFiles, transcriptions);
 
-  try {
-    await handleLLMCall(connectionId, messages, {
-      channel,
-      replyTo: threadTs,
-      thinkingMessageTs: thinkingMsg?.ts,
-      streamingEnabled: enableStreaming,
-      slackEvent: { text, user, ts, thread_ts: threadTs },
-    });
-  } catch (error) {
-    logger.error("Thread reply LLM error", {
-      channel,
-      userId: user,
-      threadTs,
-      error: String(error),
-    });
-  }
+  await publishMessageReceived(
+    connectionId,
+    { ...event, text: fullText },
+    { thinking_message_ts: thinkingMsg?.ts },
+  );
+  logPerfStep("trigger_published", meta, {
+    channel,
+    event_type: "thread_reply",
+  });
 }
 
 // ============================================================================

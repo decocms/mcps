@@ -18,7 +18,7 @@ import {
   deleteMessage,
 } from "../../lib/slack-client.ts";
 import { formatForSlack, buildResponseBlocks } from "../../lib/format.ts";
-import { triggers } from "../../lib/trigger-store.ts";
+import { publishMessageReceived } from "../../lib/event-publisher.ts";
 import type { MessageWithImages } from "./context-builder.ts";
 import { logger } from "../../lib/logger.ts";
 
@@ -51,6 +51,13 @@ export interface LLMResponseOptions {
   thinkingMessageTs?: string;
   useBlocks?: boolean;
   streamingEnabled?: boolean;
+  /**
+   * Stable identifier for the decopilot thread.
+   * We use the Slack user's resolved name so the agent has memory per person.
+   * The HTTP layer auto-falls back to `<userName>-<timestamp>` when the
+   * decopilot rejects access to the thread.
+   */
+  userName?: string;
   /** Original Slack event context — used for trigger fallback when STREAM fails */
   slackEvent?: {
     text: string;
@@ -110,7 +117,7 @@ async function callWithStreaming(
   messages: MessageWithImages[],
   options: LLMResponseOptions,
 ): Promise<string> {
-  const { channel, thinkingMessageTs, useBlocks = true } = options;
+  const { channel, thinkingMessageTs, useBlocks = true, userName } = options;
 
   if (!thinkingMessageTs) {
     return callWithoutStreaming(connectionId, messages, options);
@@ -119,7 +126,7 @@ async function callWithStreaming(
   const animation = startThinkingAnimation(channel, thinkingMessageTs);
 
   try {
-    const stream = await streamAgentResponse(connectionId, messages);
+    const stream = await streamAgentResponse(connectionId, messages, userName);
     const rawText = await collectStreamText(stream);
 
     animation.stop();
@@ -157,9 +164,15 @@ async function callWithoutStreaming(
   messages: MessageWithImages[],
   options: LLMResponseOptions,
 ): Promise<string> {
-  const { channel, replyTo, thinkingMessageTs, useBlocks = true } = options;
+  const {
+    channel,
+    replyTo,
+    thinkingMessageTs,
+    useBlocks = true,
+    userName,
+  } = options;
 
-  const stream = await streamAgentResponse(connectionId, messages);
+  const stream = await streamAgentResponse(connectionId, messages, userName);
   const response = cleanAgentResponse(await collectStreamText(stream));
 
   if (!response.trim()) {
@@ -233,20 +246,25 @@ export async function handleLLMCall(
         await deleteMessage(channel, thinkingMessageTs).catch(() => {});
       }
 
-      const isDM = channel.startsWith("D") || slackEvent.channel_type === "im";
-
-      triggers.notify(connectionId, "slack.message.received", {
-        event: "slack.message.received",
-        channel_id: channel,
-        user_id: slackEvent.user,
-        text: slackEvent.text,
-        ts: slackEvent.ts,
-        thread_ts: slackEvent.thread_ts,
-        is_dm: isDM,
-        has_files: false,
-        timestamp: new Date().toISOString(),
-        fallback: true,
-      });
+      // Reuse the standard publisher so the subscriber gets the same
+      // enriched payload (user_name, thread_messages, etc.) as the
+      // triggerOnly mode would deliver.
+      await publishMessageReceived(
+        connectionId,
+        {
+          type: "message",
+          event_ts: slackEvent.ts,
+          channel,
+          user: slackEvent.user,
+          text: slackEvent.text,
+          ts: slackEvent.ts,
+          thread_ts: slackEvent.thread_ts,
+          ...(slackEvent.channel_type
+            ? { channel_type: slackEvent.channel_type }
+            : {}),
+        } as Parameters<typeof publishMessageReceived>[1],
+        { fallback: true },
+      );
 
       // Don't throw — the trigger will handle the response
       return;

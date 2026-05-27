@@ -44,7 +44,18 @@ export const triggers = createTriggers({
   definitions: [
     {
       type: "slack.message.received",
-      description: "Triggered when a message is sent in a Slack channel or DM",
+      description:
+        "Triggered when a message is sent in a Slack channel or DM. " +
+        "Payload carries: `channel_id`, `reply_in_thread_ts`, `text`, " +
+        "`user_name`, `thinking_message_ts` (when slack-mcp already posted " +
+        "a 'Pensando...' placeholder in the thread), and `thread_messages` " +
+        "(full thread history when this is a thread continuation). " +
+        "How to respond: if `thinking_message_ts` is set, call " +
+        "SLACK_EDIT_MESSAGE(channel=channel_id, ts=thinking_message_ts, " +
+        "text=<final answer>) — that replaces the placeholder in place. " +
+        "Otherwise call SLACK_REPLY_IN_THREAD(channel=channel_id, " +
+        "thread_ts=reply_in_thread_ts, text=<final answer>). Never send a " +
+        "top-level message — every answer lives inside the user's thread.",
       params: z.object({
         channel_id: z
           .string()
@@ -58,7 +69,16 @@ export const triggers = createTriggers({
     },
     {
       type: "slack.app_mention",
-      description: "Triggered when the bot is mentioned with @",
+      description:
+        "Triggered when the bot is @mentioned in a channel. Payload carries: " +
+        "`channel_id`, `reply_in_thread_ts`, `text`, `user_name`, " +
+        "`thinking_message_ts` (when slack-mcp already posted a 'Pensando...' " +
+        "placeholder), and `thread_messages` (when the mention is inside an " +
+        "existing thread). How to respond: if `thinking_message_ts` is set, " +
+        "call SLACK_EDIT_MESSAGE(channel=channel_id, ts=thinking_message_ts, " +
+        "text=<final answer>). Otherwise call SLACK_REPLY_IN_THREAD(" +
+        "channel=channel_id, thread_ts=reply_in_thread_ts, text=<final " +
+        "answer>). The answer must live inside the user's thread.",
       params: z.object({
         channel_id: z
           .string()
