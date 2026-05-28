@@ -50,41 +50,74 @@ let passed = 0;
 let failed = 0;
 const failures: Array<{ name: string; errors: string[] }> = [];
 
-async function checkMcp(
+function commandOutput(error: unknown): string {
+  if (!error || typeof error !== "object") {
+    return "";
+  }
+
+  const stderr =
+    "stderr" in error ? String((error as { stderr: unknown }).stderr) : "";
+  const stdout =
+    "stdout" in error ? String((error as { stdout: unknown }).stdout) : "";
+
+  return (stderr || stdout).trim();
+}
+
+async function installMcpDeps(name: string): Promise<void> {
+  await $`bun install --filter ./${name}`.cwd(root).quiet();
+}
+
+async function typecheckMcp(
   name: string,
 ): Promise<{ name: string; ok: boolean; errors: string[] }> {
   const cwd = path.join(root, name);
+
   try {
-    await $`tsc --noEmit`.cwd(cwd).quiet();
+    await $`bunx tsc --noEmit`.cwd(cwd).quiet();
     return { name, ok: true, errors: [] };
-  } catch (e) {
-    const stderr =
-      e && typeof e === "object" && "stderr" in e
-        ? String((e as { stderr: unknown }).stderr)
-        : "";
-    const stdout =
-      e && typeof e === "object" && "stdout" in e
-        ? String((e as { stdout: unknown }).stdout)
-        : "";
-    const output = (stderr || stdout).trim();
-
-    const lines = output.split("\n").filter((l) => l.includes("error TS"));
-
-    const ownErrors = lines.filter(
-      (l) => !l.includes("node_modules/") && !l.includes("../node_modules/"),
-    );
+  } catch (error) {
+    const output = commandOutput(error);
+    const ownErrors = output
+      .split("\n")
+      .filter(
+        (line) =>
+          line.includes("error TS") &&
+          !line.includes("node_modules/") &&
+          !line.includes("../node_modules/"),
+      );
 
     if (ownErrors.length === 0) {
-      return { name, ok: true, errors: [] };
+      return {
+        name,
+        ok: false,
+        errors: [output || `Type check failed for ${name}`],
+      };
     }
 
     return { name, ok: false, errors: ownErrors };
   }
 }
 
-for (let i = 0; i < mcps.length; i += MAX_CONCURRENCY) {
-  const batch = mcps.slice(i, i + MAX_CONCURRENCY);
-  const results = await Promise.all(batch.map(checkMcp));
+const readyForTypecheck: string[] = [];
+
+for (const name of mcps) {
+  try {
+    await installMcpDeps(name);
+    readyForTypecheck.push(name);
+  } catch (error) {
+    failed++;
+    const output = commandOutput(error);
+    failures.push({
+      name,
+      errors: [output || `Dependency install failed for ${name}`],
+    });
+    console.log(`  ❌ ${name} (dependency install failed)`);
+  }
+}
+
+for (let i = 0; i < readyForTypecheck.length; i += MAX_CONCURRENCY) {
+  const batch = readyForTypecheck.slice(i, i + MAX_CONCURRENCY);
+  const results = await Promise.all(batch.map(typecheckMcp));
 
   for (const { name, ok, errors } of results) {
     if (ok) {
