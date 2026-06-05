@@ -10,7 +10,7 @@
 
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { createTool, type AppContext } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { getAppInstallationToken } from "./github-app-auth.ts";
@@ -158,7 +158,7 @@ export function buildUpstreamTools(
       description: toolDef.description || `GitHub tool: ${toolDef.name}`,
       inputSchema: jsonSchemaToZod(toolDef.inputSchema as any),
       execute: async ({ context }, ctx) => {
-        const env = (ctx as unknown as AppContext<Env>).env;
+        const env = (ctx as unknown as { env: Env }).env;
         const currentToken = env.MESH_REQUEST_CONTEXT?.authorization;
         const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
         if (!currentToken) {

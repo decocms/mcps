@@ -91,7 +91,7 @@ function base64url(data: Buffer | string): string {
  * Create a JWT signed with the GitHub App's private key (RS256).
  * Valid for 10 minutes (GitHub's maximum).
  */
-function createAppJWT(): string {
+export function createAppJWT(): string {
   const appId = process.env.GITHUB_APP_ID || "";
   const privateKey = normalizePrivateKey(process.env.GITHUB_PRIVATE_KEY || "");
 
@@ -140,8 +140,93 @@ function createAppJWT(): string {
 }
 
 /**
+ * Error thrown when the GitHub App REST API rejects a request. Carries the
+ * HTTP status so callers can map it to a clear, leak-free error (e.g. 422 →
+ * "repo not in installation", 401/403 → internal config error). The upstream
+ * `message` is attached for diagnostics but callers must decide whether it is
+ * safe to surface (it is not for 401/403).
+ */
+export class GitHubAppApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "GitHubAppApiError";
+  }
+}
+
+export interface MintedInstallationToken {
+  token: string;
+  expires_at: string;
+  permissions: Record<string, string>;
+  repositories?: Array<{ id: number; name: string; full_name: string }>;
+}
+
+/**
+ * Mint an installation access token for the GitHub App.
+ *
+ * An empty body mints an installation-wide token (all repos, all granted
+ * permissions). Pass `repository_ids`/`repositories` + `permissions` to scope
+ * it down to least privilege. GitHub itself enforces that the repositories
+ * belong to the installation and that the permissions are a subset of the
+ * App's grant (422 otherwise).
+ *
+ * The signing JWT defaults to a freshly minted App JWT but can be injected for
+ * testing. Non-2xx responses throw `GitHubAppApiError` carrying the HTTP
+ * status. The minted token only ever appears in a 2xx body, so it is never
+ * included in a thrown error.
+ */
+export async function mintInstallationAccessToken(
+  installationId: number,
+  body: {
+    repositories?: string[];
+    repository_ids?: number[];
+    permissions?: Record<string, string>;
+  } = {},
+  jwt: string = createAppJWT(),
+): Promise<MintedInstallationToken> {
+  const res = await fetch(
+    `https://api.github.com/app/installations/${installationId}/access_tokens`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "Content-Type": "application/json",
+        "User-Agent": "deco-cms-github-mcp",
+      },
+      body: JSON.stringify(body),
+    },
+  );
+
+  if (!res.ok) {
+    let detail = "";
+    try {
+      const parsed = (await res.json()) as { message?: string };
+      detail = parsed?.message ?? "";
+    } catch {
+      // Non-JSON error body — ignore.
+    }
+    throw new GitHubAppApiError(
+      res.status,
+      detail || `GitHub App token request failed: ${res.status}`,
+    );
+  }
+
+  const data = (await res.json()) as MintedInstallationToken;
+  return {
+    token: data.token,
+    expires_at: data.expires_at,
+    permissions: data.permissions ?? {},
+    repositories: data.repositories,
+  };
+}
+
+/**
  * Get an installation access token for the GitHub App.
- * Picks the first available installation.
+ * Picks the first available installation. Used for upstream tool discovery.
  */
 export async function getAppInstallationToken(): Promise<string> {
   const jwt = createAppJWT();
@@ -176,29 +261,10 @@ export async function getAppInstallationToken(): Promise<string> {
     );
   }
 
-  const installationId = installations[0].id;
-
-  // Create installation access token
-  const tokenRes = await fetch(
-    `https://api.github.com/app/installations/${installationId}/access_tokens`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${jwt}`,
-        Accept: "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-        "User-Agent": "deco-cms-github-mcp",
-      },
-    },
+  const minted = await mintInstallationAccessToken(
+    installations[0].id,
+    {},
+    jwt,
   );
-
-  if (!tokenRes.ok) {
-    const text = await tokenRes.text();
-    throw new Error(
-      `Failed to create installation token: ${tokenRes.status} — ${text}`,
-    );
-  }
-
-  const data = (await tokenRes.json()) as { token: string };
-  return data.token;
+  return minted.token;
 }
