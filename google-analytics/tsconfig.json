@@ -22,6 +22,9 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 
+    /* Bun globals (fetch, Response, Bun, etc.) */
+    "types": ["bun-types"],
+
     /* Path Aliases */
     "baseUrl": ".",
     "paths": {

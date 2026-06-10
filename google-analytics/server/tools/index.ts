@@ -1,10 +1,11 @@
 import { getAccountSummariesTool } from "./accounts.ts";
 import {
-  getPropertyDetailsTool,
   getCustomDimensionsAndMetricsTool,
+  getPropertyDetailsTool,
 } from "./properties.ts";
-import { runReportTool, runRealtimeReportTool } from "./reports.ts";
+import { runRealtimeReportTool, runReportTool } from "./reports.ts";
 import { listGoogleAdsLinksTool } from "./ads.ts";
+import { listPropertyAnnotationsTool } from "./annotations.ts";
 
 export const tools = [
   getAccountSummariesTool,
@@ -13,4 +14,5 @@ export const tools = [
   runReportTool,
   runRealtimeReportTool,
   listGoogleAdsLinksTool,
+  listPropertyAnnotationsTool,
 ];

@@ -7,57 +7,116 @@ const DateRangeSchema = z.object({
   startDate: z
     .string()
     .describe(
-      "The inclusive start date in YYYY-MM-DD or 'today', 'yesterday', or 'NdaysAgo' format.",
+      "Inclusive start date in YYYY-MM-DD format, or relative values: 'today', 'yesterday', 'NdaysAgo'.",
     ),
-  endDate: z.string().describe("The inclusive end date in YYYY-MM-DD format."),
+  endDate: z
+    .string()
+    .describe(
+      "Inclusive end date in YYYY-MM-DD format, or relative values: 'today', 'yesterday'.",
+    ),
 });
 
-const DimensionSchema = z.object({
-  name: z.string(),
-});
+const DimensionSchema = z.object({ name: z.string() });
+const MetricSchema = z.object({ name: z.string() });
 
-const MetricSchema = z.object({
-  name: z.string(),
-});
+// FilterExpression and OrderBy are passed as raw JSON objects matching the GA4 REST API schema.
+const FilterExpressionSchema = z
+  .record(z.string(), z.unknown())
+  .describe(
+    "GA4 FilterExpression object. See https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FilterExpression",
+  );
+
+const OrderBySchema = z
+  .record(z.string(), z.unknown())
+  .describe(
+    "GA4 OrderBy object. See https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/OrderBy",
+  );
 
 export const runReportTool = (env: Env) =>
   createPrivateTool({
     id: "run-report",
-    description: "Runs a Google Analytics report using the Data API.",
+    description:
+      "Runs a Google Analytics 4 report using the Data API. Returns dimensions, metrics, and row data for the specified property and date range.",
     inputSchema: z.object({
       property: z
         .string()
         .describe(
-          "The Google Analytics Property identifier e.g. 'properties/1234567'",
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
         ),
       dateRanges: z
         .array(DateRangeSchema)
         .min(1)
-        .describe("Date ranges to query."),
+        .describe("One or more date ranges to include in the report."),
       dimensions: z
         .array(DimensionSchema)
         .optional()
-        .describe("Dimensions requested and displayed."),
+        .describe(
+          "Dimensions to group results by, e.g. [{ name: 'sessionSource' }].",
+        ),
       metrics: z
         .array(MetricSchema)
         .min(1)
-        .describe("Metrics requested and displayed."),
+        .describe("Metrics to aggregate, e.g. [{ name: 'activeUsers' }]."),
+      dimensionFilter: FilterExpressionSchema.optional().describe(
+        "Optional filter to restrict dimension values.",
+      ),
+      metricFilter: FilterExpressionSchema.optional().describe(
+        "Optional filter to restrict metric values.",
+      ),
+      orderBys: z
+        .array(OrderBySchema)
+        .optional()
+        .describe("Optional ordering for returned rows."),
       limit: z
         .number()
+        .int()
+        .positive()
         .optional()
-        .describe("Maximum number of rows to return."),
+        .describe(
+          "Maximum number of rows to return. Defaults to 10,000; max 250,000.",
+        ),
+      offset: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe(
+          "Row offset for pagination (0-based). Use with limit to page through results.",
+        ),
+      currencyCode: z
+        .string()
+        .optional()
+        .describe(
+          "Optional ISO 4217 currency code for revenue metrics, e.g. 'USD'.",
+        ),
+      returnPropertyQuota: z
+        .boolean()
+        .optional()
+        .describe(
+          "If true, includes the current GA4 property quota state in the response.",
+        ),
     }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-
       try {
-        const response = await client.runReport(args.property, {
+        const body: Record<string, unknown> = {
           dateRanges: args.dateRanges,
-          dimensions: args.dimensions,
           metrics: args.metrics,
-          limit: args.limit,
-        });
-
+        };
+        if (args.dimensions !== undefined) body.dimensions = args.dimensions;
+        if (args.dimensionFilter !== undefined)
+          body.dimensionFilter = args.dimensionFilter;
+        if (args.metricFilter !== undefined)
+          body.metricFilter = args.metricFilter;
+        if (args.orderBys !== undefined) body.orderBys = args.orderBys;
+        if (args.limit !== undefined) body.limit = args.limit;
+        if (args.offset !== undefined) body.offset = args.offset;
+        if (args.currencyCode !== undefined)
+          body.currencyCode = args.currencyCode;
+        if (args.returnPropertyQuota !== undefined) {
+          body.returnPropertyQuota = args.returnPropertyQuota;
+        }
+        const response = await client.runReport(args.property, body);
         return { response };
       } catch (error) {
         throw new Error(
@@ -70,36 +129,64 @@ export const runReportTool = (env: Env) =>
 export const runRealtimeReportTool = (env: Env) =>
   createPrivateTool({
     id: "run-realtime-report",
-    description: "Runs a Google Analytics realtime report using the Data API.",
+    description:
+      "Runs a Google Analytics 4 realtime report. Returns live data from the last 30 minutes.",
     inputSchema: z.object({
       property: z
         .string()
         .describe(
-          "The Google Analytics Property identifier e.g. 'properties/1234567'",
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
         ),
       dimensions: z
         .array(DimensionSchema)
         .optional()
-        .describe("Dimensions requested and displayed."),
-      metrics: z
-        .array(MetricSchema)
-        .min(1)
-        .describe("Metrics requested and displayed."),
+        .describe("Dimensions to group results by."),
+      metrics: z.array(MetricSchema).min(1).describe("Metrics to aggregate."),
+      dimensionFilter: FilterExpressionSchema.optional().describe(
+        "Optional filter to restrict dimension values.",
+      ),
+      metricFilter: FilterExpressionSchema.optional().describe(
+        "Optional filter to restrict metric values.",
+      ),
+      orderBys: z
+        .array(OrderBySchema)
+        .optional()
+        .describe("Optional ordering for returned rows."),
       limit: z
         .number()
+        .int()
+        .positive()
         .optional()
         .describe("Maximum number of rows to return."),
+      offset: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe("Row offset for pagination."),
+      returnPropertyQuota: z
+        .boolean()
+        .optional()
+        .describe("If true, includes quota state in the response."),
     }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-
       try {
-        const response = await client.runRealtimeReport(args.property, {
-          dimensions: args.dimensions,
+        const body: Record<string, unknown> = {
           metrics: args.metrics,
-          limit: args.limit,
-        });
-
+        };
+        if (args.dimensions !== undefined) body.dimensions = args.dimensions;
+        if (args.dimensionFilter !== undefined)
+          body.dimensionFilter = args.dimensionFilter;
+        if (args.metricFilter !== undefined)
+          body.metricFilter = args.metricFilter;
+        if (args.orderBys !== undefined) body.orderBys = args.orderBys;
+        if (args.limit !== undefined) body.limit = args.limit;
+        if (args.offset !== undefined) body.offset = args.offset;
+        if (args.returnPropertyQuota !== undefined) {
+          body.returnPropertyQuota = args.returnPropertyQuota;
+        }
+        const response = await client.runRealtimeReport(args.property, body);
         return { response };
       } catch (error) {
         throw new Error(

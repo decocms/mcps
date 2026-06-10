@@ -3,23 +3,22 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 import { GaClient } from "../lib/ga-client.ts";
 
+const propertySchema = z
+  .string()
+  .describe(
+    "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+  );
+
 export const getPropertyDetailsTool = (env: Env) =>
   createPrivateTool({
     id: "get-property-details",
-    description: "Returns details about a property.",
-    inputSchema: z.object({
-      property: z
-        .string()
-        .describe(
-          "The Google Analytics Property identifier e.g. 'properties/1234567'",
-        ),
-    }),
+    description:
+      "Returns metadata and configuration details about a GA4 property.",
+    inputSchema: z.object({ property: propertySchema }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-
       try {
         const response = await client.getProperty(args.property);
-
         return { response };
       } catch (error) {
         throw new Error(
@@ -33,21 +32,16 @@ export const getCustomDimensionsAndMetricsTool = (env: Env) =>
   createPrivateTool({
     id: "get-custom-dimensions-and-metrics",
     description:
-      "Retrieves the custom dimensions and metrics for a specific property.",
-    inputSchema: z.object({
-      property: z
-        .string()
-        .describe(
-          "The Google Analytics Property identifier e.g. 'properties/1234567'",
-        ),
-    }),
+      "Retrieves the custom dimensions and custom metrics configured for a GA4 property.",
+    inputSchema: z.object({ property: propertySchema }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-
       try {
-        const dimensions = await client.listCustomDimensions(args.property);
-        const metrics = await client.listCustomMetrics(args.property);
-
+        // Both calls are independent — run in parallel to halve latency.
+        const [dimensions, metrics] = await Promise.all([
+          client.listCustomDimensions(args.property),
+          client.listCustomMetrics(args.property),
+        ]);
         return { dimensions, metrics };
       } catch (error) {
         throw new Error(

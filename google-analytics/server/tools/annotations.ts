@@ -9,20 +9,20 @@ const propertySchema = z
     "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
   );
 
-export const listGoogleAdsLinksTool = (env: Env) =>
+export const listPropertyAnnotationsTool = (env: Env) =>
   createPrivateTool({
-    id: "list-google-ads-links",
+    id: "list-property-annotations",
     description:
-      "Returns a list of links to Google Ads accounts for a GA4 property.",
+      "Returns timestamped annotations for a GA4 property — useful for correlating traffic changes with events like campaign launches, site releases, or data collection changes.",
     inputSchema: z.object({ property: propertySchema }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
       try {
-        const response = await client.listGoogleAdsLinks(args.property);
+        const response = await client.listPropertyAnnotations(args.property);
         return { response };
       } catch (error) {
         throw new Error(
-          `Failed to retrieve Google Ads links: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to retrieve property annotations: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     },
