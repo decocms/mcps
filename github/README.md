@@ -20,11 +20,34 @@ The webhook handler receives events from GitHub and matches them against configu
 - `github.release.published` — Release published
 - And more (see `TRIGGER_LIST` tool)
 
+## Repository-scoped tokens & synthetic refresh
+
+`MINT_REPO_TOKEN` mints a short-lived (~1h) GitHub App installation token scoped
+to exactly one repository (least privilege), gated on the caller's own GitHub
+entitlement. Alongside the `ghs_` token it issues a durable, revocable
+**synthetic refresh token** (an MCP-issued repo grant — `ghr_<grantId>.<secret>`,
+NOT a GitHub refresh token) and returns its `tokenEndpoint` + `clientId`.
+
+Two unauthenticated OAuth-shaped endpoints redeem/revoke that grant using only
+the GitHub App credentials (no user-to-server token at refresh time):
+
+- `POST /repo-grant/token` — `grant_type=refresh_token` → a fresh `ghs_` token
+  scoped to the same installation/repo/permissions. `400 invalid_grant` is
+  permanent (revoked/expired/unknown, or the App lost repo access); `503` is
+  transient (GitHub outage, rate limit, or server misconfig) and the grant is
+  kept.
+- `POST /repo-grant/revoke` — RFC 7009 revocation (always `200`).
+
+Grants are stored in the `REPO_GRANTS` Cloudflare KV namespace (only the
+SHA-256 of the secret is persisted; sliding 90-day TTL).
+
 ## Architecture
 
 ```
 Client → OAuth Proxy (this MCP) → api.githubcopilot.com/mcp/
 GitHub Webhooks → /webhooks/github → Installation mapping → Trigger matching
+MINT_REPO_TOKEN → mint ghs_ + issue grant (REPO_GRANTS KV)
+POST /repo-grant/token|revoke → re-mint / revoke via GitHub App JWT
 ```
 
 ---
@@ -47,9 +70,12 @@ GITHUB_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----"
 GITHUB_CLIENT_ID=<github-app-client-id>
 GITHUB_CLIENT_SECRET=<github-app-client-secret>
 GITHUB_WEBHOOK_SECRET=<webhook-secret>  # Required for webhook signature verification
+PUBLIC_BASE_URL=<public-origin>         # Optional; defaults to https://github-mcp.decocms.com
 ```
 
 `GITHUB_PRIVATE_KEY` accepts raw PEM, a single-line env value with `\n` escapes, or base64-encoded PEM.
+
+`PUBLIC_BASE_URL` is the origin used to build the absolute `tokenEndpoint` that `MINT_REPO_TOKEN` returns; it must point at this deployment. The synthetic refresh flow also needs the `REPO_GRANTS` KV namespace bound in `wrangler.toml` (create with `bunx wrangler kv namespace create REPO_GRANTS`).
 
 ### Running locally
 

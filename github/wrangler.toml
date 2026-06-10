@@ -23,3 +23,12 @@ invocation_logs = true
 [[kv_namespaces]]
 binding = "INSTALLATIONS"
 id = "c81656fe0e4347d39205c0f2103ca5c9"
+
+# Durable storage for synthetic repo-grant refresh tokens (prefix `grant:`).
+# Each grant stores hashed-at-rest metadata with a sliding 90-day TTL.
+#
+# Create with: bunx wrangler kv namespace create REPO_GRANTS
+# Then replace the id below with the returned id BEFORE deploying.
+[[kv_namespaces]]
+binding = "REPO_GRANTS"
+id = "REPLACE_WITH_REPO_GRANTS_KV_ID"

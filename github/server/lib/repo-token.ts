@@ -333,6 +333,7 @@ export interface RepoTokenResult {
   permissions: Record<string, string>;
   repository: { owner: string; name: string };
   installationId: number;
+  repositoryId: number;
 }
 
 /**
@@ -348,6 +349,7 @@ export async function mintRepoScopedToken(params: {
   owner: string;
   repo: string;
   permissions?: Record<string, string>;
+  repositoryId?: number;
   jwt?: string;
 }): Promise<RepoTokenResult> {
   const { callerToken, installationId, owner, repo, permissions, jwt } = params;
@@ -366,19 +368,37 @@ export async function mintRepoScopedToken(params: {
   // rejected without touching GitHub.
   const cappedPermissions = capPermissions(permissions);
 
-  // Security gate — mints nothing if the caller is not entitled.
-  const repositoryId = await authorizeAndResolveRepoId({
+  // Security gate — mints nothing if the caller is not entitled. This resolves
+  // the authoritative numeric repo id from the caller's own installation view.
+  const resolvedRepositoryId = await authorizeAndResolveRepoId({
     callerToken,
     installationId,
     owner,
     repo,
   });
 
+  // If the caller asserted a repositoryId, it must match what they are entitled
+  // to. The resolved id stays authoritative (rename-proof) and is what we mint
+  // and store.
+  if (
+    params.repositoryId !== undefined &&
+    params.repositoryId !== resolvedRepositoryId
+  ) {
+    throw new RepoTokenError(
+      "invalid_input",
+      `Provided repositoryId ${params.repositoryId} does not match repository ` +
+        `"${owner}/${repo}".`,
+    );
+  }
+
   let minted;
   try {
     minted = await mintInstallationAccessToken(
       installationId,
-      { repository_ids: [repositoryId], permissions: cappedPermissions },
+      {
+        repository_ids: [resolvedRepositoryId],
+        permissions: cappedPermissions,
+      },
       jwt ?? createAppJWT(),
     );
   } catch (err) {
@@ -391,5 +411,6 @@ export async function mintRepoScopedToken(params: {
     permissions: minted.permissions,
     repository: { owner, name: repo },
     installationId,
+    repositoryId: resolvedRepositoryId,
   };
 }

@@ -20,6 +20,12 @@ import {
   getInstallationStore,
 } from "./lib/installation-map.ts";
 import { handleProxiedRequest } from "./lib/mcp-proxy.ts";
+import {
+  handleRepoGrantRevokeRequest,
+  handleRepoGrantTokenRequest,
+} from "./lib/repo-grant.ts";
+import { setRepoGrantKV } from "./lib/repo-grant-store.ts";
+import { REPO_GRANT_REVOKE_PATH, REPO_GRANT_TOKEN_PATH } from "./constants.ts";
 import { setTriggerKV } from "./lib/trigger-store.ts";
 import { getTools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
@@ -148,6 +154,10 @@ async function getRuntime(): Promise<Runtime> {
   return runtimePromise;
 }
 
+// Per-isolate latch so the missing-REPO_GRANTS warning logs at most once per
+// cold start instead of on every request.
+let warnedMissingRepoGrants = false;
+
 /**
  * Intercept webhook and MCP resource requests before they reach runtime.fetch.
  * The Deco runtime doesn't support resources natively, so we proxy them upstream.
@@ -161,11 +171,33 @@ async function handle(
   // storage for this request.
   setTriggerKV(env.INSTALLATIONS);
 
+  // Make the REPO_GRANTS KV binding visible to the grant store's module-level
+  // singleton for this request (used by the MINT_REPO_TOKEN tool).
+  setRepoGrantKV(env.REPO_GRANTS);
+  if (!env.REPO_GRANTS && !warnedMissingRepoGrants) {
+    warnedMissingRepoGrants = true;
+    console.warn(
+      "[repo-grant] REPO_GRANTS KV binding is not configured; synthetic " +
+        "refresh grants will not persist and token refresh will fail. Add the " +
+        "REPO_GRANTS namespace in wrangler.toml.",
+    );
+  }
+
   const url = new URL(req.url);
 
   // GitHub webhook endpoint (unauthenticated — signature-verified instead)
   if (req.method === "POST" && url.pathname === "/webhooks/github") {
     return handleGitHubWebhook(req, env, ctx);
+  }
+
+  // Synthetic repo-grant OAuth endpoints (unauthenticated — the opaque refresh
+  // token is the credential). Namespaced under /repo-grant/* to stay clear of
+  // the runtime's /oauth/* routes.
+  if (req.method === "POST" && url.pathname === REPO_GRANT_TOKEN_PATH) {
+    return handleRepoGrantTokenRequest(req, env);
+  }
+  if (req.method === "POST" && url.pathname === REPO_GRANT_REVOKE_PATH) {
+    return handleRepoGrantRevokeRequest(req, env);
   }
 
   // Proxy MCP resource requests to upstream
