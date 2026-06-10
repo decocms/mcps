@@ -154,12 +154,14 @@ async function getRuntime(): Promise<Runtime> {
   return runtimePromise;
 }
 
+// Per-isolate latch so the missing-REPO_GRANTS warning logs at most once per
+// cold start instead of on every request.
+let warnedMissingRepoGrants = false;
+
 /**
  * Intercept webhook and MCP resource requests before they reach runtime.fetch.
  * The Deco runtime doesn't support resources natively, so we proxy them upstream.
  */
-let warnedMissingRepoGrants = false;
-
 async function handle(
   req: Request,
   env: Env,
