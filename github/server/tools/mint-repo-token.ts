@@ -66,6 +66,9 @@ export function createMintRepoTokenTool() {
         name: z.string(),
       }),
       installationId: z.number(),
+      repositoryId: z
+        .number()
+        .describe("Numeric GitHub repository id (stable across renames)."),
     }),
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as unknown as Env;

@@ -541,7 +541,7 @@ describe("mintRepoScopedToken", () => {
   });
 
   test("accepts a matching repositoryId and mints with it", async () => {
-    setFetch(async (input) => {
+    setFetch(async (input, init) => {
       const url = urlOf(input);
       if (/\/user\/installations\/42\/repositories/.test(url)) {
         return json({
@@ -554,6 +554,9 @@ describe("mintRepoScopedToken", () => {
         });
       }
       if (/access_tokens/.test(url)) {
+        // The resolved id — NOT the caller-supplied param — must reach GitHub.
+        const body = JSON.parse((init as { body?: string }).body ?? "{}");
+        expect(body.repository_ids).toEqual([999]);
         return json(
           {
             token: "ghs_ok",
