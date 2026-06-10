@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  handleRepoGrantRevokeRequest,
+  handleRepoGrantTokenRequest,
   issueRepoGrant,
   mintRepoTokenWithGrant,
   refreshRepoGrant,
+  revokeRepoGrant,
 } from "./repo-grant.ts";
 import {
   generateGrantCredentials,
@@ -11,6 +14,7 @@ import {
   type RepoGrantMetadata,
   verifySecret,
 } from "./repo-grant-store.ts";
+import type { Env } from "../types/env.ts";
 
 function fakeKV() {
   const store = new Map<string, string>();
@@ -464,5 +468,95 @@ describe("refreshRepoGrant — minting", () => {
       error: "temporarily_unavailable",
     });
     expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+});
+
+function formReq(path: string, params: Record<string, string>): Request {
+  return new Request(`https://github-mcp.decocms.com${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams(params).toString(),
+  });
+}
+
+describe("revokeRepoGrant", () => {
+  test("revokes a known grant and returns 200", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    const r = await revokeRepoGrant({ store, token: creds.refreshToken });
+    expect(r.status).toBe(200);
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
+  });
+
+  test("returns 200 for an unknown / malformed / missing token", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    expect((await revokeRepoGrant({ store, token: null })).status).toBe(200);
+    expect((await revokeRepoGrant({ store, token: "garbage" })).status).toBe(
+      200,
+    );
+  });
+});
+
+describe("HTTP adapters", () => {
+  test("token endpoint: invalid_request body + 400 + no-store header", async () => {
+    const env = { REPO_GRANTS: fakeKV() } as unknown as Env;
+    const res = await handleRepoGrantTokenRequest(
+      formReq("/repo-grant/token", { grant_type: "refresh_token" }),
+      env,
+    );
+    expect(res.status).toBe(400);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
+    expect((await res.json()) as unknown).toEqual({
+      error: "invalid_request",
+      error_description: "Both grant_type and refresh_token are required.",
+    });
+  });
+
+  test("token endpoint: full success path through the adapter", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds } = await seedGrant(store);
+    const env = {
+      REPO_GRANTS: kv,
+      GITHUB_CLIENT_ID: "Iv1.abc",
+    } as unknown as Env;
+
+    setFetch(async () =>
+      json(
+        {
+          token: "ghs_fresh",
+          expires_at: "2026-06-10T01:00:00.000Z",
+          permissions: { contents: "write", metadata: "read" },
+        },
+        201,
+      ),
+    );
+    const res = await handleRepoGrantTokenRequest(
+      formReq("/repo-grant/token", {
+        grant_type: "refresh_token",
+        refresh_token: creds.refreshToken,
+        client_id: "Iv1.abc",
+      }),
+      env,
+      { jwt: "fake.jwt", now: Date.parse("2026-06-10T00:00:00.000Z") },
+    );
+
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      access_token: string;
+      token_type: string;
+    };
+    expect(body.access_token).toBe("ghs_fresh");
+    expect(body.token_type).toBe("Bearer");
+  });
+
+  test("revoke endpoint: always 200", async () => {
+    const env = { REPO_GRANTS: fakeKV() } as unknown as Env;
+    const res = await handleRepoGrantRevokeRequest(
+      formReq("/repo-grant/revoke", { token: "garbage" }),
+      env,
+    );
+    expect(res.status).toBe(200);
   });
 });

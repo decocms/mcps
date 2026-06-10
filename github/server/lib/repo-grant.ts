@@ -23,14 +23,14 @@ import {
 } from "./github-app-auth.ts";
 import {
   generateGrantCredentials,
+  getRepoGrantStore,
   parseRefreshToken,
   type RepoGrantMetadata,
   type RepoGrantStore,
   verifySecret,
 } from "./repo-grant-store.ts";
 import { mintRepoScopedToken } from "./repo-token.ts";
-
-void DEFAULT_PUBLIC_BASE_URL; // used by HTTP adapters in Task 8
+import type { Env } from "../types/env.ts";
 
 export interface IssuedRepoGrant {
   refreshToken: string;
@@ -334,4 +334,97 @@ export async function refreshRepoGrant(opts: {
       scope: `github-app-installation:${grant.installationId} repo:${grant.owner}/${grant.repo}`,
     },
   };
+}
+
+/** RFC 7009-style revoke. Always 200 (even for unknown/malformed tokens) to
+ * avoid leaking token validity; only storage failure surfaces as 503. */
+export async function revokeRepoGrant(opts: {
+  store: RepoGrantStore;
+  token: string | null;
+}): Promise<{ status: number; body?: { error: string } }> {
+  if (!opts.token) return { status: 200 };
+  const parsed = parseRefreshToken(opts.token);
+  if (!parsed) return { status: 200 };
+  try {
+    await opts.store.revoke(parsed.grantId);
+  } catch {
+    return { status: 503, body: { error: "temporarily_unavailable" } };
+  }
+  return { status: 200 };
+}
+
+const NO_STORE: Record<string, string> = {
+  "Cache-Control": "no-store",
+  Pragma: "no-cache",
+};
+const JSON_NO_STORE: Record<string, string> = {
+  ...NO_STORE,
+  "Content-Type": "application/json",
+};
+
+async function readForm(req: Request): Promise<URLSearchParams> {
+  return new URLSearchParams(await req.text());
+}
+
+function clientIdOf(env: Env): string {
+  return env.GITHUB_CLIENT_ID || process.env.GITHUB_CLIENT_ID || "";
+}
+
+function baseUrlOf(env: Env): string {
+  return (
+    env.PUBLIC_BASE_URL ||
+    process.env.PUBLIC_BASE_URL ||
+    DEFAULT_PUBLIC_BASE_URL
+  );
+}
+
+/** Re-export so MINT_REPO_TOKEN can resolve the public base URL the same way. */
+export { baseUrlOf as repoGrantBaseUrl, clientIdOf as repoGrantClientId };
+
+/** POST /repo-grant/token — OAuth refresh_token grant. */
+export async function handleRepoGrantTokenRequest(
+  req: Request,
+  env: Env,
+  deps: { jwt?: string; now?: number } = {},
+): Promise<Response> {
+  const form = await readForm(req);
+  const result = await refreshRepoGrant({
+    store: getRepoGrantStore(env.REPO_GRANTS),
+    grantType: form.get("grant_type"),
+    refreshToken: form.get("refresh_token"),
+    clientId: form.get("client_id"),
+    expectedClientId: clientIdOf(env),
+    jwt: deps.jwt,
+    now: deps.now,
+  });
+
+  if (result.ok) {
+    return new Response(JSON.stringify(result.success), {
+      status: 200,
+      headers: JSON_NO_STORE,
+    });
+  }
+  return new Response(
+    JSON.stringify({
+      error: result.error,
+      error_description: result.error_description,
+    }),
+    { status: result.status, headers: JSON_NO_STORE },
+  );
+}
+
+/** POST /repo-grant/revoke — RFC 7009 token revocation. */
+export async function handleRepoGrantRevokeRequest(
+  req: Request,
+  env: Env,
+): Promise<Response> {
+  const form = await readForm(req);
+  const result = await revokeRepoGrant({
+    store: getRepoGrantStore(env.REPO_GRANTS),
+    token: form.get("token"),
+  });
+  return new Response(result.body ? JSON.stringify(result.body) : null, {
+    status: result.status,
+    headers: result.body ? JSON_NO_STORE : NO_STORE,
+  });
 }
