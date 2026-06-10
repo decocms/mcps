@@ -1,4 +1,4 @@
-import { describe, expect, test } from "bun:test";
+import { afterEach, describe, expect, test } from "bun:test";
 import { issueRepoGrant, mintRepoTokenWithGrant } from "./repo-grant.ts";
 import {
   getRepoGrantStore,
@@ -92,6 +92,12 @@ function setFetch(impl: (input: unknown, init?: unknown) => Promise<Response>) {
 const urlOf = (i: unknown) =>
   typeof i === "string" ? i : (i as { url: string }).url;
 
+// Restore the real fetch after every test so a monkeypatched mock can never
+// leak into a later test in this file (which Tasks 7-8 also fetch-mock).
+afterEach(() => {
+  globalThis.fetch = realFetch;
+});
+
 describe("mintRepoTokenWithGrant", () => {
   test("mints a token AND issues a grant with the full output shape", async () => {
     setFetch(async (input) => {
@@ -137,8 +143,6 @@ describe("mintRepoTokenWithGrant", () => {
       jwt: "fake.jwt",
       now,
     });
-
-    globalThis.fetch = realFetch;
 
     expect(result.token).toBe("ghs_minted");
     expect(result.expiresAt).toBe("2026-06-10T01:00:00.000Z");
