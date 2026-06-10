@@ -1,8 +1,14 @@
 import { afterEach, describe, expect, test } from "bun:test";
-import { issueRepoGrant, mintRepoTokenWithGrant } from "./repo-grant.ts";
 import {
+  issueRepoGrant,
+  mintRepoTokenWithGrant,
+  refreshRepoGrant,
+} from "./repo-grant.ts";
+import {
+  generateGrantCredentials,
   getRepoGrantStore,
   parseRefreshToken,
+  type RepoGrantMetadata,
   verifySecret,
 } from "./repo-grant-store.ts";
 
@@ -159,5 +165,278 @@ describe("mintRepoTokenWithGrant", () => {
     // The grant is persisted and redeemable.
     const parsed = parseRefreshToken(result.refreshToken);
     expect(await getRepoGrantStore(kv).get(parsed!.grantId)).toBeDefined();
+  });
+});
+
+async function seedGrant(
+  store: ReturnType<typeof getRepoGrantStore>,
+  over: Partial<RepoGrantMetadata> = {},
+) {
+  const creds = generateGrantCredentials();
+  const meta: RepoGrantMetadata = {
+    grantId: creds.grantId,
+    secretHash: creds.secretHash,
+    installationId: 42,
+    repositoryId: 999,
+    owner: "acme",
+    repo: "web",
+    permissions: { contents: "write", metadata: "read" },
+    createdAt: "2026-06-10T00:00:00.000Z",
+    expiresAt: "2026-09-08T00:00:00.000Z",
+    revokedAt: null,
+    clientId: "Iv1.abc",
+    ...over,
+  };
+  await store.create(meta);
+  return { creds, meta };
+}
+
+describe("refreshRepoGrant — request validation", () => {
+  test("missing grant_type or refresh_token → 400 invalid_request", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const r = await refreshRepoGrant({
+      store,
+      grantType: null,
+      refreshToken: null,
+      clientId: null,
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({
+      ok: false,
+      status: 400,
+      error: "invalid_request",
+    });
+  });
+
+  test("unsupported grant_type → 400 unsupported_grant_type", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "authorization_code",
+      refreshToken: "ghr_x.y",
+      clientId: null,
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({
+      ok: false,
+      status: 400,
+      error: "unsupported_grant_type",
+    });
+  });
+
+  test("mismatched client_id → 400 invalid_client", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: "ghr_x.y",
+      clientId: "WRONG",
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({
+      ok: false,
+      status: 400,
+      error: "invalid_client",
+    });
+  });
+});
+
+describe("refreshRepoGrant — grant validity (permanent failures)", () => {
+  test("unparseable refresh_token → 400 invalid_grant", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: "not-a-token",
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+  });
+
+  test("unknown grant → 400 invalid_grant", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const creds = generateGrantCredentials();
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+  });
+
+  test("wrong secret → 400 invalid_grant", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const { meta } = await seedGrant(store);
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: `ghr_${meta.grantId}.WRONGSECRET`,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+  });
+
+  test("revoked grant → 400 invalid_grant", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const { creds } = await seedGrant(store, {
+      revokedAt: "2026-06-11T00:00:00.000Z",
+    });
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+  });
+
+  test("expired grant → 400 invalid_grant and the grant is deleted", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store, {
+      expiresAt: "2026-06-09T00:00:00.000Z",
+    });
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      now: Date.parse("2026-06-10T00:00:00.000Z"),
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
+  });
+});
+
+describe("refreshRepoGrant — minting", () => {
+  test("valid grant → 200 OAuth response, stable refresh_token, slid TTL", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const now = Date.parse("2026-06-10T00:00:00.000Z");
+    const { creds, meta } = await seedGrant(store);
+
+    setFetch(async (input, init) => {
+      const url = urlOf(input);
+      if (/\/app\/installations\/42\/access_tokens/.test(url)) {
+        const body = JSON.parse((init as { body?: string }).body ?? "{}");
+        expect(body.repository_ids).toEqual([999]);
+        expect(body.permissions).toEqual({
+          contents: "write",
+          metadata: "read",
+        });
+        return json(
+          {
+            token: "ghs_fresh",
+            expires_at: "2026-06-10T01:00:00.000Z",
+            permissions: body.permissions,
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      now,
+      jwt: "fake.jwt",
+    });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.success).toEqual({
+      access_token: "ghs_fresh",
+      token_type: "Bearer",
+      expires_in: 3600,
+      refresh_token: creds.refreshToken,
+      scope: "github-app-installation:42 repo:acme/web",
+    });
+    // TTL slid forward 90 days from `now`.
+    const stored = await store.get(meta.grantId);
+    expect(stored?.expiresAt).toBe("2026-09-08T00:00:00.000Z");
+  });
+
+  test("GitHub 422 → 400 invalid_grant and grant deleted", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    setFetch(async () => json({ message: "repo gone" }, 422));
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
+  });
+
+  test("GitHub 404 (installation gone) → 400 invalid_grant", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const { creds } = await seedGrant(store);
+    setFetch(async () => json({ message: "not found" }, 404));
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+  });
+
+  test("GitHub 503 → 503 temporarily_unavailable and grant KEPT", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    setFetch(async () => json({ message: "down" }, 503));
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r).toMatchObject({
+      ok: false,
+      status: 503,
+      error: "temporarily_unavailable",
+    });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+
+  test("GitHub 401 (our App misconfig) → 503, NOT invalid_grant, grant KEPT", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    setFetch(async () => json({ message: "bad jwt" }, 401));
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r).toMatchObject({
+      ok: false,
+      status: 503,
+      error: "temporarily_unavailable",
+    });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
   });
 });

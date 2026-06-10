@@ -17,9 +17,16 @@ import {
   REPO_GRANT_TOKEN_PATH,
 } from "../constants.ts";
 import {
+  createAppJWT,
+  GitHubAppApiError,
+  mintInstallationAccessToken,
+} from "./github-app-auth.ts";
+import {
   generateGrantCredentials,
+  parseRefreshToken,
   type RepoGrantMetadata,
   type RepoGrantStore,
+  verifySecret,
 } from "./repo-grant-store.ts";
 import { mintRepoScopedToken } from "./repo-token.ts";
 
@@ -152,5 +159,180 @@ export async function mintRepoTokenWithGrant(opts: {
     tokenEndpoint: issued.tokenEndpoint,
     clientId: issued.clientId,
     refreshTokenExpiresAt: issued.refreshTokenExpiresAt,
+  };
+}
+
+export interface OAuthTokenSuccess {
+  access_token: string;
+  token_type: "Bearer";
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+}
+
+export type RefreshResult =
+  | { ok: true; success: OAuthTokenSuccess; newExpiresAt: string }
+  | { ok: false; status: number; error: string; error_description: string };
+
+const INVALID_GRANT_MESSAGE =
+  "Repo grant is expired, revoked, unknown, or no longer valid.";
+
+function oauthError(
+  status: number,
+  error: string,
+  error_description: string,
+): RefreshResult {
+  return { ok: false, status, error, error_description };
+}
+
+/** Map a mint failure to a transient-vs-permanent OAuth error. Permanent
+ * (422/404) means the grant can never work again; everything else (outage,
+ * rate limit, our own bad App key → 401/403) is transient and must NOT cause
+ * the mesh to discard a valid grant. */
+function mapRefreshMintError(err: unknown): RefreshResult {
+  if (err instanceof GitHubAppApiError) {
+    if (err.status === 422 || err.status === 404) {
+      return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
+    }
+    return oauthError(
+      503,
+      "temporarily_unavailable",
+      "Token service is temporarily unavailable. Please retry.",
+    );
+  }
+  return oauthError(
+    503,
+    "temporarily_unavailable",
+    "Token service is temporarily unavailable. Please retry.",
+  );
+}
+
+/** Redeem a synthetic refresh token for a fresh repo-scoped installation token.
+ * Uses ONLY GitHub App credentials — no user-to-server token. */
+export async function refreshRepoGrant(opts: {
+  store: RepoGrantStore;
+  grantType: string | null;
+  refreshToken: string | null;
+  clientId: string | null;
+  expectedClientId: string;
+  now?: number;
+  jwt?: string;
+}): Promise<RefreshResult> {
+  const now = opts.now ?? Date.now();
+
+  // --- request validation (client errors; not grant invalidation) ---
+  if (!opts.grantType || !opts.refreshToken) {
+    return oauthError(
+      400,
+      "invalid_request",
+      "Both grant_type and refresh_token are required.",
+    );
+  }
+  if (opts.grantType !== "refresh_token") {
+    return oauthError(
+      400,
+      "unsupported_grant_type",
+      `grant_type "${opts.grantType}" is not supported; use refresh_token.`,
+    );
+  }
+  if (
+    opts.clientId &&
+    opts.expectedClientId &&
+    opts.clientId !== opts.expectedClientId
+  ) {
+    return oauthError(400, "invalid_client", "Unknown client_id.");
+  }
+
+  // --- grant lookup + constant-time secret verification (permanent) ---
+  const parsed = parseRefreshToken(opts.refreshToken);
+  if (!parsed) return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
+
+  let grant: RepoGrantMetadata | undefined;
+  try {
+    grant = await opts.store.get(parsed.grantId);
+  } catch {
+    return oauthError(
+      503,
+      "temporarily_unavailable",
+      "Grant storage is temporarily unavailable. Please retry.",
+    );
+  }
+
+  if (
+    !grant ||
+    grant.revokedAt ||
+    !verifySecret(parsed.secret, grant.secretHash)
+  ) {
+    return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
+  }
+  if (grant.expiresAt && Date.parse(grant.expiresAt) <= now) {
+    try {
+      await opts.store.revoke(grant.grantId);
+    } catch {
+      // best-effort cleanup
+    }
+    return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
+  }
+
+  // --- re-mint ---
+  let jwt: string;
+  try {
+    jwt = opts.jwt ?? createAppJWT();
+  } catch {
+    // App credentials misconfigured: our fault, not the grant's. Transient.
+    return oauthError(
+      503,
+      "temporarily_unavailable",
+      "Token service is temporarily unavailable. Please retry.",
+    );
+  }
+
+  let minted;
+  try {
+    minted = await mintInstallationAccessToken(
+      grant.installationId,
+      { repository_ids: [grant.repositoryId], permissions: grant.permissions },
+      jwt,
+    );
+  } catch (err) {
+    const mapped = mapRefreshMintError(err);
+    // On a permanent (grant-invalidating) error, best-effort delete the grant.
+    if (
+      !mapped.ok &&
+      mapped.status === 400 &&
+      mapped.error === "invalid_grant"
+    ) {
+      try {
+        await opts.store.revoke(grant.grantId);
+      } catch {
+        // best-effort
+      }
+    }
+    return mapped;
+  }
+
+  // --- slide TTL and respond ---
+  const newExpiresAt = new Date(now + GRANT_TTL_SECONDS * 1000).toISOString();
+  try {
+    await opts.store.touch(grant.grantId, newExpiresAt);
+  } catch {
+    // Non-fatal: the access token is already minted.
+  }
+
+  const expiresIn = Math.max(
+    0,
+    Math.floor((Date.parse(minted.expires_at) - now) / 1000),
+  );
+
+  return {
+    ok: true,
+    newExpiresAt,
+    success: {
+      access_token: minted.token,
+      token_type: "Bearer",
+      expires_in: expiresIn,
+      refresh_token: opts.refreshToken,
+      scope: `github-app-installation:${grant.installationId} repo:${grant.owner}/${grant.repo}`,
+    },
   };
 }
