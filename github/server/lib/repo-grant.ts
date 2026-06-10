@@ -362,6 +362,16 @@ const JSON_NO_STORE: Record<string, string> = {
   "Content-Type": "application/json",
 };
 
+/** These endpoints are public/unauthenticated and only ever receive a few
+ * small form fields. Reject an over-sized body via Content-Length before
+ * buffering it, so a hostile caller can't amplify memory/CPU per request. */
+const MAX_FORM_BYTES = 8192;
+
+function bodyTooLarge(req: Request): boolean {
+  const len = Number(req.headers.get("content-length") ?? "0");
+  return Number.isFinite(len) && len > MAX_FORM_BYTES;
+}
+
 async function readForm(req: Request): Promise<URLSearchParams> {
   return new URLSearchParams(await req.text());
 }
@@ -387,6 +397,15 @@ export async function handleRepoGrantTokenRequest(
   env: Env,
   deps: { jwt?: string; now?: number } = {},
 ): Promise<Response> {
+  if (bodyTooLarge(req)) {
+    return new Response(
+      JSON.stringify({
+        error: "invalid_request",
+        error_description: "Request body too large.",
+      }),
+      { status: 413, headers: JSON_NO_STORE },
+    );
+  }
   const form = await readForm(req);
   const result = await refreshRepoGrant({
     store: getRepoGrantStore(env.REPO_GRANTS),
@@ -418,6 +437,9 @@ export async function handleRepoGrantRevokeRequest(
   req: Request,
   env: Env,
 ): Promise<Response> {
+  if (bodyTooLarge(req)) {
+    return new Response(null, { status: 413, headers: NO_STORE });
+  }
   const form = await readForm(req);
   const result = await revokeRepoGrant({
     store: getRepoGrantStore(env.REPO_GRANTS),

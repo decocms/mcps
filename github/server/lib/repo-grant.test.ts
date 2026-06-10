@@ -546,9 +546,27 @@ describe("HTTP adapters", () => {
     const body = (await res.json()) as {
       access_token: string;
       token_type: string;
+      refresh_token: string;
     };
     expect(body.access_token).toBe("ghs_fresh");
     expect(body.token_type).toBe("Bearer");
+    // The stable refresh token is echoed back so the mesh can keep using it.
+    expect(body.refresh_token).toBe(creds.refreshToken);
+  });
+
+  test("token endpoint: rejects an over-sized body with 413", async () => {
+    const env = { REPO_GRANTS: fakeKV() } as unknown as Env;
+    const req = new Request("https://github-mcp.decocms.com/repo-grant/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Length": "9000",
+      },
+      body: `grant_type=refresh_token&refresh_token=${"a".repeat(8800)}`,
+    });
+    const res = await handleRepoGrantTokenRequest(req, env);
+    expect(res.status).toBe(413);
+    expect(res.headers.get("Cache-Control")).toBe("no-store");
   });
 
   test("revoke endpoint: always 200", async () => {
