@@ -14,7 +14,11 @@ export const StateSchema = z.object({});
 
 interface KVNamespace {
   get(key: string): Promise<string | null>;
-  put(key: string, value: string): Promise<void>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
   delete(key: string): Promise<void>;
   list(options?: { prefix?: string; cursor?: string }): Promise<{
     keys: Array<{ name: string }>;
@@ -34,11 +38,13 @@ interface KVNamespace {
  */
 export type Env = DefaultEnv<typeof StateSchema, Registry> & {
   INSTALLATIONS?: KVNamespace;
+  REPO_GRANTS?: KVNamespace;
   GITHUB_APP_ID?: string;
   GITHUB_PRIVATE_KEY?: string;
   GITHUB_CLIENT_ID?: string;
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_WEBHOOK_SECRET?: string;
+  PUBLIC_BASE_URL?: string;
 };
 
 export type { Registry };
