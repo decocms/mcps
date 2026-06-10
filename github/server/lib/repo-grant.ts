@@ -190,15 +190,11 @@ function oauthError(
  * rate limit, our own bad App key → 401/403) is transient and must NOT cause
  * the mesh to discard a valid grant. */
 function mapRefreshMintError(err: unknown): RefreshResult {
-  if (err instanceof GitHubAppApiError) {
-    if (err.status === 422 || err.status === 404) {
-      return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
-    }
-    return oauthError(
-      503,
-      "temporarily_unavailable",
-      "Token service is temporarily unavailable. Please retry.",
-    );
+  if (
+    err instanceof GitHubAppApiError &&
+    (err.status === 422 || err.status === 404)
+  ) {
+    return oauthError(400, "invalid_grant", INVALID_GRANT_MESSAGE);
   }
   return oauthError(
     503,
@@ -235,6 +231,9 @@ export async function refreshRepoGrant(opts: {
       `grant_type "${opts.grantType}" is not supported; use refresh_token.`,
     );
   }
+  // Public-client model: the 256-bit grant secret is the real credential, so
+  // client_id is OPTIONAL. We reject only a client_id that is present AND wrong
+  // (a cheap consistency safeguard); an omitted client_id is allowed by design.
   if (
     opts.clientId &&
     opts.expectedClientId &&

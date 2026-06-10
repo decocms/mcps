@@ -366,6 +366,30 @@ describe("refreshRepoGrant — minting", () => {
     expect(stored?.expiresAt).toBe("2026-09-08T00:00:00.000Z");
   });
 
+  test("omitted client_id is allowed (public-client model)", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const { creds } = await seedGrant(store);
+    setFetch(async () =>
+      json(
+        {
+          token: "ghs_fresh",
+          expires_at: "2026-06-10T01:00:00.000Z",
+          permissions: { contents: "write", metadata: "read" },
+        },
+        201,
+      ),
+    );
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: null,
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r.ok).toBe(true);
+  });
+
   test("GitHub 422 → 400 invalid_grant and grant deleted", async () => {
     const kv = fakeKV();
     const store = getRepoGrantStore(kv);
@@ -383,9 +407,10 @@ describe("refreshRepoGrant — minting", () => {
     expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
   });
 
-  test("GitHub 404 (installation gone) → 400 invalid_grant", async () => {
-    const store = getRepoGrantStore(fakeKV());
-    const { creds } = await seedGrant(store);
+  test("GitHub 404 (installation gone) → 400 invalid_grant and grant deleted", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
     setFetch(async () => json({ message: "not found" }, 404));
     const r = await refreshRepoGrant({
       store,
@@ -396,6 +421,7 @@ describe("refreshRepoGrant — minting", () => {
       jwt: "fake.jwt",
     });
     expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
   });
 
   test("GitHub 503 → 503 temporarily_unavailable and grant KEPT", async () => {
