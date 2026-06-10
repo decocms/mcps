@@ -15,7 +15,7 @@ export class GaClient {
   constructor(config: GaClientConfig) {
     const authClient = new OAuth2Client();
     authClient.setCredentials({ access_token: config.accessToken });
-    
+
     // We instantiate both clients utilizing the explicit oauth object.
     this.dataClient = new BetaAnalyticsDataClient({ authClient });
     this.adminClient = new AnalyticsAdminServiceClient({ authClient });
