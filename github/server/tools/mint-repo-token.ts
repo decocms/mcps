@@ -1,21 +1,24 @@
 /**
  * MINT_REPO_TOKEN — mint a GitHub App installation access token scoped to
- * exactly one repository, with least-privilege permissions.
+ * exactly one repository, AND issue a durable synthetic refresh token (an
+ * MCP-issued repo grant — NOT a GitHub refresh token).
  *
- * Used by Deco Studio to give an imported agent a token that can touch ONLY
- * its own repo (baked into the sandbox clone URL). Tokens are short-lived
- * (~1h) with no refresh token — Studio calls this again to refresh.
+ * The short-lived (~1h) `ghs_` token is unchanged. The refresh token is the
+ * opaque `ghr_<grantId>.<secret>` string; redeeming it at `tokenEndpoint`
+ * re-mints a fresh `ghs_` token using only the GitHub App credentials.
  *
- * `createPrivateTool` ensures the request is authenticated before executing;
- * the heavy lifting (caller authorization, permission capping, minting) lives
- * in `../lib/repo-token.ts`. Env (and thus the caller's GitHub token) is read
- * from `runtimeContext.env` at execution time — on Workers there is no env at
- * tool-build time.
+ * `createPrivateTool` ensures the caller is authenticated; caller authorization,
+ * permission capping, minting and grant issuance live in ../lib/*.
  */
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { mintRepoScopedToken } from "../lib/repo-token.ts";
+import {
+  mintRepoTokenWithGrant,
+  repoGrantBaseUrl,
+  repoGrantClientId,
+} from "../lib/repo-grant.ts";
+import { getRepoGrantStore } from "../lib/repo-grant-store.ts";
 import type { Env } from "../types/env.ts";
 
 export function createMintRepoTokenTool() {
@@ -26,8 +29,10 @@ export function createMintRepoTokenTool() {
       "with least-privilege permissions, using the GitHub App. The authenticated " +
       "caller must already be entitled to the installation and repository — the " +
       "tool verifies this against the caller's own GitHub context before minting. " +
-      "The token grants only repo-content / pull-request / issue access. Tokens " +
-      "are not cached and have no refresh token; call again to refresh.",
+      "The token grants only repo-content / pull-request / issue access. Also " +
+      "returns a durable refresh token (refreshToken) plus tokenEndpoint and " +
+      "clientId: POST grant_type=refresh_token to tokenEndpoint to mint a fresh " +
+      "token later without the caller's GitHub login.",
     inputSchema: z.object({
       installationId: z
         .number()
@@ -41,6 +46,15 @@ export function createMintRepoTokenTool() {
       repo: z
         .string()
         .describe('The repository NAME only, e.g. "web" (NOT "acme/web").'),
+      repositoryId: z
+        .number()
+        .int()
+        .optional()
+        .describe(
+          "Optional numeric repository id. When provided it is cross-checked " +
+            "against the repo the caller is entitled to; the resolved id is " +
+            "authoritative (rename-proof).",
+        ),
       permissions: z
         .record(z.string(), z.string())
         .optional()
@@ -58,28 +72,52 @@ export function createMintRepoTokenTool() {
       expiresAt: z
         .string()
         .describe("ISO8601 expiry (~1h from now; issued by GitHub)."),
+      expiresIn: z
+        .number()
+        .optional()
+        .describe("Seconds until the access token expires (usually <= 3600)."),
+      tokenType: z.literal("Bearer").optional(),
       permissions: z
         .record(z.string(), z.string())
         .describe("The permissions actually granted, echoed from GitHub."),
       repository: z.object({
+        id: z.number().optional(),
         owner: z.string(),
         name: z.string(),
       }),
       installationId: z.number(),
-      repositoryId: z
-        .number()
-        .describe("Numeric GitHub repository id (stable across renames)."),
+      refreshToken: z
+        .string()
+        .describe(
+          "Opaque MCP-issued repo grant (ghr_...). NOT a GitHub token.",
+        ),
+      tokenEndpoint: z
+        .string()
+        .describe("Absolute HTTPS endpoint accepting a refresh_token grant."),
+      clientId: z
+        .string()
+        .describe("Stable client id expected by tokenEndpoint."),
+      refreshTokenExpiresAt: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("ISO8601 expiry of the refresh grant (sliding 90 days)."),
     }),
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as unknown as Env;
       const callerToken = env.MESH_REQUEST_CONTEXT?.authorization ?? "";
 
-      return await mintRepoScopedToken({
+      return await mintRepoTokenWithGrant({
         callerToken,
         installationId: context.installationId,
         owner: context.owner,
         repo: context.repo,
+        repositoryId: context.repositoryId,
         permissions: context.permissions,
+        clientId: repoGrantClientId(env),
+        baseUrl: repoGrantBaseUrl(env),
+        store: getRepoGrantStore(),
+        createdByConnectionId: env.MESH_REQUEST_CONTEXT?.connectionId,
       });
     },
   });
