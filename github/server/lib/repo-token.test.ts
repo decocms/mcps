@@ -464,6 +464,7 @@ describe("mintRepoScopedToken", () => {
       },
       repository: { owner: "acme", name: "web" },
       installationId: 42,
+      repositoryId: 999,
     });
   });
 
@@ -535,6 +536,77 @@ describe("mintRepoScopedToken", () => {
           jwt: "fake.jwt",
         }),
       "unauthorized_caller",
+    );
+    expect(mintCalled).toBe(false);
+  });
+
+  test("accepts a matching repositoryId and mints with it", async () => {
+    setFetch(async (input) => {
+      const url = urlOf(input);
+      if (/\/user\/installations\/42\/repositories/.test(url)) {
+        return json({
+          repositories: [{ id: 999, name: "web", owner: { login: "acme" } }],
+        });
+      }
+      if (url.includes("/user/installations")) {
+        return json({
+          installations: [{ id: 42, account: { login: "acme" } }],
+        });
+      }
+      if (/access_tokens/.test(url)) {
+        return json(
+          {
+            token: "ghs_ok",
+            expires_at: "2026-06-05T12:00:00Z",
+            permissions: {},
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+    const result = await mintRepoScopedToken({
+      callerToken: "ghu_x",
+      installationId: 42,
+      owner: "acme",
+      repo: "web",
+      repositoryId: 999,
+      jwt: "fake.jwt",
+    });
+    expect(result.repositoryId).toBe(999);
+  });
+
+  test("rejects a repositoryId that does not match the resolved repo", async () => {
+    let mintCalled = false;
+    setFetch(async (input) => {
+      const url = urlOf(input);
+      if (/\/user\/installations\/42\/repositories/.test(url)) {
+        return json({
+          repositories: [{ id: 999, name: "web", owner: { login: "acme" } }],
+        });
+      }
+      if (url.includes("/user/installations")) {
+        return json({
+          installations: [{ id: 42, account: { login: "acme" } }],
+        });
+      }
+      if (/access_tokens/.test(url)) {
+        mintCalled = true;
+        return json({ token: "ghs_nope" }, 201);
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+    await expectRejectCode(
+      () =>
+        mintRepoScopedToken({
+          callerToken: "ghu_x",
+          installationId: 42,
+          owner: "acme",
+          repo: "web",
+          repositoryId: 5,
+          jwt: "fake.jwt",
+        }),
+      "invalid_input",
     );
     expect(mintCalled).toBe(false);
   });
