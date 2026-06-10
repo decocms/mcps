@@ -19,14 +19,12 @@ export const listGoogleAdsLinksTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [response] = await client.adminClient.listGoogleAdsLinks({
-          parent: args.property,
-        });
+        const response = await client.listGoogleAdsLinks(args.property);
 
         return { response };
-      } catch (error: any) {
+      } catch (error) {
         throw new Error(
-          `Failed to retrieve Google Ads links: ${error.message}`,
+          `Failed to retrieve Google Ads links: ${error instanceof Error ? error.message : String(error)}`,
         );
       }
     },

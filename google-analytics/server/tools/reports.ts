@@ -51,8 +51,7 @@ export const runReportTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [response] = await client.dataClient.runReport({
-          property: args.property,
+        const response = await client.runReport(args.property, {
           dateRanges: args.dateRanges,
           dimensions: args.dimensions,
           metrics: args.metrics,
@@ -95,8 +94,7 @@ export const runRealtimeReportTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [response] = await client.dataClient.runRealtimeReport({
-          property: args.property,
+        const response = await client.runRealtimeReport(args.property, {
           dimensions: args.dimensions,
           metrics: args.metrics,
           limit: args.limit,

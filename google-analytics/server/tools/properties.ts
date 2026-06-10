@@ -18,9 +18,7 @@ export const getPropertyDetailsTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [response] = await client.adminClient.getProperty({
-          name: args.property,
-        });
+        const response = await client.getProperty(args.property);
 
         return { response };
       } catch (error) {
@@ -47,18 +45,10 @@ export const getCustomDimensionsAndMetricsTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [dimensions] = await client.adminClient.listCustomDimensions({
-          parent: args.property,
-        });
+        const dimensions = await client.listCustomDimensions(args.property);
+        const metrics = await client.listCustomMetrics(args.property);
 
-        const [metrics] = await client.adminClient.listCustomMetrics({
-          parent: args.property,
-        });
-
-        return {
-          dimensions,
-          metrics,
-        };
+        return { dimensions, metrics };
       } catch (error) {
         throw new Error(
           `Failed to retrieve custom dimensions/metrics: ${error instanceof Error ? error.message : String(error)}`,

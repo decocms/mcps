@@ -13,11 +13,9 @@ export const getAccountSummariesTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
 
       try {
-        const [response] = await client.adminClient.listAccountSummaries({});
+        const response = await client.listAccountSummaries();
 
-        return {
-          response: response,
-        };
+        return { response };
       } catch (error) {
         throw new Error(
           `Failed to retrieve account summaries: ${error instanceof Error ? error.message : String(error)}`,
