@@ -17,8 +17,8 @@ export const getAccountSummariesTool = (env: Env) =>
         return {
            response: response
         };
-      } catch (error: any) {
-        throw new Error(`Failed to retrieve account summaries: ${error.message}`);
+      } catch (error) {
+        throw new Error(`Failed to retrieve account summaries: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
   });

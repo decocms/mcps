@@ -24,12 +24,12 @@ export const runReportTool = (env: Env) =>
       property: z.string().describe("The Google Analytics Property identifier e.g. 'properties/1234567'"),
       dateRanges: z.array(DateRangeSchema).min(1).describe("Date ranges to query."),
       dimensions: z.array(DimensionSchema).optional().describe("Dimensions requested and displayed."),
-      metrics: z.array(MetricSchema).optional().describe("Metrics requested and displayed."),
+      metrics: z.array(MetricSchema).min(1).describe("Metrics requested and displayed."),
       limit: z.number().optional().describe("Maximum number of rows to return."),
     }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-      
+
       try {
         const [response] = await client.dataClient.runReport({
           property: args.property,
@@ -40,8 +40,8 @@ export const runReportTool = (env: Env) =>
         });
         
         return { response };
-      } catch (error: any) {
-        throw new Error(`Failed to run report: ${error.message}`);
+      } catch (error) {
+        throw new Error(`Failed to run report: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
   });
@@ -53,12 +53,12 @@ export const runRealtimeReportTool = (env: Env) =>
     inputSchema: z.object({
       property: z.string().describe("The Google Analytics Property identifier e.g. 'properties/1234567'"),
       dimensions: z.array(DimensionSchema).optional().describe("Dimensions requested and displayed."),
-      metrics: z.array(MetricSchema).optional().describe("Metrics requested and displayed."),
+      metrics: z.array(MetricSchema).min(1).describe("Metrics requested and displayed."),
       limit: z.number().optional().describe("Maximum number of rows to return."),
     }),
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
-      
+
       try {
         const [response] = await client.dataClient.runRealtimeReport({
           property: args.property,
@@ -68,8 +68,8 @@ export const runRealtimeReportTool = (env: Env) =>
         });
         
         return { response };
-      } catch (error: any) {
-        throw new Error(`Failed to run realtime report: ${error.message}`);
+      } catch (error) {
+        throw new Error(`Failed to run realtime report: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
   });

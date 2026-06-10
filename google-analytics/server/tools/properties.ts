@@ -19,8 +19,8 @@ export const getPropertyDetailsTool = (env: Env) =>
         });
         
         return { response };
-      } catch (error: any) {
-        throw new Error(`Failed to retrieve property details: ${error.message}`);
+      } catch (error) {
+        throw new Error(`Failed to retrieve property details: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
   });
@@ -48,8 +48,8 @@ export const getCustomDimensionsAndMetricsTool = (env: Env) =>
            dimensions,
            metrics,
         };
-      } catch (error: any) {
-        throw new Error(`Failed to retrieve custom dimensions/metrics: ${error.message}`);
+      } catch (error) {
+        throw new Error(`Failed to retrieve custom dimensions/metrics: ${error instanceof Error ? error.message : String(error)}`);
       }
     },
   });
