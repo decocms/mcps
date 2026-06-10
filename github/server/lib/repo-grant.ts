@@ -83,6 +83,14 @@ export async function issueRepoGrant(opts: {
   };
 }
 
+/** Whole seconds until an ISO timestamp, floored at 0. Returns 0 (not NaN) for
+ * an unparseable value — `Math.max(0, NaN)` is NaN, which would serialize
+ * `expires_in` to null and break the OAuth numeric contract. */
+function secondsUntil(iso: string, now: number): number {
+  const secs = Math.floor((Date.parse(iso) - now) / 1000);
+  return Number.isFinite(secs) ? Math.max(0, secs) : 0;
+}
+
 export interface MintRepoTokenWithGrantResult {
   token: string;
   expiresAt: string;
@@ -138,10 +146,7 @@ export async function mintRepoTokenWithGrant(opts: {
     now,
   });
 
-  const expiresIn = Math.max(
-    0,
-    Math.floor((Date.parse(minted.expiresAt) - now) / 1000),
-  );
+  const expiresIn = secondsUntil(minted.expiresAt, now);
 
   return {
     token: minted.token,
@@ -318,10 +323,7 @@ export async function refreshRepoGrant(opts: {
     // Non-fatal: the access token is already minted.
   }
 
-  const expiresIn = Math.max(
-    0,
-    Math.floor((Date.parse(minted.expires_at) - now) / 1000),
-  );
+  const expiresIn = secondsUntil(minted.expires_at, now);
 
   return {
     ok: true,

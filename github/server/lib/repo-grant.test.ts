@@ -394,6 +394,28 @@ describe("refreshRepoGrant — minting", () => {
     expect(r.ok).toBe(true);
   });
 
+  test("a malformed GitHub expires_at yields expires_in 0 (not NaN)", async () => {
+    const store = getRepoGrantStore(fakeKV());
+    const { creds } = await seedGrant(store);
+    setFetch(async () =>
+      json(
+        { token: "ghs_fresh", expires_at: "not-a-date", permissions: {} },
+        201,
+      ),
+    );
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.success.expires_in).toBe(0);
+  });
+
   test("GitHub 422 → 400 invalid_grant and grant deleted", async () => {
     const kv = fakeKV();
     const store = getRepoGrantStore(kv);
