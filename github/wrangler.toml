@@ -31,4 +31,4 @@ id = "c81656fe0e4347d39205c0f2103ca5c9"
 # Then replace the id below with the returned id BEFORE deploying.
 [[kv_namespaces]]
 binding = "REPO_GRANTS"
-id = "REPLACE_WITH_REPO_GRANTS_KV_ID"
+id = "800a6e64bcd14c11adc4ed5b45e76fb8"
