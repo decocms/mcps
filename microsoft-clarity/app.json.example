@@ -1,0 +1,25 @@
+{
+  "scopeName": "deco",
+  "name": "my-mcp",
+  "friendlyName": "My MCP",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-my-mcp.decocache.com/mcp"
+  },
+  "description": "Short description of what this MCP does (1-2 sentences)",
+  "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["Productivity"],
+    "official": false,
+    "tags": ["example", "template", "mcp"],
+    "short_description": "Short description of what this MCP does",
+    "mesh_description": "Detailed description of your MCP (max 1500 characters). Explain what it does, key features, use cases, and authentication method. Use **bold** for feature names. Example: **Key Features** - Feature 1 description. **Use Cases** - Use case description. **Authentication** - How to authenticate. Perfect for developers who need [your use case]. Provides [your benefit]."
+  }
+}
+
