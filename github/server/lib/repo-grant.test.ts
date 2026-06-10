@@ -61,4 +61,21 @@ describe("issueRepoGrant", () => {
     });
     expect(verifySecret(parsed!.secret, stored!.secretHash)).toBe(true);
   });
+
+  test("normalizes a baseUrl with a trailing slash (no double slash)", async () => {
+    const issued = await issueRepoGrant({
+      store: getRepoGrantStore(fakeKV()),
+      installationId: 42,
+      repositoryId: 999,
+      owner: "acme",
+      repo: "web",
+      permissions: { contents: "write", metadata: "read" },
+      clientId: "Iv1.abc",
+      baseUrl: "https://github-mcp.decocms.com/",
+      now: Date.parse("2026-06-10T00:00:00.000Z"),
+    });
+    expect(issued.tokenEndpoint).toBe(
+      "https://github-mcp.decocms.com/repo-grant/token",
+    );
+  });
 });

@@ -67,7 +67,9 @@ export async function issueRepoGrant(opts: {
 
   return {
     refreshToken,
-    tokenEndpoint: `${opts.baseUrl}${REPO_GRANT_TOKEN_PATH}`,
+    // Strip a trailing slash so a misconfigured PUBLIC_BASE_URL can't yield a
+    // double-slash endpoint the mesh would fail to call.
+    tokenEndpoint: `${opts.baseUrl.replace(/\/+$/, "")}${REPO_GRANT_TOKEN_PATH}`,
     clientId: opts.clientId,
     refreshTokenExpiresAt: expiresAt,
   };
