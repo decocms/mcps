@@ -85,9 +85,95 @@ export function parseRefreshToken(
   return { grantId, secret };
 }
 
-// --- store interface + implementations come in Task 3 (same file) ---
+// --- store interface + implementations ---
 
-const _keyOf = (grantId: string): string => `${GRANT_KEY_PREFIX}${grantId}`;
-// _keyOf and GRANT_TTL_SECONDS are used by the store added in Task 3.
-void _keyOf;
-void GRANT_TTL_SECONDS;
+interface KVNamespaceLike {
+  get(key: string): Promise<string | null>;
+  put(
+    key: string,
+    value: string,
+    options?: { expirationTtl?: number },
+  ): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+
+export interface RepoGrantStore {
+  create(meta: RepoGrantMetadata): Promise<void>;
+  get(grantId: string): Promise<RepoGrantMetadata | undefined>;
+  /** Slide expiry forward and re-persist (resets the KV TTL). */
+  touch(grantId: string, expiresAt: string): Promise<void>;
+  /** Permanently remove a grant. */
+  revoke(grantId: string): Promise<void>;
+}
+
+const keyOf = (grantId: string): string => `${GRANT_KEY_PREFIX}${grantId}`;
+
+class KvRepoGrantStore implements RepoGrantStore {
+  constructor(private kv: KVNamespaceLike) {}
+
+  async create(meta: RepoGrantMetadata): Promise<void> {
+    await this.kv.put(keyOf(meta.grantId), JSON.stringify(meta), {
+      expirationTtl: GRANT_TTL_SECONDS,
+    });
+  }
+
+  async get(grantId: string): Promise<RepoGrantMetadata | undefined> {
+    const raw = await this.kv.get(keyOf(grantId));
+    if (!raw) return undefined;
+    try {
+      return JSON.parse(raw) as RepoGrantMetadata;
+    } catch {
+      return undefined;
+    }
+  }
+
+  async touch(grantId: string, expiresAt: string): Promise<void> {
+    const existing = await this.get(grantId);
+    if (!existing) return;
+    await this.kv.put(
+      keyOf(grantId),
+      JSON.stringify({ ...existing, expiresAt }),
+      { expirationTtl: GRANT_TTL_SECONDS },
+    );
+  }
+
+  async revoke(grantId: string): Promise<void> {
+    await this.kv.delete(keyOf(grantId));
+  }
+}
+
+class MemoryRepoGrantStore implements RepoGrantStore {
+  private map = new Map<string, RepoGrantMetadata>();
+  async create(meta: RepoGrantMetadata): Promise<void> {
+    this.map.set(meta.grantId, meta);
+  }
+  async get(grantId: string): Promise<RepoGrantMetadata | undefined> {
+    return this.map.get(grantId);
+  }
+  async touch(grantId: string, expiresAt: string): Promise<void> {
+    const existing = this.map.get(grantId);
+    if (existing) this.map.set(grantId, { ...existing, expiresAt });
+  }
+  async revoke(grantId: string): Promise<void> {
+    this.map.delete(grantId);
+  }
+}
+
+const memoryStore = new MemoryRepoGrantStore();
+
+// Per-request KV binding, threaded from handle() the same way trigger-store
+// does. The binding object is stable per isolate, so concurrent requests
+// sharing it is safe.
+let currentKV: KVNamespaceLike | undefined;
+
+export function setRepoGrantKV(kv: KVNamespaceLike | undefined): void {
+  currentKV = kv;
+}
+
+/** Resolve a grant store. An explicit `kv` (e.g. from an HTTP handler that has
+ * `env`) wins; otherwise the per-request singleton; otherwise the dev memory
+ * store. */
+export function getRepoGrantStore(kv?: KVNamespaceLike): RepoGrantStore {
+  const ns = kv ?? currentKV;
+  return ns ? new KvRepoGrantStore(ns) : memoryStore;
+}
