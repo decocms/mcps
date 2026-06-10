@@ -21,6 +21,7 @@ import {
   type RepoGrantMetadata,
   type RepoGrantStore,
 } from "./repo-grant-store.ts";
+import { mintRepoScopedToken } from "./repo-token.ts";
 
 void DEFAULT_PUBLIC_BASE_URL; // used by HTTP adapters in Task 8
 
@@ -72,5 +73,84 @@ export async function issueRepoGrant(opts: {
     tokenEndpoint: `${opts.baseUrl.replace(/\/+$/, "")}${REPO_GRANT_TOKEN_PATH}`,
     clientId: opts.clientId,
     refreshTokenExpiresAt: expiresAt,
+  };
+}
+
+export interface MintRepoTokenWithGrantResult {
+  token: string;
+  expiresAt: string;
+  expiresIn: number;
+  tokenType: "Bearer";
+  permissions: Record<string, string>;
+  repository: { id: number; owner: string; name: string };
+  installationId: number;
+  refreshToken: string;
+  tokenEndpoint: string;
+  clientId: string;
+  refreshTokenExpiresAt: string;
+}
+
+/** Mint a short-lived repo-scoped token AND issue a durable refresh grant.
+ * This is the orchestration behind the MINT_REPO_TOKEN tool. */
+export async function mintRepoTokenWithGrant(opts: {
+  callerToken: string;
+  installationId: number;
+  owner: string;
+  repo: string;
+  permissions?: Record<string, string>;
+  repositoryId?: number;
+  clientId: string;
+  baseUrl: string;
+  store: RepoGrantStore;
+  createdByConnectionId?: string;
+  jwt?: string;
+  now?: number;
+}): Promise<MintRepoTokenWithGrantResult> {
+  const now = opts.now ?? Date.now();
+
+  const minted = await mintRepoScopedToken({
+    callerToken: opts.callerToken,
+    installationId: opts.installationId,
+    owner: opts.owner,
+    repo: opts.repo,
+    permissions: opts.permissions,
+    repositoryId: opts.repositoryId,
+    jwt: opts.jwt,
+  });
+
+  const issued = await issueRepoGrant({
+    store: opts.store,
+    installationId: minted.installationId,
+    repositoryId: minted.repositoryId,
+    owner: minted.repository.owner,
+    repo: minted.repository.name,
+    permissions: minted.permissions,
+    clientId: opts.clientId,
+    baseUrl: opts.baseUrl,
+    createdByConnectionId: opts.createdByConnectionId,
+    now,
+  });
+
+  const expiresIn = Math.max(
+    0,
+    Math.floor((Date.parse(minted.expiresAt) - now) / 1000),
+  );
+
+  return {
+    token: minted.token,
+    expiresAt: minted.expiresAt,
+    expiresIn,
+    tokenType: "Bearer",
+    permissions: minted.permissions,
+    repository: {
+      id: minted.repositoryId,
+      owner: minted.repository.owner,
+      name: minted.repository.name,
+    },
+    installationId: minted.installationId,
+    refreshToken: issued.refreshToken,
+    tokenEndpoint: issued.tokenEndpoint,
+    clientId: issued.clientId,
+    refreshTokenExpiresAt: issued.refreshTokenExpiresAt,
   };
 }
