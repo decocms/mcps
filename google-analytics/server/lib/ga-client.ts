@@ -47,10 +47,13 @@ export class GaClient {
       // or verbose diagnostic payloads from Google's error responses.
       let message = `${res.status}`;
       try {
-        const body = await res.json() as { error?: { message?: string; status?: string } };
+        const body = (await res.json()) as {
+          error?: { message?: string; status?: string };
+        };
         const err = body?.error;
         if (err?.status || err?.message) {
-          message = `${res.status} ${err.status ?? ""} - ${err.message ?? ""}`.trim();
+          message =
+            `${res.status} ${err.status ?? ""} - ${err.message ?? ""}`.trim();
         }
       } catch {
         // If the body isn't JSON, fall back to the status code only.
@@ -63,10 +66,7 @@ export class GaClient {
 
   // Shared paginator for Admin API list endpoints that return a single resource
   // collection with nextPageToken. Fetches all pages up to MAX_PAGES.
-  private async listAllPages<T>(
-    baseUrl: string,
-    key: string,
-  ): Promise<T[]> {
+  private async listAllPages<T>(baseUrl: string, key: string): Promise<T[]> {
     const items: T[] = [];
     let pageToken: string | undefined;
     let pages = 0;

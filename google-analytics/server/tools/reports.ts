@@ -127,7 +127,9 @@ export const runReportTool = (env: Env) =>
   });
 
 const FunnelStepSchema = z.object({
-  name: z.string().describe("Display name for this funnel step (shown in reports)."),
+  name: z
+    .string()
+    .describe("Display name for this funnel step (shown in reports)."),
   filterExpression: z
     .record(z.string(), z.unknown())
     .describe(
