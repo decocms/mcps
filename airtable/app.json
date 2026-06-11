@@ -4,7 +4,7 @@
   "friendlyName": "Airtable",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-airtable.deco.site/mcp"
+    "url": "https://sites-airtable.decocache.com/mcp"
   },
   "description": "Connect AI agents to Airtable for database operations including records, tables, fields, and bases management.",
   "icon": "https://assets.decocache.com/decocms/airtable-icon.png",

@@ -4,7 +4,7 @@
   "friendlyName": "Strapi CMS",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-strapi.deco.site/mcp"
+    "url": "https://sites-strapi.decocache.com/mcp"
   },
   "description": "Manage content, media, users, and roles in Strapi CMS. Full API integration for headless content management.",
   "icon": "https://assets.decocache.com/decocms/8a4d61b8-4d77-426b-84d8-510e07c92d50/strapi-logo.png",

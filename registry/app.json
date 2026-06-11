@@ -4,7 +4,7 @@
   "friendlyName": "MCP Registry",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-registry.deco.site/mcp"
+    "url": "https://sites-registry.decocache.com/mcp"
   },
   "repository": {
     "url": "https://github.com/decocms/mcps/tree/main/registry"

@@ -4,7 +4,7 @@
   "friendlyName": "Google Analytics",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-analytics.deco.site/mcp"
+    "url": "https://sites-google-analytics.decocache.com/mcp"
   },
   "description": "Integrate with Google Analytics 4 (GA4) to query reports, fetch realtime data, and manage analytics properties.",
   "icon": "https://www.gstatic.com/analytics-suite/header/suite/v2/ic_analytics.svg",

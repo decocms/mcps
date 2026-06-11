@@ -4,7 +4,7 @@
   "friendlyName": "TikTok Ads",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-tiktok-ads.deco.site/mcp"
+    "url": "https://sites-tiktok-ads.decocache.com/mcp"
   },
   "description": "Integrate and manage your TikTok Ads campaigns. Create, edit and analyze campaigns, ad groups, ads and performance reports.",
   "icon": "https://assets.decocache.com/decocms/2c9b2acb-5cdd-4a92-8fda-fc1df78f856d/tik-tok-ads-logo.jpg",

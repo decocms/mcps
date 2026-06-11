@@ -6,7 +6,7 @@
 	"icon": "https://app.crazyegg.com/apple-touch-icon-152x152.png",
 	"connection": {
 		"type": "HTTP",
-		"url": "https://sites-crazy-egg.deco.site/api/mcp"
+		"url": "https://sites-crazy-egg.decocache.com/api/mcp"
 	},
 	"unlisted": false,
 	"metadata": {

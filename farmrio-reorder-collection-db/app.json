@@ -4,7 +4,7 @@
   "friendlyName": "Farmrio Reorder Collection DB",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-farmrio-reorder-collection-db.deco.site/mcp",
+    "url": "https://sites-farmrio-reorder-collection-db.decocache.com/mcp",
     "configSchema": {
       "type": "object",
       "properties": {

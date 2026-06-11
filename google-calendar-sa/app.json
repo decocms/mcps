@@ -4,7 +4,7 @@
   "friendlyName": "Google Calendar (Service Account)",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-calendar-sa.deco.site/mcp"
+    "url": "https://sites-google-calendar-sa.decocache.com/mcp"
   },
   "description": "Access Google Calendar using a service account with domain-wide delegation. See all events for any user in your Google Workspace without per-user OAuth login.",
   "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",

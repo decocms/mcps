@@ -4,7 +4,7 @@
   "friendlyName": "Discord (Events)",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-discord.deco.site/mcp"
+    "url": "https://sites-discord.decocache.com/mcp"
   },
   "description": "Event-driven Discord MCP. Emits every Discord event as a Studio trigger; provides management tools for the agent to send messages, manage channels, members, roles, webhooks, and respond to interactive components (buttons, selects, modals).",
   "icon": "https://assets.decocache.com/decocms/c84a9954-d171-4b02-8bf2-906ad913b16e/discord-logo.jpeg",
