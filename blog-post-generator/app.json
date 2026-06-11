@@ -4,7 +4,7 @@
   "friendlyName": "Blog Post Generator",
   "connection": {
     "type": "HTTP",
-    "url": "https://blog-post-generator.decocache.com/mcp"
+    "url": "https://blog-post-generator.deco.site/mcp"
   },
   "description": "Generate blog posts from context using n8n workflow automation.",
   "icon": "https://assets.decocache.com/mcp/blog-post-generator-icon.svg",
