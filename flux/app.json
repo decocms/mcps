@@ -4,7 +4,7 @@
   "friendlyName": "FLUX Image Generation",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-flux.decocache.com/mcp"
+    "url": "https://sites-flux.deco.site/mcp"
   },
   "description": "Generate images using Black Forest Labs FLUX models. Supports text-to-image generation with multiple FLUX model variants.",
   "icon": "https://assets.decocache.com/mcp/flux.svg",

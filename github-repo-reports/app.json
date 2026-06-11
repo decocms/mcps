@@ -4,7 +4,7 @@
   "friendlyName": "GitHub Repo Reports",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-github-repo-reports.decocache.com/mcp"
+    "url": "https://sites-github-repo-reports.deco.site/mcp"
   },
   "description": "GitHub-backed reports MCP server implementing the Reports Binding. Stores and reads reports as Markdown files with YAML frontmatter from a configurable GitHub repository.",
   "icon": "https://assets.decocache.com/mcp/{uuid}/icon.png",
