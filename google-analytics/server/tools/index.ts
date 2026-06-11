@@ -3,7 +3,11 @@ import {
   getCustomDimensionsAndMetricsTool,
   getPropertyDetailsTool,
 } from "./properties.ts";
-import { runRealtimeReportTool, runReportTool } from "./reports.ts";
+import {
+  runFunnelReportTool,
+  runRealtimeReportTool,
+  runReportTool,
+} from "./reports.ts";
 import { listGoogleAdsLinksTool } from "./ads.ts";
 import { listPropertyAnnotationsTool } from "./annotations.ts";
 
@@ -12,6 +16,7 @@ export const tools = [
   getPropertyDetailsTool,
   getCustomDimensionsAndMetricsTool,
   runReportTool,
+  runFunnelReportTool,
   runRealtimeReportTool,
   listGoogleAdsLinksTool,
   listPropertyAnnotationsTool,

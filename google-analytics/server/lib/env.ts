@@ -8,10 +8,11 @@ import type { Env } from "../types/env.ts";
  */
 export const getGoogleAccessToken = (env: Env): string => {
   const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
-  if (!authorization) {
+  const token = authorization?.replace(/^Bearer\s+/i, "").trim();
+  if (!token) {
     throw new Error(
       "Not authenticated. Please authorize with Google Analytics first.",
     );
   }
-  return authorization.replace(/^Bearer\s+/i, "");
+  return token;
 };

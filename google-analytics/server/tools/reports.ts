@@ -126,6 +126,102 @@ export const runReportTool = (env: Env) =>
     },
   });
 
+const FunnelStepSchema = z.object({
+  name: z.string().describe("Display name for this funnel step (shown in reports)."),
+  filterExpression: z
+    .record(z.string(), z.unknown())
+    .describe(
+      "Required. Condition that qualifies users for this step. See https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FunnelStep#FunnelFilterExpression",
+    ),
+  isDirectlyFollowedBy: z
+    .boolean()
+    .optional()
+    .describe(
+      "If true, this step must immediately follow the previous step (no intervening events). Defaults to false.",
+    ),
+  withinDurationFromPriorStep: z
+    .string()
+    .optional()
+    .describe(
+      "Time window within which this step must occur after the prior step, e.g. '3600s' for 1 hour.",
+    ),
+});
+
+export const runFunnelReportTool = (env: Env) =>
+  createPrivateTool({
+    id: "run-funnel-report",
+    description:
+      "Runs a Google Analytics 4 funnel report. Analyzes how users progress through a sequence of steps (e.g. landing page → product page → checkout → purchase). Returns per-step completion counts and drop-off rates.",
+    inputSchema: z.object({
+      property: z
+        .string()
+        .describe(
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+        ),
+      funnelSteps: z
+        .array(FunnelStepSchema)
+        .min(2)
+        .describe(
+          "Ordered list of funnel steps. Each step is a GA4 FunnelStep object with a name and filterExpression.",
+        ),
+      dateRanges: z
+        .array(DateRangeSchema)
+        .min(1)
+        .describe("One or more date ranges to include in the report."),
+      funnelBreakdown: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe(
+          "Optional FunnelBreakdown — adds a sub-dimension to the funnel table rows.",
+        ),
+      funnelNextAction: z
+        .record(z.string(), z.unknown())
+        .optional()
+        .describe(
+          "Optional FunnelNextAction — adds a next-action dimension showing what users do after abandoning a step.",
+        ),
+      limit: z
+        .number()
+        .int()
+        .positive()
+        .optional()
+        .describe("Maximum number of rows to return."),
+      offset: z
+        .number()
+        .int()
+        .nonnegative()
+        .optional()
+        .describe("Row offset for pagination."),
+      returnPropertyQuota: z
+        .boolean()
+        .optional()
+        .describe("If true, includes current GA4 property quota in response."),
+    }),
+    execute: async ({ context: args }) => {
+      const client = GaClient.fromEnv(env);
+      try {
+        const body: Record<string, unknown> = {
+          funnel: { steps: args.funnelSteps },
+          dateRanges: args.dateRanges,
+        };
+        if (args.funnelBreakdown !== undefined)
+          body.funnelBreakdown = args.funnelBreakdown;
+        if (args.funnelNextAction !== undefined)
+          body.funnelNextAction = args.funnelNextAction;
+        if (args.limit !== undefined) body.limit = args.limit;
+        if (args.offset !== undefined) body.offset = args.offset;
+        if (args.returnPropertyQuota !== undefined)
+          body.returnPropertyQuota = args.returnPropertyQuota;
+        const response = await client.runFunnelReport(args.property, body);
+        return { response };
+      } catch (error) {
+        throw new Error(
+          `Failed to run funnel report: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
+    },
+  });
+
 export const runRealtimeReportTool = (env: Env) =>
   createPrivateTool({
     id: "run-realtime-report",
