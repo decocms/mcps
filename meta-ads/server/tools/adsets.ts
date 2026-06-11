@@ -200,7 +200,7 @@ export const createGetAdSetDetailsTool = (env: Env) =>
         billing_event: adset.billing_event,
         optimization_goal: adset.optimization_goal,
         targeting: adset.targeting,
-        promoted_object: adset.promoted_object,
+        promoted_object: adset.promoted_object ?? undefined,
       };
     },
   });

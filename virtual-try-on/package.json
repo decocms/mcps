@@ -20,6 +20,7 @@
   "devDependencies": {
     "@decocms/mcps-shared": "1.0.0",
     "@modelcontextprotocol/sdk": "^1.25.1",
+    "bun-types": "latest",
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2"
   },

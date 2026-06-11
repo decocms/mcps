@@ -38,7 +38,7 @@ jobs:
             BASE="${{ github.event.before }}"
           fi
 
-          CHANGED=$(git diff --name-only "$BASE"...HEAD | grep -E '\.tsx?$|tsconfig\.json' | cut -d'/' -f1 | sort -u | tr '\n' ' ')
+          CHANGED=$(git diff --name-only "$BASE"...HEAD | cut -d'/' -f1 | sort -u | tr '\n' ' ')
           echo "mcps=$CHANGED" >> "$GITHUB_OUTPUT"
           echo "Changed folders: $CHANGED"
 

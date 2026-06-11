@@ -26,7 +26,7 @@ const PORT = Number.parseInt(Bun.env.PORT ?? "8000");
 // - SSE connections stay open until explicitly closed
 // - The client (Cursor/MCP) may have its own timeout
 
-const server = Bun.serve({
+Bun.serve({
   port: PORT,
   fetch: runtime.fetch,
   development: true,
