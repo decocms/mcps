@@ -13,10 +13,10 @@ import { domainAnalysisTools } from "./domain-analysis.ts";
 /**
  * Wrap tool factory with logging
  */
-function wrapWithLogging<T>(
-  toolFactory: (env: Env) => T,
+function wrapWithLogging(
+  toolFactory: (env: Env) => unknown,
   index: number,
-): (env: Env) => T {
+): (env: Env) => unknown {
   return (env: Env) => {
     console.log(`[DataForSEO Tools] Creating tool #${index + 1}`);
     console.log(
@@ -52,7 +52,7 @@ const wrappedTools = dataForSeoTools.map((factory, index) =>
 );
 
 // Export all tools from all domains
-export const tools = wrappedTools;
+export const tools = wrappedTools as typeof dataForSeoTools;
 
 // Re-export domain-specific tools for direct access if needed
 export { keywordTools } from "./keywords.ts";
