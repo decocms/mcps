@@ -4,7 +4,7 @@
   "friendlyName": "Virtual Try-On",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-virtual-try-on.decocache.com/mcp"
+    "url": "https://sites-virtual-try-on.deco.site/mcp"
   },
   "description": "Generate virtual try-on images: combine a person photo with garment images to see how clothes would look on them.",
   "icon": "https://assets.decocache.com/mcp/virtual-try-on/icon.png",

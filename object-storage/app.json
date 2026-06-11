@@ -4,7 +4,7 @@
   "friendlyName": "Object Storage (S3)",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-object-storage.decocache.com/mcp"
+    "url": "https://sites-object-storage.deco.site/mcp"
   },
   "description": "S3-compatible object storage MCP for managing files in AWS S3, Cloudflare R2, Google Cloud Storage, and other S3-compatible providers.",
   "icon": "https://a0.awsstatic.com/libra-css/images/logos/aws_logo_smile_1200x630.png",
