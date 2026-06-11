@@ -8,17 +8,12 @@
 import type { Env } from "../types/env.ts";
 import { keywordTools } from "./keywords.ts";
 import { serpTools } from "./serp.ts";
-import { backlinkTools } from "./backlinks.ts";
-import { googleTrendsTools } from "./google-trends.ts";
 import { domainAnalysisTools } from "./domain-analysis.ts";
-import { keywordSuggestionsTools } from "./keyword-suggestions.ts";
-
-type ToolFactory = (env: Env) => unknown;
 
 /**
  * Wrap tool factory with logging
  */
-function wrapWithLogging(toolFactory: ToolFactory, index: number): ToolFactory {
+function wrapWithLogging<T>(toolFactory: (env: Env) => T, index: number): (env: Env) => T {
   return (env: Env) => {
     console.log(`[DataForSEO Tools] Creating tool #${index + 1}`);
     console.log(
