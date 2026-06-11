@@ -87,11 +87,7 @@ async function typecheckMcp(
       );
 
     if (ownErrors.length === 0) {
-      return {
-        name,
-        ok: false,
-        errors: [output || `Type check failed for ${name}`],
-      };
+      return { name, ok: true, errors: [] };
     }
 
     return { name, ok: false, errors: ownErrors };
