@@ -13,7 +13,10 @@ import { domainAnalysisTools } from "./domain-analysis.ts";
 /**
  * Wrap tool factory with logging
  */
-function wrapWithLogging<T>(toolFactory: (env: Env) => T, index: number): (env: Env) => T {
+function wrapWithLogging<T>(
+  toolFactory: (env: Env) => T,
+  index: number,
+): (env: Env) => T {
   return (env: Env) => {
     console.log(`[DataForSEO Tools] Creating tool #${index + 1}`);
     console.log(
