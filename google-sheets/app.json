@@ -4,7 +4,7 @@
   "friendlyName": "Google Sheets",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-sheets.decocache.com/mcp"
+    "url": "https://sites-google-sheets.deco.site/mcp"
   },
   "description": "Integrate and manage Google Sheets. Read, write, and format spreadsheet data programmatically.",
   "icon": "https://assets.decocache.com/decocms/4a35d182-7f4d-4978-a592-ccaff1707c80/google-sheets.png",

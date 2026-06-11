@@ -4,7 +4,7 @@
   "friendlyName": "Google BigQuery",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-big-query.decocache.com/mcp"
+    "url": "https://sites-google-big-query.deco.site/mcp"
   },
   "description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, explore schemas, monitor jobs, and discover projects.",
   "icon": "https://cdn.worldvectorlogo.com/logos/google-bigquery-logo-1.svg",

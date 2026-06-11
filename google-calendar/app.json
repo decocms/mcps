@@ -4,7 +4,7 @@
   "friendlyName": "Google Calendar",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-calendar.decocache.com/mcp"
+    "url": "https://sites-google-calendar.deco.site/mcp"
   },
   "description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars.",
   "icon": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg",

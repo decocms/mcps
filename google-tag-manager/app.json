@@ -4,7 +4,7 @@
     "friendlyName": "Google Tag Manager",
     "connection": {
         "type": "HTTP",
-        "url": "https://sites-google-tag-manager.decocache.com/mcp"
+        "url": "https://sites-google-tag-manager.deco.site/mcp"
     },
     "description": "Manage Google Tag Manager resources including accounts, containers, workspaces, tags, triggers and variables via API.",
     "icon": "https://assets.decocache.com/decocms/9636f785-2d20-4b90-8fd8-6bd8f0b29afb/google-tag-manager.jpg",
