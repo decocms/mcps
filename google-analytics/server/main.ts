@@ -27,7 +27,4 @@ const runtime = withRuntime<Env>({
   }),
 });
 
-// Start the server
-if (runtime.fetch) {
-  serve(runtime.fetch);
-}
+serve(runtime.fetch);
