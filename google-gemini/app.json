@@ -4,7 +4,7 @@
   "friendlyName": "Google Gemini",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-gemini.decocache.com/mcp"
+    "url": "https://sites-google-gemini.deco.site/mcp"
   },
   "description": "Google Gemini App Connection for LLM uses.",
   "icon": "https://assets.decocache.com/webdraw/17df85af-1578-42ef-ae07-4300de0d1723/gemini.svg",
