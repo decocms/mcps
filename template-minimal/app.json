@@ -4,7 +4,7 @@
   "friendlyName": "MCP Template (Minimal)",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-template-minimal.decocache.com/mcp"
+    "url": "https://sites-template-minimal.deco.site/mcp"
   },
   "description": "Minimal template for creating new MCP servers with modern patterns",
   "icon": "https://assets.decocache.com/mcp/template.svg",

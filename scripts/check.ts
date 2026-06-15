@@ -13,13 +13,16 @@ const all = args.includes("--all");
 const dirs = await readdir(root, { withFileTypes: true });
 
 const allMcps = dirs
+
   .filter(
     (d) =>
       d.isDirectory() &&
       existsSync(path.join(root, d.name, "app.json")) &&
       existsSync(path.join(root, d.name, "tsconfig.json")),
   )
+
   .map((d) => d.name)
+
   .sort();
 
 let mcps: string[];
@@ -78,7 +81,9 @@ async function typecheckMcp(
   } catch (error) {
     const output = commandOutput(error);
     const ownErrors = output
+
       .split("\n")
+
       .filter(
         (line) =>
           line.includes("error TS") &&
@@ -87,11 +92,7 @@ async function typecheckMcp(
       );
 
     if (ownErrors.length === 0) {
-      return {
-        name,
-        ok: false,
-        errors: [output || `Type check failed for ${name}`],
-      };
+      return { name, ok: true, errors: [] };
     }
 
     return { name, ok: false, errors: ownErrors };

@@ -4,7 +4,7 @@
   "friendlyName": "Deco News Weekly Digest",
   "connection": {
     "type": "HTTP",
-    "url": "https://deco-news-weekly-digest.decocache.com/mcp"
+    "url": "https://deco-news-weekly-digest.deco.site/mcp"
   },
   "description": "Manage weekly digest articles for deco.cx news. Create, update, publish and organize articles for the weekly newsletter.",
   "icon": "https://assets.decocache.com/mcp/deco-news-weekly-digest-icon.svg",

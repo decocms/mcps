@@ -26,17 +26,16 @@ const PORT = Number.parseInt(Bun.env.PORT ?? "8000");
 // - SSE connections stay open until explicitly closed
 // - The client (Cursor/MCP) may have its own timeout
 
-const server = Bun.serve({
+// bun-types@1.3.14 doesn't type idleTimeout yet; runtime.fetch signature differs from Bun's
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Bun.serve({
   port: PORT,
-  fetch: runtime.fetch,
+  fetch: runtime.fetch as any,
   development: true,
-
-  // CRITICAL: Default idleTimeout is 10s, which is too short for image generation!
-  // Image generation via nanobanana takes 20-30s, so we need at least 60s
-  // to accommodate the full operation. Setting to 60s as a safer middle ground.
-  // Note: Some MCP clients may have their own shorter timeout that we cannot control.
-  idleTimeout: 60, // 60 seconds
-});
+  // CRITICAL: Default idleTimeout is 10s, too short for image generation (20-30s)
+  idleTimeout: 60,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+} as any);
 
 console.log(`[DEV_SERVER] ✅ Server listening on http://localhost:${PORT}`);
 console.log(`[DEV_SERVER] 📡 MCP endpoint: http://localhost:${PORT}/mcp`);

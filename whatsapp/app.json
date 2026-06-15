@@ -4,7 +4,7 @@
   "friendlyName": "Deco WhatsApp Agent",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-whatsappagent.decocache.com/mcp"
+    "url": "https://sites-whatsappagent.deco.site/mcp"
   },
   "description": "Talk to your Mesh Agents via WhatsApp",
   "icon": "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",

@@ -24,7 +24,6 @@
 
     /* Path Aliases */
     "baseUrl": ".",
-    "ignoreDeprecations": "6.0",
     "paths": {
       "shared/*": ["./shared/*"],
       "server/*": ["./server/*"]
