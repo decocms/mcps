@@ -25,3 +25,11 @@ export const GRANT_KEY_PREFIX = "grant:";
 
 /** Opaque refresh-token prefix: `ghr_<grantId>.<secret>`. */
 export const REFRESH_TOKEN_PREFIX = "ghr_";
+
+/**
+ * Apex domains whose hosts (and any subdomain) are permitted as the OAuth
+ * `redirect_uri` we hand to GitHub. GitHub delivers the authorization `code`
+ * to this host, so an attacker-controlled value would mean code/token
+ * hijacking — pinning it to decocms.com (the canonical origin lives at
+ * `github-mcp.decocms.com`) closes that hole. */
+export const ALLOWED_REDIRECT_HOST_SUFFIXES = ["decocms.com"] as const;
