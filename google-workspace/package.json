@@ -1,7 +1,7 @@
 {
   "name": "google-workspace",
   "version": "1.0.0",
-  "description": "Google Workspace MCP — one OAuth login fanning out to Google's official Calendar, Chat, Drive, Gmail and People MCP servers",
+  "description": "Google Workspace MCP — one OAuth login covering Calendar, Gmail, Drive, Docs, Sheets, Slides, Forms and Meet",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,8 +9,7 @@
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
-    "check": "tsc --noEmit",
-    "generate-tools": "bun run server/scripts/generate-tools.ts"
+    "check": "tsc --noEmit"
   },
   "exports": {
     "./tools": "./server/tools/index.ts",
@@ -18,6 +17,14 @@
   },
   "dependencies": {
     "@decocms/runtime": "^1.2.6",
+    "google-calendar": "workspace:*",
+    "google-docs": "workspace:*",
+    "google-drive": "workspace:*",
+    "google-forms": "workspace:*",
+    "google-gmail": "workspace:*",
+    "google-meet": "workspace:*",
+    "google-sheets": "workspace:*",
+    "google-slides": "workspace:*",
     "zod": "^4.0.0"
   },
   "devDependencies": {

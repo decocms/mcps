@@ -4,6 +4,10 @@
   "description": "Google Gmail MCP Server - Read, send and manage emails",
   "private": true,
   "type": "module",
+  "exports": {
+    "./tools": "./server/tools/index.ts",
+    "./constants": "./server/constants.ts"
+  },
   "scripts": {
     "dev": "bunx wrangler dev",
     "check": "tsc --noEmit",

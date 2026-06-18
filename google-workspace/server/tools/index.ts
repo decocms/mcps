@@ -1,23 +1,30 @@
 /**
- * Aggregates tool factories for every Google service we proxy. Each backend
- * MCP's tools/list snapshot lives in ./generated/<service>.json — re-run
- * `bun run generate-tools` to refresh.
+ * Google Workspace tools = the union of our existing Google REST-based MCPs,
+ * each tool's id namespaced with the service prefix to avoid collisions.
  *
- * Some Google MCP backends (notably chat) return duplicate tool entries from
- * tools/list. Dedupe by prefixed name to keep the runtime registration sane.
+ * We pull from the productivity-focused MCPs that share the same OAuth flow.
+ * Chat and People are intentionally excluded — Google's official MCP servers
+ * for them require additional scope verification we haven't completed.
  */
 
-import { TOOL_SNAPSHOTS } from "../constants.ts";
-import { wrapBackendTool } from "../lib/wrap-tool.ts";
+import { tools as calendarTools } from "google-calendar/tools";
+import { basicTools as gmailTools } from "google-gmail/tools";
+import { tools as driveTools } from "google-drive/tools";
+import { tools as docsTools } from "google-docs/tools";
+import { tools as sheetsTools } from "google-sheets/tools";
+import { tools as slidesTools } from "google-slides/tools";
+import { tools as formsTools } from "google-forms/tools";
+import { tools as meetTools } from "google-meet/tools";
 
-const seen = new Set<string>();
-export const tools = Object.entries(TOOL_SNAPSHOTS).flatMap(([service, snap]) =>
-  snap.tools
-    .filter((def) => {
-      const id = `${service}_${def.name}`;
-      if (seen.has(id)) return false;
-      seen.add(id);
-      return true;
-    })
-    .map((def) => wrapBackendTool(service as keyof typeof TOOL_SNAPSHOTS, def)),
-);
+import { prefixToolFactories } from "../lib/prefix-tool.ts";
+
+export const tools = [
+  ...prefixToolFactories(calendarTools, "calendar"),
+  ...prefixToolFactories(gmailTools, "gmail"),
+  ...prefixToolFactories(driveTools, "drive"),
+  ...prefixToolFactories(docsTools, "docs"),
+  ...prefixToolFactories(sheetsTools, "sheets"),
+  ...prefixToolFactories(slidesTools, "slides"),
+  ...prefixToolFactories(formsTools, "forms"),
+  ...prefixToolFactories(meetTools, "meet"),
+];

@@ -1,118 +1,80 @@
 # google-workspace
 
-One OAuth login that fans out to Google's official MCP servers — Calendar, Chat, Drive, Gmail and People — exposed as a single deco MCP. After consenting once, the user gets ~33 tools prefixed `calendar_*`, `chat_*`, `drive_*`, `gmail_*`, `people_*`.
+One OAuth login that exposes the Google productivity stack — **Calendar, Gmail, Drive, Docs, Sheets, Slides, Forms and Meet** — under a single connection. After consenting once, the user gets ~160 tools prefixed `calendar_*`, `gmail_*`, `drive_*`, `docs_*`, `sheets_*`, `slides_*`, `forms_*`, `meet_*`.
 
-See [`TOOLS.md`](./TOOLS.md) for the full tool catalog (auto-generated).
+See [`TOOLS.md`](./TOOLS.md) for the catalog.
+
+## How it works
+
+Rather than duplicating logic, this MCP composes our existing per-service Google MCPs:
+
+```
+google-workspace
+├─ google-calendar/tools     → calendar_*
+├─ google-gmail/tools        → gmail_*  (basicTools — without webhook triggers)
+├─ google-drive/tools        → drive_*
+├─ google-docs/tools         → docs_*
+├─ google-sheets/tools       → sheets_*
+├─ google-slides/tools       → slides_*
+├─ google-forms/tools        → forms_*
+└─ google-meet/tools         → meet_*
+```
+
+`server/lib/prefix-tool.ts` clones each tool factory's output with a service-prefixed id, so collisions across services (e.g. multiple `list_*` tools) are resolved without touching the upstream packages. `createGoogleOAuth({ scopes })` from `@decocms/mcps-shared/google-oauth` runs the standard PKCE flow with the union of scopes from all eight services.
+
+The composition is type-safe: each child MCP's tool factory is invoked with the workspace's `Env`, which is structurally compatible because every Google MCP reads the access token from the same `MESH_REQUEST_CONTEXT.authorization` slot.
+
+## What's intentionally NOT here
+
+- **Chat / People** — Google ships official MCP servers for these (`chatmcp.googleapis.com`, `people.googleapis.com`), but their scopes need extra OAuth-consent-screen verification we haven't completed. They'll come back in a separate `google-workspace-official` MCP that wraps the upstream Google MCPs once verification lands.
+- **Send mail** — there is no `gmail_send_message` tool here. Gmail can only create drafts; the user clicks Send themselves. This is the same constraint as the standalone `google-gmail` MCP.
 
 ## Built-in prompts
 
-Two flavors, both exposed through the standard `prompts/list` and `prompts/get` calls.
+Two flavors, both via the standard `prompts/list` and `prompts/get`.
 
 ### Agent guides (no arguments)
 
 Long-form references the agent pulls on demand instead of stuffing every tool description into the system prompt:
 
-- `GOOGLE_WORKSPACE_AGENT_GUIDE` — entry point covering all 5 services, the tool naming convention, time/timezone handling, destructive-action rules, and pagination.
-- `GOOGLE_WORKSPACE_CALENDAR_GUIDE` — Calendar tool selection, the `primary` calendar convention, scheduling workflows, and pitfalls around recurring events.
-- `GOOGLE_WORKSPACE_GMAIL_GUIDE` — Gmail search syntax (`from:`, `is:unread`, `newer_than:7d`, …), thread vs. message ops, system-label IDs, and the **drafts-only** caveat.
-- `GOOGLE_WORKSPACE_DRIVE_GUIDE` — Drive structured query syntax, MIME types for Docs/Sheets/Slides, content vs. metadata vs. permissions.
-- `GOOGLE_WORKSPACE_CHAT_GUIDE` — Spaces vs. DMs, threading, send-message confirmation patterns.
-- `GOOGLE_WORKSPACE_PEOPLE_GUIDE` — directory (Workspace-only) vs. personal contacts, looking up the user themselves.
+- `GOOGLE_WORKSPACE_AGENT_GUIDE` — entry point covering all 8 services, naming, time/timezone rules, destructive actions, pagination.
+- `GOOGLE_WORKSPACE_CALENDAR_GUIDE`, `..._GMAIL_GUIDE`, `..._DRIVE_GUIDE`, `..._DOCS_GUIDE`, `..._SHEETS_GUIDE`, `..._SLIDES_GUIDE`, `..._FORMS_GUIDE`, `..._MEET_GUIDE` — per-service cheat sheets, pitfalls, and (where applicable) query syntax.
 
 ### User templates (with arguments)
 
-Slash-command-style entries the user picks from the prompt menu in their MCP client. Each one expands into a user message that drives the agent through a common day-to-day workflow:
+Slash-command-style entries the user picks from the prompt menu in their MCP client:
 
 | Template | Arguments | Does |
 |---|---|---|
-| `morning_briefing` | — | Calendar + important unread email + recent chat activity, in three short sections. |
-| `prep_for_meeting` | `lookahead?` | Pulls attendees, last emails with them, and shared docs for the next meeting. |
-| `whats_on_calendar` | `when?` | Summarizes the schedule for any free-form window. |
-| `find_meeting_time` | `attendees`, `duration?`, `when?` | Finds slots when everyone is free; asks before booking. |
-| `block_focus_time` | `duration`, `when?`, `title?` | Reserves a private focus block; confirms before creating. |
-| `inbox_triage` | `timeframe?` | Classifies unread email (Reply / FYI / Action / Noise) and surfaces what's urgent. |
-| `draft_reply` | `thread_query`, `instruction` | Finds a thread and creates a draft reply (user must click Send). |
-| `find_files` | `query` | Translates natural-language to Drive structured query and searches. |
-| `summarize_doc` | `document` | Finds a doc by name and produces an exec summary + key points. |
-| `catch_up_chat` | `space`, `timeframe?` | Summarizes a Chat space as Decisions / Action items / Open threads / FYI. |
-| `find_person` | `name` | Looks up contact info across directory + personal contacts. |
+| `morning_briefing` | — | Calendar + important unread email + recent Drive activity |
+| `prep_for_meeting` | `lookahead?` | Attendees, last emails with them, shared docs |
+| `whats_on_calendar` | `when?` | Schedule for any free-form window |
+| `find_meeting_time` | `attendees`, `duration?`, `when?` | Multi-attendee free/busy; confirms before booking |
+| `block_focus_time` | `duration`, `when?`, `title?` | Reserves a private block; confirms before creating |
+| `inbox_triage` | `timeframe?` | Classifies unread as Reply/FYI/Action/Noise |
+| `draft_reply` | `thread_query`, `instruction` | Finds thread, creates draft (user clicks Send) |
+| `find_files` | `query` | NL → Drive structured query |
+| `summarize_doc` | `document` | Finds doc by name, exports content, summarizes |
+| `new_deck_from_outline` | `title`, `outline` | Creates Slides deck from a bullet outline |
+| `create_form` | `title`, `questions` | Creates a Form from a question list |
+| `create_meet_for_event` | `event_query` | Creates a Meet space and attaches it to a calendar event |
 
 Source lives in [`server/prompts.ts`](./server/prompts.ts).
 
-## How it works
-
-Google's MCP endpoints (`calendarmcp.googleapis.com/mcp/v1`, etc.) don't accept Dynamic Client Registration, so they can't be added to mesh as a generic custom MCP today. This package wraps them: it holds the Google OAuth client ID/secret server-side and proxies JSON-RPC `tools/call` to the right backend with the user's Bearer token.
-
-```
-mesh client ──► google-workspace MCP ──► calendarmcp.googleapis.com/mcp/v1
-                       │
-                       ├──► chatmcp.googleapis.com/mcp/v1
-                       ├──► drivemcp.googleapis.com/mcp/v1
-                       ├──► gmailmcp.googleapis.com/mcp/v1
-                       └──► people.googleapis.com/mcp/v1
-```
-
-The OAuth flow is the standard `createGoogleOAuth` from `@decocms/mcps-shared` — PKCE with refresh-token rotation. The full union of scopes is sent at consent time, so a single approval covers every service.
-
-## Tool definitions are committed snapshots
-
-Tool names, descriptions, JSON schemas and PRM scopes for each backend live in `server/tools/generated/<service>.json`. These are committed to the repo for reproducible builds.
-
-> **Important:** Anytime Google updates one of their MCP servers (new tools, changed schemas, additional scopes), you need to refresh the snapshots manually:
->
-> ```sh
-> bun run generate-tools
-> ```
->
-> Commit the diff in `server/tools/generated/*.json`, the regenerated `TOOLS.md`, and re-deploy. The script needs no Google credentials — `tools/list` and the RFC 9728 PRM endpoint are both public.
-
-The generator also writes `TOOLS.md` so you can preview the catalog from GitHub or the registry without booting the server.
-
-### Why snapshot instead of fetching at boot?
-
-- **Reproducibility:** the bundle is deterministic; an upstream change can't silently flip behavior in production.
-- **Cold-start cost:** no extra round-trips to Google before the worker can serve requests.
-- **Offline safety:** if Google is down at boot, the MCP still starts and returns cached tool definitions; only `tools/call` fails through to the upstream.
-
-The trade-off is the manual refresh step above.
-
-## Adding another Google service
-
-When Google ships a new official MCP (e.g. `tasksmcp.googleapis.com`):
-
-1. Add the entry to `BACKEND_MCPS` in `server/constants.ts`.
-2. Update the `GoogleService` union type in the same file.
-3. Add the corresponding `import` for `./tools/generated/<service>.json` and an entry in `TOOL_SNAPSHOTS`.
-4. Run `bun run generate-tools` — the new service's snapshot will be created and added to `TOOLS.md`.
-5. `bun run check && bun run build` to verify, then commit and PR.
-
-Existing users get a re-consent prompt the next time they authenticate, since the union of scopes changes.
-
-## Local development
+## Local dev
 
 ```sh
 bun install
-bun run generate-tools  # First time, or after Google updates
-bun run check           # tsc --noEmit
-bun run dev             # Hot-reload server on PORT (default 8001)
+bun run check
+bun run dev   # PORT defaults to 8001
 ```
 
-To exercise the OAuth flow locally you need:
-
-1. A Web OAuth client created in [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-2. The redirect URI configured to match the mesh callback used in dev (e.g. `http://localhost:4000/api/auth/callback/...`).
-3. `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` exported in your environment.
-
-Once running, the MCP exposes:
-
-- `POST /mcp` — JSON-RPC entry. `tools/list` works without auth (handy for previewing what the user will get); `tools/call` requires the Bearer token from the OAuth flow.
-- `GET /.well-known/oauth-protected-resource` — RFC 9728 metadata pointing at `accounts.google.com` and the union of scopes.
+For the full OAuth flow you need a Google Cloud OAuth client (Web type) with all the scopes listed in `server/constants.ts` declared on its consent screen, plus the redirect URI of your dev or prod worker.
 
 ## Files
 
 - `server/main.ts` — `withRuntime` wiring with `createGoogleOAuth` and the aggregated tool list.
-- `server/constants.ts` — backend URLs, snapshot imports, scope union.
-- `server/lib/mcp-proxy.ts` — JSON-RPC fetcher that injects the Bearer token and surfaces 401/403 with re-auth hints.
-- `server/lib/json-schema-to-zod.ts` — small converter that turns the JSON Schema returned by Google into Zod for `createPrivateTool`.
-- `server/lib/wrap-tool.ts` — turns a snapshot entry into a deco tool factory.
-- `server/scripts/generate-tools.ts` — refreshes snapshots and `TOOLS.md`.
+- `server/constants.ts` — union of OAuth scopes across the 8 services.
+- `server/tools/index.ts` — imports and prefixes each child MCP's tools.
+- `server/lib/prefix-tool.ts` — small helper that clones a tool with a prefixed id.
+- `server/prompts.ts` — agent guides + user templates.

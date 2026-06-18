@@ -8,10 +8,16 @@ import { labelTools } from "./labels.ts";
 import { draftTools } from "./drafts.ts";
 import { triggers } from "../lib/trigger-store.ts";
 
-export const tools = [
+/**
+ * Core Gmail tools without the webhook/trigger machinery. Safe to import from
+ * other MCPs (e.g. google-workspace) that don't have the Workers KV binding
+ * required by `triggers.tools()`.
+ */
+export const basicTools = [
   ...messageTools,
   ...threadTools,
   ...labelTools,
   ...draftTools,
-  ...triggers.tools(),
 ];
+
+export const tools = [...basicTools, ...triggers.tools()];
