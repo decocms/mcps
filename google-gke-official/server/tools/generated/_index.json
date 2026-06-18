@@ -1,0 +1,32 @@
+{
+  "gke": {
+    "scopes": [
+      "https://www.googleapis.com/auth/container"
+    ],
+    "toolNames": [
+      "list_k8s_api_resources",
+      "check_k8s_auth",
+      "describe_k8s_resource",
+      "list_k8s_events",
+      "get_k8s_resource",
+      "get_k8s_cluster_info",
+      "get_k8s_version",
+      "get_k8s_rollout_status",
+      "list_clusters",
+      "create_cluster",
+      "update_cluster",
+      "get_cluster",
+      "list_operations",
+      "get_operation",
+      "cancel_operation",
+      "create_node_pool",
+      "list_node_pools",
+      "get_node_pool",
+      "update_node_pool",
+      "get_k8s_logs",
+      "apply_k8s_manifest",
+      "delete_k8s_resource",
+      "patch_k8s_resource"
+    ]
+  }
+}

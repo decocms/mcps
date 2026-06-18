@@ -1,5 +1,6 @@
 {
   "service": "calendar",
+  "url": "https://calendarmcp.googleapis.com/mcp/v1",
   "scopes": [
     "https://www.googleapis.com/auth/calendar",
     "https://www.googleapis.com/auth/calendar.app.created",

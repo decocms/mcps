@@ -1,5 +1,6 @@
 {
   "service": "chat",
+  "url": "https://chatmcp.googleapis.com/mcp/v1",
   "scopes": [
     "https://www.googleapis.com/auth/chat.spaces",
     "https://www.googleapis.com/auth/chat.spaces.readonly",

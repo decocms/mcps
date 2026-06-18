@@ -1,0 +1,12 @@
+{
+  "maps": {
+    "scopes": [
+      "https://www.googleapis.com/auth/maps-platform.mapstools"
+    ],
+    "toolNames": [
+      "search_places",
+      "lookup_weather",
+      "compute_routes"
+    ]
+  }
+}

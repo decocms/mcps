@@ -62,6 +62,33 @@
       "shared/**"
     ]
   },
+  "google-bigquery-official": {
+    "site": "google-bigquery-official",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "google-bigquery-official/**",
+      "shared/**"
+    ]
+  },
+  "google-gke-official": {
+    "site": "google-gke-official",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "google-gke-official/**",
+      "shared/**"
+    ]
+  },
+  "google-maps-official": {
+    "site": "google-maps-official",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "google-maps-official/**",
+      "shared/**"
+    ]
+  },
   "google-calendar-sa": {
     "site": "google-calendar-sa",
     "entrypoint": "./dist/server/main.js",

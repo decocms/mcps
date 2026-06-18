@@ -1,6 +1,14 @@
 # Google BigQuery MCP Server Official
 
-This is the **official Google BigQuery MCP Server**, provided directly by the Google Cloud team for integration with BigQuery.
+Thin wrapper around Google's official BigQuery MCP server (`bigquery.googleapis.com/mcp`). The wrapper holds the Google OAuth client credentials server-side and proxies JSON-RPC `tools/call` to the upstream — Google's MCP doesn't support Dynamic Client Registration, so this layer is needed to integrate it into mesh.
+
+See [`TOOLS.md`](./TOOLS.md) for the catalog (auto-generated via `bun run generate-tools`). Refresh after Google updates the upstream tools/list.
+
+The OAuth + proxy plumbing lives in `@decocms/mcps-shared/google-mcp` — same code path used by `google-workspace` and the other `google-*-official` wrappers.
+
+---
+
+The upstream **Google BigQuery MCP Server** is provided directly by the Google Cloud team for integration with BigQuery.
 
 ## About Google BigQuery
 
