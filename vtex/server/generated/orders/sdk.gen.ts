@@ -1029,7 +1029,7 @@ export const getChangeHistory = <ThrowOnError extends boolean = false>(options: 
 /**
  * Create order modifications
  *
- * [Order modifications](https://help.vtex.com/en/tutorial/how-change-order-works-beta--56TO0bOFXsfmpc7YZ3wIUZ) feature allows you to modify an order, whether the modification is motivated by customer mistakes, product unavailability, or others. Both sellers and marketplaces can use this endpoint and modify orders in multiple scenarios, and it is possible to make a single modification or combine multiple ones in the same request.
+ * [Order modifications](https://help.vtex.com/docs/tutorials/how-order-modification-works) feature allows you to modify an order, whether the modification is motivated by customer mistakes, product unavailability, or others. Both sellers and marketplaces can use this endpoint and modify orders in multiple scenarios, and it is possible to make a single modification or combine multiple ones in the same request.
  * The possible order modifications operations you can perform are the following:
  * - **Add:** Adding items, quantity, or product weight.
  * - **Remove:** Removing a part of items or the total quantity.
@@ -1087,7 +1087,15 @@ export const getChangeHistory = <ThrowOnError extends boolean = false>(options: 
  * - If the payment hasn't been settled, an automatic notification is sent to the payment gateway to change the order's total amount.
  * - **Higher price after order modification:** An automatic notification is sent to the payment gateway to require the customer to pay for the additional cost.
  *
+ * ## Order modifications settings
+ *
+ * The Order modifications settings allow you to customize your account's behavior when receiving a modification request, such as configuring the order payments, defining tax recalculation, and compensating shipping costs. Before or during the API integration, you can consult and, if necessary, adjust the settings of the modifications.
+ *
+ * * If you wish to consult the current settings, run the [Get Order modifications settings](https://developers.vtex.com/docs/api-reference/orders-api#get-/api/order-system/orders/changes/settings) endpoint.
+ * * If you wish to alter the current settings, run the [Update Order modifications settings](https://developers.vtex.com/docs/api-reference/orders-api#put-/api/order-system/orders/changes/settings) endpoint.
+ *
  * ## Combining multiple operations
+ *
  * You can use this endpoint to make a single change operation or combine them in the same request. See some examples below.
  *
  * ### Adding request body example:
