@@ -3773,7 +3773,20 @@ export const zListOrdersData = z.object({
         incompleteOrders: z.optional(z.boolean()),
         f_paymentNames: z.optional(z.string()),
         f_RnB: z.optional(z.string()),
-        searchField: z.optional(z.string()),
+        searchField: z.optional(z.enum([
+            'sku_Ids',
+            'listId',
+            'tid',
+            'pci_tid',
+            'paymentId',
+            'nsu'
+        ])),
+        sku_Ids: z.optional(z.string()),
+        listId: z.optional(z.string()),
+        tid: z.optional(z.string()),
+        pci_tid: z.optional(z.string()),
+        paymentId: z.optional(z.string()),
+        nsu: z.optional(z.string()),
         f_isInstore: z.optional(z.boolean())
     })),
     headers: z.object({

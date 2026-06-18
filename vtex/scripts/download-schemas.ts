@@ -9,6 +9,21 @@ const RAW_BASE_URL =
   "https://raw.githubusercontent.com/vtex/openapi-schemas/master/";
 
 /**
+ * Schema overrides: use an alternative branch/fork for specific schemas
+ * while waiting for upstream PRs to be merged.
+ *
+ * Key: exact filename in the repository (e.g. "VTEX - Orders API.json")
+ * Value: raw GitHub URL pointing to the fork/branch with the fix
+ *
+ * TODO: remove overrides once the corresponding PRs are merged upstream
+ * - "VTEX - Orders API.json": https://github.com/vtex/openapi-schemas/pull/1728
+ */
+const SCHEMA_OVERRIDES: Record<string, string> = {
+  "VTEX - Orders API.json":
+    "https://raw.githubusercontent.com/guitavano/openapi-schemas/fix/list-orders-search-field-params/VTEX%20-%20Orders%20API.json",
+};
+
+/**
  * Derive a canonical schema name from a raw filename.
  *
  * Transform rules (applied in order):
@@ -95,10 +110,15 @@ async function downloadSchemas() {
 
   for (const file of jsonFiles) {
     const name = deriveSchemaName(file.name);
-    const rawUrl = `${RAW_BASE_URL}${encodeURIComponent(file.name)}`;
+    const override = SCHEMA_OVERRIDES[file.name];
+    const rawUrl =
+      override ?? `${RAW_BASE_URL}${encodeURIComponent(file.name)}`;
 
     console.log(`Processing: ${file.name}`);
     console.log(`  → name: ${name}`);
+    if (override) {
+      console.log(`  → OVERRIDE: using custom source (PR pending upstream)`);
+    }
 
     const response = await fetch(rawUrl, {
       headers: { "User-Agent": "vtex-mcp-schema-downloader" },

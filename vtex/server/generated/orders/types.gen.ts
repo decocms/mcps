@@ -8588,15 +8588,33 @@ export type ListOrdersData = {
          */
         f_RnB?: string;
         /**
-         * You can search orders by using one of the following criterias:
-         * - SKU ID - `sku_Ids&sku_Ids`
-         * - Gift List ID - `listId&listId`
-         * - Transaction ID (TID) - `tid&tid`
-         * - PCI Connector's Transaction ID (TID) - `pci_tid&pci_tid`
-         * - Payment ID (PID) - `paymentId&paymentId`
-         * - Connector's NSU - `nsu&nsu`
+         * Defines the search criteria for filtering orders. Must be used together with the corresponding query parameter that provides the search value. For example, to search by SKU ID: `?searchField=sku_Ids&sku_Ids=11223`.
          */
-        searchField?: string;
+        searchField?: 'sku_Ids' | 'listId' | 'tid' | 'pci_tid' | 'paymentId' | 'nsu';
+        /**
+         * SKU ID to filter orders. Must be used with `searchField=sku_Ids`.
+         */
+        sku_Ids?: string;
+        /**
+         * Gift List ID to filter orders. Must be used with `searchField=listId`.
+         */
+        listId?: string;
+        /**
+         * Transaction ID (TID) to filter orders. Must be used with `searchField=tid`.
+         */
+        tid?: string;
+        /**
+         * PCI Connector's Transaction ID (TID) to filter orders. Must be used with `searchField=pci_tid`.
+         */
+        pci_tid?: string;
+        /**
+         * Payment ID (PID) to filter orders. Must be used with `searchField=paymentId`.
+         */
+        paymentId?: string;
+        /**
+         * Connector's NSU to filter orders. Must be used with `searchField=nsu`.
+         */
+        nsu?: string;
         /**
          * When set as `true`, this parameter filters orders made via [inStore](https://help.vtex.com/en/tracks/what-is-instore--zav76TFEZlAjnyBVL5tRc), and when set as `false`, it filters orders that were not made via inStore.
          */
