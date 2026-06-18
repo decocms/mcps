@@ -1,4 +1,4 @@
-import type { Env } from "../types/env.ts";
+import type { Env } from "../../shared/deco.gen.ts";
 import { getGoogleAccessToken } from "./env.ts";
 
 const GA4_DATA_API = "https://analyticsdata.googleapis.com/v1beta";

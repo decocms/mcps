@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
-import type { Env } from "../types/env.ts";
+import type { Env } from "../../shared/deco.gen.ts";
 import { GaClient } from "../lib/ga-client.ts";
 
 const DateRangeSchema = z.object({
