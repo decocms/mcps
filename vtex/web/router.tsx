@@ -16,7 +16,9 @@ const TOOL_PAGES: Record<string, React.ComponentType> = {
 };
 
 function ToolRouter() {
-  const { toolName } = useMcpState();
+  const { toolName: stateToolName } = useMcpState();
+  const hostContext = useMcpHostContext();
+  const toolName = stateToolName ?? hostContext?.toolInfo?.tool.name;
 
   if (!toolName) {
     return (

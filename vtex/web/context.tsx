@@ -25,11 +25,16 @@ export function McpProvider({ children }: { children: ReactNode }) {
 
   const onAppCreated = useCallback((app: App) => {
     app.ontoolinput = (params) => {
-      setState((prev) => ({
-        ...prev,
-        status: "tool-input",
-        toolInput: params.arguments,
-      }));
+      setState((prev) => {
+        const toolName =
+          prev.toolName ?? app.getHostContext()?.toolInfo?.tool.name;
+        return {
+          ...prev,
+          status: "tool-input",
+          toolInput: params.arguments,
+          ...(toolName ? { toolName } : {}),
+        };
+      });
     };
 
     app.ontoolresult = (result) => {
@@ -58,6 +63,10 @@ export function McpProvider({ children }: { children: ReactNode }) {
 
     app.onhostcontextchanged = (ctx) => {
       setHostContext((prev) => ({ ...prev, ...ctx }));
+      const toolName = ctx.toolInfo?.tool.name;
+      if (toolName) {
+        setState((prev) => ({ ...prev, toolName }));
+      }
     };
   }, []);
 

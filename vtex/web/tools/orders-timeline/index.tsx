@@ -46,7 +46,7 @@ export default function OrdersTimelinePage() {
       <div className="flex items-center justify-center min-h-dvh p-6">
         <div className="flex items-center gap-3 text-muted-foreground">
           <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-          <span className="text-sm">Carregando timeline…</span>
+          <span className="text-sm">Waiting for VTEX response…</span>
         </div>
       </div>
     );
