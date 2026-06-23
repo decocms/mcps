@@ -1,7 +1,7 @@
 import { z } from "zod";
 import {
   getVtexIdSessionToken,
-  vtexIdCookieHeader,
+  vtexIdAuthHeaders,
 } from "../../lib/vtexid-session.ts";
 import type { VTEXCredentials } from "../../types/env.ts";
 import { DEFAULT_STORE_TIMEZONE } from "./orders-oms.ts";
@@ -33,10 +33,7 @@ export async function fetchAnalyticsConsumption(
   const url = buildAnalyticsConsumptionUrl(creds.accountName, path, params);
 
   const response = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      Cookie: vtexIdCookieHeader(token),
-    },
+    headers: vtexIdAuthHeaders(creds.accountName, token, creds),
   });
 
   if (!response.ok) {

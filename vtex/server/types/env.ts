@@ -18,6 +18,12 @@ export const StateSchema = z.object({
     .describe(
       "VTEX App Token (required for private endpoints; not needed for public catalog searches)",
     ),
+  currency: z
+    .string()
+    .optional()
+    .describe(
+      "Store currency for analytics endpoints, e.g. BRL or USD (default BRL)",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
