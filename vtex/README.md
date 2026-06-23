@@ -42,6 +42,9 @@ These handle multi-step operations not available in the generated SDK:
 | `VTEX_REORDER_COLLECTION` | Reorder collections with SKU/product IDs via XML import |
 | `VTEX_UPDATE_PRODUCT_SPECIFICATIONS` | Bulk replace product specifications |
 | `VTEX_GET_ORDERS_TREND` | Admin home dashboard orders trend (internal analytics service); exchanges App Key/Token for a session token under the hood |
+| `VTEX_GET_HOME_METRICS_SUMMARY` | Admin home dashboard metrics summary (revenue, orders, sessions, conversion) vs previous day |
+| `VTEX_GET_HOME_TOP_VIEWED_PRODUCTS` | Most viewed products on the admin home dashboard |
+| `VTEX_GET_HOME_TOP_PRODUCTS` | Top-selling products on the admin home dashboard ranked by revenue vs previous day |
 
 ## Authentication
 

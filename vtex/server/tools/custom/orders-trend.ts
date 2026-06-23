@@ -5,6 +5,12 @@ import {
   getVtexIdSessionToken,
   vtexIdCookieHeader,
 } from "../../lib/vtexid-session.ts";
+import { buildAnalyticsConsumptionUrl } from "./analytics-consumption.ts";
+import {
+  DEFAULT_STORE_TIMEZONE,
+  formatVtexAnalyticsTimestamp,
+  getTodayTrendWindowInTimezone,
+} from "./orders-oms.ts";
 
 /**
  * VTEX's admin home dashboard charts are served by an INTERNAL microservice at
@@ -28,7 +34,7 @@ export function buildOrdersTrendUrl(
   accountName: string,
   params: OrdersTrendParams,
 ): string {
-  const qs = new URLSearchParams({
+  return buildAnalyticsConsumptionUrl(accountName, "home-orders-trend", {
     an: accountName,
     currency: params.currency,
     startDate: params.startDate,
@@ -36,7 +42,30 @@ export function buildOrdersTrendUrl(
     agg: params.agg,
     timezone: params.timezone,
   });
-  return `https://${accountName}.vtexcommercestable.com.br/api/analytics/consumption/home-orders-trend?${qs.toString()}`;
+}
+
+export function resolveOrdersTrendParams(input: {
+  startDate?: string;
+  endDate?: string;
+  agg: string;
+  currency: string;
+  timezone: string;
+  now?: Date;
+}): OrdersTrendParams {
+  const { startDate: defaultStart, endDate: defaultEnd } =
+    getTodayTrendWindowInTimezone(input.timezone, input.now);
+
+  return {
+    startDate: input.startDate
+      ? formatVtexAnalyticsTimestamp(input.startDate)
+      : defaultStart,
+    endDate: input.endDate
+      ? formatVtexAnalyticsTimestamp(input.endDate)
+      : defaultEnd,
+    agg: input.agg,
+    currency: input.currency,
+    timezone: input.timezone,
+  };
 }
 
 // Read per-request env from `runtimeContext` — see comment in
@@ -46,19 +75,19 @@ export const getOrdersTrend = (_env: Env) =>
   createTool({
     id: "VTEX_GET_ORDERS_TREND",
     description:
-      "Get the admin home dashboard orders trend: order counts bucketed over time with anomaly forecast bands (mid/high confidence intervals and a HIGH/NORMAL status per bucket). Backed by VTEX's internal analytics service — requires App Key/Token, which are exchanged for a session token under the hood.",
+      "Get the admin home dashboard orders trend: order counts bucketed over time with anomaly forecast bands (mid/high confidence intervals and a HIGH/NORMAL status per bucket). Backed by VTEX's internal analytics service — requires App Key/Token, which are exchanged for a session token under the hood. Defaults to today's window (local midnight through now) in BRL with hourly buckets at -03:00.",
     annotations: { readOnlyHint: true },
     inputSchema: z.object({
       startDate: z
         .string()
+        .optional()
         .describe(
-          "Start of the window, ISO 8601 UTC, e.g. 2026-06-23T00:00:00.000Z",
+          "Start of the window, ISO 8601 UTC. Defaults to local midnight in timezone.",
         ),
       endDate: z
         .string()
-        .describe(
-          "End of the window, ISO 8601 UTC, e.g. 2026-06-23T23:59:00.000Z",
-        ),
+        .optional()
+        .describe("End of the window, ISO 8601 UTC. Defaults to now."),
       agg: z
         .enum(["hour", "day", "week", "month"])
         .default("hour")
@@ -69,7 +98,7 @@ export const getOrdersTrend = (_env: Env) =>
         .describe("Currency code matching the store, e.g. BRL, USD"),
       timezone: z
         .string()
-        .default("+00:00")
+        .default(DEFAULT_STORE_TIMEZONE)
         .describe("Timezone offset used for bucketing, e.g. -03:00"),
     }),
     execute: async ({ context, runtimeContext }) => {
@@ -82,14 +111,8 @@ export const getOrdersTrend = (_env: Env) =>
         appToken,
       });
 
-      const url = buildOrdersTrendUrl(accountName, {
-        startDate: context.startDate,
-        endDate: context.endDate,
-        agg: context.agg,
-        currency: context.currency,
-        timezone: context.timezone,
-      });
-      console.log("[VTEX] GET", url);
+      const params = resolveOrdersTrendParams(context);
+      const url = buildOrdersTrendUrl(accountName, params);
 
       const response = await fetch(url, {
         headers: {
