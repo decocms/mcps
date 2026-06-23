@@ -41,6 +41,7 @@ These handle multi-step operations not available in the generated SDK:
 | `VTEX_SEARCH_COLLECTIONS` | Search collections by name or terms |
 | `VTEX_REORDER_COLLECTION` | Reorder collections with SKU/product IDs via XML import |
 | `VTEX_UPDATE_PRODUCT_SPECIFICATIONS` | Bulk replace product specifications |
+| `VTEX_GET_ORDERS_TREND` | Admin home dashboard orders trend (internal analytics service); exchanges App Key/Token for a session token under the hood |
 
 ## Authentication
 
