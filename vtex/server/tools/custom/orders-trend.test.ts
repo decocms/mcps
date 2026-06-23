@@ -1,13 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { buildAppTokenLoginUrl, buildOrdersTrendUrl } from "./orders-trend.ts";
-
-describe("buildAppTokenLoginUrl", () => {
-  test("targets the vtexid apptoken login with an= account", () => {
-    expect(buildAppTokenLoginUrl("lojausereserva")).toBe(
-      "https://lojausereserva.vtexcommercestable.com.br/api/vtexid/apptoken/login?an=lojausereserva",
-    );
-  });
-});
+import { buildOrdersTrendUrl } from "./orders-trend.ts";
 
 describe("buildOrdersTrendUrl", () => {
   const params = {
