@@ -120,13 +120,13 @@ export default function OrdersSalesCardPage() {
   const equalSize = cards.length === 3;
 
   return (
-    <div className="box-border flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-card">
+    <div className="@container box-border flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-card">
       <div
         className={cn(
-          "min-h-0 w-full flex-1 gap-6",
+          "min-h-0 w-full gap-3 @md:gap-6",
           equalSize
-            ? "grid grid-cols-3 grid-rows-[minmax(0,1fr)]"
-            : "flex min-h-0 flex-row",
+            ? "grid grid-cols-1 @sm:grid-cols-3 @sm:grid-rows-[minmax(0,1fr)] @sm:flex-1"
+            : "flex min-h-0 flex-col @sm:flex-row @sm:flex-1",
         )}
       >
         {cards.map((card) => (
@@ -134,7 +134,7 @@ export default function OrdersSalesCardPage() {
             key={card.period}
             className={cn(
               "flex min-h-0 min-w-0 flex-col",
-              equalSize ? "h-full" : "flex-1",
+              equalSize ? "@sm:h-full" : "@sm:flex-1",
             )}
           >
             <SalesCardItem card={card} />
