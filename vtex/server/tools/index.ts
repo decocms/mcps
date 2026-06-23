@@ -86,6 +86,7 @@ import { ordersSalesCard } from "./custom/orders-sales-card.ts";
 import { searchCollections } from "./custom/search-collections.ts";
 import { reorderCollection } from "./custom/reorder-collection.ts";
 import { updateProductSpecifications } from "./custom/update-product-specifications.ts";
+import { getOrdersTrend } from "./custom/orders-trend.ts";
 
 // ── Tool registry factories (env: Env) => Tool ────────────────────────────────
 const registryFactories = [
@@ -174,6 +175,8 @@ const customFactories = [
   reorderCollection,
   // Bulk replace product specifications (PUT v2, missing from generated SDK)
   updateProductSpecifications,
+  // Home dashboard orders trend (internal analytics service, not in OpenAPI specs)
+  getOrdersTrend,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
