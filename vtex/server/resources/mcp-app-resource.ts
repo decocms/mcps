@@ -23,12 +23,23 @@ export function createMcpAppResource(options: {
       description: options.description,
       mimeType: RESOURCE_MIME_TYPE,
       read: async () => {
-        const html = await readFile(getHtmlPath(options.htmlFile), "utf-8");
-        return {
-          uri: options.uri,
-          mimeType: RESOURCE_MIME_TYPE,
-          text: html,
-        };
+        const htmlPath = getHtmlPath(options.htmlFile);
+        try {
+          const html = await readFile(htmlPath, "utf-8");
+          return {
+            uri: options.uri,
+            mimeType: RESOURCE_MIME_TYPE,
+            text: html,
+          };
+        } catch (err) {
+          const message =
+            err instanceof Error && "code" in err && err.code === "ENOENT"
+              ? `MCP App bundle not found at ${htmlPath}. Run "bun run build:web" in the vtex folder (or "bun run dev" to build and watch).`
+              : err instanceof Error
+                ? err.message
+                : "Failed to read MCP App bundle";
+          throw new Error(message);
+        }
       },
     });
 }

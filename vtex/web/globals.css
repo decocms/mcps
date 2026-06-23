@@ -59,6 +59,26 @@
 }
 
 @layer base {
+	html {
+		height: 100%;
+	}
+
+	body {
+		height: 100%;
+		margin: 0;
+		overflow: hidden;
+		@apply bg-background text-foreground;
+	}
+
+	#root {
+		display: flex;
+		flex-direction: column;
+		width: 100%;
+		height: 100dvh;
+		min-height: 0;
+		overflow: hidden;
+	}
+
 	button,
 	a,
 	select,

@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "concurrently -k -n api,web -c magenta,cyan \"bun run dev:api\" \"bun run dev:web\"",
     "dev:api": "bun run --hot server/main.ts",
-    "dev:web": "concurrently -n timeline,sales \"MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=true vite build --watch\" \"MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --watch\"",
+    "dev:web": "bun run build:web && concurrently -n timeline,sales \"MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --watch\"",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
     "deploy": "npm run build && deco deploy ./dist/server",

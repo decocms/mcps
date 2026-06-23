@@ -9,15 +9,11 @@ import {
   YAxis,
 } from "recharts";
 import { StatusFrame } from "@/components/status-frame.tsx";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card.tsx";
-import { useMcpState } from "@/context.tsx";
+import { useTool } from "@/hooks/use-tool.ts";
 
-const DECO_CHART_COLOR = "#d0ec1a";
+const TOOL_NAME = "VTEX_ORDERS_TIMELINE";
+
+const CHART_COLOR = "#d0ec1a";
 
 interface HourBucket {
   hour: string;
@@ -35,15 +31,18 @@ function fmt(n: number | undefined) {
 }
 
 export default function OrdersTimelinePage() {
-  const state = useMcpState<Record<string, never>, OrdersTimelineOutput>();
+  const { data, loading, error } = useTool<
+    OrdersTimelineOutput,
+    Record<string, never>
+  >(TOOL_NAME, {});
 
-  if (state.status === "error" || state.status === "tool-cancelled") {
-    return <StatusFrame status={state.status} error={state.error} />;
+  if (error) {
+    return <StatusFrame status="error" error={error} />;
   }
 
-  if (state.status !== "tool-result") {
+  if (loading || !data) {
     return (
-      <div className="flex items-center justify-center min-h-dvh p-6">
+      <div className="flex min-h-0 flex-1 items-center justify-center">
         <div className="flex items-center gap-3 text-muted-foreground">
           <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
           <span className="text-sm">Waiting for VTEX response…</span>
@@ -52,45 +51,39 @@ export default function OrdersTimelinePage() {
     );
   }
 
-  const { hours } = state.toolResult ?? { hours: [], date: "" };
+  const { hours } = data;
 
   return (
-    <div className="p-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <DollarSign className="w-4 h-4" />
-            Pedidos por hora
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {hours.every((bucket) => bucket.count === 0) ? (
-            <p className="text-sm text-muted-foreground">
-              Nenhum pedido encontrado hoje.
-            </p>
-          ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={hours}
-                margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={1} />
-                <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                <Tooltip
-                  formatter={(value: number) => [fmt(value), "Pedidos"]}
-                />
-                <Bar
-                  dataKey="count"
-                  fill={DECO_CHART_COLOR}
-                  radius={[4, 4, 0, 0]}
-                  name="count"
-                />
-              </BarChart>
-            </ResponsiveContainer>
-          )}
-        </CardContent>
-      </Card>
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-2 pb-1">
+      <p className="mb-3 shrink-0 text-base font-semibold flex items-center gap-2">
+        <DollarSign className="w-4 h-4" />
+        Pedidos por hora
+      </p>
+      {hours.every((bucket) => bucket.count === 0) ? (
+        <p className="text-sm text-muted-foreground">
+          Nenhum pedido encontrado hoje.
+        </p>
+      ) : (
+        <div className="min-h-0 flex-1">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart
+              data={hours}
+              margin={{ top: 8, right: 8, bottom: 0, left: 4 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={1} />
+              <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+              <Tooltip formatter={(value: number) => [fmt(value), "Pedidos"]} />
+              <Bar
+                dataKey="count"
+                fill={CHART_COLOR}
+                radius={[4, 4, 0, 0]}
+                name="count"
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
     </div>
   );
 }
