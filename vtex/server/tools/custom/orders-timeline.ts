@@ -3,6 +3,8 @@ import { z } from "zod";
 import { VTEX_RESOURCE_URI } from "../../constants.ts";
 import type { Env } from "../../types/env.ts";
 
+const DEFAULT_STORE_TIMEZONE = "-03:00";
+
 const hourBucketSchema = z.object({
   hour: z.string(),
   count: z.number(),
@@ -33,6 +35,12 @@ interface PeriodStats {
   totalValue: number;
 }
 
+interface HourlyOrderBucket {
+  hour: string;
+  count: number;
+  totalValue: number;
+}
+
 interface ListOrdersPage {
   paging: {
     total: number;
@@ -44,33 +52,45 @@ interface ListOrdersPage {
   };
 }
 
-function getTodayUtcDate(): string {
-  const now = new Date();
-  return new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  )
-    .toISOString()
-    .slice(0, 10);
+function parseTimezoneOffsetMinutes(timezone: string): number {
+  const match = timezone.match(/^([+-])(\d{2}):(\d{2})$/);
+  if (!match) {
+    return 0;
+  }
+
+  const sign = match[1] === "+" ? 1 : -1;
+  return (
+    sign * (Number.parseInt(match[2], 10) * 60 + Number.parseInt(match[3], 10))
+  );
 }
 
-function getTodayRange(): { start: string; end: string } {
+function getTodayWindowInTimezone(timezone: string): {
+  startDate: string;
+  endDate: string;
+  date: string;
+} {
+  const offsetMinutes = parseTimezoneOffsetMinutes(timezone);
   const now = new Date();
-  const start = new Date(
-    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
-  );
-  const end = new Date(
-    Date.UTC(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      23,
-      59,
-      59,
-      999,
-    ),
-  );
+  const shifted = new Date(now.getTime() + offsetMinutes * 60_000);
+  const year = shifted.getUTCFullYear();
+  const month = shifted.getUTCMonth();
+  const day = shifted.getUTCDate();
+  const startMs = Date.UTC(year, month, day) - offsetMinutes * 60_000;
+  const endMs = startMs + 86_400_000 - 1;
 
-  return { start: start.toISOString(), end: end.toISOString() };
+  return {
+    startDate: new Date(startMs).toISOString(),
+    endDate: new Date(endMs).toISOString(),
+    date: `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+  };
+}
+
+function getCurrentLocalHourIndex(timezone: string, now = new Date()): number {
+  const offsetMinutes = parseTimezoneOffsetMinutes(timezone);
+  const totalMinutes =
+    now.getUTCHours() * 60 + now.getUTCMinutes() + offsetMinutes;
+  const normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  return Math.floor(normalized / 60);
 }
 
 function getRollingRange(minutes: number): { start: string; end: string } {
@@ -80,18 +100,35 @@ function getRollingRange(minutes: number): { start: string; end: string } {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
-function getHourRanges(date: string): HourRange[] {
+function getHourRangesForLocalDate(
+  date: string,
+  timezone: string,
+): HourRange[] {
+  const offsetMinutes = parseTimezoneOffsetMinutes(timezone);
   const [year, month, day] = date.split("-").map(Number);
+  const maxHour = getCurrentLocalHourIndex(timezone);
 
-  return Array.from({ length: 24 }, (_, index) => {
-    const start = new Date(Date.UTC(year, month - 1, day, index, 0, 0, 0));
-    const end = new Date(Date.UTC(year, month - 1, day, index, 59, 59, 999));
+  return Array.from({ length: maxHour + 1 }, (_, index) => {
+    const startMs =
+      Date.UTC(year, month - 1, day, 0, 0, 0, 0) -
+      offsetMinutes * 60_000 +
+      index * 3_600_000;
+    const endMs = startMs + 3_600_000 - 1;
 
     return {
       hour: `${String(index).padStart(2, "0")}:00`,
-      start: start.toISOString(),
-      end: end.toISOString(),
+      start: new Date(startMs).toISOString(),
+      end: new Date(endMs).toISOString(),
     };
+  });
+}
+
+function padHourlyBuckets(fetched: HourlyOrderBucket[]): HourlyOrderBucket[] {
+  const byHour = new Map(fetched.map((bucket) => [bucket.hour, bucket]));
+
+  return Array.from({ length: 24 }, (_, index) => {
+    const hour = `${String(index).padStart(2, "0")}:00`;
+    return byHour.get(hour) ?? { hour, count: 0, totalValue: 0 };
   });
 }
 
@@ -164,81 +201,83 @@ async function fetchRangeStats(
   };
 }
 
-async function fetchHourStats(
+async function fetchHourlyBuckets(
   baseUrl: string,
   headers: Record<string, string>,
-  range: HourRange,
-): Promise<{ hour: string; count: number; totalValue: number }> {
-  const stats = await fetchRangeStats(baseUrl, headers, range.start, range.end);
+  date: string,
+  timezone: string,
+): Promise<HourlyOrderBucket[]> {
+  const hourRanges = getHourRangesForLocalDate(date, timezone);
 
-  return {
-    hour: range.hour,
-    count: stats.orders,
-    totalValue: stats.totalValue,
-  };
+  const fetched = await Promise.all(
+    hourRanges.map(async (range) => {
+      const stats = await fetchRangeStats(
+        baseUrl,
+        headers,
+        range.start,
+        range.end,
+      );
+
+      return {
+        hour: range.hour,
+        count: stats.orders,
+        totalValue: stats.totalValue,
+      };
+    }),
+  );
+
+  return padHourlyBuckets(fetched);
 }
 
 export const ordersTimeline = (_env: Env) =>
   createTool({
     id: "VTEX_ORDERS_TIMELINE",
     description:
-      "Fetch today's orders aggregated by hour plus sales summaries for today, last hour, and last 5 minutes.",
+      "Fetch today's orders aggregated by hour plus sales summaries for today, last hour, and last 5 minutes. Uses OMS List Orders with _stats=1.",
     inputSchema: z.object({}),
     outputSchema,
     _meta: { ui: { resourceUri: VTEX_RESOURCE_URI } },
     annotations: { readOnlyHint: true },
     execute: async ({ runtimeContext }) => {
       const env = runtimeContext.env as Env;
-      const credentials = env.MESH_REQUEST_CONTEXT.state;
-      const { accountName, appKey, appToken } = credentials;
-      const date = getTodayUtcDate();
-      const hourRanges = getHourRanges(date);
-      const todayRange = getTodayRange();
+      const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
+      const timezone = DEFAULT_STORE_TIMEZONE;
+      const {
+        startDate: dayStartDate,
+        endDate: dayEndDate,
+        date,
+      } = getTodayWindowInTimezone(timezone);
       const lastHourRange = getRollingRange(60);
       const last5MinutesRange = getRollingRange(5);
 
-      const baseUrl = `https://${accountName}.vtexcommercestable.com.br/api/oms/pvt/orders`;
-      const headers: Record<string, string> = {
+      const omsBaseUrl = `https://${accountName}.vtexcommercestable.com.br/api/oms/pvt/orders`;
+      const omsHeaders: Record<string, string> = {
         Accept: "application/json",
         "Content-Type": "application/json",
         ...(appKey && { "X-VTEX-API-AppKey": appKey }),
         ...(appToken && { "X-VTEX-API-AppToken": appToken }),
       };
 
-      const [hours, today, lastHour, last5Minutes] = await Promise.all([
-        Promise.all(
-          hourRanges.map((range) => fetchHourStats(baseUrl, headers, range)),
-        ),
-        fetchRangeStats(baseUrl, headers, todayRange.start, todayRange.end),
+      const [hours, todaySales, lastHour, last5Minutes] = await Promise.all([
+        fetchHourlyBuckets(omsBaseUrl, omsHeaders, date, timezone),
+        fetchRangeStats(omsBaseUrl, omsHeaders, dayStartDate, dayEndDate),
         fetchRangeStats(
-          baseUrl,
-          headers,
+          omsBaseUrl,
+          omsHeaders,
           lastHourRange.start,
           lastHourRange.end,
         ),
         fetchRangeStats(
-          baseUrl,
-          headers,
+          omsBaseUrl,
+          omsHeaders,
           last5MinutesRange.start,
           last5MinutesRange.end,
         ),
       ]);
 
-      const ordersFromHours = hours.reduce(
-        (sum, bucket) => sum + bucket.count,
-        0,
-      );
-      const valueFromHours = hours.reduce(
-        (sum, bucket) => sum + bucket.totalValue,
-        0,
-      );
-
       return {
         hours,
-        today: {
-          orders: today.orders > 0 ? today.orders : ordersFromHours,
-          totalValue: today.totalValue > 0 ? today.totalValue : valueFromHours,
-        },
+        today: todaySales,
         lastHour,
         last5Minutes,
         date,

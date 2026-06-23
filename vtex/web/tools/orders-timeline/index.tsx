@@ -125,7 +125,7 @@ export default function OrdersTimelinePage() {
     <div className="p-6">
       <PageHeader
         title="Orders Timeline"
-        subtitle={`Vendas de hoje (${date}, UTC) por hora`}
+        subtitle={`Vendas de hoje (${date}, UTC-3) por hora`}
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">

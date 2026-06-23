@@ -41,7 +41,7 @@ These handle multi-step operations not available in the generated SDK:
 | `VTEX_SEARCH_COLLECTIONS` | Search collections by name or terms |
 | `VTEX_REORDER_COLLECTION` | Reorder collections with SKU/product IDs via XML import |
 | `VTEX_UPDATE_PRODUCT_SPECIFICATIONS` | Bulk replace product specifications |
-| `VTEX_GET_ORDERS_TREND` | Admin home dashboard orders trend (internal analytics service); exchanges App Key/Token for a session token under the hood |
+| `VTEX_ORDERS_TIMELINE` | Today's orders by hour with sales summary cards (MCP App UI) |
 
 ## Authentication
 
@@ -66,39 +66,6 @@ VTEX_ACCOUNT_NAME=your-account-name
 VTEX_APP_KEY=your-app-key
 VTEX_APP_TOKEN=your-app-token
 ```
-
-### Internal endpoints (VtexId session-token auth)
-
-A few VTEX services power the **admin UI** rather than the public API — for
-example the home dashboard analytics under `/api/analytics/consumption/*`. These
-are **not in VTEX's OpenAPI specs** (so no tool is generated for them) and they
-**reject the `X-VTEX-API-AppKey` / `X-VTEX-API-AppToken` headers with `401`**.
-They only accept a **VtexId session token** — the same credential the browser
-sends as the `VtexIdclientAutCookie` cookie.
-
-To call one of these from a tool, mint a session token from the connection's App
-Key/Token and send it as a cookie. The shared helper in
-[`server/lib/vtexid-session.ts`](server/lib/vtexid-session.ts) does this (with
-in-isolate caching, so repeated tool calls don't re-login):
-
-```ts
-import {
-  getVtexIdSessionToken,
-  vtexIdCookieHeader,
-} from "../../lib/vtexid-session.ts";
-
-const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
-const token = await getVtexIdSessionToken({ accountName, appKey, appToken });
-
-const res = await fetch(url, {
-  headers: { Accept: "application/json", Cookie: vtexIdCookieHeader(token) },
-});
-```
-
-Under the hood it does `POST /api/vtexid/apptoken/login` with
-`{ appkey, apptoken }`, caches the returned token until just before its JWT
-`exp`, and hands it back. `VTEX_GET_ORDERS_TREND` is the reference consumer —
-reuse the helper for any other internal-endpoint tool.
 
 ## Development
 
@@ -154,8 +121,7 @@ server/
 │   └── env.ts               # Credential schema (Zod)
 ├── lib/
 │   ├── client-factory.ts    # Creates VTEX API clients with auth
-│   ├── tool-adapter.ts      # Converts OpenAPI operations to MCP tools
-│   └── vtexid-session.ts    # Mints VtexId session tokens for internal endpoints
+│   └── tool-adapter.ts      # Converts OpenAPI operations to MCP tools
 ├── tools/
 │   ├── index.ts             # Tool registry (all tools exported)
 │   ├── registry.ts          # Auto-generated tool definitions

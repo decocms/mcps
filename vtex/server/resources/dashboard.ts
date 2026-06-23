@@ -16,7 +16,7 @@ export const dashboardResource = (_env: Env) =>
     uri: VTEX_RESOURCE_URI,
     name: "VTEX Dashboard",
     description:
-      "Bundled React UI for visualizing VTEX commerce data — orders timeline and analytics.",
+      "Bundled React UI for visualizing VTEX commerce data — orders timeline dashboard.",
     mimeType: RESOURCE_MIME_TYPE,
     read: async () => {
       const html = await readFile(getDistPath(), "utf-8");
