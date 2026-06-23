@@ -1,5 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
+import type { VTEXCredentials } from "../../types/env.ts";
 import type { Env } from "../../types/env.ts";
 import {
   getVtexIdSessionToken,
@@ -24,6 +25,9 @@ export interface OrdersTrendParams {
   timezone: string;
 }
 
+export const DEFAULT_STORE_TIMEZONE = "-03:00";
+export const DEFAULT_STORE_CURRENCY = "BRL";
+
 export function buildOrdersTrendUrl(
   accountName: string,
   params: OrdersTrendParams,
@@ -36,7 +40,70 @@ export function buildOrdersTrendUrl(
     agg: params.agg,
     timezone: params.timezone,
   });
-  return `https://${accountName}.vtexcommercestable.com.br/api/analytics/consumption/home-orders-trend?${qs.toString()}`;
+  return `https://${accountName}.myvtex.com/api/analytics/consumption/home-orders-trend?${qs.toString()}`;
+}
+
+/** Truncate to minute precision — matches the admin home-orders-trend URL. */
+export function formatAnalyticsEndDate(date: Date = new Date()): string {
+  const truncated = new Date(date);
+  truncated.setUTCSeconds(0, 0);
+  return truncated.toISOString();
+}
+
+/** Clamp hour-agg params to what the admin chart sends (start of local day → now). */
+export function normalizeAnalyticsParams(
+  params: OrdersTrendParams,
+): OrdersTrendParams {
+  if (params.agg !== "hour") {
+    return params;
+  }
+
+  const nowEnd = formatAnalyticsEndDate();
+  const requestedEnd = formatAnalyticsEndDate(new Date(params.endDate));
+
+  return {
+    ...params,
+    endDate: requestedEnd > nowEnd ? nowEnd : requestedEnd,
+  };
+}
+
+function analyticsHeaders(
+  accountName: string,
+  token: string,
+): Record<string, string> {
+  const origin = `https://${accountName}.myvtex.com`;
+
+  return {
+    Accept: "application/json",
+    Cookie: vtexIdCookieHeader(token),
+    VtexIdclientAutCookie: token,
+    Referer: `${origin}/admin/`,
+    Origin: origin,
+  };
+}
+
+export async function fetchHomeOrdersTrend(
+  creds: VTEXCredentials,
+  params: OrdersTrendParams,
+): Promise<unknown> {
+  const { accountName, appKey, appToken } = creds;
+  const token = await getVtexIdSessionToken({ accountName, appKey, appToken });
+  const normalized = normalizeAnalyticsParams(params);
+  const url = buildOrdersTrendUrl(accountName, normalized);
+
+  console.log("[VTEX] GET", url);
+
+  const response = await fetch(url, {
+    headers: analyticsHeaders(accountName, token),
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      `VTEX analytics API Error: ${response.status} - ${await response.text()}`,
+    );
+  }
+
+  return response.json();
 }
 
 // Read per-request env from `runtimeContext` — see comment in
@@ -52,12 +119,12 @@ export const getOrdersTrend = (_env: Env) =>
       startDate: z
         .string()
         .describe(
-          "Start of the window, ISO 8601 UTC, e.g. 2026-06-23T00:00:00.000Z",
+          "Start of the window, ISO 8601 UTC, e.g. 2026-06-23T03:00:00.000Z",
         ),
       endDate: z
         .string()
         .describe(
-          "End of the window, ISO 8601 UTC, e.g. 2026-06-23T23:59:00.000Z",
+          "End of the window, ISO 8601 UTC. For agg=hour use current time (e.g. 2026-06-23T16:35:00.000Z), not end-of-day.",
         ),
       agg: z
         .enum(["hour", "day", "week", "month"])
@@ -65,45 +132,26 @@ export const getOrdersTrend = (_env: Env) =>
         .describe("Time bucket granularity for the trend"),
       currency: z
         .string()
-        .default("BRL")
+        .default(DEFAULT_STORE_CURRENCY)
         .describe("Currency code matching the store, e.g. BRL, USD"),
       timezone: z
         .string()
-        .default("+00:00")
+        .default(DEFAULT_STORE_TIMEZONE)
         .describe("Timezone offset used for bucketing, e.g. -03:00"),
     }),
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;
       const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
 
-      const token = await getVtexIdSessionToken({
-        accountName,
-        appKey,
-        appToken,
-      });
-
-      const url = buildOrdersTrendUrl(accountName, {
-        startDate: context.startDate,
-        endDate: context.endDate,
-        agg: context.agg,
-        currency: context.currency,
-        timezone: context.timezone,
-      });
-      console.log("[VTEX] GET", url);
-
-      const response = await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          Cookie: vtexIdCookieHeader(token),
+      return fetchHomeOrdersTrend(
+        { accountName, appKey, appToken },
+        {
+          startDate: context.startDate,
+          endDate: context.endDate,
+          agg: context.agg,
+          currency: context.currency,
+          timezone: context.timezone,
         },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `VTEX API Error: ${response.status} - ${await response.text()}`,
-        );
-      }
-
-      return response.json();
+      );
     },
   });
