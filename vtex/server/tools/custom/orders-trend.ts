@@ -1,24 +1,20 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../types/env.ts";
+import {
+  getVtexIdSessionToken,
+  vtexIdCookieHeader,
+} from "../../lib/vtexid-session.ts";
 
 /**
  * VTEX's admin home dashboard charts are served by an INTERNAL microservice at
  * `/api/analytics/consumption/*`. It is NOT part of VTEX's public OpenAPI specs,
  * so there is no generated tool for it — hence this hand-crafted tool.
  *
- * The catch: that service REJECTS the usual `X-VTEX-API-AppKey` /
- * `X-VTEX-API-AppToken` headers with 401. It only accepts a VtexId session
- * token. So we first exchange the App Key/Token for a short-lived session token
- * via `/api/vtexid/apptoken/login`, then call the analytics endpoint passing the
- * token as the `VtexIdclientAutCookie` cookie.
+ * That service rejects the usual App Key/Token headers and only accepts a VtexId
+ * session token, so we mint one from the credentials via the shared
+ * `lib/vtexid-session` helper. Any future internal-endpoint tool should reuse it.
  */
-
-export function buildAppTokenLoginUrl(accountName: string): string {
-  return `https://${accountName}.vtexcommercestable.com.br/api/vtexid/apptoken/login?an=${encodeURIComponent(
-    accountName,
-  )}`;
-}
 
 export interface OrdersTrendParams {
   startDate: string;
@@ -41,33 +37,6 @@ export function buildOrdersTrendUrl(
     timezone: params.timezone,
   });
   return `https://${accountName}.vtexcommercestable.com.br/api/analytics/consumption/home-orders-trend?${qs.toString()}`;
-}
-
-/** Exchange App Key/Token for a VtexId session token. */
-export async function loginWithAppToken(
-  accountName: string,
-  appKey: string,
-  appToken: string,
-): Promise<string> {
-  const response = await fetch(buildAppTokenLoginUrl(accountName), {
-    method: "POST",
-    headers: { "Content-Type": "application/json", Accept: "application/json" },
-    body: JSON.stringify({ appkey: appKey, apptoken: appToken }),
-  });
-
-  if (!response.ok) {
-    throw new Error(
-      `VTEX appToken login failed: ${response.status} - ${await response.text()}`,
-    );
-  }
-
-  const data = (await response.json()) as { token?: string };
-  if (!data.token) {
-    throw new Error(
-      "VTEX appToken login succeeded but no token was returned in the response.",
-    );
-  }
-  return data.token;
 }
 
 // Read per-request env from `runtimeContext` — see comment in
@@ -107,18 +76,11 @@ export const getOrdersTrend = (_env: Env) =>
       const env = runtimeContext.env as Env;
       const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
 
-      if (!accountName) {
-        throw new Error(
-          "VTEX accountName is missing — set MESH_REQUEST_CONTEXT.state.accountName.",
-        );
-      }
-      if (!appKey || !appToken) {
-        throw new Error(
-          "VTEX_GET_ORDERS_TREND requires appKey and appToken — the analytics service rejects unauthenticated requests.",
-        );
-      }
-
-      const token = await loginWithAppToken(accountName, appKey, appToken);
+      const token = await getVtexIdSessionToken({
+        accountName,
+        appKey,
+        appToken,
+      });
 
       const url = buildOrdersTrendUrl(accountName, {
         startDate: context.startDate,
@@ -132,7 +94,7 @@ export const getOrdersTrend = (_env: Env) =>
       const response = await fetch(url, {
         headers: {
           Accept: "application/json",
-          Cookie: `VtexIdclientAutCookie=${token}`,
+          Cookie: vtexIdCookieHeader(token),
         },
       });
 
