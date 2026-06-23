@@ -8,9 +8,11 @@ import {
 } from "@tanstack/react-router";
 import { useMcpHostContext, useMcpState } from "./context.tsx";
 import OrdersTimelinePage from "./tools/orders-timeline/index.tsx";
+import OrdersSalesCardPage from "./tools/orders-sales-card/index.tsx";
 
 const TOOL_PAGES: Record<string, React.ComponentType> = {
   VTEX_ORDERS_TIMELINE: OrdersTimelinePage,
+  VTEX_ORDERS_SALES_CARD: OrdersSalesCardPage,
 };
 
 function ToolRouter() {
