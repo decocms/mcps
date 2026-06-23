@@ -40,32 +40,6 @@ export function vtexIdCookieHeader(token: string): string {
   return `${VTEXID_COOKIE_NAME}=${token}`;
 }
 
-/** Headers for internal VTEX admin endpoints (matches browser fetch shape). */
-export function vtexIdAuthHeaders(
-  accountName: string,
-  token: string,
-  creds?: Pick<VTEXCredentials, "appKey" | "appToken">,
-): Record<string, string> {
-  const origin = `https://${accountName}.myvtex.com`;
-
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    Cookie: vtexIdCookieHeader(token),
-    [VTEXID_COOKIE_NAME]: token,
-    Referer: `${origin}/admin/`,
-    Origin: origin,
-  };
-
-  if (creds?.appKey) {
-    headers["X-VTEX-API-AppKey"] = creds.appKey;
-  }
-  if (creds?.appToken) {
-    headers["X-VTEX-API-AppToken"] = creds.appToken;
-  }
-
-  return headers;
-}
-
 /**
  * Decode the `exp` (seconds since epoch) claim from a JWT without verifying it.
  * Returns null when the token isn't a parseable JWT or has no `exp`.
