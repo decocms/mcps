@@ -84,6 +84,12 @@ import {
 import { searchCollections } from "./custom/search-collections.ts";
 import { reorderCollection } from "./custom/reorder-collection.ts";
 import { updateProductSpecifications } from "./custom/update-product-specifications.ts";
+import { getOrdersTrend } from "./custom/orders-trend.ts";
+import {
+  getHomeMetricsSummary,
+  getHomeTopProducts,
+  getHomeTopViewedProducts,
+} from "./custom/home-analytics.ts";
 
 // ── Tool registry factories (env: Env) => Tool ────────────────────────────────
 const registryFactories = [
@@ -168,6 +174,12 @@ const customFactories = [
   reorderCollection,
   // Bulk replace product specifications (PUT v2, missing from generated SDK)
   updateProductSpecifications,
+  // Home dashboard orders trend (internal analytics service, not in OpenAPI specs)
+  getOrdersTrend,
+  // Home dashboard metrics summary, top viewed, and top products (internal analytics)
+  getHomeMetricsSummary,
+  getHomeTopViewedProducts,
+  getHomeTopProducts,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
