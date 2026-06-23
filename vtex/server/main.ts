@@ -4,7 +4,10 @@
  * MCP for VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory.
  */
 import { withRuntime } from "@decocms/runtime";
-import { dashboardResource } from "./resources/dashboard.ts";
+import {
+  ordersSalesCardResource,
+  ordersTimelineResource,
+} from "./resources/index.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 import packageJson from "../package.json" with { type: "json" };
@@ -40,7 +43,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools,
-  resources: [dashboardResource],
+  resources: [ordersTimelineResource, ordersSalesCardResource],
 });
 
 const PORT = Number(process.env.PORT) || 3001;

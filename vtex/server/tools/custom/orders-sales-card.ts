@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEX_RESOURCE_URI } from "../../constants.ts";
+import { VTEX_ORDERS_SALES_CARD_RESOURCE_URI } from "../../constants.ts";
 import type { Env } from "../../types/env.ts";
 import {
   buildOmsHeaders,
@@ -59,7 +59,7 @@ export const ordersSalesCard = (_env: Env) =>
         ),
     }),
     outputSchema,
-    _meta: { ui: { resourceUri: VTEX_RESOURCE_URI } },
+    _meta: { ui: { resourceUri: VTEX_ORDERS_SALES_CARD_RESOURCE_URI } },
     annotations: { readOnlyHint: true },
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;

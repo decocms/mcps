@@ -1,6 +1,6 @@
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { VTEX_RESOURCE_URI } from "../../constants.ts";
+import { VTEX_ORDERS_TIMELINE_RESOURCE_URI } from "../../constants.ts";
 import type { Env } from "../../types/env.ts";
 import { fetchAnalyticsConsumption } from "./analytics-consumption.ts";
 import {
@@ -33,7 +33,7 @@ export const ordersTimeline = (_env: Env) =>
       "Fetch today's orders aggregated by hour for a bar chart. Uses the admin home orders trend analytics endpoint (single request).",
     inputSchema: z.object({}),
     outputSchema,
-    _meta: { ui: { resourceUri: VTEX_RESOURCE_URI } },
+    _meta: { ui: { resourceUri: VTEX_ORDERS_TIMELINE_RESOURCE_URI } },
     annotations: { readOnlyHint: true },
     execute: async ({ runtimeContext }) => {
       const env = runtimeContext.env as Env;

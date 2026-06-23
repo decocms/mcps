@@ -4,6 +4,23 @@ import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
 
+const MCP_APP_ENTRIES = {
+  "orders-timeline": path.resolve(__dirname, "orders-timeline.html"),
+  "orders-sales-card": path.resolve(__dirname, "orders-sales-card.html"),
+} as const;
+
+type McpAppEntry = keyof typeof MCP_APP_ENTRIES;
+
+function resolveEntry(): McpAppEntry {
+  const entry = process.env.MCP_APP_ENTRY;
+  if (entry && entry in MCP_APP_ENTRIES) {
+    return entry as McpAppEntry;
+  }
+  return "orders-timeline";
+}
+
+const activeEntry = resolveEntry();
+
 export default defineConfig({
   plugins: [
     react({
@@ -21,9 +38,9 @@ export default defineConfig({
   },
   build: {
     outDir: "dist/client",
-    emptyOutDir: true,
+    emptyOutDir: process.env.MCP_APP_EMPTY_OUTDIR !== "false",
     rollupOptions: {
-      input: "index.html",
+      input: MCP_APP_ENTRIES[activeEntry],
     },
   },
 });
