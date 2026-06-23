@@ -8,7 +8,6 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { PageHeader } from "@/components/page-header.tsx";
 import { StatusFrame } from "@/components/status-frame.tsx";
 import {
   Card,
@@ -17,6 +16,8 @@ import {
   CardTitle,
 } from "@/components/ui/card.tsx";
 import { useMcpState } from "@/context.tsx";
+
+const DECO_CHART_COLOR = "#d0ec1a";
 
 interface HourBucket {
   hour: string;
@@ -36,27 +37,25 @@ function fmt(n: number | undefined) {
 export default function OrdersTimelinePage() {
   const state = useMcpState<Record<string, never>, OrdersTimelineOutput>();
 
+  if (state.status === "error" || state.status === "tool-cancelled") {
+    return <StatusFrame status={state.status} error={state.error} />;
+  }
+
   if (state.status !== "tool-result") {
     return (
-      <StatusFrame
-        status={state.status}
-        error={state.error}
-        pendingMessage="Carregando timeline…"
-        connectedTitle="Orders Timeline"
-        connectedHint="Chame VTEX_ORDERS_TIMELINE."
-      />
+      <div className="flex items-center justify-center min-h-dvh p-6">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+          <span className="text-sm">Carregando timeline…</span>
+        </div>
+      </div>
     );
   }
 
-  const { hours, date } = state.toolResult ?? { hours: [], date: "" };
+  const { hours } = state.toolResult ?? { hours: [], date: "" };
 
   return (
     <div className="p-6">
-      <PageHeader
-        title="Orders Timeline"
-        subtitle={`Pedidos de hoje (${date}, UTC-3) por hora`}
-      />
-
       <Card>
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
@@ -83,7 +82,7 @@ export default function OrdersTimelinePage() {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#f71963"
+                  fill={DECO_CHART_COLOR}
                   radius={[4, 4, 0, 0]}
                   name="count"
                 />

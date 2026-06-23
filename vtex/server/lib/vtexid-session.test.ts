@@ -4,6 +4,7 @@ import {
   buildAppTokenLoginUrl,
   getVtexIdSessionToken,
   jwtExpirySeconds,
+  vtexIdAuthHeaders,
   vtexIdCookieHeader,
   VTEXID_COOKIE_NAME,
 } from "./vtexid-session.ts";
@@ -23,6 +24,25 @@ describe("vtexIdCookieHeader", () => {
     expect(vtexIdCookieHeader("abc.def.ghi")).toBe(
       `${VTEXID_COOKIE_NAME}=abc.def.ghi`,
     );
+  });
+});
+
+describe("vtexIdAuthHeaders", () => {
+  test("includes admin Origin/Referer and optional app credentials", () => {
+    expect(
+      vtexIdAuthHeaders("lojafarm", "token123", {
+        appKey: "key",
+        appToken: "secret",
+      }),
+    ).toEqual({
+      Accept: "application/json",
+      Cookie: `${VTEXID_COOKIE_NAME}=token123`,
+      [VTEXID_COOKIE_NAME]: "token123",
+      Referer: "https://lojafarm.myvtex.com/admin/",
+      Origin: "https://lojafarm.myvtex.com",
+      "X-VTEX-API-AppKey": "key",
+      "X-VTEX-API-AppToken": "secret",
+    });
   });
 });
 

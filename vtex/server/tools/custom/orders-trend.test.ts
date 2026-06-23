@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildOrdersTrendUrl,
+  extractOrdersTrendChartPoints,
+  hasUsableTrendChartData,
   hourLabelInTimezone,
   parseAnalyticsHourlyBuckets,
   resolveOrdersTrendParams,
@@ -119,5 +121,92 @@ describe("parseAnalyticsHourlyBuckets", () => {
       totalValue: 0,
     });
     expect(hours[0]?.count).toBe(0);
+  });
+
+  test("accepts a top-level chart array", () => {
+    const hours = parseAnalyticsHourlyBuckets(
+      [
+        {
+          date: "2026-06-23T14:00:00.000Z",
+          orders: 42,
+        },
+      ],
+      "-03:00",
+    );
+
+    expect(hours[11]?.count).toBe(42);
+  });
+
+  test("accepts null dataChart as empty", () => {
+    const hours = parseAnalyticsHourlyBuckets({ dataChart: null }, "-03:00");
+    expect(hours.every((bucket) => bucket.count === 0)).toBe(true);
+  });
+
+  test("accepts VTEX ordersTrendData wrapper", () => {
+    const hours = parseAnalyticsHourlyBuckets(
+      {
+        ordersTrendData: {
+          dataChart: [
+            {
+              date: "2026-06-23T14:00:00.000Z",
+              orders: 99,
+            },
+          ],
+        },
+      },
+      "-03:00",
+    );
+
+    expect(hours[11]?.count).toBe(99);
+  });
+
+  test("accepts stringified JSON payloads", () => {
+    const hours = parseAnalyticsHourlyBuckets(
+      JSON.stringify({
+        dataChart: [
+          {
+            date: "2026-06-23T03:00:00.000Z",
+            orders: "7",
+          },
+        ],
+      }),
+      "-03:00",
+    );
+
+    expect(hours[0]?.count).toBe(7);
+  });
+});
+
+describe("hasUsableTrendChartData", () => {
+  test("returns false for null placeholder buckets", () => {
+    expect(
+      hasUsableTrendChartData({
+        ordersTrendData: {
+          dataChart: [
+            {
+              date: null,
+              orders: null,
+              status: "NORMAL",
+            },
+          ],
+        },
+      }),
+    ).toBe(false);
+  });
+
+  test("returns true when at least one bucket has data", () => {
+    expect(
+      hasUsableTrendChartData({
+        dataChart: [{ date: "2026-06-23T14:00:00.000Z", orders: 5 }],
+      }),
+    ).toBe(true);
+  });
+});
+
+describe("extractOrdersTrendChartPoints", () => {
+  test("throws a descriptive error for unknown payloads", () => {
+    expect(() => extractOrdersTrendChartPoints({})).toThrow(
+      /Invalid VTEX orders trend response: object\(keys=none\)/,
+    );
   });
 });

@@ -2,10 +2,9 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../types/env.ts";
 import {
-  getVtexIdSessionToken,
-  vtexIdCookieHeader,
-} from "../../lib/vtexid-session.ts";
-import { buildAnalyticsConsumptionUrl } from "./analytics-consumption.ts";
+  buildAnalyticsConsumptionUrl,
+  fetchAnalyticsConsumption,
+} from "./analytics-consumption.ts";
 import {
   DEFAULT_STORE_TIMEZONE,
   formatVtexAnalyticsTimestamp,
@@ -19,16 +18,132 @@ interface OrdersTrendChartPoint {
   orders: number | null;
 }
 
-interface OrdersTrendResponse {
-  dataChart: OrdersTrendChartPoint[];
+const CHART_POINT_KEYS = ["dataChart", "DataChart", "chart", "data", "series"];
+
+function readNumericField(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+
+  return null;
 }
 
-function isOrdersTrendResponse(data: unknown): data is OrdersTrendResponse {
+function unwrapTrendPayload(data: unknown): unknown {
+  if (typeof data !== "string") {
+    return data;
+  }
+
+  try {
+    return unwrapTrendPayload(JSON.parse(data));
+  } catch {
+    return data;
+  }
+}
+
+function isChartPointLike(value: unknown): value is Record<string, unknown> {
   return (
-    typeof data === "object" &&
-    data !== null &&
-    "dataChart" in data &&
-    Array.isArray(data.dataChart)
+    typeof value === "object" &&
+    value !== null &&
+    ("date" in value || "orders" in value)
+  );
+}
+
+function coerceChartPoints(value: unknown): OrdersTrendChartPoint[] | null {
+  if (value === null || value === undefined) {
+    return [];
+  }
+
+  if (Array.isArray(value)) {
+    if (value.length === 0 || value.every(isChartPointLike)) {
+      return value as OrdersTrendChartPoint[];
+    }
+  }
+
+  return null;
+}
+
+function findChartPoints(data: unknown): OrdersTrendChartPoint[] | null {
+  const unwrapped = unwrapTrendPayload(data);
+
+  const direct = coerceChartPoints(unwrapped);
+  if (direct !== null) {
+    return direct;
+  }
+
+  if (typeof unwrapped !== "object" || unwrapped === null) {
+    return null;
+  }
+
+  const record = unwrapped as Record<string, unknown>;
+
+  for (const key of CHART_POINT_KEYS) {
+    if (!(key in record)) {
+      continue;
+    }
+
+    const nested = findChartPoints(record[key]);
+    if (nested !== null) {
+      return nested;
+    }
+  }
+
+  // VTEX wraps chart data under endpoint-specific keys, e.g. ordersTrendData.
+  for (const value of Object.values(record)) {
+    if (typeof value !== "object" || value === null || Array.isArray(value)) {
+      continue;
+    }
+
+    const nested = findChartPoints(value);
+    if (nested !== null) {
+      return nested;
+    }
+  }
+
+  return null;
+}
+
+function describeTrendPayload(data: unknown): string {
+  const unwrapped = unwrapTrendPayload(data);
+
+  if (unwrapped === null) {
+    return "null";
+  }
+
+  if (Array.isArray(unwrapped)) {
+    return `array(length=${unwrapped.length})`;
+  }
+
+  if (typeof unwrapped === "object") {
+    return `object(keys=${Object.keys(unwrapped).join(",") || "none"})`;
+  }
+
+  return typeof unwrapped;
+}
+
+export function extractOrdersTrendChartPoints(
+  data: unknown,
+): OrdersTrendChartPoint[] {
+  const points = findChartPoints(data);
+
+  if (points === null) {
+    throw new Error(
+      `Invalid VTEX orders trend response: ${describeTrendPayload(data)}`,
+    );
+  }
+
+  return points;
+}
+
+/** True when the trend payload has at least one bucket with date + order count. */
+export function hasUsableTrendChartData(data: unknown): boolean {
+  const points = extractOrdersTrendChartPoints(data);
+  return points.some(
+    (point) => point.date !== null && readNumericField(point.orders) !== null,
   );
 }
 
@@ -46,21 +161,23 @@ export function parseAnalyticsHourlyBuckets(
   data: unknown,
   timezone: string,
 ): HourlyOrderBucket[] {
-  if (!isOrdersTrendResponse(data)) {
-    throw new Error("Invalid VTEX orders trend response");
-  }
-
+  const chartPoints = extractOrdersTrendChartPoints(data);
   const byHour = new Map<string, HourlyOrderBucket>();
 
-  for (const point of data.dataChart) {
-    if (!point.date || point.orders === null) {
+  for (const point of chartPoints) {
+    if (!point.date) {
+      continue;
+    }
+
+    const count = readNumericField(point.orders);
+    if (count === null) {
       continue;
     }
 
     const hour = hourLabelInTimezone(point.date, timezone);
     byHour.set(hour, {
       hour,
-      count: point.orders,
+      count,
       totalValue: 0,
     });
   }
@@ -163,29 +280,19 @@ export const getOrdersTrend = (_env: Env) =>
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;
       const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
-
-      const token = await getVtexIdSessionToken({
-        accountName,
-        appKey,
-        appToken,
-      });
-
       const params = resolveOrdersTrendParams(context);
-      const url = buildOrdersTrendUrl(accountName, params);
 
-      const response = await fetch(url, {
-        headers: {
-          Accept: "application/json",
-          Cookie: vtexIdCookieHeader(token),
+      return fetchAnalyticsConsumption(
+        { accountName, appKey, appToken },
+        "home-orders-trend",
+        {
+          an: accountName,
+          currency: params.currency,
+          startDate: params.startDate,
+          endDate: params.endDate,
+          agg: params.agg,
+          timezone: params.timezone,
         },
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `VTEX API Error: ${response.status} - ${await response.text()}`,
-        );
-      }
-
-      return response.json();
+      );
     },
   });

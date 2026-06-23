@@ -8,9 +8,12 @@ import {
   getTodayWindowInTimezone,
 } from "./orders-oms.ts";
 import {
+  hasUsableTrendChartData,
   parseAnalyticsHourlyBuckets,
   resolveOrdersTrendParams,
 } from "./orders-trend.ts";
+
+const DEFAULT_STORE_CURRENCY = "BRL";
 
 const hourBucketSchema = z.object({
   hour: z.string(),
@@ -27,19 +30,21 @@ export const ordersTimeline = (_env: Env) =>
   createTool({
     id: "VTEX_ORDERS_TIMELINE",
     description:
-      "Fetch today's orders aggregated by hour for a bar chart. Uses the admin home orders trend analytics endpoint (single request via VTEX_GET_ORDERS_TREND).",
+      "Fetch today's orders aggregated by hour for a bar chart. Uses the admin home orders trend analytics endpoint (single request).",
     inputSchema: z.object({}),
     outputSchema,
     _meta: { ui: { resourceUri: VTEX_RESOURCE_URI } },
     annotations: { readOnlyHint: true },
     execute: async ({ runtimeContext }) => {
       const env = runtimeContext.env as Env;
-      const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
+      const { accountName, appKey, appToken, currency } =
+        env.MESH_REQUEST_CONTEXT.state;
       const timezone = DEFAULT_STORE_TIMEZONE;
+      const storeCurrency = currency ?? DEFAULT_STORE_CURRENCY;
       const { date } = getTodayWindowInTimezone(timezone);
       const params = resolveOrdersTrendParams({
         agg: "hour",
-        currency: "BRL",
+        currency: storeCurrency,
         timezone,
       });
 
@@ -56,8 +61,15 @@ export const ordersTimeline = (_env: Env) =>
         },
       );
 
-      const hours = parseAnalyticsHourlyBuckets(trend, timezone);
+      if (!hasUsableTrendChartData(trend)) {
+        throw new Error(
+          "VTEX analytics returned empty trend data (null placeholders). Check store currency and app key access to admin analytics.",
+        );
+      }
 
-      return { hours, date };
+      return {
+        hours: parseAnalyticsHourlyBuckets(trend, timezone),
+        date,
+      };
     },
   });
