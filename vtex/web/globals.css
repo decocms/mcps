@@ -14,19 +14,20 @@
 	--color-border-secondary: hsl(240 5.9% 90%);
 	--color-ring-primary: hsl(240 5.9% 10%);
 
-	/* Primary color (no host equivalent) */
-	--primary: hsl(240 5.9% 10%);
-	--primary-foreground: hsl(0 0% 98%);
+	/* VTEX brand */
+	--primary: #f71963;
+	--primary-foreground: #ffffff;
+	--color-ring-primary: #f71963;
 
 	/* Sidebar tokens (existing) */
 	--sidebar: hsl(0 0% 98%);
 	--sidebar-foreground: hsl(240 5.3% 26.1%);
-	--sidebar-primary: hsl(240 5.9% 10%);
-	--sidebar-primary-foreground: hsl(0 0% 98%);
+	--sidebar-primary: #f71963;
+	--sidebar-primary-foreground: #ffffff;
 	--sidebar-accent: hsl(240 4.8% 95.9%);
 	--sidebar-accent-foreground: hsl(240 5.9% 10%);
 	--sidebar-border: hsl(220 13% 91%);
-	--sidebar-ring: hsl(217.2 91.2% 59.8%);
+	--sidebar-ring: #f71963;
 }
 
 [data-theme="dark"] {
@@ -41,19 +42,20 @@
 	--color-border-secondary: hsl(240 3.7% 15.9%);
 	--color-ring-primary: hsl(240 4.9% 83.9%);
 
-	/* Primary color (no host equivalent) */
-	--primary: hsl(0 0% 98%);
-	--primary-foreground: hsl(240 5.9% 10%);
+	/* VTEX brand */
+	--primary: #f71963;
+	--primary-foreground: #ffffff;
+	--color-ring-primary: #f71963;
 
 	/* Sidebar tokens (existing) */
 	--sidebar: hsl(240 5.9% 10%);
 	--sidebar-foreground: hsl(240 4.8% 95.9%);
-	--sidebar-primary: hsl(224.3 76.3% 48%);
-	--sidebar-primary-foreground: hsl(0 0% 100%);
+	--sidebar-primary: #f71963;
+	--sidebar-primary-foreground: #ffffff;
 	--sidebar-accent: hsl(240 3.7% 15.9%);
 	--sidebar-accent-foreground: hsl(240 4.8% 95.9%);
 	--sidebar-border: hsl(240 3.7% 15.9%);
-	--sidebar-ring: hsl(217.2 91.2% 59.8%);
+	--sidebar-ring: #f71963;
 }
 
 @layer base {

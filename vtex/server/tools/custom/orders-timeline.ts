@@ -33,16 +33,9 @@ interface PeriodStats {
   totalValue: number;
 }
 
-interface ListOrderItem {
-  totalValue?: number;
-}
-
 interface ListOrdersPage {
-  list: ListOrderItem[];
   paging: {
     total: number;
-    pages: number;
-    currentPage: number;
   };
   stats?: {
     stats?: {
@@ -50,9 +43,6 @@ interface ListOrdersPage {
     };
   };
 }
-
-const MAX_PAGES = 30;
-const PAGE_SIZE = 100;
 
 function getTodayUtcDate(): string {
   const now = new Date();
@@ -109,15 +99,11 @@ function isListOrdersPage(data: unknown): data is ListOrdersPage {
   return (
     typeof data === "object" &&
     data !== null &&
-    "list" in data &&
-    Array.isArray(data.list) &&
     "paging" in data &&
     typeof data.paging === "object" &&
     data.paging !== null &&
     "total" in data.paging &&
-    typeof data.paging.total === "number" &&
-    "pages" in data.paging &&
-    typeof data.paging.pages === "number"
+    typeof data.paging.total === "number"
   );
 }
 
@@ -134,43 +120,27 @@ function readNumericField(value: unknown): number | null {
   return null;
 }
 
-function extractStatsSum(data: ListOrdersPage): number | null {
+function extractStatsSum(data: ListOrdersPage): number {
   const totalValue = data.stats?.stats?.totalValue;
   if (!totalValue || typeof totalValue !== "object") {
-    return null;
+    return 0;
   }
 
   return (
-    readNumericField(totalValue.Sum) ??
-    readNumericField(totalValue.sum) ??
-    readNumericField(totalValue.Value) ??
-    readNumericField(totalValue.value)
+    readNumericField(totalValue.Sum) ?? readNumericField(totalValue.sum) ?? 0
   );
 }
 
-function sumListValues(list: ListOrderItem[]): number {
-  let total = 0;
-
-  for (const item of list) {
-    const value = readNumericField(item.totalValue);
-    if (value !== null) {
-      total += value;
-    }
-  }
-
-  return total;
-}
-
-async function fetchListOrdersPage(
+async function fetchRangeStats(
   baseUrl: string,
   headers: Record<string, string>,
   start: string,
   end: string,
-  page: number,
-): Promise<ListOrdersPage> {
+): Promise<PeriodStats> {
   const params = new URLSearchParams({
-    page: String(page),
-    per_page: String(PAGE_SIZE),
+    page: "1",
+    per_page: "1",
+    _stats: "1",
     f_creationDate: `creationDate:[${start} TO ${end}]`,
   });
   const url = `${baseUrl}?${params.toString()}`;
@@ -188,45 +158,10 @@ async function fetchListOrdersPage(
     throw new Error("Invalid VTEX List Orders response");
   }
 
-  return data;
-}
-
-async function fetchPeriodStats(
-  baseUrl: string,
-  headers: Record<string, string>,
-  start: string,
-  end: string,
-): Promise<PeriodStats> {
-  let page = 1;
-  let orders = 0;
-  let listSum = 0;
-  let statsSum: number | null = null;
-
-  while (page <= MAX_PAGES) {
-    const data = await fetchListOrdersPage(baseUrl, headers, start, end, page);
-    orders = data.paging.total;
-
-    if (page === 1) {
-      statsSum = extractStatsSum(data);
-    }
-
-    listSum += sumListValues(data.list);
-
-    if (page >= data.paging.pages) {
-      break;
-    }
-
-    page += 1;
-  }
-
-  const totalValue =
-    statsSum !== null && statsSum > 0
-      ? statsSum
-      : listSum > 0
-        ? listSum
-        : (statsSum ?? 0);
-
-  return { orders, totalValue };
+  return {
+    orders: data.paging.total,
+    totalValue: extractStatsSum(data),
+  };
 }
 
 async function fetchHourStats(
@@ -234,26 +169,12 @@ async function fetchHourStats(
   headers: Record<string, string>,
   range: HourRange,
 ): Promise<{ hour: string; count: number; totalValue: number }> {
-  const data = await fetchListOrdersPage(
-    baseUrl,
-    headers,
-    range.start,
-    range.end,
-    1,
-  );
-
-  const statsSum = extractStatsSum(data);
-  const listSum = sumListValues(data.list);
+  const stats = await fetchRangeStats(baseUrl, headers, range.start, range.end);
 
   return {
     hour: range.hour,
-    count: data.paging.total,
-    totalValue:
-      statsSum !== null && statsSum > 0
-        ? statsSum
-        : listSum > 0
-          ? listSum
-          : (statsSum ?? 0),
+    count: stats.orders,
+    totalValue: stats.totalValue,
   };
 }
 
@@ -288,14 +209,14 @@ export const ordersTimeline = (_env: Env) =>
         Promise.all(
           hourRanges.map((range) => fetchHourStats(baseUrl, headers, range)),
         ),
-        fetchPeriodStats(baseUrl, headers, todayRange.start, todayRange.end),
-        fetchPeriodStats(
+        fetchRangeStats(baseUrl, headers, todayRange.start, todayRange.end),
+        fetchRangeStats(
           baseUrl,
           headers,
           lastHourRange.start,
           lastHourRange.end,
         ),
-        fetchPeriodStats(
+        fetchRangeStats(
           baseUrl,
           headers,
           last5MinutesRange.start,

@@ -178,7 +178,7 @@ export default function OrdersTimelinePage() {
                 />
                 <Bar
                   dataKey="count"
-                  fill="#6366f1"
+                  fill="#f71963"
                   radius={[4, 4, 0, 0]}
                   name="count"
                 />
