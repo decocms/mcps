@@ -18,11 +18,8 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["@cloudflare/workers-types", "bun", "vite/client"],
-    "paths": {
-      "@/*": ["./web/*"]
-    }
+    "types": ["@cloudflare/workers-types", "bun"]
   },
-  "include": ["server", "shared", "scripts", "web"],
+  "include": ["server", "shared", "scripts"],
   "exclude": ["server/generated"]
 }
