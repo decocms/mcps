@@ -5,6 +5,10 @@
  */
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
+import {
+  ordersSalesCardResource,
+  ordersTimelineResource,
+} from "./resources/index.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 import packageJson from "../package.json" with { type: "json" };
@@ -19,6 +23,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     state: StateSchema,
   },
   tools,
+  resources: [ordersTimelineResource, ordersSalesCardResource],
 });
 
 serve(runtime.fetch);
