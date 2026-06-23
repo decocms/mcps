@@ -2,191 +2,15 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../../types/env.ts";
 import {
-  buildAnalyticsConsumptionUrl,
-  fetchAnalyticsConsumption,
-} from "./analytics-consumption.ts";
+  getVtexIdSessionToken,
+  vtexIdCookieHeader,
+} from "../../lib/vtexid-session.ts";
+import { buildAnalyticsConsumptionUrl } from "./analytics-consumption.ts";
 import {
   DEFAULT_STORE_TIMEZONE,
   formatVtexAnalyticsTimestamp,
   getTodayTrendWindowInTimezone,
-  parseTimezoneOffsetMinutes,
-  type HourlyOrderBucket,
 } from "./orders-oms.ts";
-
-interface OrdersTrendChartPoint {
-  date: string | null;
-  orders: number | null;
-}
-
-const CHART_POINT_KEYS = ["dataChart", "DataChart", "chart", "data", "series"];
-
-function readNumericField(value: unknown): number | null {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
-  }
-
-  if (typeof value === "string" && value.trim() !== "") {
-    const parsed = Number(value);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  return null;
-}
-
-function unwrapTrendPayload(data: unknown): unknown {
-  if (typeof data !== "string") {
-    return data;
-  }
-
-  try {
-    return unwrapTrendPayload(JSON.parse(data));
-  } catch {
-    return data;
-  }
-}
-
-function isChartPointLike(value: unknown): value is Record<string, unknown> {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    ("date" in value || "orders" in value)
-  );
-}
-
-function coerceChartPoints(value: unknown): OrdersTrendChartPoint[] | null {
-  if (value === null || value === undefined) {
-    return [];
-  }
-
-  if (Array.isArray(value)) {
-    if (value.length === 0 || value.every(isChartPointLike)) {
-      return value as OrdersTrendChartPoint[];
-    }
-  }
-
-  return null;
-}
-
-function findChartPoints(data: unknown): OrdersTrendChartPoint[] | null {
-  const unwrapped = unwrapTrendPayload(data);
-
-  const direct = coerceChartPoints(unwrapped);
-  if (direct !== null) {
-    return direct;
-  }
-
-  if (typeof unwrapped !== "object" || unwrapped === null) {
-    return null;
-  }
-
-  const record = unwrapped as Record<string, unknown>;
-
-  for (const key of CHART_POINT_KEYS) {
-    if (!(key in record)) {
-      continue;
-    }
-
-    const nested = findChartPoints(record[key]);
-    if (nested !== null) {
-      return nested;
-    }
-  }
-
-  // VTEX wraps chart data under endpoint-specific keys, e.g. ordersTrendData.
-  for (const value of Object.values(record)) {
-    if (typeof value !== "object" || value === null || Array.isArray(value)) {
-      continue;
-    }
-
-    const nested = findChartPoints(value);
-    if (nested !== null) {
-      return nested;
-    }
-  }
-
-  return null;
-}
-
-function describeTrendPayload(data: unknown): string {
-  const unwrapped = unwrapTrendPayload(data);
-
-  if (unwrapped === null) {
-    return "null";
-  }
-
-  if (Array.isArray(unwrapped)) {
-    return `array(length=${unwrapped.length})`;
-  }
-
-  if (typeof unwrapped === "object") {
-    return `object(keys=${Object.keys(unwrapped).join(",") || "none"})`;
-  }
-
-  return typeof unwrapped;
-}
-
-export function extractOrdersTrendChartPoints(
-  data: unknown,
-): OrdersTrendChartPoint[] {
-  const points = findChartPoints(data);
-
-  if (points === null) {
-    throw new Error(
-      `Invalid VTEX orders trend response: ${describeTrendPayload(data)}`,
-    );
-  }
-
-  return points;
-}
-
-/** True when the trend payload has at least one bucket with date + order count. */
-export function hasUsableTrendChartData(data: unknown): boolean {
-  const points = extractOrdersTrendChartPoints(data);
-  return points.some(
-    (point) => point.date !== null && readNumericField(point.orders) !== null,
-  );
-}
-
-export function hourLabelInTimezone(isoDate: string, timezone: string): string {
-  const offsetMinutes = parseTimezoneOffsetMinutes(timezone);
-  const date = new Date(isoDate);
-  const totalMinutes =
-    date.getUTCHours() * 60 + date.getUTCMinutes() + offsetMinutes;
-  const normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
-  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:00`;
-}
-
-/** Maps admin home-orders-trend `dataChart` into 24 local hour buckets for the MCP App UI. */
-export function parseAnalyticsHourlyBuckets(
-  data: unknown,
-  timezone: string,
-): HourlyOrderBucket[] {
-  const chartPoints = extractOrdersTrendChartPoints(data);
-  const byHour = new Map<string, HourlyOrderBucket>();
-
-  for (const point of chartPoints) {
-    if (!point.date) {
-      continue;
-    }
-
-    const count = readNumericField(point.orders);
-    if (count === null) {
-      continue;
-    }
-
-    const hour = hourLabelInTimezone(point.date, timezone);
-    byHour.set(hour, {
-      hour,
-      count,
-      totalValue: 0,
-    });
-  }
-
-  return Array.from({ length: 24 }, (_, index) => {
-    const hour = `${String(index).padStart(2, "0")}:00`;
-    return byHour.get(hour) ?? { hour, count: 0, totalValue: 0 };
-  });
-}
 
 /**
  * VTEX's admin home dashboard charts are served by an INTERNAL microservice at
@@ -280,19 +104,29 @@ export const getOrdersTrend = (_env: Env) =>
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;
       const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
-      const params = resolveOrdersTrendParams(context);
 
-      return fetchAnalyticsConsumption(
-        { accountName, appKey, appToken },
-        "home-orders-trend",
-        {
-          an: accountName,
-          currency: params.currency,
-          startDate: params.startDate,
-          endDate: params.endDate,
-          agg: params.agg,
-          timezone: params.timezone,
+      const token = await getVtexIdSessionToken({
+        accountName,
+        appKey,
+        appToken,
+      });
+
+      const params = resolveOrdersTrendParams(context);
+      const url = buildOrdersTrendUrl(accountName, params);
+
+      const response = await fetch(url, {
+        headers: {
+          Accept: "application/json",
+          Cookie: vtexIdCookieHeader(token),
         },
-      );
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `VTEX API Error: ${response.status} - ${await response.text()}`,
+        );
+      }
+
+      return response.json();
     },
   });
