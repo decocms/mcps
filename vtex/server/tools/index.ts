@@ -81,6 +81,8 @@ import {
 } from "./registry.ts";
 
 // ── Custom tools ──────────────────────────────────────────────────────────────
+import { ordersTimeline } from "./custom/orders-timeline.ts";
+import { ordersSalesCard } from "./custom/orders-sales-card.ts";
 import { searchCollections } from "./custom/search-collections.ts";
 import { reorderCollection } from "./custom/reorder-collection.ts";
 import { updateProductSpecifications } from "./custom/update-product-specifications.ts";
@@ -168,6 +170,10 @@ const registryFactories = [
 ];
 
 const customFactories = [
+  // Today's orders timeline chart (MCP App UI)
+  ordersTimeline,
+  // Sales summary card for today / last hour / last 5 min (MCP App UI)
+  ordersSalesCard,
   // Collection search (endpoint absent from generated SDKs)
   searchCollections,
   // Collection overwrite/reorder via XML import flow
