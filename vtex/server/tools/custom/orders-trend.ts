@@ -10,7 +10,66 @@ import {
   DEFAULT_STORE_TIMEZONE,
   formatVtexAnalyticsTimestamp,
   getTodayTrendWindowInTimezone,
+  parseTimezoneOffsetMinutes,
+  type HourlyOrderBucket,
 } from "./orders-oms.ts";
+
+interface OrdersTrendChartPoint {
+  date: string | null;
+  orders: number | null;
+}
+
+interface OrdersTrendResponse {
+  dataChart: OrdersTrendChartPoint[];
+}
+
+function isOrdersTrendResponse(data: unknown): data is OrdersTrendResponse {
+  return (
+    typeof data === "object" &&
+    data !== null &&
+    "dataChart" in data &&
+    Array.isArray(data.dataChart)
+  );
+}
+
+export function hourLabelInTimezone(isoDate: string, timezone: string): string {
+  const offsetMinutes = parseTimezoneOffsetMinutes(timezone);
+  const date = new Date(isoDate);
+  const totalMinutes =
+    date.getUTCHours() * 60 + date.getUTCMinutes() + offsetMinutes;
+  const normalized = ((totalMinutes % (24 * 60)) + 24 * 60) % (24 * 60);
+  return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:00`;
+}
+
+/** Maps admin home-orders-trend `dataChart` into 24 local hour buckets for the MCP App UI. */
+export function parseAnalyticsHourlyBuckets(
+  data: unknown,
+  timezone: string,
+): HourlyOrderBucket[] {
+  if (!isOrdersTrendResponse(data)) {
+    throw new Error("Invalid VTEX orders trend response");
+  }
+
+  const byHour = new Map<string, HourlyOrderBucket>();
+
+  for (const point of data.dataChart) {
+    if (!point.date || point.orders === null) {
+      continue;
+    }
+
+    const hour = hourLabelInTimezone(point.date, timezone);
+    byHour.set(hour, {
+      hour,
+      count: point.orders,
+      totalValue: 0,
+    });
+  }
+
+  return Array.from({ length: 24 }, (_, index) => {
+    const hour = `${String(index).padStart(2, "0")}:00`;
+    return byHour.get(hour) ?? { hour, count: 0, totalValue: 0 };
+  });
+}
 
 /**
  * VTEX's admin home dashboard charts are served by an INTERNAL microservice at

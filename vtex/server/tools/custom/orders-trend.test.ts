@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import {
   buildOrdersTrendUrl,
+  hourLabelInTimezone,
+  parseAnalyticsHourlyBuckets,
   resolveOrdersTrendParams,
 } from "./orders-trend.ts";
 
@@ -78,5 +80,44 @@ describe("resolveOrdersTrendParams", () => {
     expect(params.startDate).toBe("2026-06-01T00:00:00.000Z");
     expect(params.endDate).toBe("2026-06-01T23:59:00.000Z");
     expect(params.agg).toBe("day");
+  });
+});
+
+describe("hourLabelInTimezone", () => {
+  test("maps UTC bucket timestamps to local hour labels", () => {
+    expect(hourLabelInTimezone("2026-06-23T14:00:00.000Z", "-03:00")).toBe(
+      "11:00",
+    );
+    expect(hourLabelInTimezone("2026-06-23T03:00:00.000Z", "-03:00")).toBe(
+      "00:00",
+    );
+  });
+});
+
+describe("parseAnalyticsHourlyBuckets", () => {
+  test("maps dataChart points into 24 local hour buckets", () => {
+    const hours = parseAnalyticsHourlyBuckets(
+      {
+        dataChart: [
+          {
+            date: "2026-06-23T14:00:00.000Z",
+            orders: 120,
+          },
+          {
+            date: null,
+            orders: null,
+          },
+        ],
+      },
+      "-03:00",
+    );
+
+    expect(hours).toHaveLength(24);
+    expect(hours[11]).toEqual({
+      hour: "11:00",
+      count: 120,
+      totalValue: 0,
+    });
+    expect(hours[0]?.count).toBe(0);
   });
 });

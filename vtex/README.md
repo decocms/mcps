@@ -41,6 +41,8 @@ These handle multi-step operations not available in the generated SDK:
 | `VTEX_SEARCH_COLLECTIONS` | Search collections by name or terms |
 | `VTEX_REORDER_COLLECTION` | Reorder collections with SKU/product IDs via XML import |
 | `VTEX_UPDATE_PRODUCT_SPECIFICATIONS` | Bulk replace product specifications |
+| `VTEX_ORDERS_TIMELINE` | Hourly orders bar chart for today (MCP App UI; single analytics request) |
+| `VTEX_ORDERS_SALES_CARD` | Sales card for `today`, `last_1h`, or `last_5min` (MCP App UI) |
 | `VTEX_GET_ORDERS_TREND` | Admin home dashboard orders trend (internal analytics service); exchanges App Key/Token for a session token under the hood |
 | `VTEX_GET_HOME_METRICS_SUMMARY` | Admin home dashboard metrics summary (revenue, orders, sessions, conversion) vs previous day |
 | `VTEX_GET_HOME_TOP_VIEWED_PRODUCTS` | Most viewed products on the admin home dashboard |
