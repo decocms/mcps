@@ -9,11 +9,10 @@ import {
   YAxis,
 } from "recharts";
 import { StatusFrame } from "@/components/status-frame.tsx";
+import { VTEX_ACCENT_GREEN } from "@/constants.ts";
 import { useTool } from "@/hooks/use-tool.ts";
 
 const TOOL_NAME = "VTEX_ORDERS_TIMELINE";
-
-const CHART_COLOR = "#d0ec1a";
 
 interface HourBucket {
   hour: string;
@@ -55,7 +54,7 @@ export default function OrdersTimelinePage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-2 pb-1">
-      <p className="mb-3 shrink-0 text-base font-semibold flex items-center gap-2">
+      <p className="mb-3 shrink-0 text-base flex items-center gap-2">
         <DollarSign className="w-4 h-4" />
         Pedidos por hora
       </p>
@@ -76,7 +75,7 @@ export default function OrdersTimelinePage() {
               <Tooltip formatter={(value: number) => [fmt(value), "Pedidos"]} />
               <Bar
                 dataKey="count"
-                fill={CHART_COLOR}
+                fill={VTEX_ACCENT_GREEN}
                 radius={[4, 4, 0, 0]}
                 name="count"
               />

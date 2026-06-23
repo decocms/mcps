@@ -1,5 +1,6 @@
 import { Clock, Timer, TrendingUp } from "lucide-react";
 import { StatusFrame } from "@/components/status-frame.tsx";
+import { VTEX_ACCENT_GREEN, VTEX_ICON_GREEN } from "@/constants.ts";
 import { useMcpState } from "@/context.tsx";
 import { useTool } from "@/hooks/use-tool.ts";
 import { cn } from "@/lib/utils.ts";
@@ -64,10 +65,16 @@ function SalesCardItem({ card }: { card: SalesCard }) {
       : `${fmt(orders)} pedidos`;
 
   return (
-    <div className="@container flex h-full min-h-0 min-w-0 flex-col rounded-xl border bg-card p-3 shadow-sm sm:p-4">
+    <div className="@container flex h-full min-h-0 min-w-0 flex-col rounded-xl border-0 bg-card p-3 sm:p-4">
       <div className="flex h-full min-h-0 flex-1 items-center gap-3">
         <div className="flex shrink-0 items-center justify-center">
-          <div className="flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary sm:h-10 sm:w-10">
+          <div
+            className="flex h-9 w-9 items-center justify-center rounded-md sm:h-10 sm:w-10"
+            style={{
+              backgroundColor: `${VTEX_ACCENT_GREEN}33`,
+              color: VTEX_ICON_GREEN,
+            }}
+          >
             {PERIOD_ICONS[period]}
           </div>
         </div>
@@ -100,7 +107,7 @@ export default function OrdersSalesCardPage() {
 
   if (loading || !data) {
     return (
-      <div className="flex min-h-0 flex-1 items-center justify-center">
+      <div className="flex min-h-0 flex-1 items-center justify-center bg-card">
         <div className="flex items-center gap-3 text-muted-foreground">
           <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
           <span className="text-sm">Waiting for VTEX response…</span>
@@ -113,10 +120,10 @@ export default function OrdersSalesCardPage() {
   const equalSize = cards.length === 3;
 
   return (
-    <div className="box-border flex min-h-0 w-full flex-1 flex-col overflow-hidden p-2">
+    <div className="box-border flex min-h-0 w-full flex-1 flex-col overflow-hidden bg-card">
       <div
         className={cn(
-          "min-h-0 w-full flex-1 gap-2",
+          "min-h-0 w-full flex-1 gap-6",
           equalSize
             ? "grid grid-cols-3 grid-rows-[minmax(0,1fr)]"
             : "flex min-h-0 flex-row",
