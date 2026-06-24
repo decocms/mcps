@@ -424,7 +424,11 @@ async function fetchAllServersWithVersions(
     `📦 Fetching versions starting from server ${startFrom}/${serversToFetch_final.length}...\n`,
   );
 
-  for (let i = startFrom; i < serversToFetch_final.length; i += CONCURRENT_REQUESTS) {
+  for (
+    let i = startFrom;
+    i < serversToFetch_final.length;
+    i += CONCURRENT_REQUESTS
+  ) {
     const batch = serversToFetch_final.slice(i, i + CONCURRENT_REQUESTS);
     const promises = batch.map(async (name) => {
       try {
