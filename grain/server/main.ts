@@ -7,7 +7,7 @@ import { getGrainApiKey } from "./lib/env.ts";
 import { WebhookPayloadSchema } from "./lib/types.ts";
 import type { RecordingDetails } from "./lib/types.ts";
 import { indexRecording } from "./db/queries.ts";
-import { publishMeshEvent } from "./lib/events.ts";
+import { publishRecordingTrigger } from "./triggers/publisher.ts";
 import type { Env } from "./types/env.ts";
 import { StateSchema } from "./types/env.ts";
 
@@ -15,7 +15,6 @@ const DEVELOPMENT_WEBHOOK_BASE_URL = "https://localhost-c056dce8.deco.host";
 const WEBHOOK_PUBLIC_PATH = "/webhooks/grain";
 
 let cachedGrainClient: GrainClient | null = null;
-let cachedMeshUrl: string | undefined;
 
 function buildWebhookUrl(baseUrl: string, connectionId: string): string {
   return `${baseUrl.replace(/\/+$/, "")}${WEBHOOK_PUBLIC_PATH}/${connectionId}`;
@@ -30,7 +29,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
 
         cachedGrainClient = new GrainClient({ apiKey: grainToken });
-        cachedMeshUrl = meshUrl;
 
         if (!meshUrl || !connectionId) {
           console.error("[GRAIN_MCP] Missing meshUrl or connectionId");
@@ -132,7 +130,10 @@ async function enrichRecording(
   }
 }
 
-async function handleWebhookPost(body: string): Promise<Response> {
+async function handleWebhookPost(
+  body: string,
+  connectionId: string,
+): Promise<Response> {
   if (!body || body.trim() === "" || body.trim() === "{}") {
     return new Response("ok", { status: 200 });
   }
@@ -176,13 +177,7 @@ async function handleWebhookPost(body: string): Promise<Response> {
         hasNotes: !!details?.intelligence_notes_md,
       });
 
-      if (cachedMeshUrl) {
-        await publishMeshEvent(cachedMeshUrl, "grain.recording_indexed", {
-          recordingId: payload.data.id,
-          title: details?.title ?? payload.data.title ?? "",
-          indexedAt: new Date().toISOString(),
-        });
-      }
+      publishRecordingTrigger(connectionId, payload.type, details, payload);
     } catch (indexError) {
       console.error("[GRAIN_MCP] Failed to index recording", indexError);
     }
@@ -209,7 +204,7 @@ serve(async (request) => {
 
     if (request.method === "POST") {
       const body = await request.text();
-      return handleWebhookPost(body);
+      return handleWebhookPost(body, connectionId);
     }
 
     return new Response("Method not allowed", { status: 405 });

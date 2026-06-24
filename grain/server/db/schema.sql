@@ -54,6 +54,43 @@ CREATE INDEX idx_grain_meeting_rec_owners
 -- Row Level Security
 ALTER TABLE grain_meeting_recordings ENABLE ROW LEVEL SECURITY;
 
+-- ============================================================================
+-- Trigger credentials table (persists TRIGGER_CONFIGURE state across restarts)
+-- ============================================================================
+
+DROP TABLE IF EXISTS grain_trigger_credentials;
+
+CREATE TABLE grain_trigger_credentials (
+  connection_id        TEXT PRIMARY KEY,
+  callback_url         TEXT NOT NULL,
+  callback_token       TEXT NOT NULL,
+  active_trigger_types TEXT[] NOT NULL DEFAULT '{}',
+  updated_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+ALTER TABLE grain_trigger_credentials ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "grain_trigger_anon_select"
+  ON grain_trigger_credentials FOR SELECT
+  TO anon
+  USING (true);
+
+CREATE POLICY "grain_trigger_anon_insert"
+  ON grain_trigger_credentials FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "grain_trigger_anon_update"
+  ON grain_trigger_credentials FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);
+
+CREATE POLICY "grain_trigger_anon_delete"
+  ON grain_trigger_credentials FOR DELETE
+  TO anon
+  USING (true);
+
 CREATE POLICY "grain_meeting_anon_select"
   ON grain_meeting_recordings FOR SELECT
   TO anon
