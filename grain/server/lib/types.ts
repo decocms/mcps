@@ -136,7 +136,7 @@ export interface WebhookRecordingData {
 
 export interface WebhookPayload {
   type: WebhookEventType;
-  user_id: string;
+  user_id?: string;
   data: WebhookRecordingData;
 }
 
@@ -152,13 +152,15 @@ export const WebhookPayloadSchema = z.object({
     "story_updated",
     "story_removed",
   ]),
-  user_id: z.string(),
-  data: z.object({
-    id: z.string(),
-    title: z.string().optional(),
-    url: z.string().optional(),
-    start_datetime: z.string().optional(),
-    end_datetime: z.string().optional(),
-    public_thumbnail_url: z.string().nullable().optional(),
-  }),
+  user_id: z.string().optional(),
+  data: z
+    .object({
+      id: z.string(),
+      title: z.string().optional(),
+      url: z.string().optional(),
+      start_datetime: z.string().optional(),
+      end_datetime: z.string().optional(),
+      public_thumbnail_url: z.string().nullable().optional(),
+    })
+    .passthrough(),
 });
