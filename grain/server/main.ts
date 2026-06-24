@@ -189,7 +189,7 @@ async function handleWebhookPost(
   });
 }
 
-serve(async (request) => {
+serve(async (request, env, ctx) => {
   const url = new URL(request.url);
 
   if (url.pathname.startsWith(`${WEBHOOK_PUBLIC_PATH}/`)) {
@@ -210,5 +210,5 @@ serve(async (request) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
-  return runtime.fetch(request, { ...process.env } as Env, {});
+  return runtime.fetch(request, env, ctx);
 });
