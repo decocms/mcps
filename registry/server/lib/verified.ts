@@ -38,6 +38,10 @@ export const VERIFIED_SERVERS: string[] = [
   "com.vaadin/docs-mcp",
   "io.trunk/mcp-server",
 
+  // Design & Diagramming
+  "app.lucid.mcp/lucid",
+  "io.github.tldraw/tldraw",
+
   // AI & Search
   "ai.exa/exa",
   "io.twelvelabs/twelvelabs-mcp-server",
@@ -53,6 +57,12 @@ export const VERIFIED_SERVERS: string[] = [
   // Security
   "com.jumpcloud/jumpcloud-genai",
 
+  // Marketing & Analytics
+  "com.appsflyer/mcp",
+
+  // Finance & Commerce
+  "com.avalara/avatax",
+
   // Commerce & Business
   "com.apify/apify-mcp-server",
   "com.teamwork/mcp",
@@ -65,6 +75,12 @@ export const VERIFIED_SERVERS: string[] = [
   "com.thousandeyes/mcp",
   "com.rootly/mcp-server",
   "com.mux/mcp",
+
+  // Productivity & Databases
+  "com.airtable/mcp",
+
+  // Cloud & DevOps
+  "com.railway/mcp",
 ];
 
 /**
@@ -94,6 +110,18 @@ export const UNLISTED_SERVERS: string[] = [
   "com.brightsec/mcp",
   "com.agilitycms/mcp-server",
   "co.huggingface/hf-mcp-server",
+
+  // Microsoft WorkIQ — same tenant-based OAuth as agent365 (broken)
+  "com.microsoft/sentinel-data-exploration",
+  "com.microsoft/workiq-admintools",
+  "com.microsoft/workiq-calendartools",
+  "com.microsoft/workiq-m365copilot",
+  "com.microsoft/workiq-mailtools",
+  "com.microsoft/workiq-meserver",
+  "com.microsoft/workiq-odspremoteserver",
+  "com.microsoft/workiq-sharepointliststools",
+  "com.microsoft/workiq-teamsserver",
+  "com.microsoft/workiq-wordserver",
 ];
 
 /**
@@ -242,6 +270,31 @@ export const VERIFIED_SERVER_OVERRIDES: Record<string, ServerOverride> = {
   },
   "com.mux/mcp": {
     icons: [{ src: "https://mux.com/favicon.ico" }],
+  },
+
+  // Design & Diagramming
+  "io.github.tldraw/tldraw": {
+    icons: [{ src: "https://github.com/tldraw.png" }],
+  },
+
+  // Marketing & Analytics
+  "com.appsflyer/mcp": {
+    icons: [{ src: "https://github.com/AppsFlyerSDK.png" }],
+  },
+
+  // Finance & Commerce
+  "com.avalara/avatax": {
+    icons: [{ src: "https://www.avalara.com/favicon.ico" }],
+  },
+
+  // Productivity & Databases
+  "com.airtable/mcp": {
+    icons: [{ src: "https://github.com/Airtable.png" }],
+  },
+
+  // Cloud & DevOps
+  "com.railway/mcp": {
+    icons: [{ src: "https://github.com/railwayapp.png" }],
   },
   "com.stackoverflow.mcp/mcp": {
     icons: [
