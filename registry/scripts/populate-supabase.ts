@@ -23,6 +23,7 @@ import {
   VERIFIED_SERVERS,
   VERIFIED_SERVER_OVERRIDES,
 } from "../server/lib/verified.ts";
+import { ALLOWED_SERVERS_SET } from "../server/lib/allowlist.ts";
 
 // ═══════════════════════════════════════════════════════════════
 // SQL to create the table
@@ -240,27 +241,44 @@ async function fetchAllServerNames(): Promise<string[]> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
-    try {
-      const response = await fetch(url.toString(), {
-        signal: controller.signal,
-        headers: { Accept: "application/json" },
-      });
+    let attempt = 0;
+    const maxRetries = 5;
+    while (true) {
+      try {
+        const response = await fetch(url.toString(), {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
 
-      if (!response.ok) {
-        throw new Error(`Registry API returned status ${response.status}`);
+        if (response.status === 429) {
+          clearTimeout(timeoutId);
+          const wait = Math.pow(2, attempt) * 10_000;
+          console.log(`   ⏳ Rate limited, waiting ${wait / 1000}s...`);
+          await new Promise((r) => setTimeout(r, wait));
+          attempt++;
+          if (attempt > maxRetries) throw new Error("Too many 429s");
+          continue;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Registry API returned status ${response.status}`);
+        }
+
+        const data: RegistryResponse = await response.json();
+        const names = data.servers.map((s) => s.server.name);
+        serverNames.push(...names);
+        cursor = data.metadata.nextCursor;
+        pageCount++;
+
+        console.log(
+          `   Page ${pageCount}: +${data.servers.length} servers (total names: ${serverNames.length})`,
+        );
+        clearTimeout(timeoutId);
+        break;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
       }
-
-      const data: RegistryResponse = await response.json();
-      const names = data.servers.map((s) => s.server.name);
-      serverNames.push(...names);
-      cursor = data.metadata.nextCursor;
-      pageCount++;
-
-      console.log(
-        `   Page ${pageCount}: +${data.servers.length} servers (total names: ${serverNames.length})`,
-      );
-    } finally {
-      clearTimeout(timeoutId);
     }
   } while (cursor);
 
@@ -374,39 +392,44 @@ async function fetchAllServersWithVersions(
   resumeFrom?: number,
   forceUpdate = false,
 ): Promise<RegistryServer[]> {
-  // 1. Fetch list of names
-  const allServerNames = await fetchAllServerNames();
+  // 1. Use allowlist directly — skip fetching 13k names from the API
+  const allServerNames = Array.from(ALLOWED_SERVERS_SET);
+  console.log(`📋 Using allowlist: ${allServerNames.length} servers\n`);
 
   // 2. Identificar quais precisam ser atualizados
   console.log("\n🔍 Checking which servers need to be fetched...");
-  const serversToFetch = await getServersToUpdate(
+  const serversToFetch_final = await getServersToUpdate(
     supabase,
     allServerNames,
     forceUpdate,
   );
 
-  if (serversToFetch.length === 0) {
+  if (serversToFetch_final.length === 0) {
     console.log("✅ All servers are up to date!\n");
     return [];
   }
 
   console.log(
-    `📦 Need to fetch ${serversToFetch.length} servers (${allServerNames.length - serversToFetch.length} already in DB)\n`,
+    `📦 Need to fetch ${serversToFetch_final.length} servers (${allServerNames.length - serversToFetch_final.length} already in DB)\n`,
   );
 
   // 3. Fetch versions with concurrency control and retry
-  const CONCURRENT_REQUESTS = 10;
-  const BATCH_DELAY = 300;
+  const CONCURRENT_REQUESTS = 30;
+  const BATCH_DELAY = 50;
   const allServers: RegistryServer[] = [];
   const startFrom = resumeFrom || 0;
   let failedServers: string[] = [];
 
   console.log(
-    `📦 Fetching versions starting from server ${startFrom}/${serversToFetch.length}...\n`,
+    `📦 Fetching versions starting from server ${startFrom}/${serversToFetch_final.length}...\n`,
   );
 
-  for (let i = startFrom; i < serversToFetch.length; i += CONCURRENT_REQUESTS) {
-    const batch = serversToFetch.slice(i, i + CONCURRENT_REQUESTS);
+  for (
+    let i = startFrom;
+    i < serversToFetch_final.length;
+    i += CONCURRENT_REQUESTS
+  ) {
+    const batch = serversToFetch_final.slice(i, i + CONCURRENT_REQUESTS);
     const promises = batch.map(async (name) => {
       try {
         const versions = await fetchServerVersions(name);
@@ -443,11 +466,11 @@ async function fetchAllServersWithVersions(
 
     const processed = i + batch.length;
     console.log(
-      `   Processed ${processed}/${serversToFetch.length} servers (${allServers.length} total versions, ${failedServers.length} failed)`,
+      `   Processed ${processed}/${serversToFetch_final.length} servers (${allServers.length} total versions, ${failedServers.length} failed)`,
     );
 
     // Delay between batches to avoid rate limiting
-    if (i + CONCURRENT_REQUESTS < serversToFetch.length) {
+    if (i + CONCURRENT_REQUESTS < serversToFetch_final.length) {
       await new Promise((resolve) => setTimeout(resolve, BATCH_DELAY));
     }
   }
@@ -480,8 +503,9 @@ function transformServerToRow(
   const isNpm = server.server.packages?.some((p) => p.type === "npm") ?? false;
   const isLocalRepo = !hasRemote && !isNpm && !!server.server.repository;
 
-  // All new servers are unlisted by default (must be manually approved)
-  const unlisted = true;
+  // Servers fetched from the allowlist are visible by default
+  // publish-verified.ts handles UNLISTED_SERVERS overrides after this
+  const unlisted = false;
 
   return {
     // Registry data

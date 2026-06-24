@@ -21,16 +21,6 @@ export const StateSchema = z.object({
     .describe(
       "Minutes before an event to notify via trigger (default: 10). The scheduler polls every 5 minutes.",
     ),
-
-  WEBHOOK_URL: z
-    .string()
-    .default(
-      "https://sites-google-calendar-sa.deco.site/calendar/events/{connectionId}",
-    )
-    .readonly()
-    .describe(
-      "Webhook URL the Google Apps Script posts events to. Use get_apps_script_config to get the URL + token for this connection.",
-    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;

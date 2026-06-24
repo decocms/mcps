@@ -10,7 +10,6 @@ import {
   loadAllTriggerCredentials,
 } from "google-calendar/supabase";
 import { app as webhookRouter } from "google-calendar/router";
-import { createGetAppsScriptConfigTool } from "google-calendar/tools/apps-script";
 
 import { type Env, StateSchema } from "../shared/deco.gen.ts";
 import { getServiceAccountAccessToken } from "./lib/service-account.ts";
@@ -225,8 +224,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     }),
     // Trigger tools (TRIGGER_CONFIGURE / TRIGGER_UNCONFIGURE) — no SA auth needed
     ...triggers.tools(),
-    // Apps Script setup helper — no SA auth needed (still useful for the OAuth path)
-    createGetAppsScriptConfigTool(env),
   ],
 });
 
