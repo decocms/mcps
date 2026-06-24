@@ -15,6 +15,13 @@ export const StateSchema = z.object({
     ),
   EVENT_BUS: BindingOf("@deco/event-bus").optional(),
 
+  LEAD_MINUTES: z
+    .number()
+    .default(10)
+    .describe(
+      "Minutes before an event to notify via trigger (default: 10). The scheduler polls every 5 minutes.",
+    ),
+
   WEBHOOK_URL: z
     .string()
     .default(
