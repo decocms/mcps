@@ -83,10 +83,14 @@ const runtime = withRuntime<Env, typeof StateSchema>({
           return;
         }
 
-        const viewId = views[0].id;
+        const teamView = views.find((v) =>
+          v.name.toLowerCase().includes("team"),
+        );
+        const selectedView = teamView ?? views[0];
+        const viewId = selectedView.id;
         console.log("[GRAIN_MCP] Using view for hook", {
           viewId,
-          viewName: views[0].name,
+          viewName: selectedView.name,
         });
 
         const hook = await cachedGrainClient.createHook(webhookUrl, viewId, [
