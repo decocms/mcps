@@ -153,12 +153,14 @@ export const WebhookPayloadSchema = z.object({
     "story_removed",
   ]),
   user_id: z.string().optional(),
-  data: z.object({
-    id: z.string(),
-    title: z.string().optional(),
-    url: z.string().optional(),
-    start_datetime: z.string().optional(),
-    end_datetime: z.string().optional(),
-    public_thumbnail_url: z.string().nullable().optional(),
-  }),
+  data: z
+    .object({
+      id: z.string(),
+      title: z.string().optional(),
+      url: z.string().optional(),
+      start_datetime: z.string().optional(),
+      end_datetime: z.string().optional(),
+      public_thumbnail_url: z.string().nullable().optional(),
+    })
+    .passthrough(),
 });

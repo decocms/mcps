@@ -18,7 +18,7 @@ export interface GrainRecordingRow {
   participants: RecordingParticipant[];
   participants_text: string | null;
   intelligence_notes_md: string | null;
-  user_id: string;
+  user_id: string | null;
   webhook_type: string;
   raw_payload: WebhookPayload;
   indexed_at: string;
@@ -62,7 +62,7 @@ function toDbRow(data: EnrichedWebhookData): GrainRecordingRow {
     participants,
     participants_text: buildParticipantsText(participants),
     intelligence_notes_md: details?.intelligence_notes_md ?? null,
-    user_id: payload.user_id ?? "",
+    user_id: payload.user_id ?? null,
     webhook_type: payload.type,
     raw_payload: payload,
     indexed_at: new Date().toISOString(),

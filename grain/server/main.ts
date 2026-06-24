@@ -53,22 +53,28 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         });
 
         const { hooks } = await cachedGrainClient.listHooks();
-        if (hooks.some((h) => h.hook_url === webhookUrl)) {
-          console.log("[GRAIN_MCP] Webhook already registered");
-          return;
-        }
 
         const staleHooks = hooks.filter(
           (h) =>
             h.hook_url.includes(WEBHOOK_PUBLIC_PATH) &&
             h.hook_url !== webhookUrl,
         );
-        for (const stale of staleHooks) {
-          await cachedGrainClient.deleteHook(stale.id);
-          console.log("[GRAIN_MCP] Deleted stale webhook", {
-            hookId: stale.id,
-            url: stale.hook_url,
-          });
+        if (staleHooks.length > 0) {
+          await Promise.all(
+            staleHooks.map((stale) =>
+              cachedGrainClient!.deleteHook(stale.id).then(() =>
+                console.log("[GRAIN_MCP] Deleted stale webhook", {
+                  hookId: stale.id,
+                  url: stale.hook_url,
+                }),
+              ),
+            ),
+          );
+        }
+
+        if (hooks.some((h) => h.hook_url === webhookUrl)) {
+          console.log("[GRAIN_MCP] Webhook already registered");
+          return;
         }
 
         const { views } = await cachedGrainClient.listViews();
@@ -87,6 +93,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
         const hook = await cachedGrainClient.createHook(webhookUrl, viewId, [
           "added",
+          "updated",
         ]);
         console.log("[GRAIN_MCP] Hook created", { hookId: hook.id });
       } catch (error) {
@@ -141,7 +148,7 @@ async function handleWebhookPost(body: string): Promise<Response> {
   if (!parsed.success) {
     console.warn("[GRAIN_MCP] Webhook validation failed", {
       error: parsed.error.format(),
-      rawPayload: JSON.stringify(json).slice(0, 500),
+      type: (json as Record<string, unknown>)?.type,
     });
     return new Response("ok", { status: 200 });
   }

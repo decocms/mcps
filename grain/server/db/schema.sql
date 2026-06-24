@@ -1,7 +1,8 @@
 -- Grain Meeting Recordings index table
 -- Run this manually in Supabase SQL Editor
--- To rename an existing table without data loss:
+-- To migrate an existing table without data loss:
 --   ALTER TABLE grain_recordings RENAME TO grain_meeting_recordings;
+--   ALTER TABLE grain_meeting_recordings ALTER COLUMN user_id DROP NOT NULL;
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
@@ -19,7 +20,7 @@ CREATE TABLE grain_meeting_recordings (
   participants          JSONB       DEFAULT '[]',
   participants_text     TEXT,
   intelligence_notes_md TEXT,
-  user_id               TEXT        NOT NULL DEFAULT '',
+  user_id               TEXT,
   webhook_type          TEXT        NOT NULL,
   raw_payload           JSONB       NOT NULL,
   indexed_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
