@@ -7,7 +7,7 @@ import { getGrainApiKey } from "./lib/env.ts";
 import { WebhookPayloadSchema } from "./lib/types.ts";
 import type { RecordingDetails } from "./lib/types.ts";
 import { indexRecording } from "./db/queries.ts";
-import { publishMeshEvent } from "./lib/events.ts";
+import { publishRecordingTrigger } from "./triggers/publisher.ts";
 import type { Env } from "./types/env.ts";
 import { StateSchema } from "./types/env.ts";
 
@@ -15,7 +15,6 @@ const DEVELOPMENT_WEBHOOK_BASE_URL = "https://localhost-c056dce8.deco.host";
 const WEBHOOK_PUBLIC_PATH = "/webhooks/grain";
 
 let cachedGrainClient: GrainClient | null = null;
-let cachedMeshUrl: string | undefined;
 
 function buildWebhookUrl(baseUrl: string, connectionId: string): string {
   return `${baseUrl.replace(/\/+$/, "")}${WEBHOOK_PUBLIC_PATH}/${connectionId}`;
@@ -30,7 +29,6 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
 
         cachedGrainClient = new GrainClient({ apiKey: grainToken });
-        cachedMeshUrl = meshUrl;
 
         if (!meshUrl || !connectionId) {
           console.error("[GRAIN_MCP] Missing meshUrl or connectionId");
@@ -53,6 +51,25 @@ const runtime = withRuntime<Env, typeof StateSchema>({
         });
 
         const { hooks } = await cachedGrainClient.listHooks();
+
+        const staleHooks = hooks.filter(
+          (h) =>
+            h.hook_url.includes(WEBHOOK_PUBLIC_PATH) &&
+            h.hook_url !== webhookUrl,
+        );
+        if (staleHooks.length > 0) {
+          await Promise.all(
+            staleHooks.map((stale) =>
+              cachedGrainClient!.deleteHook(stale.id).then(() =>
+                console.log("[GRAIN_MCP] Deleted stale webhook", {
+                  hookId: stale.id,
+                  url: stale.hook_url,
+                }),
+              ),
+            ),
+          );
+        }
+
         if (hooks.some((h) => h.hook_url === webhookUrl)) {
           console.log("[GRAIN_MCP] Webhook already registered");
           return;
@@ -74,6 +91,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
         const hook = await cachedGrainClient.createHook(webhookUrl, viewId, [
           "added",
+          "updated",
         ]);
         console.log("[GRAIN_MCP] Hook created", { hookId: hook.id });
       } catch (error) {
@@ -112,7 +130,10 @@ async function enrichRecording(
   }
 }
 
-async function handleWebhookPost(body: string): Promise<Response> {
+async function handleWebhookPost(
+  body: string,
+  connectionId: string,
+): Promise<Response> {
   if (!body || body.trim() === "" || body.trim() === "{}") {
     return new Response("ok", { status: 200 });
   }
@@ -126,7 +147,8 @@ async function handleWebhookPost(body: string): Promise<Response> {
 
   const parsed = WebhookPayloadSchema.safeParse(json);
   if (!parsed.success) {
-    console.warn("[GRAIN_MCP] Non-recording webhook event, acknowledging", {
+    console.warn("[GRAIN_MCP] Webhook validation failed", {
+      error: parsed.error.format(),
       type: (json as Record<string, unknown>)?.type,
     });
     return new Response("ok", { status: 200 });
@@ -155,13 +177,7 @@ async function handleWebhookPost(body: string): Promise<Response> {
         hasNotes: !!details?.intelligence_notes_md,
       });
 
-      if (cachedMeshUrl) {
-        await publishMeshEvent(cachedMeshUrl, "grain.recording_indexed", {
-          recordingId: payload.data.id,
-          title: details?.title ?? payload.data.title ?? "",
-          indexedAt: new Date().toISOString(),
-        });
-      }
+      publishRecordingTrigger(connectionId, payload.type, details, payload);
     } catch (indexError) {
       console.error("[GRAIN_MCP] Failed to index recording", indexError);
     }
@@ -173,7 +189,7 @@ async function handleWebhookPost(body: string): Promise<Response> {
   });
 }
 
-serve(async (request) => {
+serve(async (request, env, ctx) => {
   const url = new URL(request.url);
 
   if (url.pathname.startsWith(`${WEBHOOK_PUBLIC_PATH}/`)) {
@@ -188,11 +204,11 @@ serve(async (request) => {
 
     if (request.method === "POST") {
       const body = await request.text();
-      return handleWebhookPost(body);
+      return handleWebhookPost(body, connectionId);
     }
 
     return new Response("Method not allowed", { status: 405 });
   }
 
-  return runtime.fetch(request, { ...process.env } as Env, {});
+  return runtime.fetch(request, env, ctx);
 });

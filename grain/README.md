@@ -57,13 +57,34 @@ In Grain, webhook management is available in the same Integrations/API area wher
 
 ## Supabase Indexing
 
-The MCP listens to `grain_recording` events and stores indexed data in Supabase table `grain_recordings`.
+The MCP listens to Grain webhook events and stores indexed data in Supabase table `grain_meeting_recordings`.
 
 - Webhook setup is automatic during configuration
 - New or updated recordings are upserted in Supabase
 - `SEARCH_INDEXED_RECORDINGS` queries this local index for fast filtering
 
-Create the table manually in Supabase using [`server/db/schema.sql`](server/db/schema.sql).
+Create both tables manually in Supabase using [`server/db/schema.sql`](server/db/schema.sql):
+- `grain_meeting_recordings` — indexed recording data
+- `grain_trigger_credentials` — persists Mesh trigger callbacks across restarts
+
+## Triggers
+
+Two Mesh triggers are available:
+
+| Trigger | Fires when |
+| --- | --- |
+| `grain.recording.added` | A new meeting recording is indexed |
+| `grain.recording.updated` | An existing recording is updated (e.g. AI notes ready) |
+
+Both triggers support the same filter params:
+
+| Param | Description |
+| --- | --- |
+| `owner_email` | Only fire for recordings owned by this email |
+| `tag` | Only fire when the recording has this exact tag |
+| `participant_email` | Only fire when this participant was in the meeting |
+
+Trigger payload fields: `recording_id`, `title`, `url`, `start_datetime`, `end_datetime`, `owners`, `tags`, `participants` (`[{name, email, scope}]`), `has_summary`, `indexed_at`.
 
 ## Tools
 
