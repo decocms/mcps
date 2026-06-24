@@ -120,7 +120,7 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
       if (minutesUntilStart < 0 || minutesUntilStart > conn.leadMinutes)
         continue;
 
-      const dedupKey = `${conn.connectionId}:${email}:${event.id}:${startTime}`;
+      const dedupKey = `${conn.connectionId}:${event.id}:${startTime}`;
       if (notified.has(dedupKey)) continue;
 
       try {
