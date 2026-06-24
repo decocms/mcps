@@ -12,6 +12,7 @@ import {
 // types. This preprocessor parses the string before Zod validates it.
 const fromJson = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((val) => {
+    if (val === null) return undefined;
     if (typeof val !== "string") return val;
     try {
       const parsed = JSON.parse(val);
