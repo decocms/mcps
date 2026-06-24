@@ -62,7 +62,7 @@ function toDbRow(data: EnrichedWebhookData): GrainRecordingRow {
     participants,
     participants_text: buildParticipantsText(participants),
     intelligence_notes_md: details?.intelligence_notes_md ?? null,
-    user_id: payload.user_id,
+    user_id: payload.user_id ?? "",
     webhook_type: payload.type,
     raw_payload: payload,
     indexed_at: new Date().toISOString(),
@@ -75,7 +75,7 @@ export async function indexRecording(data: EnrichedWebhookData): Promise<void> {
   const row = toDbRow(data);
 
   const { error } = await client
-    .from("grain_recordings")
+    .from("grain_meeting_recordings")
     .upsert(row, { onConflict: "id" });
 
   throwIfError(error, "upsert indexed recording");
@@ -95,7 +95,7 @@ export async function searchIndexedRecordings(
 ): Promise<GrainRecordingRow[]> {
   const client = getSupabaseClient();
   let qb = client
-    .from("grain_recordings")
+    .from("grain_meeting_recordings")
     .select("*")
     .order("start_datetime", { ascending: false })
     .limit(filters.limit);

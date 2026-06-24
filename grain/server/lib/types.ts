@@ -136,7 +136,7 @@ export interface WebhookRecordingData {
 
 export interface WebhookPayload {
   type: WebhookEventType;
-  user_id: string;
+  user_id?: string;
   data: WebhookRecordingData;
 }
 
@@ -152,7 +152,7 @@ export const WebhookPayloadSchema = z.object({
     "story_updated",
     "story_removed",
   ]),
-  user_id: z.string(),
+  user_id: z.string().optional(),
   data: z.object({
     id: z.string(),
     title: z.string().optional(),

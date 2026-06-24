@@ -57,7 +57,7 @@ In Grain, webhook management is available in the same Integrations/API area wher
 
 ## Supabase Indexing
 
-The MCP listens to `grain_recording` events and stores indexed data in Supabase table `grain_recordings`.
+The MCP listens to `grain_recording` events and stores indexed data in Supabase table `grain_meeting_recordings`.
 
 - Webhook setup is automatic during configuration
 - New or updated recordings are upserted in Supabase

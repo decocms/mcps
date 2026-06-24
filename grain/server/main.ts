@@ -58,6 +58,19 @@ const runtime = withRuntime<Env, typeof StateSchema>({
           return;
         }
 
+        const staleHooks = hooks.filter(
+          (h) =>
+            h.hook_url.includes(WEBHOOK_PUBLIC_PATH) &&
+            h.hook_url !== webhookUrl,
+        );
+        for (const stale of staleHooks) {
+          await cachedGrainClient.deleteHook(stale.id);
+          console.log("[GRAIN_MCP] Deleted stale webhook", {
+            hookId: stale.id,
+            url: stale.hook_url,
+          });
+        }
+
         const { views } = await cachedGrainClient.listViews();
         if (views.length === 0) {
           console.error(
@@ -126,8 +139,9 @@ async function handleWebhookPost(body: string): Promise<Response> {
 
   const parsed = WebhookPayloadSchema.safeParse(json);
   if (!parsed.success) {
-    console.warn("[GRAIN_MCP] Non-recording webhook event, acknowledging", {
-      type: (json as Record<string, unknown>)?.type,
+    console.warn("[GRAIN_MCP] Webhook validation failed", {
+      error: parsed.error.format(),
+      rawPayload: JSON.stringify(json).slice(0, 500),
     });
     return new Response("ok", { status: 200 });
   }
