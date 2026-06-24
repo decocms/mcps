@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@decocms/bindings": "1.0.1-alpha.23",
-    "@decocms/runtime": "1.0.0-alpha.41",
+    "@decocms/runtime": "1.3.1",
     "@supabase/supabase-js": "^2.57.4",
-    "zod": "^3.24.3"
+    "zod": "^4.0.0"
   },
   "devDependencies": {
     "@decocms/mcps-shared": "1.0.0",
