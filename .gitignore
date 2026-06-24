@@ -23,3 +23,6 @@ count.txt
 
 # SpecStory development history
 .specstory/
+
+# Supabase CLI cache
+supabase/.temp/

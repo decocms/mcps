@@ -31,7 +31,7 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 // Recommended models (quality + cost balance)
 const RECOMMENDED_MODELS = [
-  "google/gemini-2.0-flash-001", // Fast, high quality, cheap
+  "google/gemini-2.5-flash", // Fast, high quality, cheap
   "anthropic/claude-3.5-haiku", // Great quality, affordable
   "meta-llama/llama-3.3-70b-instruct", // Good open-source option
 ];
@@ -39,8 +39,10 @@ const RECOMMENDED_MODELS = [
 // Use default model or one specified in env
 const MODEL = process.env.OPENROUTER_MODEL || RECOMMENDED_MODELS[0];
 
-// Concurrency for AI enrichment
-const ENRICH_CONCURRENCY = 5;
+// Concurrency for AI enrichment (continuous worker pool, configurable via env)
+const ENRICH_CONCURRENCY = process.env.ENRICH_CONCURRENCY
+  ? parseInt(process.env.ENRICH_CONCURRENCY)
+  : 20;
 
 // ═══════════════════════════════════════════════════════════════
 // Types
@@ -74,81 +76,10 @@ interface EnrichedData {
 // ═══════════════════════════════════════════════════════════════
 
 /**
- * Call LLM via OpenRouter API directly
+ * Static system prompt with all the rules (identical across every call →
+ * lets the provider cache the prefix, so it's cheaper and faster per request).
  */
-async function generateWithLLM(
-  prompt: string,
-  apiKey: string,
-): Promise<string> {
-  try {
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://github.com/decocms/mcps",
-        "X-Title": "MCP Registry AI Enrichment",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        messages: [
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        temperature: 0.3,
-        max_tokens: 800,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(
-        `OpenRouter API error (${response.status}): ${errorText}`,
-      );
-    }
-
-    const result = await response.json();
-    return result.choices?.[0]?.message?.content || "";
-  } catch (error) {
-    console.error(`Error calling LLM: ${error}`);
-    throw error;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// AI Enrichment Logic
-// ═══════════════════════════════════════════════════════════════
-
-/**
- * Generate enriched data for an MCP using AI
- */
-async function enrichMcpWithAI(
-  server: McpServer,
-  apiKey: string,
-): Promise<EnrichedData> {
-  const name = server.name;
-  const description = server.description || server.short_description || "";
-  const repoUrl = server.repository?.url || "";
-  const hasRemote = (server.remotes?.length ?? 0) > 0;
-  const isNpm = server.remotes?.some((r) => r.type === "npm") ?? false;
-  const isVerified = server.verified;
-
-  // Serialize remotes for the prompt
-  const remotesInfo =
-    server.remotes?.map((r) => `${r.type}`).join(", ") || "none";
-
-  const prompt = `You generate metadata for MCP (Model Context Protocol) servers. Respond with ONLY valid JSON, nothing else.
-
-Input:
-- ID: ${name}
-- Description: ${description || "(none)"}
-- Repo: ${repoUrl || "(none)"}
-- Remotes: ${remotesInfo}
-
-Output this exact JSON structure:
-{"friendly_name":"...","mesh_description":"...","tags":[...],"categories":[...],"icon_url":"..."}
+const SYSTEM_PROMPT = `You generate metadata for MCP (Model Context Protocol) servers for a marketplace. You must respond by calling the provided JSON structure.
 
 Rules for each field:
 
@@ -174,9 +105,9 @@ friendly_name — The name of the SERVICE or PRODUCT this MCP connects to. This 
   "io.github.user/github-issues-tool" → "GitHub Issues"
   "ai.acme/jira-connector" → "Jira Connector" (NOT "Acme")
 
-mesh_description — A concise, informative description (80-150 words, plain text, NO markdown).
+mesh_description — A concise, informative description (60-100 words, plain text, NO markdown).
 - First sentence: what it does in one line
-- Then 2-3 sentences covering key features, integrations, and use cases
+- Then 1-2 sentences covering key features, integrations, and use cases
 - Write in third person ("Provides...", "Enables...", "Connects...")
 - MUST be in English (translate if needed)
 - Be factual — only describe what the description/name suggests, don't invent features
@@ -187,76 +118,160 @@ tags — 4-6 lowercase tags describing functionality and technology.
 - No generic tags like "tool", "server", "mcp"
 
 categories — 1-2 from ONLY this list: productivity, development, data, ai, communication, infrastructure, security, monitoring, analytics, automation
-- Pick the most relevant. When in doubt, pick fewer.
+- Pick the most relevant. When in doubt, pick fewer.`;
 
-icon_url — A URL for the service/product's official icon or logo.
-- If this MCP connects to a well-known service, use that service's favicon: "https://<domain>/favicon.ico"
-- For GitHub-hosted projects, use the owner's GitHub avatar: "https://github.com/<owner>.png"
-- Examples:
-  Notion MCP → "https://www.notion.so/images/favicon.ico"
-  Slack MCP → "https://slack.com/favicon.ico"
-  GitHub tool → "https://github.com/github.png"
-  "io.github.someuser/tool" → "https://github.com/someuser.png"
-- If you cannot determine a reasonable icon URL, use null`;
+/**
+ * JSON schema for structured output (guarantees valid JSON, no regex repair).
+ */
+const RESPONSE_SCHEMA = {
+  type: "json_schema",
+  json_schema: {
+    name: "mcp_metadata",
+    strict: true,
+    schema: {
+      type: "object",
+      properties: {
+        friendly_name: { type: "string" },
+        mesh_description: { type: "string" },
+        tags: { type: "array", items: { type: "string" } },
+        categories: { type: "array", items: { type: "string" } },
+      },
+      required: ["friendly_name", "mesh_description", "tags", "categories"],
+      additionalProperties: false,
+    },
+  },
+} as const;
 
-  // Retry loop - retry LLM call if it fails
-  const maxAttempts = 2;
+/**
+ * Call LLM via OpenRouter API with structured output + retry/backoff on 429/5xx.
+ */
+async function generateWithLLM(
+  userInput: string,
+  apiKey: string,
+): Promise<string> {
+  const maxNetworkRetries = 4;
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      console.log(
-        `   🤖 Calling LLM for ${name}... (attempt ${attempt}/${maxAttempts})`,
+  for (let attempt = 0; attempt <= maxNetworkRetries; attempt++) {
+    const response = await fetch(OPENROUTER_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://github.com/decocms/mcps",
+        "X-Title": "MCP Registry AI Enrichment",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userInput },
+        ],
+        temperature: 0.3,
+        max_tokens: 500,
+        response_format: RESPONSE_SCHEMA,
+      }),
+    });
+
+    // Retry on rate limit / transient server errors with exponential backoff
+    if (response.status === 429 || response.status >= 500) {
+      if (attempt < maxNetworkRetries) {
+        const wait = Math.pow(2, attempt) * 1000;
+        await new Promise((resolve) => setTimeout(resolve, wait));
+        continue;
+      }
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `OpenRouter API error (${response.status}): ${errorText}`,
       );
-      const response = await generateWithLLM(prompt, apiKey);
+    }
 
-      // Try to extract JSON from response (in case it comes with markdown)
-      const jsonMatch = response.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) {
-        throw new Error("No JSON found in response");
-      }
+    const result = await response.json();
+    return result.choices?.[0]?.message?.content || "";
+  }
 
-      let jsonStr = jsonMatch[0];
+  throw new Error("Unreachable");
+}
 
-      // Try to repair common JSON issues: unterminated strings at the end
-      // Pattern: "field": "text without closing
-      if (jsonStr.match(/:\s*"[^"]*$/)) {
-        console.log(`   🔧 Attempting to fix unterminated string...`);
-        jsonStr = jsonStr + '"}';
-      }
+// ═══════════════════════════════════════════════════════════════
+// AI Enrichment Logic
+// ═══════════════════════════════════════════════════════════════
 
-      const data = JSON.parse(jsonStr);
+/**
+ * Derive an icon URL deterministically from the server name/repo, avoiding
+ * LLM hallucination. Returns null if we can't infer one.
+ */
+function deriveIconUrl(server: McpServer): string | null {
+  // GitHub-hosted: use the owner's avatar
+  const repoUrl = server.repository?.url || "";
+  const ghMatch = repoUrl.match(/github\.com\/([^/]+)/i);
+  if (ghMatch) {
+    return `https://github.com/${ghMatch[1]}.png`;
+  }
 
-      // Validate required fields
-      if (
-        !data.friendly_name ||
-        !data.mesh_description ||
-        !Array.isArray(data.tags) ||
-        !Array.isArray(data.categories)
-      ) {
-        throw new Error("Invalid response format - missing required fields");
-      }
+  // Name format "io.github.<owner>/<repo>" → owner avatar
+  const nameGh = server.name.match(/^io\.github\.([^/.]+)/i);
+  if (nameGh) {
+    return `https://github.com/${nameGh[1]}.png`;
+  }
 
-      // Success!
-      return {
-        friendly_name: data.friendly_name,
-        mesh_description: data.mesh_description,
-        tags: data.tags,
-        categories: data.categories,
-        icon_url: data.icon_url || null,
-      };
-    } catch (error) {
-      if (attempt === maxAttempts) {
-        console.error(`   ❌ Failed after ${maxAttempts} attempts`);
-        throw error;
-      }
-      console.log(`   ⚠️  Attempt ${attempt} failed, retrying...`);
-      // Wait 1s before retrying LLM call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+  // Reverse-DNS publisher (com.foo/bar, ai.foo.mcp/bar) → favicon of foo.<tld>
+  const parts = server.name.split("/")[0].split(".");
+  if (parts.length >= 2) {
+    const tld = parts[0]; // com, ai, io, co, net, org, dev...
+    const domain = parts[1];
+    if (domain && domain !== "github") {
+      return `https://${domain}.${tld}/favicon.ico`;
     }
   }
 
-  // TypeScript needs this (will never reach here)
-  throw new Error("Unreachable");
+  return null;
+}
+
+/**
+ * Generate enriched data for an MCP using AI (structured output).
+ */
+async function enrichMcpWithAI(
+  server: McpServer,
+  apiKey: string,
+): Promise<EnrichedData> {
+  const name = server.name;
+  const description = server.description || server.short_description || "";
+  const repoUrl = server.repository?.url || "";
+  const remotesInfo =
+    server.remotes?.map((r) => `${r.type}`).join(", ") || "none";
+
+  const userInput = `Generate marketplace metadata for this MCP server.
+- ID: ${name}
+- Description: ${description || "(none)"}
+- Repo: ${repoUrl || "(none)"}
+- Remotes: ${remotesInfo}`;
+
+  // Icon is derived deterministically (no LLM hallucination)
+  const icon_url = deriveIconUrl(server);
+
+  const response = await generateWithLLM(userInput, apiKey);
+  const data = JSON.parse(response);
+
+  // Structured output guarantees the shape, but guard anyway
+  if (
+    !data.friendly_name ||
+    !data.mesh_description ||
+    !Array.isArray(data.tags) ||
+    !Array.isArray(data.categories)
+  ) {
+    throw new Error("Invalid response format - missing required fields");
+  }
+
+  return {
+    friendly_name: data.friendly_name,
+    mesh_description: data.mesh_description,
+    tags: data.tags,
+    categories: data.categories,
+    icon_url,
+  };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -336,23 +351,17 @@ async function updateMcp(
     updatePayload.icons = [{ src: data.icon_url }];
   }
 
-  // Update ALL versions with this name
-  const {
-    data: updated,
-    error,
-    count,
-  } = await supabase
+  // Update ALL versions with this name (no .select() — avoid returning rows)
+  const { error } = await supabase
     .from("mcp_servers")
     .update(updatePayload)
-    .eq("name", server.name)
-    .select();
+    .eq("name", server.name);
 
   if (error) {
     throw new Error(`Error updating MCP ${server.name}: ${error.message}`);
   }
 
-  const versionsUpdated = count || updated?.length || 0;
-  return versionsUpdated;
+  return 0;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -402,45 +411,35 @@ async function main() {
       return;
     }
 
-    // 2. Process MCPs with concurrency
+    // 2. Process MCPs with a continuous worker pool (N requests always in flight)
     let successCount = 0;
     let errorCount = 0;
+    let cursor = 0;
 
-    for (let i = 0; i < mcps.length; i += ENRICH_CONCURRENCY) {
-      const batch = mcps.slice(i, i + ENRICH_CONCURRENCY);
+    async function worker() {
+      while (true) {
+        const idx = cursor++;
+        if (idx >= mcps.length) return;
+        const mcp = mcps[idx];
+        const pos = idx + 1;
 
-      const results = await Promise.allSettled(
-        batch.map(async (mcp, idx) => {
-          const globalIdx = i + idx + 1;
-          console.log(
-            `\n[${globalIdx}/${mcps.length}] Processing: ${mcp.name}${mcp.verified ? " ⭐" : ""}`,
-          );
-
+        try {
           const enriched = await enrichMcpWithAI(mcp, openrouterApiKey);
-          const versionsUpdated = await updateMcp(supabase, mcp, enriched);
-
-          console.log(
-            `   ✅ [${globalIdx}] ${enriched.friendly_name} (${enriched.categories.join(", ")})`,
-          );
-
-          return { name: mcp.name, enriched, versionsUpdated };
-        }),
-      );
-
-      for (const result of results) {
-        if (result.status === "fulfilled") {
+          await updateMcp(supabase, mcp, enriched);
           successCount++;
-        } else {
+          console.log(
+            `[${pos}/${mcps.length}] ✅ ${mcp.name}${mcp.verified ? " ⭐" : ""} → ${enriched.friendly_name} (${enriched.categories.join(", ")})`,
+          );
+        } catch (error) {
           errorCount++;
-          console.error(`   ❌ Error: ${result.reason}`);
+          console.error(`[${pos}/${mcps.length}] ❌ ${mcp.name}: ${error}`);
         }
       }
-
-      // Brief delay between batches
-      if (i + ENRICH_CONCURRENCY < mcps.length) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-      }
     }
+
+    await Promise.all(
+      Array.from({ length: ENRICH_CONCURRENCY }, () => worker()),
+    );
 
     // 3. Print summary
     console.log(
