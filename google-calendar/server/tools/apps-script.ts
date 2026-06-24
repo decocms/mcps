@@ -9,11 +9,14 @@
 
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import type { Env } from "../main.ts";
 import { computeWebhookToken } from "../webhook.ts";
 import { WEBHOOK_BASE_URL, DEFAULT_LEAD_MINUTES } from "../constants.ts";
 
-export const createGetAppsScriptConfigTool = (env: Env) =>
+interface MinimalEnv {
+  MESH_REQUEST_CONTEXT?: { connectionId?: string };
+}
+
+export const createGetAppsScriptConfigTool = (env: MinimalEnv) =>
   createPrivateTool({
     id: "get_apps_script_config",
     description:
