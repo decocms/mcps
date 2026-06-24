@@ -14,7 +14,8 @@ const fromJson = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((val) => {
     if (typeof val !== "string") return val;
     try {
-      return JSON.parse(val);
+      const parsed = JSON.parse(val);
+      return parsed === null ? undefined : parsed;
     } catch {
       return val;
     }
@@ -96,8 +97,7 @@ export const runReportTool = (env: Env) =>
         .describe(
           "Optional ISO 4217 currency code for revenue metrics, e.g. 'USD'.",
         ),
-      returnPropertyQuota: z
-        .boolean()
+      returnPropertyQuota: fromJson(z.boolean())
         .optional()
         .describe(
           "If true, includes the current GA4 property quota state in the response.",
@@ -140,8 +140,7 @@ const FunnelStepSchema = z.object({
   filterExpression: fromJson(z.record(z.string(), z.unknown())).describe(
     "Required. Condition that qualifies users for this step. See https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FunnelStep#FunnelFilterExpression",
   ),
-  isDirectlyFollowedBy: z
-    .boolean()
+  isDirectlyFollowedBy: fromJson(z.boolean())
     .optional()
     .describe(
       "If true, this step must immediately follow the previous step (no intervening events). Defaults to false.",
@@ -187,8 +186,7 @@ export const runFunnelReportTool = (env: Env) =>
       offset: fromJson(z.number().int().nonnegative())
         .optional()
         .describe("Row offset for pagination."),
-      returnPropertyQuota: z
-        .boolean()
+      returnPropertyQuota: fromJson(z.boolean())
         .optional()
         .describe("If true, includes current GA4 property quota in response."),
     }),
@@ -250,8 +248,7 @@ export const runRealtimeReportTool = (env: Env) =>
       offset: fromJson(z.number().int().nonnegative())
         .optional()
         .describe("Row offset for pagination."),
-      returnPropertyQuota: z
-        .boolean()
+      returnPropertyQuota: fromJson(z.boolean())
         .optional()
         .describe("If true, includes quota state in the response."),
     }),
