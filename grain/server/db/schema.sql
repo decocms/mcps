@@ -6,6 +6,10 @@
 
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- ============================================================================
+-- Recording index table
+-- ============================================================================
+
 DROP TABLE IF EXISTS grain_meeting_recordings;
 
 CREATE TABLE grain_meeting_recordings (
@@ -51,8 +55,23 @@ CREATE INDEX idx_grain_meeting_rec_tags
 CREATE INDEX idx_grain_meeting_rec_owners
   ON grain_meeting_recordings USING gin (owners);
 
--- Row Level Security
 ALTER TABLE grain_meeting_recordings ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "grain_meeting_anon_select"
+  ON grain_meeting_recordings FOR SELECT
+  TO anon
+  USING (true);
+
+CREATE POLICY "grain_meeting_anon_insert"
+  ON grain_meeting_recordings FOR INSERT
+  TO anon
+  WITH CHECK (true);
+
+CREATE POLICY "grain_meeting_anon_update"
+  ON grain_meeting_recordings FOR UPDATE
+  TO anon
+  USING (true)
+  WITH CHECK (true);
 
 -- ============================================================================
 -- Trigger credentials table (persists TRIGGER_CONFIGURE state across restarts)
@@ -90,19 +109,3 @@ CREATE POLICY "grain_trigger_anon_delete"
   ON grain_trigger_credentials FOR DELETE
   TO anon
   USING (true);
-
-CREATE POLICY "grain_meeting_anon_select"
-  ON grain_meeting_recordings FOR SELECT
-  TO anon
-  USING (true);
-
-CREATE POLICY "grain_meeting_anon_insert"
-  ON grain_meeting_recordings FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
-CREATE POLICY "grain_meeting_anon_update"
-  ON grain_meeting_recordings FOR UPDATE
-  TO anon
-  USING (true)
-  WITH CHECK (true);

@@ -3,6 +3,7 @@ import {
   saveTriggerCredentials,
   loadTriggerCredentials,
   deleteTriggerCredentials,
+  type TriggerState,
 } from "../lib/supabase-client.ts";
 import { z } from "zod";
 
@@ -11,11 +12,8 @@ class SupabaseTriggerStorage implements TriggerStorage {
     return loadTriggerCredentials(connectionId);
   }
 
-  async set(connectionId: string, state: unknown) {
-    await saveTriggerCredentials(
-      connectionId,
-      state as Parameters<typeof saveTriggerCredentials>[1],
-    );
+  async set(connectionId: string, state: TriggerState) {
+    await saveTriggerCredentials(connectionId, state);
   }
 
   async delete(connectionId: string) {
