@@ -32,7 +32,7 @@ This is done in `onChange` in `server/main.ts`:
 
 If you need to configure it manually in Grain, use this URL pattern:
 
-`https://sites-grain.decocache.com/webhooks/grain/{connectionId}`
+`https://sites-grain.deco.site/webhooks/grain/{connectionId}`
 
 - Replace `{connectionId}` with your Deco Mesh connection ID
 - This is a dedicated public webhook route (no `/mcp` in the external URL)
