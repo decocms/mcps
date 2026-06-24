@@ -26,6 +26,14 @@ export const ENDPOINTS = {
 // Default calendar ID
 export const PRIMARY_CALENDAR = "primary";
 
+// Public base URL of this MCP (used to build the Apps Script webhook URL).
+// Override with SERVER_PUBLIC_URL in non-production environments.
+export const WEBHOOK_BASE_URL =
+  process.env.SERVER_PUBLIC_URL ?? "https://sites-google-calendar.deco.site";
+
+// Default lead time (minutes before an event) suggested to the Apps Script.
+export const DEFAULT_LEAD_MINUTES = 10;
+
 // Default pagination
 export const DEFAULT_MAX_RESULTS = 50;
 
