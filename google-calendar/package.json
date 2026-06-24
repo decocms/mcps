@@ -16,6 +16,7 @@
     "./tools/apps-script": "./server/tools/apps-script.ts",
     "./types": "./server/lib/types.ts",
     "./constants": "./server/constants.ts",
+    "./client": "./server/lib/google-client.ts",
     "./triggers": "./server/lib/trigger-store.ts",
     "./supabase": "./server/lib/supabase-client.ts",
     "./webhook": "./server/webhook.ts",

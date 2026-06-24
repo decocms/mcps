@@ -13,6 +13,8 @@ import { app as webhookRouter } from "google-calendar/router";
 
 import { type Env, StateSchema } from "../shared/deco.gen.ts";
 import { getServiceAccountAccessToken } from "./lib/service-account.ts";
+import { cacheConnection } from "./lib/connection-cache.ts";
+import { startScheduler, stopScheduler } from "./lib/scheduler.ts";
 
 export type { Env };
 
@@ -114,10 +116,41 @@ function mergeResults(
   return results[0];
 }
 
-const scopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
+const googleScopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
+
+// deno-lint-ignore no-explicit-any
+const onChangeHandler = async (_env: Env, config: any) => {
+  try {
+    const state = config?.state;
+    const connectionId =
+      config?.connectionId ?? _env.MESH_REQUEST_CONTEXT?.connectionId;
+    const json = state?.SERVICE_ACCOUNT_JSON;
+    const emails = (state?.IMPERSONATE_EMAILS ?? [])
+      .map((e: string) => e.trim())
+      .filter(Boolean);
+    const leadMinutes = state?.LEAD_MINUTES ?? 10;
+
+    if (!connectionId || !json || emails.length === 0) {
+      return;
+    }
+
+    cacheConnection({
+      connectionId,
+      serviceAccountJson: json,
+      impersonateEmails: emails,
+      leadMinutes,
+    });
+  } catch (error) {
+    console.error(
+      "[onChange] Error caching connection:",
+      error instanceof Error ? error.message : String(error),
+    );
+  }
+};
 
 const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   configuration: {
+    onChange: onChangeHandler,
     scopes: ["EVENT_BUS::*"],
     state: StateSchema,
   },
@@ -167,7 +200,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             const token = await getServiceAccountAccessToken(
               json,
               emails[0],
-              scopes,
+              googleScopes,
             );
             reqCtx.authorization = token;
             return originalExecute(args);
@@ -178,7 +211,7 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
               const token = await getServiceAccountAccessToken(
                 json,
                 email,
-                scopes,
+                googleScopes,
               );
               reqCtx.authorization = token;
               return originalExecute(args);
@@ -209,6 +242,19 @@ if (isSupabaseConfigured()) {
     "[BOOTSTRAP] Supabase not configured — calendar triggers will not persist. " +
       "Set SUPABASE_URL / SUPABASE_ANON_KEY.",
   );
+}
+
+// Start the background scheduler for upcoming-meeting notifications.
+// Runs every 5 minutes, scanning all cached connections' calendars.
+setImmediate(() => startScheduler(5 * 60 * 1000));
+
+// Graceful shutdown (Discord pattern)
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  process.on(signal, () => {
+    console.log(`[Shutdown] Received ${signal}`);
+    stopScheduler();
+    process.exit(0);
+  });
 }
 
 // Webhook routes (/health, /calendar/events/:connectionId) handled by Hono
