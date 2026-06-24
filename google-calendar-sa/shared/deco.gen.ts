@@ -14,6 +14,16 @@ export const StateSchema = z.object({
       "Emails of Google Workspace users to impersonate. Events from all users are merged and deduplicated.",
     ),
   EVENT_BUS: BindingOf("@deco/event-bus").optional(),
+
+  WEBHOOK_URL: z
+    .string()
+    .default(
+      "https://sites-google-calendar-sa.deco.site/calendar/events/{connectionId}",
+    )
+    .readonly()
+    .describe(
+      "Webhook URL the Google Apps Script posts events to. Use get_apps_script_config to get the URL + token for this connection.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema, Registry>;

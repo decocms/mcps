@@ -4,6 +4,14 @@ import { serve } from "@decocms/mcps-shared/serve";
 
 import { tools } from "google-calendar/tools";
 import { GOOGLE_SCOPES } from "google-calendar/constants";
+import { triggers } from "google-calendar/triggers";
+import {
+  isSupabaseConfigured,
+  loadAllTriggerCredentials,
+} from "google-calendar/supabase";
+import { app as webhookRouter } from "google-calendar/router";
+import { createGetAppsScriptConfigTool } from "google-calendar/tools/apps-script";
+
 import { type Env, StateSchema } from "../shared/deco.gen.ts";
 import { getServiceAccountAccessToken } from "./lib/service-account.ts";
 
@@ -77,7 +85,6 @@ function mergeResults(
   }
 
   if (toolId === "find_available_slots") {
-    // Intersect available slots across all users — a slot is only available if ALL users are free
     const slotArrays = results.map(
       (r) =>
         ((r as { availableSlots?: { start: string; end: string }[] })
@@ -128,10 +135,10 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
       },
     },
   },
-  // Always register tools — credentials are validated at execution time, not registration
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tools: (env: Env) =>
-    (tools as any[]).map((createTool: (env: any) => any) => {
+  tools: (env: Env) => [
+    // Calendar tools wrapped with SA auth + fan-out
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(tools as any[]).map((createTool: (env: any) => any) => {
       const tool = createTool(env);
       const originalExecute = tool.execute;
       const shouldFanOut = FAN_OUT_TOOLS.has(tool.id);
@@ -157,7 +164,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             unknown
           >;
 
-          // For write tools or single email, just use the first email
           if (!shouldFanOut || emails.length === 1) {
             const token = await getServiceAccountAccessToken(
               json,
@@ -168,7 +174,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             return originalExecute(args);
           }
 
-          // Fan out: call for each email, merge results
           const results = await Promise.all(
             emails.map(async (email: string) => {
               const token = await getServiceAccountAccessToken(
@@ -185,6 +190,36 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
         },
       };
     }),
+    // Trigger tools (TRIGGER_CONFIGURE / TRIGGER_UNCONFIGURE) — no SA auth needed
+    ...triggers.tools(),
+    // Apps Script setup helper — no SA auth needed
+    createGetAppsScriptConfigTool(env),
+  ],
 });
 
-serve(runtime.fetch);
+// Bootstrap trigger credentials from Supabase
+if (isSupabaseConfigured()) {
+  try {
+    const allCreds = await loadAllTriggerCredentials();
+    console.log(
+      `[BOOTSTRAP] Loaded trigger credentials for ${allCreds.length} connection(s)`,
+    );
+  } catch (error) {
+    console.error("[BOOTSTRAP] Failed to load trigger credentials:", error);
+  }
+} else {
+  console.warn(
+    "[BOOTSTRAP] Supabase not configured — calendar triggers will not persist. " +
+      "Set SUPABASE_URL / SUPABASE_ANON_KEY.",
+  );
+}
+
+// Webhook routes (/health, /calendar/events/:connectionId) handled by Hono
+// router. A 404 means "not a webhook route" — fall through to /mcp.
+serve(async (req, env, ctx) => {
+  const webhookResponse = await webhookRouter.fetch(req, env, ctx);
+  if (webhookResponse.status !== 404) {
+    return webhookResponse;
+  }
+  return runtime.fetch(req, env, ctx);
+});

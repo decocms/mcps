@@ -13,8 +13,13 @@
   },
   "exports": {
     "./tools": "./server/tools/index.ts",
+    "./tools/apps-script": "./server/tools/apps-script.ts",
     "./types": "./server/lib/types.ts",
-    "./constants": "./server/constants.ts"
+    "./constants": "./server/constants.ts",
+    "./triggers": "./server/lib/trigger-store.ts",
+    "./supabase": "./server/lib/supabase-client.ts",
+    "./webhook": "./server/webhook.ts",
+    "./router": "./server/router.ts"
   },
   "dependencies": {
     "@decocms/runtime": "^1.3.0",
