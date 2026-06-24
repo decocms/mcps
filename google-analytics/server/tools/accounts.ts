@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../../shared/deco.gen.ts";
 import { GaClient } from "../lib/ga-client.ts";
+import { AccountSummariesResponseSchema } from "../lib/schemas.ts";
 
 export const getAccountSummariesTool = (env: Env) =>
   createPrivateTool({
@@ -9,13 +10,13 @@ export const getAccountSummariesTool = (env: Env) =>
     description:
       "Retrieves information about the user's Google Analytics accounts and properties.",
     inputSchema: z.object({}),
+    outputSchema: AccountSummariesResponseSchema,
     execute: async () => {
       const client = GaClient.fromEnv(env);
 
       try {
-        const response = await client.listAccountSummaries();
-
-        return { response };
+        const result = await client.listAccountSummaries();
+        return AccountSummariesResponseSchema.parse({ response: result });
       } catch (error) {
         throw new Error(
           `Failed to retrieve account summaries: ${error instanceof Error ? error.message : String(error)}`,
