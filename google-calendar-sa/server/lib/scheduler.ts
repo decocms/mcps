@@ -128,8 +128,19 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
       if (seenEventIds.has(event.id)) continue;
       seenEventIds.add(event.id);
 
-      const startTime = event.start?.dateTime || event.start?.date;
-      if (!startTime) continue;
+      // Skip all-day events (no dateTime = all-day)
+      if (!event.start?.dateTime) continue;
+
+      // Skip events without a meeting link
+      if (!event.hangoutLink) continue;
+
+      // Skip events with fewer than 2 non-bot attendees
+      const realAttendees = (event.attendees ?? []).filter(
+        (a) => !a.self && !a.resource,
+      );
+      if (realAttendees.length < 2) continue;
+
+      const startTime = event.start.dateTime;
 
       const minutesUntilStart = Math.round(
         (new Date(startTime).getTime() - now.getTime()) / 60000,
