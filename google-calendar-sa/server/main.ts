@@ -15,6 +15,7 @@ import { type Env, StateSchema } from "../shared/deco.gen.ts";
 import { getServiceAccountAccessToken } from "./lib/service-account.ts";
 import { cacheConnection } from "./lib/connection-cache.ts";
 import { startScheduler, stopScheduler } from "./lib/scheduler.ts";
+import { saveSAConfig, loadAllSAConfigs } from "./lib/sa-config-store.ts";
 
 export type { Env };
 
@@ -134,12 +135,16 @@ const onChangeHandler = async (_env: Env, config: any) => {
       return;
     }
 
-    cacheConnection({
+    const saConfig = {
       connectionId,
       serviceAccountJson: json,
       impersonateEmails: emails,
       leadMinutes,
-    });
+    };
+    cacheConnection(saConfig);
+    saveSAConfig(saConfig).catch((err) =>
+      console.error("[onChange] Failed to persist SA config:", err),
+    );
   } catch (error) {
     console.error(
       "[onChange] Error caching connection:",
@@ -227,19 +232,27 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
   ],
 });
 
-// Bootstrap trigger credentials from Supabase
+// Bootstrap from Supabase: trigger credentials + SA connection configs.
+// This lets the scheduler start scanning immediately after pod restart,
+// without waiting for onChange to fire per-connection.
 if (isSupabaseConfigured()) {
   try {
-    const allCreds = await loadAllTriggerCredentials();
+    const [allCreds, allConfigs] = await Promise.all([
+      loadAllTriggerCredentials(),
+      loadAllSAConfigs(),
+    ]);
+    for (const config of allConfigs) {
+      cacheConnection(config);
+    }
     console.log(
-      `[BOOTSTRAP] Loaded trigger credentials for ${allCreds.length} connection(s)`,
+      `[BOOTSTRAP] Loaded ${allCreds.length} trigger credential(s), ${allConfigs.length} SA config(s)`,
     );
   } catch (error) {
-    console.error("[BOOTSTRAP] Failed to load trigger credentials:", error);
+    console.error("[BOOTSTRAP] Failed to load from Supabase:", error);
   }
 } else {
   console.warn(
-    "[BOOTSTRAP] Supabase not configured — calendar triggers will not persist. " +
+    "[BOOTSTRAP] Supabase not configured — triggers and scheduler will not persist. " +
       "Set SUPABASE_URL / SUPABASE_ANON_KEY.",
   );
 }
