@@ -21,6 +21,10 @@ import { getServiceAccountAccessToken } from "./service-account.ts";
 
 const scopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
 
+const BUSINESS_HOUR_START = 9;
+const BUSINESS_HOUR_END = 18;
+const BUSINESS_TIMEZONE = "America/Sao_Paulo";
+
 // Dedup: track notified events so the same event isn't sent twice.
 // Key format: "connectionId:email:eventId:startTime"
 const notified = new Map<string, number>();
@@ -52,7 +56,20 @@ export function stopScheduler(): void {
   }
 }
 
+function isBusinessHours(): boolean {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIMEZONE,
+    hour: "numeric",
+    hour12: false,
+  });
+  const hour = parseInt(formatter.format(now), 10);
+  return hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END;
+}
+
 async function tick(): Promise<void> {
+  if (!isBusinessHours()) return;
+
   const connections = getCachedConnections();
   if (connections.length === 0) return;
 
@@ -111,8 +128,19 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
       if (seenEventIds.has(event.id)) continue;
       seenEventIds.add(event.id);
 
-      const startTime = event.start?.dateTime || event.start?.date;
-      if (!startTime) continue;
+      // Skip all-day events (no dateTime = all-day)
+      if (!event.start?.dateTime) continue;
+
+      // Skip events without a meeting link
+      if (!event.hangoutLink) continue;
+
+      // Skip events with fewer than 2 non-bot attendees
+      const realAttendees = (event.attendees ?? []).filter(
+        (a) => !a.self && !a.resource,
+      );
+      if (realAttendees.length < 2) continue;
+
+      const startTime = event.start.dateTime;
 
       const minutesUntilStart = Math.round(
         (new Date(startTime).getTime() - now.getTime()) / 60000,
