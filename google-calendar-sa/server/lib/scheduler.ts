@@ -21,6 +21,10 @@ import { getServiceAccountAccessToken } from "./service-account.ts";
 
 const scopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
 
+const BUSINESS_HOUR_START = 9;
+const BUSINESS_HOUR_END = 18;
+const BUSINESS_TIMEZONE = "America/Sao_Paulo";
+
 // Dedup: track notified events so the same event isn't sent twice.
 // Key format: "connectionId:email:eventId:startTime"
 const notified = new Map<string, number>();
@@ -52,7 +56,20 @@ export function stopScheduler(): void {
   }
 }
 
+function isBusinessHours(): boolean {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: BUSINESS_TIMEZONE,
+    hour: "numeric",
+    hour12: false,
+  });
+  const hour = parseInt(formatter.format(now), 10);
+  return hour >= BUSINESS_HOUR_START && hour < BUSINESS_HOUR_END;
+}
+
 async function tick(): Promise<void> {
+  if (!isBusinessHours()) return;
+
   const connections = getCachedConnections();
   if (connections.length === 0) return;
 
