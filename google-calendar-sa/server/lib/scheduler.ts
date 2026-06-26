@@ -25,11 +25,9 @@ const BUSINESS_HOUR_START = 9;
 const BUSINESS_HOUR_END = 18;
 const BUSINESS_TIMEZONE = "America/Sao_Paulo";
 
-// Dedup: track notified events so the same event isn't sent twice.
-// Key format: "connectionId:email:eventId:startTime"
-const notified = new Map<string, number>();
+import { getSupabaseClient } from "google-calendar/supabase";
 
-const DEDUP_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const DEDUP_TABLE = "calendar_notified_events";
 
 let intervalHandle: ReturnType<typeof setInterval> | null = null;
 
@@ -84,7 +82,7 @@ async function tick(): Promise<void> {
     }
   }
 
-  cleanupDedup();
+  cleanupOldNotifications().catch(() => {});
 }
 
 async function scanConnection(conn: CachedConnection): Promise<void> {
@@ -149,7 +147,7 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
         continue;
 
       const dedupKey = `${conn.connectionId}:${event.id}:${startTime}`;
-      if (notified.has(dedupKey)) continue;
+      if (await wasAlreadyNotified(dedupKey)) continue;
 
       try {
         await triggers.notify(
@@ -174,7 +172,7 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
             impersonated_email: email,
           },
         );
-        notified.set(dedupKey, now.getTime());
+        await markNotified(dedupKey);
         console.log(
           `[Scheduler] Notified: "${event.summary}" in ${minutesUntilStart}m (${conn.connectionId})`,
         );
@@ -188,9 +186,36 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
   }
 }
 
-function cleanupDedup(): void {
-  const cutoff = Date.now() - DEDUP_TTL_MS;
-  for (const [key, ts] of notified) {
-    if (ts < cutoff) notified.delete(key);
-  }
+async function wasAlreadyNotified(key: string): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) return false;
+
+  const { data } = await client
+    .from(DEDUP_TABLE)
+    .select("dedup_key")
+    .eq("dedup_key", key)
+    .maybeSingle();
+
+  return !!data;
+}
+
+async function markNotified(key: string): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  await client.from(DEDUP_TABLE).upsert(
+    {
+      dedup_key: key,
+      notified_at: new Date().toISOString(),
+    } as never,
+    { onConflict: "dedup_key" },
+  );
+}
+
+async function cleanupOldNotifications(): Promise<void> {
+  const client = getSupabaseClient();
+  if (!client) return;
+
+  const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+  await client.from(DEDUP_TABLE).delete().lt("notified_at", cutoff);
 }
