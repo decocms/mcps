@@ -1,0 +1,20 @@
+{
+  "scopeName": "github",
+  "name": "github-mcp-server",
+  "friendlyName": "GitHub (Official)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://api.githubcopilot.com/mcp/"
+  },
+  "description": "GitHub's official remote MCP server — manage repositories, issues, pull requests, Actions, and code from AI agents.",
+  "icon": "https://github.githubassets.com/assets/GitHub-Mark-ea2971cee799.png",
+  "unlisted": false,
+  "official": true,
+  "metadata": {
+    "categories": ["Developer Tools"],
+    "official": true,
+    "tags": ["github", "git", "repositories", "issues", "pull-requests", "actions", "code"],
+    "short_description": "GitHub's official remote MCP server for repos, issues, PRs, and Actions",
+    "mesh_description": "GitHub's official remote MCP server. Connect AI agents directly to GitHub to manage repositories, browse and edit code, open and review pull requests, triage issues, and work with GitHub Actions and workflows. Served over GitHub's hosted endpoint (api.githubcopilot.com), it covers the full GitHub developer surface so agents can automate engineering workflows end to end. Ideal for code review, repository management, release automation, and developer productivity."
+  }
+}
