@@ -17,7 +17,9 @@
     "check": "bun run ./scripts/check.ts",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
     "prepare": "sh scripts/setup-hooks.sh",
-    "build": "bun run ./scripts/build-mcp.ts"
+    "build": "bun run ./scripts/build-mcp.ts",
+    "build:registry": "bun run ./scripts/build-registry-json.ts",
+    "check:registry": "bun run ./scripts/build-registry-json.ts --check"
   },
   "workspaces": [
     "airtable",

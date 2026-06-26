@@ -16,82 +16,16 @@ import { readFile, stat } from "fs/promises";
 import { existsSync } from "fs";
 import { join } from "path";
 import { $ } from "bun";
+import {
+  type AppJson,
+  type RegistryItemData,
+  buildRegistryData,
+} from "./lib/registry-payload";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-interface AppJson {
-  scopeName: string;
-  name: string;
-  friendlyName?: string;
-  description?: string;
-  icon?: string;
-  unlisted?: boolean;
-  official?: boolean;
-  connection?: {
-    type?: string;
-    url?: string;
-    configSchema?: Record<string, unknown>;
-  };
-  bindings?: Record<string, string>;
-  requester?: {
-    name?: string;
-    email?: string;
-    repository?: string;
-  };
-  metadata?: {
-    categories?: string[];
-    official?: boolean;
-    tags?: string[];
-    short_description?: string;
-    mesh_description?: string;
-    mesh_unlisted?: boolean;
-  };
-  tools?: Array<{ name: string; description?: string }>;
-}
-
-interface MeshTool {
-  name: string;
-  description?: string | null;
-}
-
 interface PublishRequestBody {
-  data: {
-    id: string;
-    title: string;
-    description?: string | null;
-    is_public?: boolean;
-    _meta?: {
-      "mcp.mesh"?: {
-        verified?: boolean;
-        tags?: string[];
-        categories?: string[];
-        friendly_name?: string | null;
-        short_description?: string | null;
-        owner?: string | null;
-        readme?: string | null;
-        has_remote?: boolean;
-        has_oauth?: boolean;
-        tools?: MeshTool[];
-      };
-    };
-    server: {
-      name: string;
-      title?: string;
-      description?: string;
-      websiteUrl?: string;
-      icons?: Array<{ src: string }>;
-      remotes?: Array<{
-        type?: string;
-        url?: string;
-        name?: string;
-        title?: string;
-        description?: string;
-      }>;
-      repository?: {
-        url?: string;
-      };
-    };
-  };
+  data: RegistryItemData;
   requester?: {
     name?: string;
     email?: string;
@@ -173,68 +107,8 @@ function buildPayload(
   readme: string | null,
   committer: GitCommitter,
 ): PublishRequestBody {
-  const id = `${app.scopeName}/${app.name}`;
-  const title = app.friendlyName ?? app.name;
-  const isOfficial = app.metadata?.official ?? app.official ?? false;
-  const hasRemote =
-    app.connection?.type !== "BINDING" && Boolean(app.connection?.url);
-  const hasOAuth = Boolean(app.connection?.configSchema);
-
-  const tools: MeshTool[] | undefined = app.tools?.map((t) => ({
-    name: t.name,
-    description: t.description ?? null,
-  }));
-
-  const meshMeta: NonNullable<
-    NonNullable<PublishRequestBody["data"]["_meta"]>["mcp.mesh"]
-  > = {
-    verified: isOfficial,
-    friendly_name: app.friendlyName ?? null,
-    short_description: app.metadata?.short_description?.slice(0, 160) ?? null,
-    owner: app.scopeName,
-    has_remote: hasRemote,
-    has_oauth: hasOAuth,
-  };
-
-  if (app.metadata?.tags?.length) meshMeta.tags = app.metadata.tags;
-  if (app.metadata?.categories?.length)
-    meshMeta.categories = [app.metadata.categories[0]];
-  if (readme) {
-    meshMeta.readme = readme;
-  } else if (app.metadata?.mesh_description) {
-    meshMeta.readme = app.metadata.mesh_description;
-  }
-  if (tools?.length) meshMeta.tools = tools;
-
-  const remotes: PublishRequestBody["data"]["server"]["remotes"] = [];
-  if (hasRemote && app.connection?.url) {
-    remotes.push({
-      type: app.connection.type ?? "HTTP",
-      url: app.connection.url,
-      name: app.name,
-      title,
-      description: app.description,
-    });
-  }
-
   return {
-    data: {
-      id,
-      title,
-      description: app.description ?? null,
-      is_public: !(app.unlisted ?? app.metadata?.mesh_unlisted ?? false),
-      _meta: { "mcp.mesh": meshMeta },
-      server: {
-        name: app.name,
-        title,
-        description: app.description,
-        ...(app.icon ? { icons: [{ src: app.icon }] } : {}),
-        ...(remotes.length ? { remotes } : {}),
-        ...(app.requester?.repository
-          ? { repository: { url: app.requester.repository } }
-          : {}),
-      },
-    },
+    data: buildRegistryData(app, { readme }),
     requester: {
       name: app.requester?.name ?? committer.name,
       email: app.requester?.email ?? committer.email,

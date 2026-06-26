@@ -29,6 +29,9 @@ jobs:
       - name: Run lint
         run: bun run lint
 
+      - name: Check registry.json is up to date
+        run: bun run check:registry
+
       - name: Detect changed MCPs
         id: changed
         run: |
