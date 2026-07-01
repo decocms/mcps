@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../../shared/deco.gen.ts";
 import { GaClient } from "../lib/ga-client.ts";
-import { getAllowedPropertyIds } from "../lib/env.ts";
+import { getAllowedAccountIds } from "../lib/env.ts";
 import { AccountSummariesResponseSchema } from "../lib/schemas.ts";
 
 export const getAccountSummariesTool = (env: Env) =>
@@ -29,17 +29,12 @@ export const getAccountSummariesTool = (env: Env) =>
             }>;
           }>;
         };
-        const allowed = getAllowedPropertyIds(env);
+        const allowed = getAllowedAccountIds(env);
 
         if (allowed) {
-          const filtered = (result.accountSummaries ?? [])
-            .map((account) => ({
-              ...account,
-              propertySummaries: (account.propertySummaries ?? []).filter(
-                (prop) => allowed.includes(prop.property),
-              ),
-            }))
-            .filter((account) => account.propertySummaries.length > 0);
+          const filtered = (result.accountSummaries ?? []).filter((account) =>
+            allowed.includes(account.account ?? ""),
+          );
 
           return AccountSummariesResponseSchema.parse({
             response: { accountSummaries: filtered },

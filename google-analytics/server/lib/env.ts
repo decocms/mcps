@@ -10,28 +10,27 @@ export const getGoogleAccessToken = (env: Env): string => {
   return authorization.replace(/^Bearer\s+/i, "");
 };
 
-// Normalizes "1234567" → "properties/1234567"; already-prefixed IDs pass through.
-function normalizePropertyId(id: string): string {
+// Normalizes "1234567" → "accounts/1234567"; already-prefixed IDs pass through.
+function normalizeAccountId(id: string): string {
   const clean = String(id).trim();
-  return /^\d+$/.test(clean) ? `properties/${clean}` : clean;
+  return /^\d+$/.test(clean) ? `accounts/${clean}` : clean;
 }
 
 /**
- * Returns the normalized allowlist of property IDs for this installation,
- * or null if no allowlist is configured (meaning all properties are allowed).
+ * Returns the normalized allowlist of account IDs for this installation,
+ * or null if no allowlist is configured (meaning all accounts are allowed).
  */
-export const getAllowedPropertyIds = (env: Env): string[] | null => {
-  const ids = env.MESH_REQUEST_CONTEXT?.state?.allowedPropertyIds;
+export const getAllowedAccountIds = (env: Env): string[] | null => {
+  const ids = env.MESH_REQUEST_CONTEXT?.state?.allowedAccountIds;
   if (!ids || ids.length === 0) return null;
-  return ids.map(normalizePropertyId);
+  return ids.map(normalizeAccountId);
 };
 
 /**
  * Resolves the GA4 property to use for a request.
  *
  * Prefers the `property` passed to the tool; when omitted, falls back to the
- * `propertyId` configured on the MCP installation state. If an allowlist is
- * configured, the resolved property must be in it.
+ * `propertyId` configured on the MCP installation state.
  */
 export const resolveProperty = (env: Env, property?: string | null): string => {
   const resolved = property ?? env.MESH_REQUEST_CONTEXT?.state?.propertyId;
@@ -40,12 +39,5 @@ export const resolveProperty = (env: Env, property?: string | null): string => {
       "No GA4 property provided. Pass a `property` argument or configure a default `propertyId` in this integration's settings.",
     );
   }
-  const normalized = normalizePropertyId(resolved);
-  const allowed = getAllowedPropertyIds(env);
-  if (allowed && !allowed.includes(normalized)) {
-    throw new Error(
-      `Property "${normalized}" is not allowed for this integration. Allowed properties: ${allowed.join(", ")}.`,
-    );
-  }
-  return normalized;
+  return resolved;
 };
