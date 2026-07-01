@@ -4,11 +4,14 @@ import { createGoogleOAuth } from "@decocms/mcps-shared/google-oauth";
 
 import { tools } from "./tools/index.ts";
 import { GOOGLE_SCOPES } from "./constants.ts";
-import type { Env } from "../shared/deco.gen.ts";
+import { type Env, StateSchema } from "../shared/deco.gen.ts";
 
 export type { Env };
 
-const runtime = withRuntime<Env>({
+const runtime = withRuntime<Env, typeof StateSchema>({
+  configuration: {
+    state: StateSchema,
+  },
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: createGoogleOAuth({
     scopes: [GOOGLE_SCOPES.ANALYTICS_READONLY],

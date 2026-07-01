@@ -10,6 +10,7 @@ import type { Env } from "../main.ts";
 import {
   SearchConsoleClient,
   getAccessToken,
+  resolveSiteUrl,
 } from "../lib/search-console-client.ts";
 import {
   SEARCH_ANALYTICS_DIMENSIONS,
@@ -41,8 +42,9 @@ export const createQuerySearchAnalyticsTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
       startDate: z
         .string()
@@ -153,7 +155,7 @@ export const createQuerySearchAnalyticsTool = (env: Env) =>
       };
 
       const response = await client.querySearchAnalytics(
-        context.siteUrl,
+        resolveSiteUrl(env, context.siteUrl),
         request,
       );
 

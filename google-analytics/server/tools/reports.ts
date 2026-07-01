@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../../shared/deco.gen.ts";
 import { GaClient } from "../lib/ga-client.ts";
+import { resolveProperty } from "../lib/env.ts";
 import {
   RunReportOutputSchema,
   RunFunnelReportOutputSchema,
@@ -55,8 +56,10 @@ export const runReportTool = (env: Env) =>
 
         .string()
 
+        .optional()
+
         .describe(
-          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'. Falls back to the default propertyId configured for this integration when omitted.",
         ),
       dateRanges: z
 
@@ -160,7 +163,10 @@ export const runReportTool = (env: Env) =>
         if (args.returnPropertyQuota !== undefined) {
           body.returnPropertyQuota = args.returnPropertyQuota;
         }
-        const response = await client.runReport(args.property, body);
+        const response = await client.runReport(
+          resolveProperty(env, args.property),
+          body,
+        );
 
         return RunReportOutputSchema.parse({ response });
       } catch (error) {
@@ -214,8 +220,10 @@ export const runFunnelReportTool = (env: Env) =>
 
         .string()
 
+        .optional()
+
         .describe(
-          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'. Falls back to the default propertyId configured for this integration when omitted.",
         ),
       funnelSteps: z
 
@@ -297,7 +305,10 @@ export const runFunnelReportTool = (env: Env) =>
         if (args.offset !== undefined) body.offset = args.offset;
         if (args.returnPropertyQuota !== undefined)
           body.returnPropertyQuota = args.returnPropertyQuota;
-        const response = await client.runFunnelReport(args.property, body);
+        const response = await client.runFunnelReport(
+          resolveProperty(env, args.property),
+          body,
+        );
 
         return RunFunnelReportOutputSchema.parse({ response });
       } catch (error) {
@@ -318,8 +329,10 @@ export const runRealtimeReportTool = (env: Env) =>
 
         .string()
 
+        .optional()
+
         .describe(
-          "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+          "GA4 Property identifier — 'properties/1234567' or just '1234567'. Falls back to the default propertyId configured for this integration when omitted.",
         ),
       dimensions: z
 
@@ -390,7 +403,10 @@ export const runRealtimeReportTool = (env: Env) =>
         if (args.returnPropertyQuota !== undefined) {
           body.returnPropertyQuota = args.returnPropertyQuota;
         }
-        const response = await client.runRealtimeReport(args.property, body);
+        const response = await client.runRealtimeReport(
+          resolveProperty(env, args.property),
+          body,
+        );
 
         return RunRealtimeReportOutputSchema.parse({ response });
       } catch (error) {

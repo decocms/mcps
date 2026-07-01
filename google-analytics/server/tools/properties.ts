@@ -2,6 +2,7 @@ import { z } from "zod";
 import { createPrivateTool } from "@decocms/runtime/tools";
 import type { Env } from "../../shared/deco.gen.ts";
 import { GaClient } from "../lib/ga-client.ts";
+import { resolveProperty } from "../lib/env.ts";
 import {
   PropertyResponseSchema,
   CustomDimensionsAndMetricsResponseSchema,
@@ -11,8 +12,10 @@ const propertySchema = z
 
   .string()
 
+  .optional()
+
   .describe(
-    "GA4 Property identifier — 'properties/1234567' or just '1234567'.",
+    "GA4 Property identifier — 'properties/1234567' or just '1234567'. Falls back to the default propertyId configured for this integration when omitted.",
   );
 
 export const getPropertyDetailsTool = (env: Env) =>
@@ -25,7 +28,9 @@ export const getPropertyDetailsTool = (env: Env) =>
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
       try {
-        const result = await client.getProperty(args.property);
+        const result = await client.getProperty(
+          resolveProperty(env, args.property),
+        );
         return PropertyResponseSchema.parse({ response: result });
       } catch (error) {
         throw new Error(
@@ -45,10 +50,11 @@ export const getCustomDimensionsAndMetricsTool = (env: Env) =>
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
       try {
+        const property = resolveProperty(env, args.property);
         // Both calls are independent — run in parallel to halve latency.
         const [dimensions, metrics] = await Promise.all([
-          client.listCustomDimensions(args.property),
-          client.listCustomMetrics(args.property),
+          client.listCustomDimensions(property),
+          client.listCustomMetrics(property),
         ]);
 
         return CustomDimensionsAndMetricsResponseSchema.parse({
