@@ -1094,6 +1094,31 @@ describe("VTEX_LIST_ORDERS", () => {
     );
   });
 
+  test("defaultQuery: merged into query with caller values taking precedence", async () => {
+    const fixture = { list: [], paging: { total: 0 } };
+    const sdkFn = mock(() => Promise.resolve({ data: fixture }));
+
+    const tool = createToolFromOperation({
+      id: "VTEX_LIST_ORDERS",
+      description: "List orders with optional filters.",
+      annotations: { readOnlyHint: true },
+      requestSchema: ordersZod.zListOrdersData,
+      sdkFn: sdkFn as any,
+      defaultQuery: { _stats: "1", per_page: 1 },
+    })(mockEnv);
+
+    await tool.execute({
+      runtimeContext: mockRuntimeContext,
+      context: { page: 2, per_page: 15 },
+    });
+
+    expect(sdkFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: { _stats: "1", page: 2, per_page: 15 },
+      }),
+    );
+  });
+
   test("error path: throws when sdkFn returns error", async () => {
     const sdkFn = mock(() =>
       Promise.resolve({
