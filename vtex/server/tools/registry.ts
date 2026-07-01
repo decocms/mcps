@@ -285,6 +285,8 @@ export const orderTools = [
     annotations: { readOnlyHint: true },
     requestSchema: ordersZod.zListOrdersData,
     sdkFn: ordersSdk.listOrders as any,
+    // Always request aggregated stats (totalValue Sum, etc.) alongside the page.
+    defaultQuery: { _stats: "1" },
   }),
   createToolFromOperation({
     id: "VTEX_CANCEL_ORDER",

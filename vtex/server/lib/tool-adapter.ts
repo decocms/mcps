@@ -282,6 +282,12 @@ export interface ToolFromOperationConfig {
   ) => Promise<SdkResult>;
   /** Optional factory to create the HTTP client. Defaults to createVtexClient. */
   clientFactory?: (credentials: VTEXCredentials) => Client;
+  /**
+   * Query params always sent to the SDK, merged as a base under the caller's
+   * input (caller values win). Use for operation-level constants that aren't
+   * worth exposing as tool inputs — e.g. `_stats: "1"` on List Orders.
+   */
+  defaultQuery?: Record<string, unknown>;
 }
 
 /**
@@ -315,6 +321,9 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
           context as Record<string, unknown>,
           config.requestSchema,
         );
+        if (config.defaultQuery) {
+          structured.query = { ...config.defaultQuery, ...structured.query };
+        }
         const result = await withRetry(() =>
           config.sdkFn({ client, ...structured } as any),
         );
