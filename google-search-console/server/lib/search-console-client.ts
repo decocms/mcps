@@ -157,3 +157,4 @@ export class SearchConsoleClient {
 
 // Re-export getGoogleAccessToken from env.ts for convenience
 export { getGoogleAccessToken as getAccessToken } from "./env.ts";
+export { resolveSiteUrl } from "./env.ts";

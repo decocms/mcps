@@ -10,6 +10,7 @@ import type { Env } from "../main.ts";
 import {
   SearchConsoleClient,
   getAccessToken,
+  resolveSiteUrl,
 } from "../lib/search-console-client.ts";
 
 // ============================================================================
@@ -69,8 +70,9 @@ export const createGetSiteTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
     }),
     outputSchema: z.object({
@@ -81,7 +83,7 @@ export const createGetSiteTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      const site = await client.getSite(context.siteUrl);
+      const site = await client.getSite(resolveSiteUrl(env, context.siteUrl));
 
       return {
         site: {
@@ -103,8 +105,9 @@ export const createAddSiteTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL to add (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL to add (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
     }),
     outputSchema: z.object({
@@ -116,11 +119,12 @@ export const createAddSiteTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      await client.addSite(context.siteUrl);
+      const siteUrl = resolveSiteUrl(env, context.siteUrl);
+      await client.addSite(siteUrl);
 
       return {
         success: true,
-        siteUrl: context.siteUrl,
+        siteUrl,
       };
     },
   });
@@ -136,8 +140,9 @@ export const createRemoveSiteTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL to remove (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL to remove (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
     }),
     outputSchema: z.object({
@@ -151,11 +156,12 @@ export const createRemoveSiteTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      await client.removeSite(context.siteUrl);
+      const siteUrl = resolveSiteUrl(env, context.siteUrl);
+      await client.removeSite(siteUrl);
 
       return {
         success: true,
-        siteUrl: context.siteUrl,
+        siteUrl,
       };
     },
   });

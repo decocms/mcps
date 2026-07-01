@@ -10,6 +10,7 @@ import type { Env } from "../main.ts";
 import {
   SearchConsoleClient,
   getAccessToken,
+  resolveSiteUrl,
 } from "../lib/search-console-client.ts";
 
 // ============================================================================
@@ -145,8 +146,9 @@ export const createInspectUrlTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
       inspectionUrl: z.string().url().describe("URL to inspect (full URL)"),
       languageCode: z
@@ -163,7 +165,7 @@ export const createInspectUrlTool = (env: Env) =>
       });
 
       const result = await client.inspectUrl({
-        siteUrl: context.siteUrl,
+        siteUrl: resolveSiteUrl(env, context.siteUrl),
         inspectionUrl: context.inspectionUrl,
         languageCode: context.languageCode,
       });

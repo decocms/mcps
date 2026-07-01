@@ -1,8 +1,17 @@
 import { z } from "zod";
 
+export const StateSchema = z.object({
+  propertyId: z
+    .string()
+    .nullish()
+    .describe(
+      "Default GA4 Property identifier — 'properties/1234567' or just '1234567'. Used as a fallback for tools when their `property` argument is omitted.",
+    ),
+});
+
 export interface MeshRequestContext {
   authorization?: string;
-  state?: string;
+  state?: z.infer<typeof StateSchema>;
   token?: string;
   meshUrl?: string;
   connectionId?: string;
@@ -16,5 +25,3 @@ export interface Env {
   SELF?: unknown;
   IS_LOCAL?: boolean;
 }
-
-export const StateSchema = z.object({});

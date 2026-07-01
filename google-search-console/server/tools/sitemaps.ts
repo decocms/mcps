@@ -10,6 +10,7 @@ import type { Env } from "../main.ts";
 import {
   SearchConsoleClient,
   getAccessToken,
+  resolveSiteUrl,
 } from "../lib/search-console-client.ts";
 
 // ============================================================================
@@ -49,8 +50,9 @@ export const createListSitemapsTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
     }),
     outputSchema: z.object({
@@ -61,7 +63,9 @@ export const createListSitemapsTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      const response = await client.listSitemaps(context.siteUrl);
+      const response = await client.listSitemaps(
+        resolveSiteUrl(env, context.siteUrl),
+      );
       const sitemaps = response.sitemap || [];
 
       return {
@@ -93,8 +97,9 @@ export const createGetSitemapTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
       feedpath: z.string().describe("Sitemap feedpath/URL"),
     }),
@@ -107,7 +112,7 @@ export const createGetSitemapTool = (env: Env) =>
       });
 
       const sitemap = await client.getSitemap(
-        context.siteUrl,
+        resolveSiteUrl(env, context.siteUrl),
         context.feedpath,
       );
 
@@ -140,8 +145,9 @@ export const createSubmitSitemapTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
       feedpath: z.string().describe("Sitemap feedpath/URL to submit"),
     }),
@@ -157,11 +163,12 @@ export const createSubmitSitemapTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      await client.submitSitemap(context.siteUrl, context.feedpath);
+      const siteUrl = resolveSiteUrl(env, context.siteUrl);
+      await client.submitSitemap(siteUrl, context.feedpath);
 
       return {
         success: true,
-        siteUrl: context.siteUrl,
+        siteUrl,
         feedpath: context.feedpath,
       };
     },
@@ -178,8 +185,9 @@ export const createDeleteSitemapTool = (env: Env) =>
     inputSchema: z.object({
       siteUrl: z
         .string()
+        .optional()
         .describe(
-          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/')",
+          "Site URL (e.g., 'sc-domain:example.com' or 'https://example.com/'). Falls back to the default siteUrl configured for this integration when omitted.",
         ),
       feedpath: z.string().describe("Sitemap feedpath/URL to delete"),
     }),
@@ -195,11 +203,12 @@ export const createDeleteSitemapTool = (env: Env) =>
         accessToken: getAccessToken(env),
       });
 
-      await client.deleteSitemap(context.siteUrl, context.feedpath);
+      const siteUrl = resolveSiteUrl(env, context.siteUrl);
+      await client.deleteSitemap(siteUrl, context.feedpath);
 
       return {
         success: true,
-        siteUrl: context.siteUrl,
+        siteUrl,
         feedpath: context.feedpath,
       };
     },
