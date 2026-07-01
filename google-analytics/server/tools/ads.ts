@@ -26,7 +26,7 @@ export const listGoogleAdsLinksTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
       try {
         const result = await client.listGoogleAdsLinks(
-          await resolveProperty(env, client, args.property),
+          resolveProperty(env, args.property),
         );
         return GoogleAdsLinksResponseSchema.parse({ response: result });
       } catch (error) {
