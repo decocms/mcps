@@ -164,7 +164,7 @@ export const runReportTool = (env: Env) =>
           body.returnPropertyQuota = args.returnPropertyQuota;
         }
         const response = await client.runReport(
-          resolveProperty(env, args.property),
+          await resolveProperty(env, client, args.property),
           body,
         );
 
@@ -306,7 +306,7 @@ export const runFunnelReportTool = (env: Env) =>
         if (args.returnPropertyQuota !== undefined)
           body.returnPropertyQuota = args.returnPropertyQuota;
         const response = await client.runFunnelReport(
-          resolveProperty(env, args.property),
+          await resolveProperty(env, client, args.property),
           body,
         );
 
@@ -404,7 +404,7 @@ export const runRealtimeReportTool = (env: Env) =>
           body.returnPropertyQuota = args.returnPropertyQuota;
         }
         const response = await client.runRealtimeReport(
-          resolveProperty(env, args.property),
+          await resolveProperty(env, client, args.property),
           body,
         );
 

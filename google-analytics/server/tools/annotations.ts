@@ -26,7 +26,7 @@ export const listPropertyAnnotationsTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
       try {
         const result = await client.listPropertyAnnotations(
-          resolveProperty(env, args.property),
+          await resolveProperty(env, client, args.property),
         );
         return PropertyAnnotationsResponseSchema.parse({ response: result });
       } catch (error) {

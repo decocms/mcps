@@ -29,7 +29,7 @@ export const getPropertyDetailsTool = (env: Env) =>
       const client = GaClient.fromEnv(env);
       try {
         const result = await client.getProperty(
-          resolveProperty(env, args.property),
+          await resolveProperty(env, client, args.property),
         );
         return PropertyResponseSchema.parse({ response: result });
       } catch (error) {
@@ -50,7 +50,7 @@ export const getCustomDimensionsAndMetricsTool = (env: Env) =>
     execute: async ({ context: args }) => {
       const client = GaClient.fromEnv(env);
       try {
-        const property = resolveProperty(env, args.property);
+        const property = await resolveProperty(env, client, args.property);
         // Both calls are independent — run in parallel to halve latency.
         const [dimensions, metrics] = await Promise.all([
           client.listCustomDimensions(property),
