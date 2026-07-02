@@ -14,11 +14,7 @@ export type { Env };
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: createGoogleOAuth({
-    scopes: [
-      GOOGLE_SCOPES.FORMS_BODY,
-      GOOGLE_SCOPES.FORMS_RESPONSES_READONLY,
-      GOOGLE_SCOPES.DRIVE_FILE,
-    ],
+    scopes: [GOOGLE_SCOPES.FORMS_BODY, GOOGLE_SCOPES.FORMS_RESPONSES_READONLY],
   }),
 });
 

@@ -2,8 +2,25 @@
  * Google Slides API client
  */
 
-import { ENDPOINTS, PREDEFINED_LAYOUT } from "../constants.ts";
+import {
+  ENDPOINTS,
+  PREDEFINED_LAYOUT,
+  PRESENTATION_MIME_TYPE,
+} from "../constants.ts";
 import type { Presentation, Request, BatchUpdateResponse } from "./types.ts";
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  createdTime?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+}
+
+interface DriveFileListResponse {
+  files?: DriveFile[];
+  nextPageToken?: string;
+}
 
 export class SlidesClient {
   private accessToken: string;
@@ -39,6 +56,33 @@ export class SlidesClient {
 
   async getPresentation(presentationId: string): Promise<Presentation> {
     return this.request<Presentation>(ENDPOINTS.PRESENTATION(presentationId));
+  }
+
+  // Lists presentations visible under the drive.file scope, i.e. those
+  // created or opened through this app.
+  async listPresentations(options: {
+    nameContains?: string;
+    pageSize?: number;
+    pageToken?: string;
+  }): Promise<DriveFileListResponse> {
+    const query = [`mimeType='${PRESENTATION_MIME_TYPE}'`, "trashed=false"];
+    if (options.nameContains) {
+      query.push(
+        `name contains '${options.nameContains.replace(/'/g, "\\'")}'`,
+      );
+    }
+    const url = new URL(ENDPOINTS.DRIVE_FILES);
+    url.searchParams.set("q", query.join(" and "));
+    url.searchParams.set("orderBy", "modifiedTime desc");
+    url.searchParams.set(
+      "fields",
+      "files(id,name,createdTime,modifiedTime,webViewLink),nextPageToken",
+    );
+    url.searchParams.set("pageSize", String(options.pageSize ?? 25));
+    if (options.pageToken) {
+      url.searchParams.set("pageToken", options.pageToken);
+    }
+    return this.request<DriveFileListResponse>(url.toString());
   }
 
   async batchUpdate(

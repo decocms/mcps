@@ -36,5 +36,4 @@ export const DEFAULT_FIELDS =
 // Google OAuth scopes
 export const GOOGLE_SCOPES = {
   DRIVE: "https://www.googleapis.com/auth/drive",
-  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
 } as const;

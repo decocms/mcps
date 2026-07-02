@@ -34,5 +34,4 @@ export const GOOGLE_SCOPES = {
   FORMS_BODY: "https://www.googleapis.com/auth/forms.body",
   FORMS_RESPONSES_READONLY:
     "https://www.googleapis.com/auth/forms.responses.readonly",
-  DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
 } as const;

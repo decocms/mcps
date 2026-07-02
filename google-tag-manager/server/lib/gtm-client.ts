@@ -127,15 +127,6 @@ export class GTMClient {
     });
   }
 
-  /**
-   * Delete a container
-   */
-  async deleteContainer(accountId: string, containerId: string): Promise<void> {
-    await this.request<void>(ENDPOINTS.CONTAINER(accountId, containerId), {
-      method: "DELETE",
-    });
-  }
-
   // ==================== Workspace Methods ====================
 
   /**

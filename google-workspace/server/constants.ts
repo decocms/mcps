@@ -47,9 +47,26 @@ export interface BackendSnapshot {
 }
 
 /**
- * Union of every scope advertised by every backend's PRM.
- * Sent to Google's authorization endpoint at consent time.
+ * Scopes advertised by the backends' PRM that we deliberately do NOT
+ * request: they are far broader than what the exposed tools need.
+ * Applied as a filter below so it survives `bun run generate-tools`
+ * rewriting the generated snapshots.
+ */
+const SCOPE_DENYLIST = new Set([
+  // Full mailbox access; gmail.modify covers the exposed gmail tools
+  // (drafts, labels, thread/message reads).
+  "https://mail.google.com/",
+  // Full calendar access; calendar.events + calendar.readonly cover
+  // the exposed calendar tools (event CRUD, list calendars, suggest_time).
+  "https://www.googleapis.com/auth/calendar",
+]);
+
+/**
+ * Union of every scope advertised by every backend's PRM, minus the
+ * denylisted ones. Sent to Google's authorization endpoint at consent time.
  */
 export const GOOGLE_WORKSPACE_SCOPES: string[] = Array.from(
   new Set(Object.values(TOOL_SNAPSHOTS).flatMap((snap) => snap.scopes)),
-).sort();
+)
+  .filter((scope) => !SCOPE_DENYLIST.has(scope))
+  .sort();

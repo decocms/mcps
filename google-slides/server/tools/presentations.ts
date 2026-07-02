@@ -73,7 +73,63 @@ export const createGetPresentationTool = (env: Env) =>
     },
   });
 
+export const createListPresentationsTool = (env: Env) =>
+  createPrivateTool({
+    id: "list_presentations",
+    description:
+      "List Google Slides presentations created or opened through this app, most recently modified first. " +
+      "Note: presentations the user created elsewhere in Drive are not visible to this integration.",
+    inputSchema: z.object({
+      nameContains: z
+        .string()
+        .optional()
+        .describe("Filter presentations whose name contains this text"),
+      pageSize: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("Maximum number of presentations to return (default: 25)"),
+      pageToken: z
+        .string()
+        .optional()
+        .describe("Token from a previous call to fetch the next page"),
+    }),
+    outputSchema: z.object({
+      presentations: z.array(
+        z.object({
+          presentationId: z.string(),
+          title: z.string(),
+          createdTime: z.string().optional(),
+          modifiedTime: z.string().optional(),
+          webViewLink: z.string().optional(),
+        }),
+      ),
+      nextPageToken: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SlidesClient({ accessToken: getAccessToken(env) });
+      const result = await client.listPresentations({
+        nameContains: context.nameContains,
+        pageSize: context.pageSize,
+        pageToken: context.pageToken,
+      });
+      return {
+        presentations: (result.files ?? []).map((file) => ({
+          presentationId: file.id,
+          title: file.name,
+          createdTime: file.createdTime,
+          modifiedTime: file.modifiedTime,
+          webViewLink: file.webViewLink,
+        })),
+        nextPageToken: result.nextPageToken,
+      };
+    },
+  });
+
 export const presentationTools = [
   createCreatePresentationTool,
   createGetPresentationTool,
+  createListPresentationsTool,
 ];

@@ -49,7 +49,6 @@ export const DEFAULTS = {
 // Google OAuth scopes
 export const GOOGLE_SCOPES = {
   BIGQUERY: "https://www.googleapis.com/auth/bigquery",
-  BIGQUERY_READONLY: "https://www.googleapis.com/auth/bigquery.readonly",
   // Required for listing projects (Cloud Resource Manager API)
   CLOUD_PLATFORM_READ_ONLY:
     "https://www.googleapis.com/auth/cloud-platform.read-only",

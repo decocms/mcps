@@ -51,4 +51,63 @@ export const createGetDocumentTool = (env: Env) =>
     },
   });
 
-export const documentTools = [createCreateDocumentTool, createGetDocumentTool];
+export const createListDocumentsTool = (env: Env) =>
+  createPrivateTool({
+    id: "list_documents",
+    description:
+      "List Google Documents created or opened through this app, most recently modified first. " +
+      "Note: documents the user created elsewhere in Drive are not visible to this integration.",
+    inputSchema: z.object({
+      nameContains: z
+        .string()
+        .optional()
+        .describe("Filter documents whose name contains this text"),
+      pageSize: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("Maximum number of documents to return (default: 25)"),
+      pageToken: z
+        .string()
+        .optional()
+        .describe("Token from a previous call to fetch the next page"),
+    }),
+    outputSchema: z.object({
+      documents: z.array(
+        z.object({
+          documentId: z.string(),
+          title: z.string(),
+          createdTime: z.string().optional(),
+          modifiedTime: z.string().optional(),
+          webViewLink: z.string().optional(),
+        }),
+      ),
+      nextPageToken: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const client = new DocsClient({ accessToken: getAccessToken(env) });
+      const result = await client.listDocuments({
+        nameContains: context.nameContains,
+        pageSize: context.pageSize,
+        pageToken: context.pageToken,
+      });
+      return {
+        documents: (result.files ?? []).map((file) => ({
+          documentId: file.id,
+          title: file.name,
+          createdTime: file.createdTime,
+          modifiedTime: file.modifiedTime,
+          webViewLink: file.webViewLink,
+        })),
+        nextPageToken: result.nextPageToken,
+      };
+    },
+  });
+
+export const documentTools = [
+  createCreateDocumentTool,
+  createGetDocumentTool,
+  createListDocumentsTool,
+];

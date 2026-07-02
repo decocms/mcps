@@ -4,11 +4,16 @@
 
 export const DOCS_API_BASE = "https://docs.googleapis.com/v1/documents";
 
+export const DRIVE_API_FILES = "https://www.googleapis.com/drive/v3/files";
+
+export const DOCUMENT_MIME_TYPE = "application/vnd.google-apps.document";
+
 export const ENDPOINTS = {
   DOCUMENTS: DOCS_API_BASE,
   DOCUMENT: (documentId: string) => `${DOCS_API_BASE}/${documentId}`,
   BATCH_UPDATE: (documentId: string) =>
     `${DOCS_API_BASE}/${documentId}:batchUpdate`,
+  DRIVE_FILES: DRIVE_API_FILES,
 };
 
 export const NAMED_STYLE_TYPE = {
@@ -40,7 +45,9 @@ export const BULLET_GLYPH_PRESET = {
 } as const;
 
 // Google OAuth scopes
+// drive.file is non-sensitive (no Google verification review needed) and
+// covers Docs API create/read/edit plus Drive listing — but only for files
+// created or opened through this app.
 export const GOOGLE_SCOPES = {
-  DOCUMENTS: "https://www.googleapis.com/auth/documents",
   DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
 } as const;

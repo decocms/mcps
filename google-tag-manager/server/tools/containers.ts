@@ -192,37 +192,6 @@ export const createCreateContainerTool = (env: Env) =>
   });
 
 // ============================================================================
-// Delete Container Tool
-// ============================================================================
-
-export const createDeleteContainerTool = (env: Env) =>
-  createPrivateTool({
-    id: "delete_container",
-    description:
-      "Delete a GTM container. Warning: This action cannot be undone.",
-    inputSchema: z.object({
-      accountId: z.string().describe("Account ID (e.g., '12345')"),
-      containerId: z.string().describe("Container ID to delete"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean().describe("Whether the deletion was successful"),
-      message: z.string().describe("Result message"),
-    }),
-    execute: async ({ context }) => {
-      const client = new GTMClient({
-        accessToken: getAccessToken(env),
-      });
-
-      await client.deleteContainer(context.accountId, context.containerId);
-
-      return {
-        success: true,
-        message: `Container ${context.containerId} deleted successfully`,
-      };
-    },
-  });
-
-// ============================================================================
 // Export all container tools
 // ============================================================================
 
@@ -230,5 +199,4 @@ export const containerTools = [
   createListContainersTool,
   createGetContainerTool,
   createCreateContainerTool,
-  createDeleteContainerTool,
 ];
