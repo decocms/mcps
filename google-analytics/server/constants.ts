@@ -9,6 +9,4 @@ export const GOOGLE_ANALYTICS_ADMIN_ALPHA_API =
 
 export const GOOGLE_SCOPES = {
   ANALYTICS_READONLY: "https://www.googleapis.com/auth/analytics.readonly",
-  ANALYTICS: "https://www.googleapis.com/auth/analytics",
-  ANALYTICS_EDIT: "https://www.googleapis.com/auth/analytics.edit",
 } as const;

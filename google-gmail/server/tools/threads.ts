@@ -261,36 +261,6 @@ export const createModifyThreadTool = (env: Env) =>
   });
 
 // ============================================================================
-// Delete Thread Tool
-// ============================================================================
-
-export const createDeleteThreadTool = (env: Env) =>
-  createPrivateTool({
-    id: "gmail_permanently_delete_conversation",
-    description:
-      "PERMANENTLY delete an entire email conversation. WARNING: This cannot be undone! Use gmail_move_conversation_to_trash instead if you might need to recover later.",
-    inputSchema: z.object({
-      id: z.string().describe("Thread ID to permanently delete"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean().describe("Whether deletion was successful"),
-      message: z.string().describe("Result message"),
-    }),
-    execute: async ({ context }) => {
-      const client = new GmailClient({
-        accessToken: await getAccessTokenWithSetup(env),
-      });
-
-      await client.deleteThread(context.id);
-
-      return {
-        success: true,
-        message: `Thread ${context.id} permanently deleted`,
-      };
-    },
-  });
-
-// ============================================================================
 // Export all thread tools
 // ============================================================================
 
@@ -300,5 +270,4 @@ export const threadTools = [
   createTrashThreadTool,
   createUntrashThreadTool,
   createModifyThreadTool,
-  createDeleteThreadTool,
 ];

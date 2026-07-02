@@ -159,7 +159,4 @@ export const PARAMETER_TYPES = {
 // Google OAuth scopes
 export const GOOGLE_SCOPES = {
   TAGMANAGER_EDIT: "https://www.googleapis.com/auth/tagmanager.edit.containers",
-  TAGMANAGER_READONLY: "https://www.googleapis.com/auth/tagmanager.readonly",
-  TAGMANAGER_MANAGE:
-    "https://www.googleapis.com/auth/tagmanager.manage.accounts",
 } as const;

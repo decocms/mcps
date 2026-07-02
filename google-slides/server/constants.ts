@@ -4,8 +4,14 @@
 
 export const SLIDES_API_BASE = "https://slides.googleapis.com/v1/presentations";
 
+export const DRIVE_API_FILES = "https://www.googleapis.com/drive/v3/files";
+
+export const PRESENTATION_MIME_TYPE =
+  "application/vnd.google-apps.presentation";
+
 export const ENDPOINTS = {
   PRESENTATIONS: SLIDES_API_BASE,
+  DRIVE_FILES: DRIVE_API_FILES,
   PRESENTATION: (presentationId: string) =>
     `${SLIDES_API_BASE}/${presentationId}`,
   BATCH_UPDATE: (presentationId: string) =>
@@ -45,7 +51,9 @@ export const SHAPE_TYPE = {
 } as const;
 
 // Google OAuth scopes
+// drive.file is non-sensitive (no Google verification review needed) and
+// covers Slides API create/read/edit plus Drive listing — but only for files
+// created or opened through this app.
 export const GOOGLE_SCOPES = {
-  PRESENTATIONS: "https://www.googleapis.com/auth/presentations",
   DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
 } as const;

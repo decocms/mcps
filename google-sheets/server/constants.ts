@@ -4,8 +4,13 @@
 
 export const SHEETS_API_BASE = "https://sheets.googleapis.com/v4/spreadsheets";
 
+export const DRIVE_API_FILES = "https://www.googleapis.com/drive/v3/files";
+
+export const SPREADSHEET_MIME_TYPE = "application/vnd.google-apps.spreadsheet";
+
 export const ENDPOINTS = {
   SPREADSHEETS: SHEETS_API_BASE,
+  DRIVE_FILES: DRIVE_API_FILES,
   SPREADSHEET: (spreadsheetId: string) => `${SHEETS_API_BASE}/${spreadsheetId}`,
   VALUES: (spreadsheetId: string, range: string) =>
     `${SHEETS_API_BASE}/${spreadsheetId}/values/${encodeURIComponent(range)}`,
@@ -43,7 +48,9 @@ export const DIMENSION = {
 } as const;
 
 // Google OAuth scopes
+// drive.file is non-sensitive (no Google verification review needed) and
+// covers Sheets API create/read/edit plus Drive listing — but only for files
+// created or opened through this app.
 export const GOOGLE_SCOPES = {
-  SPREADSHEETS: "https://www.googleapis.com/auth/spreadsheets",
   DRIVE_FILE: "https://www.googleapis.com/auth/drive.file",
 } as const;

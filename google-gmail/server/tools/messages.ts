@@ -370,36 +370,6 @@ export const createUntrashMessageTool = (env: Env) =>
   });
 
 // ============================================================================
-// Delete Message Tool
-// ============================================================================
-
-export const createDeleteMessageTool = (env: Env) =>
-  createPrivateTool({
-    id: "gmail_permanently_delete_email",
-    description:
-      "PERMANENTLY delete an email from Gmail. WARNING: This cannot be undone! Use gmail_move_email_to_trash instead if you might need to recover the email later.",
-    inputSchema: z.object({
-      id: z.string().describe("Email ID to permanently delete"),
-    }),
-    outputSchema: z.object({
-      success: z.boolean().describe("Whether the email was deleted"),
-      message: z.string().describe("Confirmation message"),
-    }),
-    execute: async ({ context }) => {
-      const client = new GmailClient({
-        accessToken: await getAccessTokenWithSetup(env),
-      });
-
-      await client.deleteMessage(context.id);
-
-      return {
-        success: true,
-        message: `Email permanently deleted`,
-      };
-    },
-  });
-
-// ============================================================================
 // Modify Message Labels Tool
 // ============================================================================
 
@@ -520,7 +490,6 @@ export const messageTools = [
   createSearchMessagesTool,
   createTrashMessageTool,
   createUntrashMessageTool,
-  createDeleteMessageTool,
   createModifyMessageTool,
   createBatchModifyMessagesTool,
 ];

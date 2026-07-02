@@ -295,15 +295,6 @@ export class GmailClient {
   }
 
   /**
-   * Permanently delete a message
-   */
-  async deleteMessage(messageId: string): Promise<void> {
-    await this.request<void>(ENDPOINTS.MESSAGE(messageId), {
-      method: "DELETE",
-    });
-  }
-
-  /**
    * Modify message labels
    */
   async modifyMessage(input: ModifyMessageInput): Promise<Message> {
@@ -417,15 +408,6 @@ export class GmailClient {
         addLabelIds: input.addLabelIds || [],
         removeLabelIds: input.removeLabelIds || [],
       }),
-    });
-  }
-
-  /**
-   * Permanently delete a thread
-   */
-  async deleteThread(threadId: string): Promise<void> {
-    await this.request<void>(ENDPOINTS.THREAD(threadId), {
-      method: "DELETE",
     });
   }
 

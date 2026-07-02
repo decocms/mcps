@@ -377,9 +377,65 @@ export const createCopySheetTool = (env: Env) =>
     },
   });
 
+export const createListSpreadsheetsTool = (env: Env) =>
+  createPrivateTool({
+    id: "list_spreadsheets",
+    description:
+      "List Google Spreadsheets created or opened through this app, most recently modified first. " +
+      "Note: spreadsheets the user created elsewhere in Drive are not visible to this integration.",
+    inputSchema: z.object({
+      nameContains: z
+        .string()
+        .optional()
+        .describe("Filter spreadsheets whose name contains this text"),
+      pageSize: z.coerce
+        .number()
+        .int()
+        .min(1)
+        .max(100)
+        .optional()
+        .describe("Maximum number of spreadsheets to return (default: 25)"),
+      pageToken: z
+        .string()
+        .optional()
+        .describe("Token from a previous call to fetch the next page"),
+    }),
+    outputSchema: z.object({
+      spreadsheets: z.array(
+        z.object({
+          spreadsheetId: z.string(),
+          title: z.string(),
+          createdTime: z.string().optional(),
+          modifiedTime: z.string().optional(),
+          webViewLink: z.string().optional(),
+        }),
+      ),
+      nextPageToken: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const client = new SheetsClient({ accessToken: getAccessToken(env) });
+      const result = await client.listSpreadsheets({
+        nameContains: context.nameContains,
+        pageSize: context.pageSize,
+        pageToken: context.pageToken,
+      });
+      return {
+        spreadsheets: (result.files ?? []).map((file) => ({
+          spreadsheetId: file.id,
+          title: file.name,
+          createdTime: file.createdTime,
+          modifiedTime: file.modifiedTime,
+          webViewLink: file.webViewLink,
+        })),
+        nextPageToken: result.nextPageToken,
+      };
+    },
+  });
+
 export const spreadsheetTools = [
   createCreateSpreadsheetTool,
   createGetSpreadsheetTool,
+  createListSpreadsheetsTool,
   createGetSpreadsheetMetadataTool,
   createAddSheetTool,
   createDeleteSheetTool,

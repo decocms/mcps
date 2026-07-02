@@ -17,11 +17,11 @@ export type { Env };
 const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
   oauth: createGoogleOAuth({
-    scopes: [
-      GOOGLE_SCOPES.TAGMANAGER_EDIT,
-      GOOGLE_SCOPES.TAGMANAGER_READONLY,
-      GOOGLE_SCOPES.TAGMANAGER_MANAGE,
-    ],
+    // edit.containers covers every endpoint the tools call, including
+    // account/container reads (per the GTM v2 discovery doc). Container
+    // deletion would require tagmanager.delete.containers and is not
+    // exposed.
+    scopes: [GOOGLE_SCOPES.TAGMANAGER_EDIT],
   }),
 });
 

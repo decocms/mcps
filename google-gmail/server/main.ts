@@ -31,12 +31,11 @@ let runtime: Runtime | null = null;
 
 function buildOAuth() {
   const base = createGoogleOAuth({
-    scopes: [
-      GOOGLE_SCOPES.GMAIL_READONLY,
-      GOOGLE_SCOPES.GMAIL_SEND,
-      GOOGLE_SCOPES.GMAIL_MODIFY,
-      GOOGLE_SCOPES.GMAIL_LABELS,
-    ],
+    // gmail.modify covers read, send, drafts, labels, trash and
+    // watch/history — everything the tools use except permanent
+    // message/thread deletion, which would require the full
+    // https://mail.google.com/ scope and is intentionally not exposed.
+    scopes: [GOOGLE_SCOPES.GMAIL_MODIFY],
   });
 
   // Wrap exchangeCode so we can stash the refresh_token before it

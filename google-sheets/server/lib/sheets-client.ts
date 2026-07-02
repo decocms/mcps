@@ -2,7 +2,11 @@
  * Google Sheets API client
  */
 
-import { ENDPOINTS, INSERT_DATA_OPTION } from "../constants.ts";
+import {
+  ENDPOINTS,
+  INSERT_DATA_OPTION,
+  SPREADSHEET_MIME_TYPE,
+} from "../constants.ts";
 import type {
   Spreadsheet,
   ValueRange,
@@ -12,6 +16,19 @@ import type {
   Request,
 } from "./types.ts";
 import { calculateDataRange } from "./utils.ts";
+
+export interface DriveFile {
+  id: string;
+  name: string;
+  createdTime?: string;
+  modifiedTime?: string;
+  webViewLink?: string;
+}
+
+interface DriveFileListResponse {
+  files?: DriveFile[];
+  nextPageToken?: string;
+}
 
 export class SheetsClient {
   private accessToken: string;
@@ -52,6 +69,36 @@ export class SheetsClient {
     const url = new URL(ENDPOINTS.SPREADSHEET(spreadsheetId));
     if (includeGridData) url.searchParams.set("includeGridData", "true");
     return this.request<Spreadsheet>(url.toString());
+  }
+
+  // Lists spreadsheets visible under the drive.file scope, i.e. those
+  // created or opened through this app.
+  async listSpreadsheets(options: {
+    nameContains?: string;
+    pageSize?: number;
+    pageToken?: string;
+  }): Promise<DriveFileListResponse> {
+    const query = [`mimeType='${SPREADSHEET_MIME_TYPE}'`, "trashed=false"];
+    if (options.nameContains) {
+      // Escape backslashes before apostrophes so the value can't break
+      // out of the Drive query string literal.
+      const escaped = options.nameContains
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+      query.push(`name contains '${escaped}'`);
+    }
+    const url = new URL(ENDPOINTS.DRIVE_FILES);
+    url.searchParams.set("q", query.join(" and "));
+    url.searchParams.set("orderBy", "modifiedTime desc");
+    url.searchParams.set(
+      "fields",
+      "files(id,name,createdTime,modifiedTime,webViewLink),nextPageToken",
+    );
+    url.searchParams.set("pageSize", String(options.pageSize ?? 25));
+    if (options.pageToken) {
+      url.searchParams.set("pageToken", options.pageToken);
+    }
+    return this.request<DriveFileListResponse>(url.toString());
   }
 
   async copySpreadsheet(
