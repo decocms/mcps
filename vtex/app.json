@@ -29,7 +29,7 @@
     }
   },
   "description": "MCP for interacting with VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory.",
-  "icon": "https://assets.decocache.com/decocms/d08dbe46-1ce2-4e3a-a99b-d2d0e7de7e61/vtex-logo.png",
+  "icon": "https://decoims.com/decocms/f17166ef-59c9-4691-975b-c46461b3a782/vtex.png",
   "unlisted": false,
   "metadata": {
     "categories": ["E-commerce", "Developer Tools"],
