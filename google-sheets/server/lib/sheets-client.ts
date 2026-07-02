@@ -80,9 +80,12 @@ export class SheetsClient {
   }): Promise<DriveFileListResponse> {
     const query = [`mimeType='${SPREADSHEET_MIME_TYPE}'`, "trashed=false"];
     if (options.nameContains) {
-      query.push(
-        `name contains '${options.nameContains.replace(/'/g, "\\'")}'`,
-      );
+      // Escape backslashes before apostrophes so the value can't break
+      // out of the Drive query string literal.
+      const escaped = options.nameContains
+        .replace(/\\/g, "\\\\")
+        .replace(/'/g, "\\'");
+      query.push(`name contains '${escaped}'`);
     }
     const url = new URL(ENDPOINTS.DRIVE_FILES);
     url.searchParams.set("q", query.join(" and "));
