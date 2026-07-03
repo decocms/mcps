@@ -466,5 +466,14 @@
       "google-analytics/**",
       "shared/**"
     ]
+  },
+  "tanstack-migrator": {
+    "site": "tanstack-migrator",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "tanstack-migrator/**",
+      "shared/**"
+    ]
   }
 }
