@@ -209,6 +209,25 @@ describe("aggregateTopProducts", () => {
     expect(products.find((p) => p.sku === "SAB-01-CHILD")).toBeUndefined();
   });
 
+  test("counts distinct orders even when a SKU repeats within one order", () => {
+    const products = aggregateTopProducts(
+      [
+        order("2026-07-03 10:00:00", 100, "processing", [
+          { sku: "SAB-01", name: "Sabonete", qty_ordered: 1, row_total: 20 },
+          { sku: "SAB-01", name: "Sabonete", qty_ordered: 2, row_total: 40 },
+        ]),
+      ],
+      10,
+    );
+    expect(products[0]).toEqual({
+      sku: "SAB-01",
+      name: "Sabonete",
+      quantity: 3,
+      revenue: 60,
+      orders: 1,
+    });
+  });
+
   test("respects the limit", () => {
     const products = aggregateTopProducts(
       [

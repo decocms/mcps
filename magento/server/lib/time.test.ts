@@ -93,6 +93,14 @@ describe("getRangeForPeriod", () => {
     const window = getRangeForPeriod("30d", "America/Sao_Paulo", now);
     expect(window.startUtc.toISOString()).toBe("2026-06-04T03:00:00.000Z");
   });
+
+  test("7d start is the true local midnight across a DST change", () => {
+    // US DST 2026 starts Mar 8. Mar 12 10:00 EDT (UTC-4) == 15:00 UTC;
+    // 7d window starts at Mar 6 midnight EST (UTC-5) == 05:00 UTC.
+    const dstNow = new Date("2026-03-12T15:00:00Z");
+    const window = getRangeForPeriod("7d", "America/New_York", dstNow);
+    expect(window.startUtc.toISOString()).toBe("2026-03-06T05:00:00.000Z");
+  });
 });
 
 describe("getRollingRange", () => {

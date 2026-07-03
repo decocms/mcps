@@ -110,8 +110,15 @@ export function getRangeForPeriod(
   if (period === "today") return today;
 
   const days = period === "7d" ? 7 : 30;
+  // A fixed 24h*N subtraction drifts by an hour across DST changes. Step to
+  // midday of the target local day (safe against ±1h drift) and resolve that
+  // day's true local midnight with the offset in effect at that instant.
+  const targetMidday = new Date(
+    today.startUtc.getTime() - (days - 1) * DAY_MS + 12 * HOUR_MS,
+  );
+  const targetDay = getTodayWindow(timezone, targetMidday);
   return {
-    startUtc: new Date(today.startUtc.getTime() - (days - 1) * DAY_MS),
+    startUtc: targetDay.startUtc,
     endUtc: now,
     date: today.date,
   };

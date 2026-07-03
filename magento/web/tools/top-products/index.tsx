@@ -79,6 +79,11 @@ export default function TopProductsPage() {
         <Trophy className="w-4 h-4" />
         Top produtos · {PERIOD_LABELS[data.period]}
       </p>
+      {data.truncated ? (
+        <p className="mb-2 shrink-0 text-[11px] text-muted-foreground">
+          Dados parciais — o volume de pedidos excedeu o limite de paginação.
+        </p>
+      ) : null}
       {products.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           Nenhum pedido no período.

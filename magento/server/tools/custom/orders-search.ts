@@ -215,6 +215,7 @@ export interface ProductAggregate {
   name: string;
   quantity: number;
   revenue: number;
+  /** Distinct orders containing the SKU (not line-item occurrences). */
   orders: number;
 }
 
@@ -229,6 +230,9 @@ export function aggregateTopProducts(
   const bySku = new Map<string, ProductAggregate>();
 
   for (const order of orders) {
+    // The same SKU can appear in multiple line items of one order (bundle
+    // splits, admin edits) — count the order once per SKU.
+    const countedSkus = new Set<string>();
     for (const item of order.items ?? []) {
       if (item.parent_item_id != null) continue;
       const sku = item.sku ?? "unknown";
@@ -241,7 +245,10 @@ export function aggregateTopProducts(
       };
       aggregate.quantity += item.qty_ordered ?? 0;
       aggregate.revenue += item.row_total ?? 0;
-      aggregate.orders += 1;
+      if (!countedSkus.has(sku)) {
+        aggregate.orders += 1;
+        countedSkus.add(sku);
+      }
       bySku.set(sku, aggregate);
     }
   }

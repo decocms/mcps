@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import {
   Card,
   CardContent,
@@ -14,6 +15,23 @@ interface StatusFrameProps {
   connectedHint?: string;
 }
 
+function Centered({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex items-center justify-center min-h-dvh p-6">
+      {children}
+    </div>
+  );
+}
+
+function Spinner({ message }: { message: string }) {
+  return (
+    <div className="flex items-center gap-3 text-muted-foreground">
+      <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+      <span className="text-sm">{message}</span>
+    </div>
+  );
+}
+
 export function StatusFrame({
   status,
   error,
@@ -23,18 +41,15 @@ export function StatusFrame({
 }: StatusFrameProps) {
   if (status === "initializing") {
     return (
-      <div className="flex items-center justify-center min-h-dvh p-6">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-          <span className="text-sm">Connecting to host…</span>
-        </div>
-      </div>
+      <Centered>
+        <Spinner message="Connecting to host…" />
+      </Centered>
     );
   }
 
   if (status === "connected") {
     return (
-      <div className="flex items-center justify-center min-h-dvh p-6">
+      <Centered>
         <Card className="w-full max-w-md text-center">
           <CardHeader>
             <CardTitle>{connectedTitle}</CardTitle>
@@ -43,14 +58,14 @@ export function StatusFrame({
             <p className="text-muted-foreground text-sm">{connectedHint}</p>
           </CardContent>
         </Card>
-      </div>
+      </Centered>
     );
   }
 
   if (status === "error") {
     return (
-      <div className="flex items-center justify-center min-h-dvh p-6">
-        <Card className="w-full max-w-md border-destructive">
+      <Centered>
+        <Card role="alert" className="w-full max-w-md border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Error</CardTitle>
           </CardHeader>
@@ -60,14 +75,14 @@ export function StatusFrame({
             </p>
           </CardContent>
         </Card>
-      </div>
+      </Centered>
     );
   }
 
   if (status === "tool-cancelled") {
     return (
-      <div className="flex items-center justify-center min-h-dvh p-6">
-        <Card className="w-full max-w-md border-destructive">
+      <Centered>
+        <Card role="alert" className="w-full max-w-md border-destructive">
           <CardHeader>
             <CardTitle className="text-destructive">Cancelled</CardTitle>
           </CardHeader>
@@ -75,16 +90,13 @@ export function StatusFrame({
             <p className="text-sm text-destructive">Tool call was cancelled.</p>
           </CardContent>
         </Card>
-      </div>
+      </Centered>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-dvh p-6">
-      <div className="flex items-center gap-3 text-muted-foreground">
-        <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-        <span className="text-sm">{pendingMessage}</span>
-      </div>
-    </div>
+    <Centered>
+      <Spinner message={pendingMessage} />
+    </Centered>
   );
 }

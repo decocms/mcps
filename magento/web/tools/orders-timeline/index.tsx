@@ -60,6 +60,11 @@ export default function OrdersTimelinePage() {
         <DollarSign className="w-4 h-4" />
         Pedidos por hora
       </p>
+      {data.truncated ? (
+        <p className="mb-2 shrink-0 text-[11px] text-muted-foreground">
+          Dados parciais — o volume de pedidos excedeu o limite de paginação.
+        </p>
+      ) : null}
       {hours.every((bucket) => bucket.count === 0) ? (
         <p className="text-sm text-muted-foreground">
           Nenhum pedido encontrado hoje.

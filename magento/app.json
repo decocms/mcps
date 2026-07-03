@@ -39,6 +39,14 @@
           "title": "Origin Header",
           "description": "Secret value sent as the x-origin-header on every request (required by WAF-protected stores)",
           "format": "password"
+        },
+        "extraHeaders": {
+          "type": "object",
+          "title": "Extra Headers",
+          "description": "Additional headers sent on every Magento request",
+          "additionalProperties": {
+            "type": "string"
+          }
         }
       },
       "required": ["baseUrl", "apiToken"]

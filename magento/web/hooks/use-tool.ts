@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMcpApp, useMcpState } from "@/context.tsx";
 
 interface ToolCallResult {
@@ -39,7 +39,12 @@ export function useTool<
 >(name: string, args: A): UseToolResult<T> {
   const app = useMcpApp();
   const mcpState = useMcpState<A, T>();
-  const argsKey = useMemo(() => stableArgsKey(args), [args]);
+  // Callers often build `args` inline, so its identity changes every render.
+  // The effect keys off the serialized value and reads the latest object from
+  // a ref — otherwise each setFetched rerender would refire the tool call.
+  const argsKey = stableArgsKey(args);
+  const argsRef = useRef(args);
+  argsRef.current = args;
 
   const hostResult =
     mcpState.status === "tool-result"
@@ -72,7 +77,7 @@ export function useTool<
     setFetched({ data: null, loading: true, error: null });
 
     app
-      .callServerTool({ name, arguments: args })
+      .callServerTool({ name, arguments: argsRef.current })
       .then((result) => {
         if (cancelled) return;
         const toolResult = result as ToolCallResult;
@@ -99,7 +104,7 @@ export function useTool<
     return () => {
       cancelled = true;
     };
-  }, [app, args, argsKey, hostError, hostResult, name]);
+  }, [app, argsKey, hostError, hostResult, name]);
 
   if (hostResult) {
     return { data: hostResult, loading: false, error: null };

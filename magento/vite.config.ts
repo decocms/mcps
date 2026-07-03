@@ -19,6 +19,11 @@ function resolveEntry(): McpAppEntry {
   if (entry && entry in MCP_APP_ENTRIES) {
     return entry as McpAppEntry;
   }
+  if (entry) {
+    console.warn(
+      `[vite] Unknown MCP_APP_ENTRY "${entry}" — falling back to "orders-timeline". Valid entries: ${Object.keys(MCP_APP_ENTRIES).join(", ")}`,
+    );
+  }
   return "orders-timeline";
 }
 
