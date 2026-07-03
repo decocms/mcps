@@ -119,6 +119,12 @@ export const StateSchema = z.object({
     .describe(
       "manual = end-to-end simulation (no external effects, for demos); decopilot = live migrations via mesh sandboxes.",
     ),
+  SANDBOX_KIND: z
+    .enum(["agent-sandbox", "user-desktop", "auto"])
+    .default("agent-sandbox")
+    .describe(
+      "Where the sandbox runs: agent-sandbox = hosted k8s (production default); user-desktop = your machine via the link daemon (local dev); auto = let mesh decide (user-desktop when your link daemon is online).",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
@@ -136,6 +142,7 @@ export interface MigratorConfig {
   maxIterations: number;
   noImproveLimit: number;
   sandboxProvider: "manual" | "decopilot";
+  sandboxKind: "agent-sandbox" | "user-desktop" | "auto";
 }
 
 export function parseMigratorConfig(
@@ -160,5 +167,9 @@ export function parseMigratorConfig(
     noImproveLimit: num(s.NO_IMPROVE_LIMIT) ?? DEFAULT_NO_IMPROVE_LIMIT,
     sandboxProvider:
       s.SANDBOX_PROVIDER === "decopilot" ? "decopilot" : "manual",
+    sandboxKind:
+      s.SANDBOX_KIND === "user-desktop" || s.SANDBOX_KIND === "auto"
+        ? s.SANDBOX_KIND
+        : "agent-sandbox",
   };
 }
