@@ -1,0 +1,116 @@
+export type McpStatus =
+  | "initializing"
+  | "connected"
+  | "tool-input"
+  | "tool-result"
+  | "tool-cancelled"
+  | "error";
+
+export interface McpState<TInput = unknown, TResult = unknown> {
+  status: McpStatus;
+  toolName?: string;
+  error?: string;
+  toolInput?: TInput;
+  toolResult?: TResult;
+}
+
+export const INITIAL_STATE: McpState = { status: "initializing" };
+
+/* ---- mirrors of the server view shapes (server/tools/views.ts) ---- */
+
+export interface SiteView {
+  id: string;
+  name: string;
+  sourceRepo: string;
+  sourceBranch: string;
+  targetRepo: string | null;
+  prodUrl: string;
+  status: string;
+  phaseDetail: string | null;
+  parityScore: number | null;
+  parityTarget: number;
+  bestScore: number | null;
+  iterationsDone: number;
+  maxIterations: number;
+  previewUrl: string | null;
+  cfDeployUrl: string | null;
+  error: string | null;
+  needsHumanReason: string | null;
+  createdAt: string;
+  startedAt: string | null;
+  finishedAt: string | null;
+  updatedAt: string;
+}
+
+export interface DashboardData {
+  sites: SiteView[];
+  queue: {
+    active: number;
+    queued: number;
+    needsHuman: number;
+    done: number;
+    maxConcurrent: number;
+    provider: string;
+  };
+  updatedAt: string;
+}
+
+export interface ParityIssue {
+  severity: string;
+  category?: string;
+  page?: string;
+  summary: string;
+  suggestedFix?: string;
+}
+
+export interface ParitySummary {
+  verdict?: {
+    status: string;
+    score: number;
+    critical?: number;
+    high?: number;
+    medium?: number;
+    low?: number;
+  };
+  parityOk?: boolean;
+  topIssues?: ParityIssue[];
+  perPage?: Array<{
+    pagePath: string;
+    viewport?: string;
+    pctDiff?: number;
+    verdict?: string;
+    sectionsOnlyInProd?: string[];
+  }>;
+}
+
+export interface RunView {
+  id: string;
+  kind: string;
+  iteration: number;
+  status: string;
+  parityScore: number | null;
+  summary: ParitySummary | null;
+  hasArtifacts: boolean;
+  logsTail: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface EventView {
+  id: number;
+  level: string;
+  message: string;
+  createdAt: string;
+}
+
+export interface SiteDetail {
+  site: SiteView;
+  runs: RunView[];
+  events: EventView[];
+}
+
+export interface ReportUrls {
+  reportHtml: string | null;
+  reportJson: string | null;
+  heatmaps: Array<{ name: string; url: string }>;
+}
