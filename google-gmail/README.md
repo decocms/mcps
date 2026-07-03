@@ -1,5 +1,5 @@
 # Gmail MCP 
-  
+   
 MCP Server for Gmail API integration. Read, send, search, and manage emails using the Gmail API with OAuth authentication.
 
 ## Features
