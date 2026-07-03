@@ -36,8 +36,6 @@ const DECOPILOT_MODEL_ID =
   process.env.MIGRATOR_DECOPILOT_MODEL ?? "claude-code:sonnet";
 
 const DEFAULT_TASK_TIMEOUT_MS = 45 * 60_000;
-/** Hosted sandbox; never "user-desktop" (headless worker has no link daemon). */
-const SANDBOX_PROVIDER_KIND = "agent-sandbox";
 const SANDBOX_BRANCH = "main";
 
 interface SandboxStartResult {
@@ -97,13 +95,17 @@ async function sandboxStart(
   virtualMcpId: string,
   ctx: WorkerCtx,
 ): Promise<SandboxStartResult> {
+  // "auto" omits the kind: mesh picks user-desktop when the acting user's
+  // link daemon is online (how the agentic CMS runs sandboxes locally),
+  // else the env default. Production installs pin "agent-sandbox".
+  const kind = ctx.config.sandboxKind;
   return await callSelfTool<SandboxStartResult>(
     ctx,
     "SANDBOX_START",
     {
       virtualMcpId,
       branch: SANDBOX_BRANCH,
-      sandboxProviderKind: SANDBOX_PROVIDER_KIND,
+      ...(kind === "auto" ? {} : { sandboxProviderKind: kind }),
     },
     180_000,
   );
@@ -226,14 +228,22 @@ export const decopilotDriver: SandboxDriver = {
 
   async destroy(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     if (!site.virtual_mcp_id) return;
-    try {
-      await callSelfTool(ctx, "SANDBOX_DELETE", {
-        virtualMcpId: site.virtual_mcp_id,
-        branch: SANDBOX_BRANCH,
-        sandboxProviderKind: SANDBOX_PROVIDER_KIND,
-      });
-    } catch {
-      // sandbox may already be reaped by the idle TTL — fine
+    // With "auto" we don't know which kind was picked — try both, best-effort.
+    const kinds =
+      ctx.config.sandboxKind === "auto"
+        ? (["user-desktop", "agent-sandbox"] as const)
+        : ([ctx.config.sandboxKind] as const);
+    for (const kind of kinds) {
+      try {
+        await callSelfTool(ctx, "SANDBOX_DELETE", {
+          virtualMcpId: site.virtual_mcp_id,
+          branch: SANDBOX_BRANCH,
+          sandboxProviderKind: kind,
+        });
+        return;
+      } catch {
+        // sandbox may already be reaped by the idle TTL — try the next kind
+      }
     }
   },
 };
