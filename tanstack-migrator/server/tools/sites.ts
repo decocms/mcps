@@ -32,7 +32,9 @@ import {
 function requireConnectionId(env: Env): string {
   const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
   if (!connectionId) {
-    throw new Error("No connectionId in request context");
+    throw new Error(
+      "Sem contexto de conexão do mesh (connectionId ausente). Chame este MCP através de uma conexão do studio — e se a conexão foi criada com um access token preenchido, limpe o campo Token e salve.",
+    );
   }
   return connectionId;
 }

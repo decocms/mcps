@@ -9,11 +9,6 @@
   "description": "Orchestrates migrations of Deco storefronts from Fresh/Deno to TanStack Start with an autonomous queue, parity validation and Cloudflare deploys.",
   "icon": "https://assets.decocache.com/decochatweb/a1d17e0a-51bb-4a80-a209-de8b06017649/tanstack.png",
   "unlisted": true,
-  "auth": {
-    "type": "token",
-    "header": "Authorization",
-    "prefix": "Bearer"
-  },
   "bindings": {
     "GITHUB": "@deco/github-mcp",
     "OBJECT_STORAGE": "@deco/object-storage"
