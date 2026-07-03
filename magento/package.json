@@ -1,0 +1,50 @@
+{
+  "name": "magento",
+  "version": "1.0.0",
+  "description": "MCP for Magento 2 REST APIs - sales analytics widgets, orders, catalog, customers, inventory and CMS",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"bun run dev:api\" \"bun run dev:web\"",
+    "dev:api": "bun run --hot server/main.ts",
+    "dev:web": "bun run build:web && concurrently -n timeline,sales,cancel,top,status \"MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=cancellation-rate MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=top-products MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=status-breakdown MCP_APP_EMPTY_OUTDIR=false vite build --watch\"",
+    "configure": "deco configure",
+    "deploy": "npm run build && deco deploy ./dist/server",
+    "check": "tsc --noEmit",
+    "build:web": "MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=true vite build && MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build && MCP_APP_ENTRY=cancellation-rate MCP_APP_EMPTY_OUTDIR=false vite build && MCP_APP_ENTRY=top-products MCP_APP_EMPTY_OUTDIR=false vite build && MCP_APP_ENTRY=status-breakdown MCP_APP_EMPTY_OUTDIR=false vite build",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:web && bun run build:server",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@decocms/runtime": "^1.6.2",
+    "@modelcontextprotocol/ext-apps": "^1.1.2",
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "@tailwindcss/vite": "^4.2.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.576.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "2.15.4",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^4.2.1",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260206.0",
+    "@decocms/mcps-shared": "1.0.0",
+    "@types/bun": "^1.2.14",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "babel-plugin-react-compiler": "^1.0.0",
+    "concurrently": "^9.2.1",
+    "deco-cli": "^0.28.0",
+    "typescript": "^5.7.2",
+    "vite": "^7.3.1",
+    "vite-plugin-singlefile": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

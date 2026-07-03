@@ -2498,6 +2498,55 @@
     }
   },
   {
+    "id": "deco/magento",
+    "title": "Magento Commerce",
+    "description": "MCP for Magento 2 REST APIs — live sales dashboard widgets (orders per hour, sales cards, cancellation rate, top products, status breakdown) plus curated tools for orders, catalog, customers, inventory and CMS.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "Magento Commerce",
+        "short_description": "Manage Magento 2 stores and get live sales insights with dashboard widgets.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": true,
+        "tags": [
+          "magento",
+          "adobe-commerce",
+          "ecommerce",
+          "orders",
+          "catalog",
+          "analytics",
+          "dashboard",
+          "api"
+        ],
+        "categories": [
+          "E-commerce"
+        ],
+        "readme": "The Magento Commerce MCP provides direct access to Magento 2 (Adobe Commerce) REST APIs for e-commerce operations, plus live analytics widgets for the studio home. It enables AI agents to search and inspect orders, invoices, shipments and credit memos, browse products and categories, look up customers and stock, and read CMS pages/blocks. Analytics tools aggregate the orders API into hourly sales timelines, revenue summary cards, cancellation rates, top selling products and status breakdowns — each with a rich UI widget. Works with any Magento 2 store via an integration token, including WAF-protected stores through a configurable origin header."
+      }
+    },
+    "server": {
+      "name": "magento",
+      "title": "Magento Commerce",
+      "description": "MCP for Magento 2 REST APIs — live sales dashboard widgets (orders per hour, sales cards, cancellation rate, top products, status breakdown) plus curated tools for orders, catalog, customers, inventory and CMS.",
+      "icons": [
+        {
+          "src": "https://github.com/magento.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-magento.deco.site/mcp",
+          "name": "magento",
+          "title": "Magento Commerce",
+          "description": "MCP for Magento 2 REST APIs — live sales dashboard widgets (orders per hour, sales cards, cancellation rate, top products, status breakdown) plus curated tools for orders, catalog, customers, inventory and CMS."
+        }
+      ]
+    }
+  },
+  {
     "id": "deco/mcp-registry",
     "title": "MCP Registry",
     "description": "A registry translation server that normalizes third-party MCP registries into this system's format. When no external registry URL is supplied, the server automatically falls back to the official MCP store.",
