@@ -90,3 +90,18 @@ export async function attachThreadToRun(
     .eq("id", runId)
     .is("finished_at", null);
 }
+
+/** Close run rows abandoned by dead readers (pod restarts). */
+export async function closeStaleRuns(olderThanMinutes: number): Promise<void> {
+  const client = requireSupabase();
+  const cutoff = new Date(Date.now() - olderThanMinutes * 60_000).toISOString();
+  await client
+    .from("sitemig_runs")
+    .update({
+      status: "failed",
+      logs_tail: "[órfã: leitor morreu com restart do pod]",
+      finished_at: new Date().toISOString(),
+    })
+    .eq("status", "running")
+    .lt("started_at", cutoff);
+}

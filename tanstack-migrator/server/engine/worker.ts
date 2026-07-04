@@ -20,6 +20,7 @@ import {
 import { isSupabaseConfigured } from "../db/client.ts";
 import { loadAllConnections, saveConnection } from "../db/connections.ts";
 import { addEvent } from "../db/events.ts";
+import { closeStaleRuns } from "../db/runs.ts";
 import {
   acquireLease,
   listSites,
@@ -280,6 +281,8 @@ export async function runTickOnce(): Promise<{
   advanced: number;
 }> {
   if (!isSupabaseConfigured()) return { connections: 0, advanced: 0 };
+  // close run rows abandoned by readers that died with pod restarts
+  await closeStaleRuns(50).catch(() => {});
   const rows = await loadAllConnections();
   let advanced = 0;
   for (const row of rows) {
