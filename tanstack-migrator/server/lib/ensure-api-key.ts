@@ -84,6 +84,7 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
     const previousGrants = existing?.state?.[API_KEY_GRANTS_STATE_KEY];
     const orgSlug =
       mrc.organizationSlug ?? existing?.state?.[ORG_SLUG_STATE_KEY];
+    const workerVersion = existing?.state?.["__WORKER_VERSION"];
     const state: Record<string, unknown> = {
       ...fresh,
       ...(previousGrants !== undefined
@@ -91,6 +92,10 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
         : {}),
       ...(typeof orgSlug === "string" && orgSlug
         ? { [ORG_SLUG_STATE_KEY]: orgSlug }
+        : {}),
+      // bookkeeping written by the worker's version fence — never drop it
+      ...(workerVersion !== undefined
+        ? { __WORKER_VERSION: workerVersion }
         : {}),
     };
 

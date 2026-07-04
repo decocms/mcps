@@ -11,13 +11,14 @@
  * MCP pattern). Long sessions run fire-and-forget via InflightTracker.
  */
 
+import packageJson from "../../package.json" with { type: "json" };
 import {
   LEASE_TTL_MS,
   TICK_INTERVAL_MS,
   WATCHDOG_STALL_MS,
 } from "../constants.ts";
 import { isSupabaseConfigured } from "../db/client.ts";
-import { loadAllConnections } from "../db/connections.ts";
+import { loadAllConnections, saveConnection } from "../db/connections.ts";
 import { addEvent } from "../db/events.ts";
 import {
   acquireLease,
@@ -169,6 +170,31 @@ async function tickConnection(ctx: WorkerCtx): Promise<void> {
   }
 }
 
+/**
+ * Version fence against stale platform replicas: every publish spawns a NEW
+ * deployment while old ones keep Running (and ticking!) until the platform
+ * reaps them. Workers persist the highest version seen per connection; any
+ * worker running an older build stops processing that connection.
+ */
+const WORKER_VERSION = packageJson.version;
+const WORKER_VERSION_STATE_KEY = "__WORKER_VERSION";
+
+function versionTuple(v: string): number[] {
+  return v.split(".").map((part) => Number.parseInt(part, 10) || 0);
+}
+
+function isOlderVersion(mine: string, stored: string): boolean {
+  const a = versionTuple(mine);
+  const b = versionTuple(stored);
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    const diff = (a[i] ?? 0) - (b[i] ?? 0);
+    if (diff !== 0) return diff < 0;
+  }
+  return false;
+}
+
+const fencedLogged = new Set<string>();
+
 export async function runTickOnce(): Promise<{
   connections: number;
   advanced: number;
@@ -178,6 +204,31 @@ export async function runTickOnce(): Promise<{
   let advanced = 0;
   for (const row of rows) {
     try {
+      const stored = row.state?.[WORKER_VERSION_STATE_KEY];
+      if (
+        typeof stored === "string" &&
+        isOlderVersion(WORKER_VERSION, stored)
+      ) {
+        if (!fencedLogged.has(row.connection_id)) {
+          fencedLogged.add(row.connection_id);
+          console.warn(
+            `[worker] fenced: v${WORKER_VERSION} < v${stored} seen for ${row.connection_id} — this replica stops processing it`,
+          );
+        }
+        continue;
+      }
+      if (stored !== WORKER_VERSION) {
+        await saveConnection({
+          connectionId: row.connection_id,
+          organizationId: row.organization_id,
+          meshUrl: row.mesh_url,
+          state: {
+            ...(row.state ?? {}),
+            [WORKER_VERSION_STATE_KEY]: WORKER_VERSION,
+          },
+        }).catch(() => {});
+      }
+
       const ctx = buildWorkerCtx(row);
       await tickConnection(ctx);
       advanced++;

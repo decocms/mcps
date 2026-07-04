@@ -66,6 +66,7 @@ export async function migrating(
           status: "installing_sync",
           phase_detail: "migração inicial concluída, instalando sync do .deco",
           sandbox_session_id: null,
+          no_improve_count: 0, // used as transient-retry counter during migrate
           last_progress_at: new Date().toISOString(),
         });
         await addEvent(
@@ -77,25 +78,58 @@ export async function migrating(
           status: "failed",
           logsTail: result.output,
         });
-        await updateSite(site.id, {
-          status: "failed",
-          resume_status: "migrating",
-          error: result.error ?? "migração inicial falhou",
-          sandbox_session_id: null,
-          last_progress_at: new Date().toISOString(),
-        });
-        await addEvent(site.id, `Migração falhou: ${result.error}`, "error");
+        await failOrAutoRetry(
+          current,
+          result.error ?? "migração inicial falhou",
+        );
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await finishRun(run.id, { status: "failed", logsTail: message });
-      await updateSite(site.id, {
-        status: "failed",
-        resume_status: "migrating",
-        error: message,
-        sandbox_session_id: null,
-      });
-      await addEvent(site.id, `Migração falhou: ${message}`, "error");
+      const current = await getSite(site.id);
+      if (current) await failOrAutoRetry(current, message);
     }
   });
+}
+
+/**
+ * Zombie-signature failures (stale platform replicas still running pre-#491
+ * code answer sessions with the legacy 404s) auto-retry: stay in `migrating`
+ * so the next tick rolls the dice again — eventually a fresh pod claims it.
+ * Bounded by MAX_TRANSIENT_RETRIES (no_improve_count doubles as the counter
+ * here; the parity loop resets it when validation starts).
+ */
+const TRANSIENT_ZOMBIE_SIGNATURE =
+  /decopilot (stream|message dispatch|thread stream) failed \(404\)|organization .+ not found/i;
+const MAX_TRANSIENT_RETRIES = 12;
+
+async function failOrAutoRetry(site: SiteRow, message: string): Promise<void> {
+  const transient =
+    TRANSIENT_ZOMBIE_SIGNATURE.test(message) &&
+    site.no_improve_count < MAX_TRANSIENT_RETRIES;
+
+  if (transient) {
+    await updateSite(site.id, {
+      status: "migrating",
+      no_improve_count: site.no_improve_count + 1,
+      phase_detail: `sessão caiu em réplica desatualizada — tentando de novo (${site.no_improve_count + 1}/${MAX_TRANSIENT_RETRIES})`,
+      sandbox_session_id: null,
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(
+      site.id,
+      `Sessão falhou em réplica desatualizada, retry automático ${site.no_improve_count + 1}/${MAX_TRANSIENT_RETRIES}: ${message.slice(0, 160)}`,
+      "warn",
+    );
+    return;
+  }
+
+  await updateSite(site.id, {
+    status: "failed",
+    resume_status: "migrating",
+    error: message,
+    sandbox_session_id: null,
+    last_progress_at: new Date().toISOString(),
+  });
+  await addEvent(site.id, `Migração falhou: ${message}`, "error");
 }
