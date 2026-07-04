@@ -125,6 +125,12 @@ export const StateSchema = z.object({
     .describe(
       "Where the sandbox runs: agent-sandbox = hosted k8s (production default); user-desktop = your machine via the link daemon (local dev); auto = let mesh decide (user-desktop when your link daemon is online).",
     ),
+  SESSION_HARNESS: z
+    .enum(["claude-code", "decopilot", "codex"])
+    .default("claude-code")
+    .describe(
+      "Coding harness for migration sessions: claude-code needs an Anthropic AI-provider key in the org; decopilot uses the org's default LLM credentials (e.g. OpenRouter).",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
@@ -143,6 +149,7 @@ export interface MigratorConfig {
   noImproveLimit: number;
   sandboxProvider: "manual" | "decopilot";
   sandboxKind: "agent-sandbox" | "user-desktop" | "auto";
+  sessionHarness: "claude-code" | "decopilot" | "codex";
 }
 
 export function parseMigratorConfig(
@@ -171,5 +178,9 @@ export function parseMigratorConfig(
       s.SANDBOX_KIND === "user-desktop" || s.SANDBOX_KIND === "auto"
         ? s.SANDBOX_KIND
         : "agent-sandbox",
+    sessionHarness:
+      s.SESSION_HARNESS === "decopilot" || s.SESSION_HARNESS === "codex"
+        ? s.SESSION_HARNESS
+        : "claude-code",
   };
 }

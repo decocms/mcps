@@ -171,7 +171,9 @@ async function runDecopilotSession(
     stream: true,
     branch: SANDBOX_BRANCH,
     toolApprovalLevel: "auto" as const,
-    harnessId: "claude-code" as const,
+    // claude-code needs an Anthropic AI-provider key in the org; decopilot
+    // rides the org's default LLM credentials (e.g. OpenRouter)
+    harnessId: ctx.config.sessionHarness,
     ...(kind === "auto" ? {} : { sandboxProviderKind: kind }),
   };
 
