@@ -30,7 +30,7 @@ export async function installingSync(
 ): Promise<void> {
   if (isSimulation(ctx)) {
     await updateSite(site.id, {
-      status: "validating2",
+      status: "validating3",
       phase_detail: "[simulação] sync do .deco instalado",
       last_progress_at: new Date().toISOString(),
     });
@@ -82,7 +82,7 @@ export async function installingSync(
 
     await finishRun(run.id, { status: "succeeded" });
     await updateSite(site.id, {
-      status: "validating2",
+      status: "validating3",
       phase_detail: "sync do .deco instalado, iniciando loop de paridade",
       last_progress_at: new Date().toISOString(),
     });
