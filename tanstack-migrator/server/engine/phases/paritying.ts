@@ -127,7 +127,8 @@ export async function paritying(
             ? simulatedSummary(result.parityScore)
             : null;
       } else {
-        const artifacts = await presignPutUrls(ctx, keys);
+        // object storage is optional — skip artifacts gracefully
+        const artifacts = await presignPutUrls(ctx, keys).catch(() => null);
         result = await getDriver(ctx).runTask(site, ctx, {
           kind: "parity",
           iteration,

@@ -25,7 +25,7 @@ import {
 import { isSupabaseConfigured } from "../db/client.ts";
 import { loadAllConnections, saveConnection } from "../db/connections.ts";
 import { addEvent } from "../db/events.ts";
-import { closeStaleRuns } from "../db/runs.ts";
+import { closeOpenRunsForSite, closeStaleRuns } from "../db/runs.ts";
 import {
   acquireLease,
   getSite,
@@ -173,7 +173,13 @@ async function probeSessionLiveness(
       return;
     }
     // Terminal thread with a dead reader: free the session marker so the
-    // phase relaunches next tick (the reused thread keeps the context).
+    // phase relaunches next tick (the reused thread keeps the context), and
+    // close the dangling run row NOW — the history should never show a
+    // phantom "running" entry until the 50min sweep.
+    await closeOpenRunsForSite(
+      site.id,
+      `[leitor morreu; fase repicada — thread ${site.phase_thread_id} ${status}]`,
+    ).catch(() => {});
     await updateSite(site.id, {
       sandbox_session_id: null,
       phase_detail: `thread terminou (${status}) com o leitor morto — repicando a fase`,

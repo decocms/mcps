@@ -129,7 +129,7 @@ export function parseResultJson(output: string): SessionResult | null {
 }
 
 const progressInstruction = (site: SiteRow) =>
-  `Sempre que concluir um passo relevante, chame a tool MIGRATION_REPORT_PROGRESS do MCP tanstack-migrator com {"siteId": "${site.id}", "detail": "<o que acabou de fazer>"} (e "parityScore" quando tiver um score novo).`;
+  `Se a tool MIGRATION_REPORT_PROGRESS (MCP tanstack-migrator) estiver disponível, chame-a ao concluir passos relevantes com {"siteId": "${site.id}", "detail": "<o que acabou de fazer>"} (e "parityScore" quando tiver score novo). Se ela NÃO estiver no seu conjunto de tools, siga sem reportar — NUNCA tente chamá-la às cegas. O mais importante: a linha RESULT_JSON no fim da sua última mensagem é OBRIGATÓRIA em qualquer cenário — emita-a antes de qualquer passo opcional.`;
 
 function repoUrl(full: string | null, ghToken?: string): string {
   if (!full) throw new Error("repo not set");

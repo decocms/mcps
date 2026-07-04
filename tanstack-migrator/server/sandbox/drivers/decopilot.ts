@@ -92,7 +92,10 @@ async function createVirtualMcp(
               : {}),
           },
         },
-        connections: [],
+        // attach THIS MCP so sessions can call MIGRATION_REPORT_PROGRESS —
+        // without it the tool doesn't exist and calling it kills the turn
+        // before the RESULT_JSON is emitted
+        connections: [ctx.connectionId],
       },
     },
     60_000,
@@ -277,7 +280,9 @@ async function runDecopilotSession(
           Authorization: `Bearer ${ctx.meshToken}`,
           Accept: "text/event-stream",
         },
-        signal: AbortSignal.timeout(remaining),
+        // windowed read: the production mesh holds the SSE open past thread
+        // completion — abort periodically so the status check below runs
+        signal: AbortSignal.timeout(Math.min(remaining, 90_000)),
       });
       if (!response.ok) {
         const errorText = await response.text();
@@ -297,8 +302,7 @@ async function runDecopilotSession(
       // instead of spinning until the timeout.
       const status = await getThreadStatus(ctx, threadId);
       if (status && status !== "in_progress" && status !== "requires_action") {
-        const finalText = await fetchThreadFinalText(ctx, threadId);
-        if (finalText) output = `${output}\n${finalText}`.trim();
+        output = await rescueFinalText(ctx, threadId, output);
         await addEvent(
           site.id,
           `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
@@ -321,6 +325,28 @@ async function runDecopilotSession(
       const message = err instanceof Error ? err.message : String(err);
       // 4xx from the route is permanent — bubble it up instead of spinning
       if (/\((400|401|403|404)\)/.test(message)) throw err;
+      // aborted/failed read — the thread may have completed while we were
+      // blocked on the stream; rescue instead of reconnecting forever
+      const status = await getThreadStatus(ctx, threadId);
+      if (status && status !== "in_progress" && status !== "requires_action") {
+        output = await rescueFinalText(ctx, threadId, output);
+        await addEvent(
+          site.id,
+          `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
+          parseResultJson(output) ? "info" : "warn",
+        );
+        return { output, threadId };
+      }
+      // heartbeat also on the windowed-abort path — the dashboard should
+      // keep moving while the agent works
+      if (Date.now() - lastHeartbeat > 60_000) {
+        lastHeartbeat = Date.now();
+        const minutes = Math.round((Date.now() - startedAt) / 60_000);
+        await updateSite(site.id, {
+          phase_detail: `sessão ${threadId}: ${status ?? "trabalhando"} há ${minutes}min`,
+          last_progress_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
       console.warn(`[decopilot] stream reconnect (${message.slice(0, 120)})`);
     }
     await sleep(STREAM_RECONNECT_DELAY_MS);
@@ -388,6 +414,26 @@ async function fetchThreadFinalText(
   } catch {
     return "";
   }
+}
+
+/**
+ * Terminal-thread rescue with persistence-race tolerance: the thread status
+ * flips to completed BEFORE the final assistant message finishes writing —
+ * re-fetch a few times before declaring the session RESULT_JSON-less.
+ */
+async function rescueFinalText(
+  ctx: WorkerCtx,
+  threadId: string,
+  output: string,
+): Promise<string> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    if (attempt > 0) await sleep(8_000);
+    const finalText = await fetchThreadFinalText(ctx, threadId);
+    const merged = finalText ? `${output}\n${finalText}`.trim() : output;
+    if (parseResultJson(merged)) return merged;
+  }
+  const finalText = await fetchThreadFinalText(ctx, threadId);
+  return finalText ? `${output}\n${finalText}`.trim() : output;
 }
 
 const num = (v: unknown): number | undefined =>

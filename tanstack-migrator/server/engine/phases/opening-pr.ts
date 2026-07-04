@@ -162,8 +162,14 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     }
   }
 
-  // 3. sandbox restart — with a package.json on the branch, the daemon
-  // installs deps and manages the dev server from here on
+  // 3. fresh sandbox — destroy + recreate so the daemon clones the branch
+  // WITH package.json already present (provisioning_sandbox ran when the repo
+  // was still empty; the daemon marks packageManager=null and never recovers).
+  try {
+    await getDriver(ctx).destroy({ ...site, ...prPatch } as SiteRow, ctx);
+  } catch {
+    // sandbox may have already expired — ignore
+  }
   try {
     const info = await getDriver(ctx).ensure(
       { ...site, ...prPatch } as SiteRow,
@@ -177,13 +183,13 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     };
     await addEvent(
       site.id,
-      "Sandbox reiniciado — daemon assume install + dev server",
+      "Sandbox recriado — daemon clona branch com package.json, instala deps e sobe dev server",
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await addEvent(
       site.id,
-      `Restart do sandbox falhou (${message.slice(0, 160)}) — o keepalive tenta de novo`,
+      `Recriação do sandbox falhou (${message.slice(0, 160)}) — keepalive tenta no próximo tick`,
       "warn",
     );
   }

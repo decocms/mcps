@@ -99,6 +99,23 @@ export async function attachThreadToRun(
     .is("finished_at", null);
 }
 
+/** Close a site's open run rows immediately (liveness detected a dead reader). */
+export async function closeOpenRunsForSite(
+  siteId: string,
+  note: string,
+): Promise<void> {
+  const client = requireSupabase();
+  await client
+    .from("sitemig_runs")
+    .update({
+      status: "failed",
+      logs_tail: note,
+      finished_at: new Date().toISOString(),
+    })
+    .eq("site_id", siteId)
+    .eq("status", "running");
+}
+
 /** Close run rows abandoned by dead readers (pod restarts). */
 export async function closeStaleRuns(olderThanMinutes: number): Promise<void> {
   const client = requireSupabase();

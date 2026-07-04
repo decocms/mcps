@@ -248,7 +248,18 @@ function unwrapList(raw: unknown): Record<string, unknown>[] {
 }
 
 function toIssue(raw: Record<string, unknown>): GithubIssue | null {
-  const number = typeof raw.number === "number" ? raw.number : undefined;
+  const rawUrl =
+    typeof raw.html_url === "string"
+      ? raw.html_url
+      : typeof raw.url === "string"
+        ? raw.url
+        : undefined;
+  let number = typeof raw.number === "number" ? raw.number : undefined;
+  if (number === undefined && rawUrl) {
+    // the proxy's issue_write create answers only {id, url}
+    const match = rawUrl.match(/\/issues\/(\d+)/);
+    if (match) number = Number(match[1]);
+  }
   if (number === undefined) return null;
   const labels = Array.isArray(raw.labels)
     ? (raw.labels as unknown[])
@@ -430,7 +441,19 @@ export interface PullRequestInfo {
 }
 
 function toPullRequest(raw: Record<string, unknown>): PullRequestInfo | null {
-  const number = typeof raw.number === "number" ? raw.number : undefined;
+  const url =
+    typeof raw.html_url === "string"
+      ? raw.html_url
+      : typeof raw.url === "string" && raw.url.includes("/pull/")
+        ? raw.url
+        : undefined;
+  let number = typeof raw.number === "number" ? raw.number : undefined;
+  if (number === undefined && url) {
+    // the proxy's create_pull_request answers only {id, url} — the number
+    // lives in the URL path
+    const match = url.match(/\/pull\/(\d+)/);
+    if (match) number = Number(match[1]);
+  }
   if (number === undefined) return null;
   const state = typeof raw.state === "string" ? raw.state.toLowerCase() : "";
   const merged =
@@ -438,12 +461,7 @@ function toPullRequest(raw: Record<string, unknown>): PullRequestInfo | null {
     typeof raw.merged_at === "string" ||
     typeof raw.mergedAt === "string" ||
     state === "merged";
-  return {
-    number,
-    url: typeof raw.html_url === "string" ? raw.html_url : undefined,
-    state,
-    merged,
-  };
+  return { number, url, state, merged };
 }
 
 export async function createPullRequest(
