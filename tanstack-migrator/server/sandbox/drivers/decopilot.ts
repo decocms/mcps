@@ -21,6 +21,8 @@
  */
 
 import { collectFullStreamText } from "@decocms/mcps-shared/mesh-chat";
+import { addEvent } from "../../db/events.ts";
+import { updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
 import {
   callSelfTool,
@@ -125,6 +127,7 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 async function runDecopilotSession(
   ctx: WorkerCtx,
+  site: SiteRow,
   virtualMcpId: string,
   prompt: string,
   timeoutMs: number,
@@ -193,11 +196,21 @@ async function runDecopilotSession(
       `decopilot message dispatch failed (${post.status}): ${errorText.slice(0, 300)}`,
     );
   }
+  await addEvent(
+    site.id,
+    `Sessão despachada (202) — thread ${threadId} · harness ${ctx.config.sessionHarness}`,
+  );
+  await updateSite(site.id, {
+    phase_detail: `sessão ${threadId} na fila do decopilot`,
+    last_progress_at: new Date().toISOString(),
+  }).catch(() => {});
 
   // Consume the thread stream until RESULT_JSON shows up or time runs out.
   const streamUrl = `${base}/api/${org}/decopilot/threads/${threadId}/stream`;
-  const deadline = Date.now() + timeoutMs;
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutMs;
   let output = "";
+  let lastHeartbeat = 0;
 
   while (Date.now() < deadline) {
     const remaining = Math.max(10_000, deadline - Date.now());
@@ -229,7 +242,22 @@ async function runDecopilotSession(
       if (status && status !== "in_progress" && status !== "requires_action") {
         const finalText = await fetchThreadFinalText(ctx, threadId);
         if (finalText) output = `${output}\n${finalText}`.trim();
+        await addEvent(
+          site.id,
+          `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
+          parseResultJson(output) ? "info" : "warn",
+        );
         return output;
+      }
+
+      // Heartbeat: keep the dashboard honest about what the reader is doing
+      if (Date.now() - lastHeartbeat > 60_000) {
+        lastHeartbeat = Date.now();
+        const minutes = Math.round((Date.now() - startedAt) / 60_000);
+        await updateSite(site.id, {
+          phase_detail: `sessão ${threadId}: ${status ?? "streamando"} há ${minutes}min`,
+          last_progress_at: new Date().toISOString(),
+        }).catch(() => {});
       }
     } catch (err) {
       if (Date.now() >= deadline) break;
@@ -241,6 +269,11 @@ async function runDecopilotSession(
     await sleep(STREAM_RECONNECT_DELAY_MS);
   }
 
+  await addEvent(
+    site.id,
+    `Sessão ${threadId} atingiu o timeout de ${Math.round(timeoutMs / 60_000)}min sem RESULT_JSON`,
+    "warn",
+  );
   return output;
 }
 
@@ -332,6 +365,7 @@ export const decopilotDriver: SandboxDriver = {
     const timeoutMs = task.timeoutMs ?? DEFAULT_TASK_TIMEOUT_MS;
     const output = await runDecopilotSession(
       ctx,
+      site,
       site.virtual_mcp_id,
       task.prompt,
       timeoutMs,
