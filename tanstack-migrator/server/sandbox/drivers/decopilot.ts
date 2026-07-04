@@ -138,6 +138,23 @@ async function runDecopilotSession(
   }
 
   const threadId = `mig-${crypto.randomUUID()}`;
+
+  // The canonical thread row must exist before the first message —
+  // thread_message_parts has an FK to threads (500 otherwise).
+  await callSelfTool(
+    ctx,
+    "COLLECTION_THREADS_CREATE",
+    {
+      data: {
+        id: threadId,
+        title: "tanstack-migrator session",
+        virtual_mcp_id: virtualMcpId,
+        branch: SANDBOX_BRANCH,
+      },
+    },
+    30_000,
+  );
+
   const postUrl = `${base}/api/${org}/decopilot/threads/${threadId}/messages`;
 
   // Body per StreamRequestSchema (strict): exactly one non-system message,
