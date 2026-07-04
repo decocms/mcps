@@ -10,9 +10,11 @@ export type SiteStatus =
   | "triaging"
   | "fixing"
   | "paritying"
-  | "deploying_cf"
+  | "deploying"
   | "awaiting_merge"
-  // legacy names (≤ v0.4.x) — kept only so the sweep can translate leftovers
+  // legacy names (≤ v0.4.x) — kept only so the sweep can translate leftovers.
+  // deploying_cf is legacy too: old workers would run THEIR handler on it and
+  // mark the site done, bypassing the merge gate.
   | "migrating"
   | "migrating2"
   | "migrating3"
@@ -20,6 +22,7 @@ export type SiteStatus =
   | "validating"
   | "validating2"
   | "validating3"
+  | "deploying_cf"
   // terminal / parked
   | "done"
   | "needs_human"
@@ -44,7 +47,7 @@ export const ACTIVE_STATUSES: SiteStatus[] = [
   "triaging",
   "fixing",
   "paritying",
-  "deploying_cf",
+  "deploying",
   // legacy (translated on sight by the worker sweep)
   "migrating",
   "migrating2",
@@ -53,6 +56,7 @@ export const ACTIVE_STATUSES: SiteStatus[] = [
   "validating",
   "validating2",
   "validating3",
+  "deploying_cf",
 ];
 
 /**
@@ -76,6 +80,8 @@ export function toCurrentStatus(status: SiteStatus): SiteStatus {
       // re-triage is the correct resume for in-flight parity-loop sites:
       // it rebuilds the backlog before spending fix sessions
       return "triaging";
+    case "deploying_cf":
+      return "deploying";
     default:
       return status;
   }
@@ -89,7 +95,8 @@ export function isLegacyStatus(status: string): boolean {
     status === "installing_sync" ||
     status === "validating" ||
     status === "validating2" ||
-    status === "validating3"
+    status === "validating3" ||
+    status === "deploying_cf"
   );
 }
 
@@ -182,7 +189,10 @@ export interface SiteRow {
   max_iterations: number;
   no_improve_limit: number;
   iterations_done: number;
+  /** Parity-score stagnation counter (rounds without improvement). */
   no_improve_count: number;
+  /** Zombie-replica transient retry counter (separate control loop). */
+  transient_retries: number;
   best_score: number | null;
 
   // issue backlog caches (source of truth is GitHub)

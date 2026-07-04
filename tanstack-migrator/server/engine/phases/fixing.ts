@@ -25,6 +25,20 @@ import type { EngineDeps } from "../machine.ts";
 import { clearStaleSession, markSessionStart } from "./session-guard.ts";
 import { failOrAutoRetry } from "./transient.ts";
 
+async function budgetExhausted(site: SiteRow): Promise<void> {
+  await updateSite(site.id, {
+    status: "needs_human",
+    resume_status: "fixing",
+    needs_human_reason: `Orçamento de ${site.max_fix_sessions} sessões de fix esgotado com ${site.issues_open} issues abertas. Veja https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
+    last_progress_at: new Date().toISOString(),
+  });
+  await addEvent(
+    site.id,
+    "Orçamento de sessões de fix esgotado — precisa de humano",
+    "warn",
+  );
+}
+
 export async function fixing(
   site: SiteRow,
   ctx: WorkerCtx,
@@ -33,7 +47,7 @@ export async function fixing(
   // Terminal checks first (idempotent re-entry)
   if (site.parity_score !== null && site.parity_score >= site.parity_target) {
     await updateSite(site.id, {
-      status: "deploying_cf",
+      status: "deploying",
       phase_detail: `paridade ${site.parity_score} >= ${site.parity_target}, indo pro deploy`,
       last_progress_at: new Date().toISOString(),
     });
@@ -43,26 +57,13 @@ export async function fixing(
     );
     return;
   }
-  if (site.fix_sessions_done >= site.max_fix_sessions) {
-    await updateSite(site.id, {
-      status: "needs_human",
-      resume_status: "fixing",
-      needs_human_reason: `Orçamento de ${site.max_fix_sessions} sessões de fix esgotado com ${site.issues_open} issues abertas. Veja https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
-      last_progress_at: new Date().toISOString(),
-    });
-    await addEvent(
-      site.id,
-      "Orçamento de sessões de fix esgotado — precisa de humano",
-      "warn",
-    );
-    return;
-  }
-
   if (deps.inflight.has(site.id)) return;
   const proceed = await clearStaleSession(site, deps);
   if (!proceed) return;
 
-  // Pick the batch — GitHub is the source of truth (simulation uses counters)
+  // Pick the batch — GitHub is the source of truth (simulation uses counters).
+  // The backlog-empty check comes BEFORE the session budget: a drained
+  // backlog must advance to paritying even when the budget just ran out.
   let batch: Array<{ number: number; title: string; body?: string }> = [];
   if (isSimulation(ctx)) {
     if (site.issues_open <= 0) {
@@ -71,6 +72,10 @@ export async function fixing(
         phase_detail: "[simulação] backlog drenado, medindo paridade",
         last_progress_at: new Date().toISOString(),
       });
+      return;
+    }
+    if (site.fix_sessions_done >= site.max_fix_sessions) {
+      await budgetExhausted(site);
       return;
     }
   } else {
@@ -82,6 +87,10 @@ export async function fixing(
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(site.id, "Backlog de issues drenado — rodada de paridade");
+      return;
+    }
+    if (site.fix_sessions_done >= site.max_fix_sessions) {
+      await budgetExhausted(site);
       return;
     }
     const selected = selectIssuesForFixSession(
@@ -180,6 +189,7 @@ export async function fixing(
           issues_closed: current.issues_closed + resolvedCount,
           sandbox_session_id: null,
           phase_thread_id: null,
+          transient_retries: 0,
           phase_detail: `[simulação] fix ${sessionNumber}: ${resolvedCount} issues fechadas`,
           last_progress_at: new Date().toISOString(),
         });
@@ -217,6 +227,7 @@ export async function fixing(
         fix_sessions_done: sessionNumber,
         sandbox_session_id: null,
         phase_thread_id: null, // each batch is a fresh, narrow conversation
+        transient_retries: 0,
         phase_detail: `fix ${sessionNumber}: ${resolved.length}/${batch.length} resolvidas, backlog ${openIssues.open}`,
         last_progress_at: new Date().toISOString(),
       });

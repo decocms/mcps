@@ -89,6 +89,7 @@ export async function triaging(
           sandbox_session_id: null,
           phase_thread_id: null,
           no_improve_count: 0,
+          transient_retries: 0,
           last_progress_at: new Date().toISOString(),
         });
         await addEvent(
@@ -121,6 +122,7 @@ export async function triaging(
         sandbox_session_id: null,
         phase_thread_id: null,
         no_improve_count: 0,
+        transient_retries: 0,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(

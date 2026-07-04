@@ -393,6 +393,21 @@ async function fetchThreadFinalText(
 const num = (v: unknown): number | undefined =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
+/** Command text goes to sitemig_runs.meta and the dashboard — mask secrets. */
+function redactSecrets(cmd: string): string {
+  return cmd
+    .replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
+    .replace(
+      /\b(gh[pousr]_|github_pat_|sk-ant-|sk-|aik_|or-)[A-Za-z0-9_-]{8,}/g,
+      "$1***",
+    )
+    .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi, "$1***")
+    .replace(
+      /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
+      "$1=***",
+    );
+}
+
 /** Session cost/tokens — MONITORING_THREAD_USAGE arg/result shapes vary. */
 async function fetchThreadUsage(
   ctx: WorkerCtx,
@@ -462,7 +477,7 @@ async function fetchThreadCommands(
         if (!cmd) continue;
         const output = (part.output ?? {}) as Record<string, unknown>;
         commands.push({
-          cmd: cmd.slice(0, 160),
+          cmd: redactSecrets(cmd).slice(0, 160),
           exit: num(output.exitCode ?? output.exit_code ?? output.exit),
         });
         if (commands.length >= 40) return commands;

@@ -97,8 +97,10 @@ export async function ensureBranch(
       from_branch: from,
     });
   } catch (err) {
+    // only explicit already-exists counts as success — a generic 422 would
+    // silently continue with a missing work branch
     const message = err instanceof Error ? err.message : String(err);
-    if (/already exists|reference already exists|422/i.test(message)) return;
+    if (/already exists|reference already exists/i.test(message)) return;
     throw err;
   }
 }
@@ -483,7 +485,12 @@ export async function findOpenPullRequest(
   ref: RepoRef,
   branch: string,
 ): Promise<PullRequestInfo | null> {
-  const attempts: Array<{ tool: string; args: Record<string, unknown> }> = [
+  const attempts: Array<{
+    tool: string;
+    args: Record<string, unknown>;
+    /** server already filtered by head — a row without head.ref is trustable */
+    serverFiltered: boolean;
+  }> = [
     {
       tool: "list_pull_requests",
       args: {
@@ -492,10 +499,12 @@ export async function findOpenPullRequest(
         state: "open",
         head: `${ref.owner}:${branch}`,
       },
+      serverFiltered: true,
     },
     {
       tool: "list_pull_requests",
       args: { owner: ref.owner, repo: ref.repo, state: "open" },
+      serverFiltered: false,
     },
   ];
   for (const attempt of attempts) {
@@ -506,15 +515,16 @@ export async function findOpenPullRequest(
         attempt.tool,
         attempt.args,
       );
-      const prs = unwrapList(raw)
-        .map(toPullRequest)
-        .filter((p): p is PullRequestInfo => p !== null);
-      // when the head filter was dropped, match by branch in the raw rows
       const rows = unwrapList(raw);
-      for (let i = 0; i < prs.length; i++) {
-        const head = rows[i]?.head as Record<string, unknown> | undefined;
+      for (const row of rows) {
+        const pr = toPullRequest(row);
+        if (!pr) continue;
+        const head = row.head as Record<string, unknown> | undefined;
         const headRef = typeof head?.ref === "string" ? head.ref : undefined;
-        if (headRef === undefined || headRef === branch) return prs[i];
+        // never bind the site to an unrelated PR: exact branch match, or a
+        // missing head.ref ONLY when the server itself did the filtering
+        if (headRef === branch) return pr;
+        if (headRef === undefined && attempt.serverFiltered) return pr;
       }
     } catch {
       // try the next shape

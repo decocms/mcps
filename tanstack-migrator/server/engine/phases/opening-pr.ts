@@ -153,10 +153,10 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         if (!/already exists|pull request already/i.test(message)) throw err;
-        await addEvent(
-          site.id,
-          `PR para ${branch} já existia mas não foi localizado — seguindo sem número`,
-          "warn",
+        // a PR exists but findOpenPullRequest missed it — fail retryably
+        // instead of continuing without a number (that would skip the merge gate)
+        throw new Error(
+          `PR para ${branch} já existe mas não foi localizado (${message.slice(0, 120)}) — retry vai reencontrá-lo`,
         );
       }
     }

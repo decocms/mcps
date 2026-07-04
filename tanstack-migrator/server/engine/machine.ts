@@ -36,6 +36,6 @@ export const PHASE_HANDLERS: Partial<Record<SiteStatus, PhaseHandler>> = {
   triaging,
   fixing,
   paritying,
-  deploying_cf: deployingCf,
+  deploying: deployingCf,
   awaiting_merge: awaitingMerge,
 };

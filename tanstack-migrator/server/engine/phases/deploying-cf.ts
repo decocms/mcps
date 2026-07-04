@@ -70,7 +70,7 @@ export async function deployingCf(
   if (!ctx.config.cloudflareApiToken) {
     await updateSite(site.id, {
       status: "needs_human",
-      resume_status: "deploying_cf",
+      resume_status: "deploying",
       needs_human_reason: manualCfInstructions({
         workerName,
         repoFull: site.target_repo,
@@ -102,7 +102,7 @@ export async function deployingCf(
     await finishRun(run.id, { status: "failed", logsTail: message });
     await updateSite(site.id, {
       status: "needs_human",
-      resume_status: "deploying_cf",
+      resume_status: "deploying",
       needs_human_reason: `${message}\n\n${manualCfInstructions({ workerName, repoFull: site.target_repo })}`,
       last_progress_at: new Date().toISOString(),
     });

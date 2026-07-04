@@ -71,7 +71,7 @@ export async function migratingScript(
           phase_detail: `checkpoint pushado na branch ${site.work_branch}, abrindo PR`,
           sandbox_session_id: null,
           phase_thread_id: null, // next phase starts a fresh conversation
-          no_improve_count: 0, // used as transient-retry counter during sessions
+          transient_retries: 0,
           last_progress_at: new Date().toISOString(),
         });
         await addEvent(

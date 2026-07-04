@@ -249,7 +249,7 @@ export const createSiteRetryTool = (env: Env) =>
         .string()
         .optional()
         .describe(
-          "Override the phase to resume into (e.g. triaging, fixing, deploying_cf)",
+          "Override the phase to resume into (e.g. triaging, fixing, deploying)",
         ),
     }),
     outputSchema: siteOutput,

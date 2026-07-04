@@ -45,6 +45,12 @@ export const createGithubProbeTool = (_env: Env) =>
       "[debug] Round-trip the GitHub issue wrappers (create → list → update → comment → close) against a scratch repo, via the worker's binding path. Optionally opens a PR head→base.",
     inputSchema: z.object({
       repo: z.string().describe("owner/repo scratch repository"),
+      connectionId: z
+        .string()
+        .optional()
+        .describe(
+          "Connection row to run through (defaults to the current request's connection)",
+        ),
       pr: z
         .object({ head: z.string(), base: z.string().default("main") })
         .optional()
@@ -62,7 +68,20 @@ export const createGithubProbeTool = (_env: Env) =>
     execute: async ({ context }) => {
       const rows = await loadAllConnections();
       if (rows.length === 0) throw new Error("no connection snapshot in DB");
-      const ctx = buildWorkerCtx(rows[0]);
+      // GitHub mutations must run under the right tenant, not "most recent"
+      const wanted =
+        context.connectionId ?? _env.MESH_REQUEST_CONTEXT?.connectionId;
+      const row = wanted
+        ? rows.find((r) => r.connection_id === wanted)
+        : rows.length === 1
+          ? rows[0]
+          : undefined;
+      if (!row) {
+        throw new Error(
+          `connection não encontrada (${wanted ?? "sem contexto"}) — passe connectionId. Disponíveis: ${rows.map((r) => r.connection_id).join(", ")}`,
+        );
+      }
+      const ctx = buildWorkerCtx(row);
       const ref = parseRepo(context.repo);
       const steps: Array<{ step: string; ok: boolean; detail: string }> = [];
       const record = async <T>(
@@ -119,18 +138,18 @@ export const createGithubProbeTool = (_env: Env) =>
           commentIssue(ctx, ref, issue.number, "probe comment ✔"),
         );
         await record("closeIssue", () => closeIssue(ctx, ref, issue.number));
-        await record(
-          "listIssues(closed)",
-          () =>
-            listIssues(ctx, ref, {
-              state: "closed",
-              labels: ["tanstack-migrator"],
-            }),
-          (list) =>
-            list.some((i) => i.number === issue.number)
-              ? `#${issue.number} veio na lista closed`
-              : `#${issue.number} NÃO veio na lista closed`,
-        );
+        await record("listIssues(closed)", async () => {
+          const list = await listIssues(ctx, ref, {
+            state: "closed",
+            labels: ["tanstack-migrator"],
+          });
+          if (!list.some((i) => i.number === issue.number)) {
+            throw new Error(
+              `#${issue.number} NÃO veio na lista closed (${list.length} itens) — wrapper de list/close inconsistente`,
+            );
+          }
+          return `#${issue.number} veio na lista closed`;
+        });
       }
       if (context.pr) {
         const pr = await record(

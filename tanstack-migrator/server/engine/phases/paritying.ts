@@ -63,7 +63,7 @@ export async function paritying(
   const target = site.parity_target;
   if (site.parity_score !== null && site.parity_score >= target) {
     await updateSite(site.id, {
-      status: "deploying_cf",
+      status: "deploying",
       phase_detail: `paridade ${site.parity_score} >= ${target}, indo pro deploy`,
       last_progress_at: new Date().toISOString(),
     });
@@ -200,7 +200,8 @@ export async function paritying(
         no_improve_count: improved ? 0 : current.no_improve_count + 1,
         sandbox_session_id: null,
         phase_thread_id: null,
-        status: hitTarget ? "deploying_cf" : "fixing",
+        transient_retries: 0,
+        status: hitTarget ? "deploying" : "fixing",
         phase_detail: `rodada ${iteration}: score ${score ?? "?"}${hitTarget ? " — meta atingida!" : ` (${createdCount} issues novas)`}`,
         last_progress_at: new Date().toISOString(),
       });

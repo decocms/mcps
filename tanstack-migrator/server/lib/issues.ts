@@ -169,6 +169,26 @@ export async function syncIssuesFromDrafts(
     const existing = byHash.get(hash);
     if (existing) {
       await updateIssueBody(ctx, ref, existing.number, body).catch(() => {});
+      // keep priority in sync with the latest round (severity may escalate);
+      // preserve the blocked marker so the batch selector still skips it
+      const freshLabels = [
+        TSM_LABEL,
+        `severity:${severity}`,
+        category,
+        ...(existing.labels.includes(BLOCKED_LABEL) ? [BLOCKED_LABEL] : []),
+      ];
+      if (
+        freshLabels.some((label) => !existing.labels.includes(label)) ||
+        existing.labels.some((label) =>
+          label.startsWith("severity:") || label === BLOCKED_LABEL
+            ? !freshLabels.includes(label)
+            : false,
+        )
+      ) {
+        await issueUpdateLabels(ctx, ref, existing.number, freshLabels).catch(
+          () => {},
+        );
+      }
       await commentIssue(
         ctx,
         ref,

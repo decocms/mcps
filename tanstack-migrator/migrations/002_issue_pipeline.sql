@@ -24,3 +24,7 @@ ALTER TABLE sitemig_sites ADD COLUMN IF NOT EXISTS cost_total NUMERIC NOT NULL D
 
 -- per-run structured telemetry: {usage, commands[], issues: {taken/resolved/blocked}}
 ALTER TABLE sitemig_runs ADD COLUMN IF NOT EXISTS meta JSONB;
+
+-- transient (zombie-replica) retry counter — separate from no_improve_count,
+-- which measures parity-score stagnation (cubic review of #502)
+ALTER TABLE sitemig_sites ADD COLUMN IF NOT EXISTS transient_retries INT NOT NULL DEFAULT 0;

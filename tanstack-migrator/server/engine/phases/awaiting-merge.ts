@@ -30,9 +30,19 @@ export async function awaitingMerge(
     return;
   }
 
-  // No PR to wait on (creation failed earlier) — nothing gates the done.
+  // No PR registered: never auto-declare go-live — a human confirms.
   if (!site.pr_number || !site.target_repo) {
-    await finishAsDone(site, "Migração concluída (sem PR registrado)");
+    await updateSite(site.id, {
+      status: "needs_human",
+      resume_status: "awaiting_merge",
+      needs_human_reason: `Paridade atingida mas nenhum PR está registrado para ${site.target_repo ?? site.name}. Confirme o estado da branch ${site.work_branch} no GitHub e finalize com SITE_MARK_DONE (ou Retry após abrir o PR manualmente).`,
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(
+      site.id,
+      "awaiting_merge sem PR registrado — precisa de humano",
+      "warn",
+    );
     return;
   }
 

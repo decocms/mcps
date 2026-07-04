@@ -28,6 +28,7 @@ import { addEvent } from "../db/events.ts";
 import { closeStaleRuns } from "../db/runs.ts";
 import {
   acquireLease,
+  getSite,
   listSites,
   releaseLease,
   updateSite,
@@ -139,9 +140,13 @@ async function watchdog(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
  *   - mesh unreachable → say it LOUD (needs_human) instead of silence
  */
 async function probeSessionLiveness(
-  site: SiteRow,
+  staleRow: SiteRow,
   ctx: WorkerCtx,
 ): Promise<void> {
+  // advanceSite may have just progressed the site — never act on the
+  // pre-advance snapshot (a stale probe could needs_human a healthy site)
+  const site = await getSite(staleRow.id).catch(() => null);
+  if (!site) return;
   if (!isSessionStatus(site.status)) return;
   if (!site.sandbox_session_id || !site.phase_thread_id) return;
   const staleness = stalenessMs(site);
@@ -304,7 +309,7 @@ async function sweepSites(sites: SiteRow[]): Promise<void> {
     }
     if (site.status !== "failed") continue;
     if (!site.error || !ZOMBIE_FAILURE_SIGNATURE.test(site.error)) continue;
-    if (site.no_improve_count >= MAX_ZOMBIE_REVIVES) continue;
+    if (site.transient_retries >= MAX_ZOMBIE_REVIVES) continue;
 
     const resumeInto = site.resume_status
       ? toCurrentStatus(site.resume_status)
@@ -315,14 +320,14 @@ async function sweepSites(sites: SiteRow[]): Promise<void> {
     await updateSite(site.id, {
       status: resumeInto,
       error: null,
-      no_improve_count: site.no_improve_count + 1,
-      phase_detail: `revivido após falha de réplica desatualizada (${site.no_improve_count + 1}/${MAX_ZOMBIE_REVIVES})`,
+      transient_retries: site.transient_retries + 1,
+      phase_detail: `revivido após falha de réplica desatualizada (${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES})`,
       sandbox_session_id: null,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Falha de réplica desatualizada — retry automático ${site.no_improve_count + 1}/${MAX_ZOMBIE_REVIVES} (retomando em ${resumeInto})`,
+      `Falha de réplica desatualizada — retry automático ${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES} (retomando em ${resumeInto})`,
       "warn",
     );
     site.status = resumeInto;
