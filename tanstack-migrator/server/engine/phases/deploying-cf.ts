@@ -1,8 +1,9 @@
 /**
  * Phase: deploying_cf — create the Cloudflare Workers Builds project
- * (git-connected: every push deploys automatically) and finish the migration.
- * Degrades to needs_human with manual instructions when the API/token
- * isn't available.
+ * (git-connected, watching MAIN: the deploy happens when the PR merges).
+ * With a PR registered the site parks in awaiting_merge (human merge =
+ * go-live); without one it finishes directly. Degrades to needs_human with
+ * manual instructions when the API/token isn't available.
  */
 
 import { addEvent } from "../../db/events.ts";
@@ -22,14 +23,28 @@ async function finishMigration(
   ctx: WorkerCtx,
   patch: Partial<SiteRow>,
 ): Promise<void> {
-  await updateSite(site.id, {
-    ...patch,
-    status: "done",
-    phase_detail: "migração concluída",
-    finished_at: new Date().toISOString(),
-    last_progress_at: new Date().toISOString(),
-  });
-  await addEvent(site.id, "Migração concluída 🎉");
+  const hasPr = Boolean(site.pr_number);
+  if (hasPr) {
+    await updateSite(site.id, {
+      ...patch,
+      status: "awaiting_merge",
+      phase_detail: `projeto CF criado — aguardando merge do PR #${site.pr_number} (merge = go-live)`,
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(
+      site.id,
+      `Paridade ok e CF configurada — falta só o merge do PR #${site.pr_number}`,
+    );
+  } else {
+    await updateSite(site.id, {
+      ...patch,
+      status: "done",
+      phase_detail: "migração concluída",
+      finished_at: new Date().toISOString(),
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(site.id, "Migração concluída 🎉");
+  }
   try {
     await getDriver(ctx).destroy(site, ctx);
   } catch {
@@ -55,7 +70,7 @@ export async function deployingCf(
   if (!ctx.config.cloudflareApiToken) {
     await updateSite(site.id, {
       status: "needs_human",
-      resume_status: "deploying_cf",
+      resume_status: "deploying",
       needs_human_reason: manualCfInstructions({
         workerName,
         repoFull: site.target_repo,
@@ -87,7 +102,7 @@ export async function deployingCf(
     await finishRun(run.id, { status: "failed", logsTail: message });
     await updateSite(site.id, {
       status: "needs_human",
-      resume_status: "deploying_cf",
+      resume_status: "deploying",
       needs_human_reason: `${message}\n\n${manualCfInstructions({ workerName, repoFull: site.target_repo })}`,
       last_progress_at: new Date().toISOString(),
     });

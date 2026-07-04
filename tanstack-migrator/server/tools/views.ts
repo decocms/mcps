@@ -17,6 +17,15 @@ export const SiteViewSchema = z.object({
   bestScore: z.number().nullable(),
   iterationsDone: z.number(),
   maxIterations: z.number(),
+  issuesTotal: z.number(),
+  issuesOpen: z.number(),
+  issuesClosed: z.number(),
+  fixSessionsDone: z.number(),
+  maxFixSessions: z.number(),
+  workBranch: z.string(),
+  prNumber: z.number().nullable(),
+  prUrl: z.string().nullable(),
+  costTotal: z.number(),
   previewUrl: z.string().nullable(),
   previewReady: z.boolean(),
   cfDeployUrl: z.string().nullable(),
@@ -44,6 +53,15 @@ export function toSiteView(row: SiteRow): SiteView {
     bestScore: row.best_score,
     iterationsDone: row.iterations_done,
     maxIterations: row.max_iterations,
+    issuesTotal: row.issues_total ?? 0,
+    issuesOpen: row.issues_open ?? 0,
+    issuesClosed: row.issues_closed ?? 0,
+    fixSessionsDone: row.fix_sessions_done ?? 0,
+    maxFixSessions: row.max_fix_sessions ?? 20,
+    workBranch: row.work_branch ?? "migration/tanstack",
+    prNumber: row.pr_number,
+    prUrl: row.pr_url,
+    costTotal: Number(row.cost_total ?? 0),
     previewUrl: row.sandbox_preview_url,
     previewReady: row.preview_ready ?? false,
     cfDeployUrl: row.cf_deploy_url,
@@ -56,6 +74,35 @@ export function toSiteView(row: SiteRow): SiteView {
   };
 }
 
+export const RunMetaViewSchema = z
+  .object({
+    usage: z
+      .object({
+        inputTokens: z.number().optional(),
+        outputTokens: z.number().optional(),
+        totalTokens: z.number().optional(),
+        costUsd: z.number().optional(),
+      })
+      .optional(),
+    commands: z
+      .array(z.object({ cmd: z.string(), exit: z.number().optional() }))
+      .optional(),
+    issues: z
+      .object({
+        taken: z.array(z.number()).optional(),
+        resolved: z.array(z.number()).optional(),
+        blocked: z
+          .array(
+            z.object({ number: z.number(), reason: z.string().optional() }),
+          )
+          .optional(),
+        created: z.number().optional(),
+      })
+      .optional(),
+    threadId: z.string().optional(),
+  })
+  .nullable();
+
 export const RunViewSchema = z.object({
   id: z.string(),
   kind: z.string(),
@@ -66,6 +113,7 @@ export const RunViewSchema = z.object({
   hasArtifacts: z.boolean(),
   threadId: z.string().nullable(),
   logsTail: z.string().nullable(),
+  meta: RunMetaViewSchema,
   startedAt: z.string(),
   finishedAt: z.string().nullable(),
 });
@@ -80,8 +128,12 @@ export function toRunView(row: RunRow): RunView {
     parityScore: row.parity_score,
     summary: row.summary,
     hasArtifacts: !!row.artifact_prefix,
-    threadId: row.logs_tail?.match(/^\[thread ([^\]]+)\]/)?.[1] ?? null,
+    threadId:
+      row.meta?.threadId ??
+      row.logs_tail?.match(/^\[thread ([^\]]+)\]/)?.[1] ??
+      null,
     logsTail: row.logs_tail,
+    meta: row.meta ?? null,
     startedAt: row.started_at,
     finishedAt: row.finished_at,
   };

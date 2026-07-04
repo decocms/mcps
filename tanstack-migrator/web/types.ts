@@ -32,6 +32,15 @@ export interface SiteView {
   bestScore: number | null;
   iterationsDone: number;
   maxIterations: number;
+  issuesTotal: number;
+  issuesOpen: number;
+  issuesClosed: number;
+  fixSessionsDone: number;
+  maxFixSessions: number;
+  workBranch: string;
+  prNumber: number | null;
+  prUrl: string | null;
+  costTotal: number;
   previewUrl: string | null;
   previewReady: boolean;
   cfDeployUrl: string | null;
@@ -84,6 +93,23 @@ export interface ParitySummary {
   }>;
 }
 
+export interface RunMetaView {
+  usage?: {
+    inputTokens?: number;
+    outputTokens?: number;
+    totalTokens?: number;
+    costUsd?: number;
+  };
+  commands?: Array<{ cmd: string; exit?: number }>;
+  issues?: {
+    taken?: number[];
+    resolved?: number[];
+    blocked?: Array<{ number: number; reason?: string }>;
+    created?: number;
+  };
+  threadId?: string;
+}
+
 export interface RunView {
   id: string;
   kind: string;
@@ -94,6 +120,7 @@ export interface RunView {
   hasArtifacts: boolean;
   threadId: string | null;
   logsTail: string | null;
+  meta: RunMetaView | null;
   startedAt: string;
   finishedAt: string | null;
 }

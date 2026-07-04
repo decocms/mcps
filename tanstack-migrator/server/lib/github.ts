@@ -78,6 +78,33 @@ export async function ensureRepo(ctx: WorkerCtx, full: string): Promise<void> {
   }
 }
 
+/**
+ * Idempotent: create the work branch off `from`. The branch must exist on
+ * GitHub BEFORE SANDBOX_START — the sandbox clone and the decopilot threads
+ * are pinned to it, and the (user, branch) pair routes sessions into the vm.
+ */
+export async function ensureBranch(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  branch: string,
+  from = "main",
+): Promise<void> {
+  try {
+    await callBindingTool(ctx, "GITHUB", "create_branch", {
+      owner: ref.owner,
+      repo: ref.repo,
+      branch,
+      from_branch: from,
+    });
+  } catch (err) {
+    // only explicit already-exists counts as success — a generic 422 would
+    // silently continue with a missing work branch
+    const message = err instanceof Error ? err.message : String(err);
+    if (/already exists|reference already exists/i.test(message)) return;
+    throw err;
+  }
+}
+
 export interface RepoGrant {
   token: string;
   expiresAt?: string;
@@ -179,6 +206,383 @@ export async function ghsTokenForSite(
   } catch {
     return { token: undefined };
   }
+}
+
+// ============================================================================
+// Issues + PRs — the durable memory of the v0.5.0 pipeline.
+//
+// The binding proxies the official GitHub MCP server, whose arg shapes vary
+// by version (consolidated issue_write/pull_request_read vs the older
+// create_issue/get_pull_request; state enums upper vs lower case). Every
+// wrapper parses tolerantly and retries the known shape variants.
+// ============================================================================
+
+export interface GithubIssue {
+  number: number;
+  title: string;
+  body: string;
+  state: string;
+  labels: string[];
+  htmlUrl?: string;
+}
+
+/** Unwrap {item}/{data}/{issue}/array envelopes the proxy may add. */
+function unwrapItem(raw: unknown): Record<string, unknown> | null {
+  if (!raw || typeof raw !== "object") return null;
+  const obj = raw as Record<string, unknown>;
+  const candidate = Array.isArray(obj)
+    ? obj[0]
+    : (obj.issue ?? obj.pull_request ?? obj.item ?? obj.data ?? obj);
+  if (!candidate || typeof candidate !== "object") return null;
+  return candidate as Record<string, unknown>;
+}
+
+function unwrapList(raw: unknown): Record<string, unknown>[] {
+  if (Array.isArray(raw)) return raw as Record<string, unknown>[];
+  if (!raw || typeof raw !== "object") return [];
+  const obj = raw as Record<string, unknown>;
+  for (const key of ["issues", "items", "data", "nodes"]) {
+    if (Array.isArray(obj[key])) return obj[key] as Record<string, unknown>[];
+  }
+  return [];
+}
+
+function toIssue(raw: Record<string, unknown>): GithubIssue | null {
+  const number = typeof raw.number === "number" ? raw.number : undefined;
+  if (number === undefined) return null;
+  const labels = Array.isArray(raw.labels)
+    ? (raw.labels as unknown[])
+        .map((l) =>
+          typeof l === "string"
+            ? l
+            : typeof (l as Record<string, unknown>)?.name === "string"
+              ? ((l as Record<string, unknown>).name as string)
+              : "",
+        )
+        .filter(Boolean)
+    : [];
+  return {
+    number,
+    title: typeof raw.title === "string" ? raw.title : "",
+    body: typeof raw.body === "string" ? raw.body : "",
+    state: typeof raw.state === "string" ? raw.state.toLowerCase() : "open",
+    labels,
+    htmlUrl: typeof raw.html_url === "string" ? raw.html_url : undefined,
+  };
+}
+
+function isUnknownToolError(message: string): boolean {
+  return /unknown tool|tool .+ not found|no such tool|method not found/i.test(
+    message,
+  );
+}
+
+export async function createIssue(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  input: { title: string; body: string; labels?: string[] },
+): Promise<GithubIssue> {
+  const args = {
+    method: "create",
+    owner: ref.owner,
+    repo: ref.repo,
+    title: input.title,
+    body: input.body,
+    ...(input.labels?.length ? { labels: input.labels } : {}),
+  };
+  let raw: unknown;
+  try {
+    raw = await callBindingTool(ctx, "GITHUB", "issue_write", args);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (isUnknownToolError(message)) {
+      const { method: _m, ...rest } = args;
+      raw = await callBindingTool(ctx, "GITHUB", "create_issue", rest);
+    } else if (input.labels?.length && /label|422|validation/i.test(message)) {
+      // labels may not exist yet / label create may be forbidden — retry bare
+      return await createIssue(ctx, ref, { ...input, labels: undefined });
+    } else {
+      throw err;
+    }
+  }
+  const issue = toIssue(unwrapItem(raw) ?? {});
+  if (!issue) {
+    throw new Error(
+      `issue create returned no number: ${JSON.stringify(raw).slice(0, 200)}`,
+    );
+  }
+  return issue;
+}
+
+async function issueUpdate(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  issueNumber: number,
+  patch: Record<string, unknown>,
+): Promise<void> {
+  const args = {
+    method: "update",
+    owner: ref.owner,
+    repo: ref.repo,
+    issue_number: issueNumber,
+    ...patch,
+  };
+  try {
+    await callBindingTool(ctx, "GITHUB", "issue_write", args);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!isUnknownToolError(message)) throw err;
+    const { method: _m, ...rest } = args;
+    await callBindingTool(ctx, "GITHUB", "update_issue", rest);
+  }
+}
+
+export async function updateIssueBody(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  issueNumber: number,
+  body: string,
+): Promise<void> {
+  await issueUpdate(ctx, ref, issueNumber, { body });
+}
+
+/** Replace the issue's label set (pass the merged list — GitHub overwrites). */
+export async function issueUpdateLabels(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  issueNumber: number,
+  labels: string[],
+): Promise<void> {
+  await issueUpdate(ctx, ref, issueNumber, {
+    labels: [...new Set(labels)],
+  });
+}
+
+export async function closeIssue(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  issueNumber: number,
+  reason: "completed" | "not_planned" = "completed",
+): Promise<void> {
+  try {
+    await issueUpdate(ctx, ref, issueNumber, {
+      state: "closed",
+      state_reason: reason,
+    });
+  } catch (err) {
+    // some server versions reject state_reason — closing is what matters
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/state_reason|invalid/i.test(message)) throw err;
+    await issueUpdate(ctx, ref, issueNumber, { state: "closed" });
+  }
+}
+
+export async function commentIssue(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  issueNumber: number,
+  body: string,
+): Promise<void> {
+  await callBindingTool(ctx, "GITHUB", "add_issue_comment", {
+    owner: ref.owner,
+    repo: ref.repo,
+    issue_number: issueNumber,
+    body,
+  });
+}
+
+export async function listIssues(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  input: { state: "open" | "closed"; labels?: string[] },
+): Promise<GithubIssue[]> {
+  const base = {
+    owner: ref.owner,
+    repo: ref.repo,
+    ...(input.labels?.length ? { labels: input.labels } : {}),
+    perPage: 100,
+  };
+  let raw: unknown;
+  try {
+    raw = await callBindingTool(ctx, "GITHUB", "list_issues", {
+      ...base,
+      state: input.state,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    // GraphQL-backed versions want the enum uppercase
+    if (!/state|enum|invalid|validation/i.test(message)) throw err;
+    raw = await callBindingTool(ctx, "GITHUB", "list_issues", {
+      ...base,
+      state: input.state.toUpperCase(),
+    });
+  }
+  return unwrapList(raw)
+    .map(toIssue)
+    .filter((i): i is GithubIssue => i !== null);
+}
+
+export interface PullRequestInfo {
+  number: number;
+  url?: string;
+  state: string;
+  merged: boolean;
+}
+
+function toPullRequest(raw: Record<string, unknown>): PullRequestInfo | null {
+  const number = typeof raw.number === "number" ? raw.number : undefined;
+  if (number === undefined) return null;
+  const state = typeof raw.state === "string" ? raw.state.toLowerCase() : "";
+  const merged =
+    raw.merged === true ||
+    typeof raw.merged_at === "string" ||
+    typeof raw.mergedAt === "string" ||
+    state === "merged";
+  return {
+    number,
+    url: typeof raw.html_url === "string" ? raw.html_url : undefined,
+    state,
+    merged,
+  };
+}
+
+export async function createPullRequest(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  input: { title: string; body: string; head: string; base: string },
+): Promise<PullRequestInfo> {
+  const args = {
+    owner: ref.owner,
+    repo: ref.repo,
+    title: input.title,
+    body: input.body,
+    head: input.head,
+    base: input.base,
+  };
+  let raw: unknown;
+  try {
+    raw = await callBindingTool(ctx, "GITHUB", "create_pull_request", args);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!isUnknownToolError(message)) throw err;
+    raw = await callBindingTool(ctx, "GITHUB", "pull_request_write", {
+      method: "create",
+      ...args,
+    });
+  }
+  const pr = toPullRequest(unwrapItem(raw) ?? {});
+  if (!pr) {
+    throw new Error(
+      `PR create returned no number: ${JSON.stringify(raw).slice(0, 200)}`,
+    );
+  }
+  return pr;
+}
+
+/** Open PR whose head is `branch` — how a re-run reuses the existing PR. */
+export async function findOpenPullRequest(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  branch: string,
+): Promise<PullRequestInfo | null> {
+  const attempts: Array<{
+    tool: string;
+    args: Record<string, unknown>;
+    /** server already filtered by head — a row without head.ref is trustable */
+    serverFiltered: boolean;
+  }> = [
+    {
+      tool: "list_pull_requests",
+      args: {
+        owner: ref.owner,
+        repo: ref.repo,
+        state: "open",
+        head: `${ref.owner}:${branch}`,
+      },
+      serverFiltered: true,
+    },
+    {
+      tool: "list_pull_requests",
+      args: { owner: ref.owner, repo: ref.repo, state: "open" },
+      serverFiltered: false,
+    },
+  ];
+  for (const attempt of attempts) {
+    try {
+      const raw = await callBindingTool(
+        ctx,
+        "GITHUB",
+        attempt.tool,
+        attempt.args,
+      );
+      const rows = unwrapList(raw);
+      for (const row of rows) {
+        const pr = toPullRequest(row);
+        if (!pr) continue;
+        const head = row.head as Record<string, unknown> | undefined;
+        const headRef = typeof head?.ref === "string" ? head.ref : undefined;
+        // never bind the site to an unrelated PR: exact branch match, or a
+        // missing head.ref ONLY when the server itself did the filtering
+        if (headRef === branch) return pr;
+        if (headRef === undefined && attempt.serverFiltered) return pr;
+      }
+    } catch {
+      // try the next shape
+    }
+  }
+  return null;
+}
+
+export async function getPullRequest(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  prNumber: number,
+): Promise<PullRequestInfo | null> {
+  const attempts: Array<{ tool: string; args: Record<string, unknown> }> = [
+    {
+      tool: "pull_request_read",
+      args: {
+        method: "get",
+        owner: ref.owner,
+        repo: ref.repo,
+        pullNumber: prNumber,
+      },
+    },
+    {
+      tool: "pull_request_read",
+      args: {
+        method: "get",
+        owner: ref.owner,
+        repo: ref.repo,
+        pull_number: prNumber,
+      },
+    },
+    {
+      tool: "get_pull_request",
+      args: { owner: ref.owner, repo: ref.repo, pull_number: prNumber },
+    },
+  ];
+  let lastError: unknown = null;
+  for (const attempt of attempts) {
+    try {
+      const raw = await callBindingTool(
+        ctx,
+        "GITHUB",
+        attempt.tool,
+        attempt.args,
+      );
+      const pr = toPullRequest(unwrapItem(raw) ?? {});
+      if (pr) return pr;
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  const message =
+    lastError instanceof Error ? lastError.message : String(lastError ?? "");
+  if (/404|not found/i.test(message)) return null;
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`getPullRequest failed: ${message}`);
 }
 
 interface FileContents {

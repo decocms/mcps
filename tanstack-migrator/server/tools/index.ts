@@ -1,4 +1,4 @@
-import { createAdvanceQueueTool } from "./admin.ts";
+import { createAdvanceQueueTool, createGithubProbeTool } from "./admin.ts";
 import { createDashboardTool } from "./dashboard.ts";
 import { createReportProgressTool } from "./progress.ts";
 import { createParityReportUrlsTool } from "./reports.ts";
@@ -28,4 +28,5 @@ export const tools = [
   createParityReportUrlsTool,
   createReportProgressTool,
   createAdvanceQueueTool,
+  createGithubProbeTool,
 ];

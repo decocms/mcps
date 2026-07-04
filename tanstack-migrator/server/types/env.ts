@@ -3,8 +3,11 @@ import type { ToolBinder } from "@decocms/runtime";
 import { z } from "zod";
 import {
   DEFAULT_CF_ACCOUNT_ID,
+  DEFAULT_FIX_BATCH_SIZE,
   DEFAULT_GITHUB_ORG,
   DEFAULT_MAX_CONCURRENT,
+  DEFAULT_MAX_FIX_SESSIONS,
+  DEFAULT_MAX_ISSUES_PER_TRIAGE,
   DEFAULT_MAX_ITERATIONS,
   DEFAULT_NO_IMPROVE_LIMIT,
   DEFAULT_PARITY_TARGET,
@@ -113,6 +116,30 @@ export const StateSchema = z.object({
     .describe(
       "Consecutive iterations without score improvement before needs_human.",
     ),
+  MAX_FIX_SESSIONS: z
+    .number()
+    .int()
+    .min(1)
+    .default(DEFAULT_MAX_FIX_SESSIONS)
+    .describe(
+      "Max issue-fixing sessions per site before needs_human (issue-driven loop).",
+    ),
+  FIX_BATCH_SIZE: z
+    .number()
+    .int()
+    .min(1)
+    .max(5)
+    .default(DEFAULT_FIX_BATCH_SIZE)
+    .describe(
+      "How many medium/low issues of the same category one fix session takes (critical/high always go alone).",
+    ),
+  MAX_ISSUES_PER_TRIAGE: z
+    .number()
+    .int()
+    .min(1)
+    .max(30)
+    .default(DEFAULT_MAX_ISSUES_PER_TRIAGE)
+    .describe("Cap of GitHub issues created per triage/parity round."),
   SANDBOX_PROVIDER: z
     .enum(["manual", "decopilot"])
     .default("manual")
@@ -147,6 +174,9 @@ export interface MigratorConfig {
   parityTarget: number;
   maxIterations: number;
   noImproveLimit: number;
+  maxFixSessions: number;
+  fixBatchSize: number;
+  maxIssuesPerTriage: number;
   sandboxProvider: "manual" | "decopilot";
   sandboxKind: "agent-sandbox" | "user-desktop" | "auto";
   sessionHarness: "claude-code" | "decopilot" | "codex";
@@ -172,6 +202,10 @@ export function parseMigratorConfig(
     parityTarget: num(s.PARITY_TARGET) ?? DEFAULT_PARITY_TARGET,
     maxIterations: num(s.MAX_ITERATIONS) ?? DEFAULT_MAX_ITERATIONS,
     noImproveLimit: num(s.NO_IMPROVE_LIMIT) ?? DEFAULT_NO_IMPROVE_LIMIT,
+    maxFixSessions: num(s.MAX_FIX_SESSIONS) ?? DEFAULT_MAX_FIX_SESSIONS,
+    fixBatchSize: num(s.FIX_BATCH_SIZE) ?? DEFAULT_FIX_BATCH_SIZE,
+    maxIssuesPerTriage:
+      num(s.MAX_ISSUES_PER_TRIAGE) ?? DEFAULT_MAX_ISSUES_PER_TRIAGE,
     sandboxProvider:
       s.SANDBOX_PROVIDER === "decopilot" ? "decopilot" : "manual",
     sandboxKind:

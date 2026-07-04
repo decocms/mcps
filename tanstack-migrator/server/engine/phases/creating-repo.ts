@@ -7,8 +7,12 @@ import { addEvent } from "../../db/events.ts";
 import type { SiteRow } from "../../db/types.ts";
 import { updateSite } from "../../db/sites.ts";
 import {
+  ensureBranch,
   ensureRepo,
+  getFile,
   mintRepoGrant,
+  parseRepo,
+  putFile,
   RepoCreatePermissionError,
   targetRepoFor,
 } from "../../lib/github.ts";
@@ -54,6 +58,25 @@ export async function creatingRepo(
     throw err;
   }
   await addEvent(site.id, `Repo ${targetRepo} garantido no GitHub`);
+
+  // main must exist (repos are created empty) — it's the PR base — and the
+  // work branch must exist BEFORE SANDBOX_START: sandbox clone + decopilot
+  // threads are pinned to it.
+  const ref = parseRepo(targetRepo);
+  const readme = await getFile(ctx, ref, "README.md");
+  if (!readme) {
+    await putFile(ctx, ref, {
+      path: "README.md",
+      content: `# ${ref.repo}\n\nTanStack Start migration of \`${site.source_repo}\` — managed by tanstack-migrator.\n`,
+      message: "chore: init (tanstack-migrator)",
+    });
+    await addEvent(site.id, "Branch main inicializada (README)");
+  }
+  await ensureBranch(ctx, ref, site.work_branch);
+  await addEvent(
+    site.id,
+    `Branch de trabalho ${site.work_branch} garantida (base do PR: main)`,
+  );
 
   // The push grant is optional: the mesh sandbox gets git credentials synced
   // for the virtualMcp's githubRepo connection (sync-git-credentials), so

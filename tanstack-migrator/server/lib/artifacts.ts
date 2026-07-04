@@ -105,6 +105,42 @@ export async function presignGetUrls(
 }
 
 /**
+ * Long-lived presigned GETs for embedding in GitHub issue bodies
+ * (![heatmap](url)). 7 days — images in old issues eventually expire;
+ * regenerable via PARITY_REPORT_URLS.
+ */
+export async function presignIssueEmbeds(
+  ctx: WorkerCtx,
+  prefix: string,
+): Promise<{ reportHtml: string; heatmaps: string[] } | null> {
+  if (!hasBinding(ctx, "OBJECT_STORAGE")) return null;
+  const week = 7 * 24 * 3600;
+  try {
+    const [reportHtml, ...heatmaps] = await Promise.all([
+      presign(
+        ctx,
+        "GET_PRESIGNED_URL",
+        `${prefix}/report.html`,
+        undefined,
+        week,
+      ),
+      ...Array.from({ length: HEATMAP_SLOTS }, (_, i) =>
+        presign(
+          ctx,
+          "GET_PRESIGNED_URL",
+          `${prefix}/heatmap_${i}.png`,
+          undefined,
+          week,
+        ),
+      ),
+    ]);
+    return { reportHtml, heatmaps };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Fetch the uploaded report.json (via presigned GET) and trim it to the
  * summary stored in sitemig_runs (full report never goes to Postgres).
  */

@@ -17,7 +17,12 @@ const TAB_META: Array<{ id: Tab; label: string }> = [
 
 function bucketOf(site: SiteView): Tab {
   if (site.status === "done") return "done";
-  if (site.status === "needs_human" || site.status === "failed") {
+  if (
+    site.status === "needs_human" ||
+    site.status === "failed" ||
+    // the pipeline is done — a human merging the PR is the go-live
+    site.status === "awaiting_merge"
+  ) {
     return "needs_human";
   }
   return "migrating";
