@@ -79,6 +79,7 @@ export async function migrating(
         });
         await updateSite(site.id, {
           status: "failed",
+          resume_status: "migrating",
           error: result.error ?? "migração inicial falhou",
           sandbox_session_id: null,
           last_progress_at: new Date().toISOString(),
@@ -90,6 +91,7 @@ export async function migrating(
       await finishRun(run.id, { status: "failed", logsTail: message });
       await updateSite(site.id, {
         status: "failed",
+        resume_status: "migrating",
         error: message,
         sandbox_session_id: null,
       });
