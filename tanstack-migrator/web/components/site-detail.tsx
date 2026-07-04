@@ -14,7 +14,7 @@ import { useState } from "react";
 import { ParityBar } from "@/components/parity-bar.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
-import { clockTime, cn, timeAgo } from "@/lib/utils.ts";
+import { duration, clockTime, cn, timeAgo } from "@/lib/utils.ts";
 import type { ReportUrls, RunView, SiteDetail } from "@/types.ts";
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -110,6 +110,26 @@ function RunRow({ run }: { run: RunView }) {
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {run.finishedAt && (
+            <span className="text-muted-foreground tabular-nums">
+              {duration(run.startedAt, run.finishedAt)}
+            </span>
+          )}
+          {run.threadId && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard?.writeText(run.threadId ?? "");
+              }}
+              onKeyDown={(e) => e.key === "Enter" && e.stopPropagation()}
+              className="inline-flex max-w-28 items-center gap-1 truncate rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+              title={`Thread da sessão: ${run.threadId} (clique pra copiar)`}
+            >
+              {run.threadId}
+            </span>
+          )}
           {run.parityScore !== null && (
             <span className="font-semibold tabular-nums">
               {Math.round(run.parityScore)}%
@@ -391,7 +411,7 @@ export function SiteDetailPanel({
                     ]
                   : null,
                 ["Produção", site.prodUrl, site.prodUrl],
-                site.previewUrl
+                site.previewUrl && site.previewReady
                   ? ["Preview", site.previewUrl, site.previewUrl]
                   : null,
                 site.cfDeployUrl

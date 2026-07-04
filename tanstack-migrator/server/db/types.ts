@@ -109,6 +109,7 @@ export interface SiteRow {
 
   sandbox_handle: string | null;
   sandbox_preview_url: string | null;
+  preview_ready: boolean;
   sandbox_session_id: string | null;
   virtual_mcp_id: string | null;
 

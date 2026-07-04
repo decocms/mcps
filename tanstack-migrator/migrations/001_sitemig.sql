@@ -140,3 +140,6 @@ ALTER TABLE sitemig_events ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "service_role_all" ON sitemig_events;
 CREATE POLICY "service_role_all" ON sitemig_events
   AS PERMISSIVE FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- v0.4.0: preview link only shows when the dev server actually answers
+ALTER TABLE sitemig_sites ADD COLUMN IF NOT EXISTS preview_ready BOOLEAN NOT NULL DEFAULT false;

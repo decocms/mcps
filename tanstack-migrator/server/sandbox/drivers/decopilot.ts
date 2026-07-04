@@ -22,6 +22,7 @@
 
 import { collectFullStreamText } from "@decocms/mcps-shared/mesh-chat";
 import { addEvent } from "../../db/events.ts";
+import { attachThreadToRun } from "../../db/runs.ts";
 import { updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
 import {
@@ -132,6 +133,7 @@ async function runDecopilotSession(
   prompt: string,
   timeoutMs: number,
   kind: string,
+  runId?: string,
 ): Promise<string> {
   const base = resolveMeshUrl(ctx.meshUrl);
   // decopilot routes are keyed by org SLUG (an org-id 404s: "organization not found")
@@ -200,6 +202,7 @@ async function runDecopilotSession(
     site.id,
     `Sessão despachada (202) — thread ${threadId} · harness ${ctx.config.sessionHarness}`,
   );
+  if (runId) await attachThreadToRun(runId, threadId).catch(() => {});
   await updateSite(site.id, {
     phase_detail: `sessão ${threadId} na fila do decopilot`,
     last_progress_at: new Date().toISOString(),
@@ -370,6 +373,7 @@ export const decopilotDriver: SandboxDriver = {
       task.prompt,
       timeoutMs,
       ctx.config.sandboxKind,
+      task.runId,
     );
     const tail = output.slice(-4000);
     const result = parseResultJson(output);

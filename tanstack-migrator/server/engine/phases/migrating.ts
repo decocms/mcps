@@ -52,6 +52,7 @@ export async function migrating(
       const result = await getDriver(ctx).runTask(site, ctx, {
         kind: "migrate",
         prompt,
+        runId: run.id,
       });
 
       const current = await getSite(site.id);

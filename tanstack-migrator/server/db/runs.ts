@@ -77,3 +77,16 @@ export async function listRunsForSite(
   if (error) throw new Error(`Failed to list runs: ${error.message}`);
   return (data as RunRow[]) ?? [];
 }
+
+/** Stamp the decopilot thread id on a running run (prefix of logs_tail). */
+export async function attachThreadToRun(
+  runId: string,
+  threadId: string,
+): Promise<void> {
+  const client = requireSupabase();
+  await client
+    .from("sitemig_runs")
+    .update({ logs_tail: `[thread ${threadId}]` })
+    .eq("id", runId)
+    .is("finished_at", null);
+}

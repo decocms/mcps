@@ -90,12 +90,21 @@ export function SiteCard({
         <RepoLink repo={site.targetRepo} label="tanstack" icon={GitBranch} />
         <div className="flex items-center gap-3">
           <RepoLink repo={site.prodUrl} label="produção" icon={Globe} />
-          {site.previewUrl && (
+          {site.previewUrl && site.previewReady && (
             <RepoLink
               repo={site.previewUrl}
               label="preview"
               icon={ExternalLink}
             />
+          )}
+          {site.previewUrl && !site.previewReady && (
+            <span
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground/60"
+              title="Sandbox criado — o link aparece quando o dev server responder"
+            >
+              <ExternalLink className="h-3 w-3" />
+              sandbox criado
+            </span>
           )}
           {site.cfDeployUrl && (
             <RepoLink
