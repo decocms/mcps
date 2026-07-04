@@ -1,6 +1,6 @@
 /**
  * Decopilot driver — live mode via the same path the agentic CMS uses
- * (verified against mesh main @ 2026-07-03, apps/mesh/src/tools/{sandbox,virtual}):
+ * (verified against mesh main @ 2026-07-03/04):
  *
  *   project:   COLLECTION_VIRTUAL_MCP_CREATE on {meshUrl}/mcp/self creates the
  *              virtual MCP bound to the repo (metadata.githubRepo {url, owner,
@@ -8,10 +8,16 @@
  *   lifecycle: SANDBOX_START / SANDBOX_DELETE management tools on /mcp/self
  *              ({virtualMcpId, branch, sandboxProviderKind: "agent-sandbox"}).
  *              Re-calling SANDBOX_START resets the idle TTL (keepalive).
- *   execution: bounded decopilot sessions (claude-code provider) at
- *              {meshUrl}/api/{org}/decopilot/stream — mesh runs the agent
- *              loop and executes bash/edits inside the sandbox via its
- *              internal vm tools.
+ *   execution: thread-based decopilot runs (StreamRequestSchema in
+ *              mesh apps/mesh/src/api/routes/decopilot/schemas.ts):
+ *                POST {meshUrl}/api/{orgSlug}/decopilot/threads/{threadId}/messages
+ *                  { messages: [one user UIMessage], agent: {id: virtualMcpId},
+ *                    harnessId: "claude-code", sandboxProviderKind, branch, ... }
+ *                → 202 {taskId}; then consume
+ *                GET {meshUrl}/api/{orgSlug}/decopilot/threads/{threadId}/stream
+ *              The harness/branch/kind are PINNED on the first message; the
+ *              (user, branch) pair routes the run into the sandbox started by
+ *              SANDBOX_START. Claude Code runs mesh-side against that sandbox.
  */
 
 import { collectFullStreamText } from "@decocms/mcps-shared/mesh-chat";
@@ -31,12 +37,10 @@ import type {
 } from "../client.ts";
 import { parseResultJson } from "../templates/prompts.ts";
 
-/** Model routed to the mesh-side Claude Code coding agent. Override per pod if needed. */
-const DECOPILOT_MODEL_ID =
-  process.env.MIGRATOR_DECOPILOT_MODEL ?? "claude-code:sonnet";
-
 const DEFAULT_TASK_TIMEOUT_MS = 45 * 60_000;
 const SANDBOX_BRANCH = "main";
+/** Reconnect cadence for the thread SSE while the run is still going. */
+const STREAM_RECONNECT_DELAY_MS = 3_000;
 
 interface SandboxStartResult {
   previewUrl?: string | null;
@@ -111,60 +115,103 @@ async function sandboxStart(
   );
 }
 
-/** One bounded decopilot session; resolves with the final assistant text. */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * One bounded decopilot run: POST a user message onto a fresh thread
+ * (202 + queued dispatch), then consume the thread SSE until the run
+ * produces the RESULT_JSON line or the timeout expires. The SSE replays
+ * from the stream buffer, so reconnecting is safe.
+ */
 async function runDecopilotSession(
   ctx: WorkerCtx,
+  virtualMcpId: string,
   prompt: string,
   timeoutMs: number,
+  kind: string,
 ): Promise<string> {
   const base = resolveMeshUrl(ctx.meshUrl);
-  // The decopilot routes are keyed by org SLUG (an org-id 404s: "organization not found")
+  // decopilot routes are keyed by org SLUG (an org-id 404s: "organization not found")
   const org = ctx.organizationSlug ?? ctx.organizationId;
-  const url = `${base}/api/${org}/decopilot/stream`;
   if (!ctx.meshToken) {
     throw new Error("No mesh token available for decopilot sessions");
   }
 
+  const threadId = `mig-${crypto.randomUUID()}`;
+  const postUrl = `${base}/api/${org}/decopilot/threads/${threadId}/messages`;
+
+  // Body per StreamRequestSchema (strict): exactly one non-system message,
+  // agent.id = virtualMcpId, harness/branch/kind pinned on first message.
   const body = {
     messages: [
       {
-        id: `migrator-${Date.now()}`,
+        id: crypto.randomUUID(),
         role: "user",
         parts: [{ type: "text", text: prompt }],
       },
     ],
-    models: {
-      thinking: {
-        id: DECOPILOT_MODEL_ID,
-        provider: "claude-code",
-      },
-    },
+    agent: { id: virtualMcpId },
     stream: true,
+    branch: SANDBOX_BRANCH,
     toolApprovalLevel: "auto" as const,
+    harnessId: "claude-code" as const,
+    ...(kind === "auto" ? {} : { sandboxProviderKind: kind }),
   };
 
-  const response = await fetch(url, {
+  const post = await fetch(postUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${ctx.meshToken}`,
-      Accept: "application/json, text/event-stream",
+      Accept: "application/json",
     },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
+    signal: AbortSignal.timeout(60_000),
   });
-
-  if (!response.ok) {
-    const errorText = await response.text();
+  if (!post.ok && post.status !== 202) {
+    const errorText = await post.text();
     throw new Error(
-      `decopilot stream failed (${response.status}): ${errorText.slice(0, 300)}`,
+      `decopilot message dispatch failed (${post.status}): ${errorText.slice(0, 300)}`,
     );
   }
-  if (!response.body) {
-    throw new Error("decopilot stream returned no body");
+
+  // Consume the thread stream until RESULT_JSON shows up or time runs out.
+  const streamUrl = `${base}/api/${org}/decopilot/threads/${threadId}/stream`;
+  const deadline = Date.now() + timeoutMs;
+  let output = "";
+
+  while (Date.now() < deadline) {
+    const remaining = Math.max(10_000, deadline - Date.now());
+    try {
+      const response = await fetch(streamUrl, {
+        headers: {
+          Authorization: `Bearer ${ctx.meshToken}`,
+          Accept: "text/event-stream",
+        },
+        signal: AbortSignal.timeout(remaining),
+      });
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(
+          `decopilot thread stream failed (${response.status}): ${errorText.slice(0, 300)}`,
+        );
+      }
+      if (response.body) {
+        // Stream replays from the buffer on reconnect — safe to re-read.
+        output = await collectFullStreamText(response.body);
+        if (parseResultJson(output)) return output;
+      }
+    } catch (err) {
+      if (Date.now() >= deadline) break;
+      const message = err instanceof Error ? err.message : String(err);
+      // 4xx from the route is permanent — bubble it up instead of spinning
+      if (/\((400|401|403|404)\)/.test(message)) throw err;
+      console.warn(`[decopilot] stream reconnect (${message.slice(0, 120)})`);
+    }
+    await sleep(STREAM_RECONNECT_DELAY_MS);
   }
 
-  return await collectFullStreamText(response.body);
+  return output;
 }
 
 export const decopilotDriver: SandboxDriver = {
@@ -200,8 +247,19 @@ export const decopilotDriver: SandboxDriver = {
     ctx: WorkerCtx,
     task: SandboxTaskInput,
   ): Promise<SandboxTaskResult> {
+    if (!site.virtual_mcp_id) {
+      throw new Error(
+        `Site ${site.name} has no virtual_mcp_id for the session`,
+      );
+    }
     const timeoutMs = task.timeoutMs ?? DEFAULT_TASK_TIMEOUT_MS;
-    const output = await runDecopilotSession(ctx, task.prompt, timeoutMs);
+    const output = await runDecopilotSession(
+      ctx,
+      site.virtual_mcp_id,
+      task.prompt,
+      timeoutMs,
+      ctx.config.sandboxKind,
+    );
     const tail = output.slice(-4000);
     const result = parseResultJson(output);
 
