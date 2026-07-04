@@ -69,7 +69,7 @@ describe("prompts", () => {
     expect(prompt).toContain("deco-sites/granadobr");
     expect(prompt).toContain("deco-sites/granadobr-tanstack");
     expect(prompt).toContain("x-access-token:ghs_abc");
-    expect(prompt).toContain("migrate.ts --source /work/source");
+    expect(prompt).toContain("migrate.ts --source /app/source");
     expect(prompt).toContain("RESULT_JSON");
     expect(prompt).toContain("MIGRATION_REPORT_PROGRESS");
   });
