@@ -16,6 +16,14 @@ import type { SiteRow, SiteStatus } from "../../db/types.ts";
 
 export const TRANSIENT_ZOMBIE_SIGNATURE =
   /decopilot (stream|message dispatch|thread stream) failed \(404\)|organization .+ not found/i;
+/**
+ * Turn-limit deaths: the harness ends the turn mid-work and the session
+ * never emits its RESULT_JSON. Retrying CONTINUES the same thread
+ * (phase_thread_id is kept on failure), so each retry is another chapter
+ * of the same conversation — the agent picks up where it died.
+ */
+export const RESUMABLE_SESSION_SIGNATURE =
+  /session ended without a RESULT_JSON line/i;
 export const MAX_TRANSIENT_RETRIES = 12;
 
 /** `retryStatus` = the phase to stay in on a transient failure (usually the current one). */
@@ -25,21 +33,25 @@ export async function failOrAutoRetry(
   retryStatus: SiteStatus,
   label: string,
 ): Promise<void> {
+  const zombie = TRANSIENT_ZOMBIE_SIGNATURE.test(message);
+  const turnLimit = RESUMABLE_SESSION_SIGNATURE.test(message);
   const transient =
-    TRANSIENT_ZOMBIE_SIGNATURE.test(message) &&
-    site.transient_retries < MAX_TRANSIENT_RETRIES;
+    (zombie || turnLimit) && site.transient_retries < MAX_TRANSIENT_RETRIES;
 
   if (transient) {
+    const reason = turnLimit
+      ? "sessão atingiu o limite de turnos — continuando a mesma thread"
+      : "sessão caiu em réplica desatualizada — tentando de novo";
     await updateSite(site.id, {
       status: retryStatus,
       transient_retries: site.transient_retries + 1,
-      phase_detail: `sessão caiu em réplica desatualizada — tentando de novo (${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES})`,
+      phase_detail: `${reason} (${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES})`,
       sandbox_session_id: null,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Sessão falhou em réplica desatualizada, retry automático ${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES}: ${message.slice(0, 160)}`,
+      `${reason} — retry automático ${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES}`,
       "warn",
     );
     return;

@@ -79,10 +79,14 @@ function RunRow({ run }: { run: RunView }) {
     }
   };
 
+  const takenIssues = run.meta?.issues?.taken;
   const kindLabel: Record<string, string> = {
     migrate: "script de migração",
     triage: "triagem",
-    fix: `fix ${run.iteration}`,
+    // show WHICH issues the session took, not just a sequence number
+    fix: takenIssues?.length
+      ? `fix ${takenIssues.map((n) => `#${n}`).join(" ")}`
+      : `fix ${run.iteration}`,
     parity: `parity ${run.iteration}`,
     fix_iteration: `iteração ${run.iteration}`,
     install_sync: "instalação do sync",
@@ -123,11 +127,12 @@ function RunRow({ run }: { run: RunView }) {
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs">
-          {run.finishedAt && (
-            <span className="text-muted-foreground tabular-nums">
-              {duration(run.startedAt, run.finishedAt)}
-            </span>
-          )}
+          {/* running rows show live elapsed time (re-rendered by the 10s poll) */}
+          <span className="text-muted-foreground tabular-nums">
+            {run.finishedAt
+              ? duration(run.startedAt, run.finishedAt)
+              : `${duration(run.startedAt, new Date().toISOString())}…`}
+          </span>
           {run.threadId && (
             <span
               role="button"
@@ -306,11 +311,11 @@ export function SiteDetailPanel({
   simulation?: boolean;
 }) {
   const callTool = useToolCaller();
-  const { data, refresh } = usePollingTool<SiteDetail>(
-    "SITE_GET",
-    { siteId },
-    10_000,
-  );
+  const {
+    data,
+    refresh,
+    error: loadError,
+  } = usePollingTool<SiteDetail>("SITE_GET", { siteId }, 10_000);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -366,7 +371,22 @@ export function SiteDetailPanel({
           </button>
         </div>
 
-        {!site ? (
+        {loadError && /not found/i.test(loadError) ? (
+          // the site was deleted while the drawer was open — never freeze
+          // showing stale data
+          <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
+            <p className="text-sm text-muted-foreground">
+              Este site foi excluído — os dados não existem mais.
+            </p>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              Fechar
+            </button>
+          </div>
+        ) : !site ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
