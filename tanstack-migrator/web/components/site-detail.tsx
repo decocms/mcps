@@ -165,6 +165,15 @@ function RunRow({ run }: { run: RunView }) {
 
       {expanded && (
         <div className="border-t border-border px-3 py-2 text-xs">
+          {!run.summary?.topIssues?.length &&
+            !run.logsTail &&
+            !heatmaps?.length && (
+              <p className="text-muted-foreground">
+                Sem logs desta sessão
+                {run.threadId ? ` — thread ${run.threadId}` : ""}
+                {run.status === "running" ? " (ainda em execução)" : ""}.
+              </p>
+            )}
           {run.summary?.topIssues && run.summary.topIssues.length > 0 && (
             <ul className="flex flex-col gap-1">
               {run.summary.topIssues.map((issue, i) => (
