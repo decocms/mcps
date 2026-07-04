@@ -121,8 +121,49 @@ async function advanceSite(site: SiteRow, ctx: WorkerCtx): Promise<void> {
   }
 }
 
+/**
+ * Zombie-kill recovery: stale platform replicas (old builds keep Running
+ * after every publish) claim sessions, fail them with legacy-protocol 404s
+ * and write a hard `failed` with THEIR old code — so the in-phase auto-retry
+ * never runs. Fresh workers sweep those corpses back to life, bounded by
+ * no_improve_count.
+ */
+const ZOMBIE_FAILURE_SIGNATURE =
+  /decopilot (stream|message dispatch|thread stream) failed \(404\)|organization .+ not found/i;
+const MAX_ZOMBIE_REVIVES = 12;
+
+async function reviveZombieKills(sites: SiteRow[]): Promise<void> {
+  for (const site of sites) {
+    if (site.status !== "failed") continue;
+    if (!site.error || !ZOMBIE_FAILURE_SIGNATURE.test(site.error)) continue;
+    if (site.no_improve_count >= MAX_ZOMBIE_REVIVES) continue;
+
+    const resumeInto =
+      site.sandbox_handle && site.virtual_mcp_id
+        ? "migrating"
+        : ((site.resume_status ?? "queued") as SiteRow["status"]);
+
+    await updateSite(site.id, {
+      status: resumeInto,
+      error: null,
+      no_improve_count: site.no_improve_count + 1,
+      phase_detail: `revivido após falha de réplica desatualizada (${site.no_improve_count + 1}/${MAX_ZOMBIE_REVIVES})`,
+      sandbox_session_id: null,
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(
+      site.id,
+      `Falha de réplica desatualizada — retry automático ${site.no_improve_count + 1}/${MAX_ZOMBIE_REVIVES} (retomando em ${resumeInto})`,
+      "warn",
+    );
+    site.status = resumeInto;
+  }
+}
+
 async function tickConnection(ctx: WorkerCtx): Promise<void> {
   const sites = await listSites({ connectionId: ctx.connectionId });
+
+  await reviveZombieKills(sites);
 
   const active = sites.filter((s) =>
     (ACTIVE_STATUSES as string[]).includes(s.status),
