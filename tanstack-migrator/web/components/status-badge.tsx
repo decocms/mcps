@@ -25,6 +25,11 @@ export const STATUS_META: Record<
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
+  migrating3: {
+    label: "Migrando",
+    className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    active: true,
+  },
   installing_sync: {
     label: "Instalando sync",
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
@@ -36,6 +41,11 @@ export const STATUS_META: Record<
     active: true,
   },
   validating2: {
+    label: "Validando paridade",
+    className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+    active: true,
+  },
+  validating3: {
     label: "Validando paridade",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     active: true,

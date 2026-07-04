@@ -10,6 +10,7 @@ export interface SaveConnectionInput {
   meshToken?: string;
   meshApiKey?: string;
   state?: Record<string, unknown>;
+  pinned?: Record<string, unknown>;
 }
 
 export async function saveConnection(
@@ -27,6 +28,7 @@ export async function saveConnection(
   if (input.meshToken !== undefined) row.mesh_token = input.meshToken;
   if (input.meshApiKey !== undefined) row.mesh_api_key = input.meshApiKey;
   if (input.state !== undefined) row.state = input.state;
+  if (input.pinned !== undefined) row.pinned = input.pinned;
 
   const { error } = await client
     .from("sitemig_connections")

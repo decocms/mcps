@@ -6,9 +6,11 @@ export type SiteStatus =
   | "provisioning_sandbox"
   | "migrating"
   | "migrating2"
+  | "migrating3"
   | "installing_sync"
   | "validating"
   | "validating2"
+  | "validating3"
   | "deploying_cf"
   | "done"
   | "needs_human"
@@ -30,25 +32,35 @@ export const ACTIVE_STATUSES: SiteStatus[] = [
   "provisioning_sandbox",
   "migrating",
   "migrating2",
+  "migrating3",
   "installing_sync",
   "validating",
   "validating2",
+  "validating3",
   "deploying_cf",
 ];
 
-/** Old session-phase names → zombie-invisible v2 names. */
+/** Old session-phase names → the newest zombie-invisible generation. */
 export function toV2Status(status: SiteStatus): SiteStatus {
-  if (status === "migrating") return "migrating2";
-  if (status === "validating") return "validating2";
+  if (status === "migrating" || status === "migrating2") return "migrating3";
+  if (status === "validating" || status === "validating2") {
+    return "validating3";
+  }
   return status;
 }
 
 export function isMigratingStatus(status: string): boolean {
-  return status === "migrating" || status === "migrating2";
+  return (
+    status === "migrating" || status === "migrating2" || status === "migrating3"
+  );
 }
 
 export function isValidatingStatus(status: string): boolean {
-  return status === "validating" || status === "validating2";
+  return (
+    status === "validating" ||
+    status === "validating2" ||
+    status === "validating3"
+  );
 }
 
 /** Statuses a site can be resumed/retried from. */
@@ -80,6 +92,8 @@ export interface ConnectionRow {
   mesh_token: string | null;
   mesh_api_key: string | null;
   state: Record<string, unknown> | null;
+  /** Tamper-proof keys — old replicas rewrite `state` but never this column. */
+  pinned: Record<string, unknown> | null;
   configured_at: string;
   updated_at: string;
 }

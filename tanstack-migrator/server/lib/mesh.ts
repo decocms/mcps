@@ -31,15 +31,18 @@ export interface WorkerCtx {
 }
 
 export function buildWorkerCtx(row: ConnectionRow): WorkerCtx {
-  const slug = row.state?.[ORG_SLUG_STATE_KEY];
+  // pinned keys are tamper-proof (old replicas rewrite `state` wholesale and
+  // their zod schema strips fields they don't know) — pinned wins over state
+  const merged = { ...(row.state ?? {}), ...(row.pinned ?? {}) };
+  const slug = merged[ORG_SLUG_STATE_KEY];
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
     organizationSlug: typeof slug === "string" && slug ? slug : undefined,
     meshUrl: row.mesh_url,
     meshToken: row.mesh_api_key || row.mesh_token || null,
-    config: parseMigratorConfig(row.state),
-    state: row.state ?? {},
+    config: parseMigratorConfig(merged),
+    state: merged,
   };
 }
 

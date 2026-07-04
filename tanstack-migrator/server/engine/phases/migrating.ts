@@ -111,7 +111,7 @@ async function failOrAutoRetry(site: SiteRow, message: string): Promise<void> {
 
   if (transient) {
     await updateSite(site.id, {
-      status: "migrating2",
+      status: "migrating3",
       no_improve_count: site.no_improve_count + 1,
       phase_detail: `sessão caiu em réplica desatualizada — tentando de novo (${site.no_improve_count + 1}/${MAX_TRANSIENT_RETRIES})`,
       sandbox_session_id: null,

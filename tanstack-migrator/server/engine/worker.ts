@@ -20,6 +20,7 @@ import {
 import { isSupabaseConfigured } from "../db/client.ts";
 import { loadAllConnections, saveConnection } from "../db/connections.ts";
 import { addEvent } from "../db/events.ts";
+import { closeStaleRuns } from "../db/runs.ts";
 import {
   acquireLease,
   listSites,
@@ -166,7 +167,12 @@ async function reviveZombieKills(sites: SiteRow[]): Promise<void> {
   for (const site of sites) {
     // translate session phases written under the old names (zombie writes)
     // to the v2 names so stale replicas lose sight of them
-    if (site.status === "migrating" || site.status === "validating") {
+    if (
+      site.status === "migrating" ||
+      site.status === "validating" ||
+      site.status === "migrating2" ||
+      site.status === "validating2"
+    ) {
       const v2 = toV2Status(site.status);
       await updateSite(site.id, { status: v2 });
       site.status = v2;
@@ -178,7 +184,7 @@ async function reviveZombieKills(sites: SiteRow[]): Promise<void> {
 
     const resumeInto =
       site.sandbox_handle && site.virtual_mcp_id
-        ? "migrating2"
+        ? "migrating3"
         : toV2Status((site.resume_status ?? "queued") as SiteRow["status"]);
 
     await updateSite(site.id, {
@@ -280,11 +286,15 @@ export async function runTickOnce(): Promise<{
   advanced: number;
 }> {
   if (!isSupabaseConfigured()) return { connections: 0, advanced: 0 };
+  // close run rows abandoned by readers that died with pod restarts
+  await closeStaleRuns(50).catch(() => {});
   const rows = await loadAllConnections();
   let advanced = 0;
   for (const row of rows) {
     try {
-      const stored = row.state?.[WORKER_VERSION_STATE_KEY];
+      const stored =
+        row.pinned?.[WORKER_VERSION_STATE_KEY] ??
+        row.state?.[WORKER_VERSION_STATE_KEY];
       if (
         typeof stored === "string" &&
         isOlderVersion(WORKER_VERSION, stored)
@@ -302,8 +312,8 @@ export async function runTickOnce(): Promise<{
           connectionId: row.connection_id,
           organizationId: row.organization_id,
           meshUrl: row.mesh_url,
-          state: {
-            ...(row.state ?? {}),
+          pinned: {
+            ...(row.pinned ?? {}),
             [WORKER_VERSION_STATE_KEY]: WORKER_VERSION,
           },
         }).catch(() => {});

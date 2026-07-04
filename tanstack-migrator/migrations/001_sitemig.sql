@@ -143,3 +143,8 @@ CREATE POLICY "service_role_all" ON sitemig_events
 
 -- v0.4.0: preview link only shows when the dev server actually answers
 ALTER TABLE sitemig_sites ADD COLUMN IF NOT EXISTS preview_ready BOOLEAN NOT NULL DEFAULT false;
+
+-- v0.4.1: tamper-proof config keys — old replicas rewrite `state` wholesale
+-- (their zod schema strips unknown fields), but never touch columns they
+-- don't know about.
+ALTER TABLE sitemig_connections ADD COLUMN IF NOT EXISTS pinned JSONB;

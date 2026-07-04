@@ -26,8 +26,10 @@ export const PHASE_HANDLERS: Partial<Record<SiteStatus, PhaseHandler>> = {
   // v2 = zombie-invisible session phases (see db/types.ts toV2Status)
   migrating,
   migrating2: migrating,
+  migrating3: migrating,
   installing_sync: installingSync,
   validating,
   validating2: validating,
+  validating3: validating,
   deploying_cf: deployingCf,
 };

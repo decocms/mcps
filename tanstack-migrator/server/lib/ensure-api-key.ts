@@ -130,6 +130,22 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
       }
     }
 
+    // Tamper-proof pinned keys: session harness (when present in the SAVED
+    // config), org slug and the worker-version fence. Old replicas can't
+    // erase these — their code doesn't know the column.
+    const pinned: Record<string, unknown> = {
+      ...(existing?.pinned ?? {}),
+      ...(typeof fresh.SESSION_HARNESS === "string"
+        ? { SESSION_HARNESS: fresh.SESSION_HARNESS }
+        : {}),
+      ...(typeof orgSlug === "string" && orgSlug
+        ? { [ORG_SLUG_STATE_KEY]: orgSlug }
+        : {}),
+      ...(workerVersion !== undefined
+        ? { __WORKER_VERSION: workerVersion }
+        : {}),
+    };
+
     await saveConnection({
       connectionId,
       organizationId,
@@ -137,6 +153,7 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
       meshToken: mrc.token,
       meshApiKey: meshApiKey ?? undefined,
       state,
+      pinned,
     });
   } catch (err) {
     console.error(
