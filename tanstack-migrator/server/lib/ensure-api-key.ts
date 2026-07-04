@@ -19,6 +19,7 @@ import {
   grantsChanged,
   mintPersistentApiKey,
 } from "./api-key.ts";
+import { ORG_SLUG_STATE_KEY } from "./mesh.ts";
 import { bindingConnectionId } from "./persist-state.ts";
 
 const THROTTLE_MS = 20_000;
@@ -81,10 +82,15 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
       mrc.state as Record<string, unknown> | undefined,
     );
     const previousGrants = existing?.state?.[API_KEY_GRANTS_STATE_KEY];
+    const orgSlug =
+      mrc.organizationSlug ?? existing?.state?.[ORG_SLUG_STATE_KEY];
     const state: Record<string, unknown> = {
       ...fresh,
       ...(previousGrants !== undefined
         ? { [API_KEY_GRANTS_STATE_KEY]: previousGrants }
+        : {}),
+      ...(typeof orgSlug === "string" && orgSlug
+        ? { [ORG_SLUG_STATE_KEY]: orgSlug }
         : {}),
     };
 

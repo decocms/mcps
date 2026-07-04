@@ -110,6 +110,7 @@ async function advanceSite(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     );
     await updateSite(site.id, {
       status: "failed",
+      resume_status: site.status, // Retry resumes the failed phase, not the whole pipeline
       error: `${site.status}: ${message}`,
       sandbox_session_id: null,
     });

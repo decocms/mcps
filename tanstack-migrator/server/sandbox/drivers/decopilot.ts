@@ -118,7 +118,9 @@ async function runDecopilotSession(
   timeoutMs: number,
 ): Promise<string> {
   const base = resolveMeshUrl(ctx.meshUrl);
-  const url = `${base}/api/${ctx.organizationId}/decopilot/stream`;
+  // The decopilot routes are keyed by org SLUG (an org-id 404s: "organization not found")
+  const org = ctx.organizationSlug ?? ctx.organizationId;
+  const url = `${base}/api/${org}/decopilot/stream`;
   if (!ctx.meshToken) {
     throw new Error("No mesh token available for decopilot sessions");
   }

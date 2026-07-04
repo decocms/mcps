@@ -14,9 +14,14 @@ import type { ConnectionRow } from "../db/types.ts";
 import { type MigratorConfig, parseMigratorConfig } from "../types/env.ts";
 import { bindingConnectionId } from "./persist-state.ts";
 
+/** Bookkeeping key in the state snapshot: org slug used in decopilot URLs. */
+export const ORG_SLUG_STATE_KEY = "__ORG_SLUG";
+
 export interface WorkerCtx {
   connectionId: string;
   organizationId: string;
+  /** Org slug — the /api/{org}/decopilot/* routes want the SLUG, not the id. */
+  organizationSlug?: string;
   meshUrl: string;
   /** Durable API key when available, else the last-seen request JWT. */
   meshToken: string | null;
@@ -26,9 +31,11 @@ export interface WorkerCtx {
 }
 
 export function buildWorkerCtx(row: ConnectionRow): WorkerCtx {
+  const slug = row.state?.[ORG_SLUG_STATE_KEY];
   return {
     connectionId: row.connection_id,
     organizationId: row.organization_id,
+    organizationSlug: typeof slug === "string" && slug ? slug : undefined,
     meshUrl: row.mesh_url,
     meshToken: row.mesh_api_key || row.mesh_token || null,
     config: parseMigratorConfig(row.state),
