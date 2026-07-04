@@ -1,6 +1,6 @@
 {
   "name": "tanstack-migrator",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Orchestrates Fresh/Deno \u2192 TanStack Start storefront migrations: FIFO queue, mesh sandboxes running Claude, parity validation loop and Cloudflare deploy",
   "private": true,
   "type": "module",

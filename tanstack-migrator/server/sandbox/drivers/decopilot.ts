@@ -220,6 +220,17 @@ async function runDecopilotSession(
         output = await collectFullStreamText(response.body);
         if (parseResultJson(output)) return output;
       }
+
+      // SSE gave no marker — the run may have already finished (v2 storage
+      // persists the assistant message at completion; the stream buffer can
+      // be empty by then). Check the thread status and rescue the final text
+      // instead of spinning until the timeout.
+      const status = await getThreadStatus(ctx, threadId);
+      if (status && status !== "in_progress" && status !== "requires_action") {
+        const finalText = await fetchThreadFinalText(ctx, threadId);
+        if (finalText) output = `${output}\n${finalText}`.trim();
+        return output;
+      }
     } catch (err) {
       if (Date.now() >= deadline) break;
       const message = err instanceof Error ? err.message : String(err);
@@ -231,6 +242,53 @@ async function runDecopilotSession(
   }
 
   return output;
+}
+
+async function getThreadStatus(
+  ctx: WorkerCtx,
+  threadId: string,
+): Promise<string | null> {
+  try {
+    const result = await callSelfTool<{ item?: { status?: string } }>(
+      ctx,
+      "COLLECTION_THREADS_GET",
+      { id: threadId },
+      20_000,
+    );
+    return result?.item?.status ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Assistant text parts of the thread — where the RESULT_JSON lives after completion. */
+async function fetchThreadFinalText(
+  ctx: WorkerCtx,
+  threadId: string,
+): Promise<string> {
+  try {
+    const result = await callSelfTool<{
+      messages?: Array<{
+        role?: string;
+        parts?: Array<Record<string, unknown>>;
+      }>;
+      items?: Array<{ role?: string; parts?: Array<Record<string, unknown>> }>;
+    }>(
+      ctx,
+      "COLLECTION_THREAD_MESSAGES_LIST",
+      { thread_id: threadId, limit: 50 },
+      30_000,
+    );
+    const messages = result?.messages ?? result?.items ?? [];
+    return messages
+      .filter((m) => m.role === "assistant")
+      .flatMap((m) => m.parts ?? [])
+      .filter((p) => p.type === "text" && typeof p.text === "string")
+      .map((p) => p.text as string)
+      .join("\n");
+  } catch {
+    return "";
+  }
 }
 
 export const decopilotDriver: SandboxDriver = {
