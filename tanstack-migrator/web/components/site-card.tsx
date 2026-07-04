@@ -18,12 +18,14 @@ function RepoLink({
   const href = isUrl ? repo : `https://github.com/${repo}`;
   const text = isUrl ? label : repo;
   return (
+    // w-fit/self-start: the anchor must hug its text — a stretched anchor
+    // makes "empty" card space open external links instead of the drawer
     <a
       href={href}
       target="_blank"
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
-      className="inline-flex max-w-full items-center gap-1 truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
+      className="inline-flex w-fit max-w-full items-center gap-1 self-start truncate text-xs text-muted-foreground hover:text-foreground hover:underline"
       title={text}
     >
       <Icon className="h-3 w-3 shrink-0" />
