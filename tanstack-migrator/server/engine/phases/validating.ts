@@ -10,7 +10,11 @@
 import { addEvent } from "../../db/events.ts";
 import { createRun, finishRun } from "../../db/runs.ts";
 import { getSite, updateSite } from "../../db/sites.ts";
-import type { ParitySummary, SiteRow } from "../../db/types.ts";
+import {
+  isValidatingStatus,
+  type ParitySummary,
+  type SiteRow,
+} from "../../db/types.ts";
 import {
   artifactKeys,
   fetchReportSummary,
@@ -152,7 +156,7 @@ export async function validating(
       }
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "validating") return;
+      if (!current || !isValidatingStatus(current.status)) return;
 
       if (!result.ok) {
         await finishRun(run.id, { status: "failed", logsTail: result.output });

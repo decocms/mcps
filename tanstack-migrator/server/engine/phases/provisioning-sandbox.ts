@@ -27,7 +27,7 @@ export async function provisioningSandbox(
     sandbox_handle: info.handle,
     sandbox_preview_url: info.previewUrl,
     virtual_mcp_id: info.virtualMcpId ?? site.virtual_mcp_id,
-    status: "migrating",
+    status: "migrating2", // zombie-invisible session phase
     phase_detail: "sandbox de pé, iniciando migração",
     last_progress_at: new Date().toISOString(),
   });

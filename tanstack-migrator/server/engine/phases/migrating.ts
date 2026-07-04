@@ -8,7 +8,7 @@
 import { addEvent } from "../../db/events.ts";
 import { createRun, finishRun } from "../../db/runs.ts";
 import { getSite, updateSite } from "../../db/sites.ts";
-import type { SiteRow } from "../../db/types.ts";
+import { isMigratingStatus, type SiteRow } from "../../db/types.ts";
 import { ghsTokenForSite } from "../../lib/github.ts";
 import type { WorkerCtx } from "../../lib/mesh.ts";
 import { getDriver, isSimulation } from "../../sandbox/client.ts";
@@ -55,7 +55,7 @@ export async function migrating(
       });
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "migrating") return; // paused/changed meanwhile
+      if (!current || !isMigratingStatus(current.status)) return; // paused/changed meanwhile
 
       if (result.ok) {
         await finishRun(run.id, {
@@ -110,7 +110,7 @@ async function failOrAutoRetry(site: SiteRow, message: string): Promise<void> {
 
   if (transient) {
     await updateSite(site.id, {
-      status: "migrating",
+      status: "migrating2",
       no_improve_count: site.no_improve_count + 1,
       phase_detail: `sessão caiu em réplica desatualizada — tentando de novo (${site.no_improve_count + 1}/${MAX_TRANSIENT_RETRIES})`,
       sandbox_session_id: null,
