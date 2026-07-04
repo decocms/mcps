@@ -5,8 +5,10 @@ export type SiteStatus =
   | "creating_repo"
   | "provisioning_sandbox"
   | "migrating"
+  | "migrating2"
   | "installing_sync"
   | "validating"
+  | "validating2"
   | "deploying_cf"
   | "done"
   | "needs_human"
@@ -14,15 +16,40 @@ export type SiteStatus =
   | "failed"
   | "archived";
 
-/** Statuses that occupy a queue slot (count toward MAX_CONCURRENT). */
+/**
+ * Statuses that occupy a queue slot (count toward MAX_CONCURRENT).
+ *
+ * `migrating2`/`validating2` are the session-phase names since v0.2.3:
+ * stale platform replicas (old builds keep Running after every publish)
+ * filter their queries by the OLD status list, so sites parked in the
+ * v2 names are INVISIBLE to them — only fresh workers run sessions.
+ * New workers still list the old names to translate leftovers.
+ */
 export const ACTIVE_STATUSES: SiteStatus[] = [
   "creating_repo",
   "provisioning_sandbox",
   "migrating",
+  "migrating2",
   "installing_sync",
   "validating",
+  "validating2",
   "deploying_cf",
 ];
+
+/** Old session-phase names → zombie-invisible v2 names. */
+export function toV2Status(status: SiteStatus): SiteStatus {
+  if (status === "migrating") return "migrating2";
+  if (status === "validating") return "validating2";
+  return status;
+}
+
+export function isMigratingStatus(status: string): boolean {
+  return status === "migrating" || status === "migrating2";
+}
+
+export function isValidatingStatus(status: string): boolean {
+  return status === "validating" || status === "validating2";
+}
 
 /** Statuses a site can be resumed/retried from. */
 export const RESUMABLE_STATUSES: SiteStatus[] = [

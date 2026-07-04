@@ -18,6 +18,7 @@ import {
   isActiveStatus,
   RESUMABLE_STATUSES,
   type SiteStatus,
+  toV2Status,
 } from "../db/types.ts";
 import type { Env } from "../types/env.ts";
 import {
@@ -259,9 +260,9 @@ export const createSiteRetryTool = (env: Env) =>
       if (!RESUMABLE_STATUSES.includes(site.status)) {
         throw new Error(`Site is not retryable (status: ${site.status})`);
       }
-      const nextStatus = (context.fromStatus ??
-        site.resume_status ??
-        "queued") as SiteStatus;
+      const nextStatus = toV2Status(
+        (context.fromStatus ?? site.resume_status ?? "queued") as SiteStatus,
+      );
       const updated = await updateSite(site.id, {
         status: nextStatus,
         resume_status: null,

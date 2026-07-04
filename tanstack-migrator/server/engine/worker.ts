@@ -26,7 +26,13 @@ import {
   releaseLease,
   updateSite,
 } from "../db/sites.ts";
-import { ACTIVE_STATUSES, type SiteRow } from "../db/types.ts";
+import {
+  ACTIVE_STATUSES,
+  isMigratingStatus,
+  isValidatingStatus,
+  type SiteRow,
+  toV2Status,
+} from "../db/types.ts";
 import { buildWorkerCtx, type WorkerCtx } from "../lib/mesh.ts";
 import { getDriver } from "../sandbox/client.ts";
 import { InflightTracker } from "./inflight.ts";
@@ -76,8 +82,8 @@ async function keepaliveIfNeeded(site: SiteRow, ctx: WorkerCtx): Promise<void> {
   if (!site.sandbox_handle) return;
   const isWorking =
     inflight.has(site.id) ||
-    site.status === "migrating" ||
-    site.status === "validating";
+    isMigratingStatus(site.status) ||
+    isValidatingStatus(site.status);
   if (!isWorking) return;
 
   const last = lastKeepalive.get(site.id) ?? 0;
@@ -134,14 +140,22 @@ const MAX_ZOMBIE_REVIVES = 12;
 
 async function reviveZombieKills(sites: SiteRow[]): Promise<void> {
   for (const site of sites) {
+    // translate session phases written under the old names (zombie writes)
+    // to the v2 names so stale replicas lose sight of them
+    if (site.status === "migrating" || site.status === "validating") {
+      const v2 = toV2Status(site.status);
+      await updateSite(site.id, { status: v2 });
+      site.status = v2;
+      continue;
+    }
     if (site.status !== "failed") continue;
     if (!site.error || !ZOMBIE_FAILURE_SIGNATURE.test(site.error)) continue;
     if (site.no_improve_count >= MAX_ZOMBIE_REVIVES) continue;
 
     const resumeInto =
       site.sandbox_handle && site.virtual_mcp_id
-        ? "migrating"
-        : ((site.resume_status ?? "queued") as SiteRow["status"]);
+        ? "migrating2"
+        : toV2Status((site.resume_status ?? "queued") as SiteRow["status"]);
 
     await updateSite(site.id, {
       status: resumeInto,

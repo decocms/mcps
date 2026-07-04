@@ -23,8 +23,11 @@ export type PhaseHandler = (
 export const PHASE_HANDLERS: Partial<Record<SiteStatus, PhaseHandler>> = {
   creating_repo: creatingRepo,
   provisioning_sandbox: provisioningSandbox,
+  // v2 = zombie-invisible session phases (see db/types.ts toV2Status)
   migrating,
+  migrating2: migrating,
   installing_sync: installingSync,
   validating,
+  validating2: validating,
   deploying_cf: deployingCf,
 };
