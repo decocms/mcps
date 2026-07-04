@@ -15,6 +15,42 @@ export const STATUS_META: Record<
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
+  migrating_script: {
+    label: "Rodando script",
+    className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    active: true,
+  },
+  opening_pr: {
+    label: "Abrindo PR",
+    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    active: true,
+  },
+  triaging: {
+    label: "Triando issues",
+    className: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
+    active: true,
+  },
+  fixing: {
+    label: "Corrigindo issues",
+    className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
+    active: true,
+  },
+  paritying: {
+    label: "Medindo paridade",
+    className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
+    active: true,
+  },
+  deploying_cf: {
+    label: "Deploy CF",
+    className: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    active: true,
+  },
+  awaiting_merge: {
+    label: "Aguardando merge",
+    className: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    active: true,
+  },
+  // legacy (≤ v0.4.x) — shown until the worker sweep translates them
   migrating: {
     label: "Migrando",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
@@ -48,11 +84,6 @@ export const STATUS_META: Record<
   validating3: {
     label: "Validando paridade",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
-    active: true,
-  },
-  deploying_cf: {
-    label: "Deploy CF",
-    className: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
     active: true,
   },
   done: {

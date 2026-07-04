@@ -18,7 +18,7 @@ import {
   isActiveStatus,
   RESUMABLE_STATUSES,
   type SiteStatus,
-  toV2Status,
+  toCurrentStatus,
 } from "../db/types.ts";
 import type { Env } from "../types/env.ts";
 import {
@@ -229,7 +229,7 @@ export const createSiteResumeTool = (env: Env) =>
         throw new Error(`Site is not paused (status: ${site.status})`);
       }
       const updated = await updateSite(site.id, {
-        status: (site.resume_status ?? "queued") as SiteStatus,
+        status: toCurrentStatus((site.resume_status ?? "queued") as SiteStatus),
         resume_status: null,
         last_progress_at: new Date().toISOString(),
       });
@@ -249,7 +249,7 @@ export const createSiteRetryTool = (env: Env) =>
         .string()
         .optional()
         .describe(
-          "Override the phase to resume into (e.g. validating, deploying_cf)",
+          "Override the phase to resume into (e.g. triaging, fixing, deploying_cf)",
         ),
     }),
     outputSchema: siteOutput,
@@ -260,7 +260,7 @@ export const createSiteRetryTool = (env: Env) =>
       if (!RESUMABLE_STATUSES.includes(site.status)) {
         throw new Error(`Site is not retryable (status: ${site.status})`);
       }
-      const nextStatus = toV2Status(
+      const nextStatus = toCurrentStatus(
         (context.fromStatus ?? site.resume_status ?? "queued") as SiteStatus,
       );
       const updated = await updateSite(site.id, {

@@ -41,7 +41,38 @@ export const manualDriver: SandboxDriver = {
     if (task.kind === "migrate") {
       return {
         ok: true,
-        output: `[simulation] migrate script ran for ${site.source_repo}; build green; initial push done`,
+        output: `[simulation] migrate script ran for ${site.source_repo}; checkpoint pushed to ${site.work_branch}`,
+      };
+    }
+    if (task.kind === "triage") {
+      const issues = [
+        {
+          title: "[sim] build: imports preact não migrados",
+          severity: "critical",
+          category: "build",
+        },
+        {
+          title: "[sim] runtime: rota / responde 500",
+          severity: "high",
+          category: "runtime",
+        },
+        {
+          title: "[sim] visual: hero divergente no mobile",
+          severity: "medium",
+          category: "visual",
+        },
+      ];
+      return {
+        ok: true,
+        output: `[simulation] triage found ${issues.length} issues`,
+        parsed: { ok: true, issues, detail: "[simulation] triage" },
+      };
+    }
+    if (task.kind === "fix") {
+      return {
+        ok: true,
+        output: "[simulation] fix session resolved its batch",
+        parsed: { ok: true, resolved: [], detail: "[simulation] fixes pushed" },
       };
     }
     const iteration = task.iteration ?? site.iterations_done;
@@ -50,6 +81,7 @@ export const manualDriver: SandboxDriver = {
       ok: true,
       output: `[simulation] parity iteration ${iteration + 1} → score ${score}`,
       parityScore: score,
+      parsed: { ok: true, parityScore: score },
     };
   },
 

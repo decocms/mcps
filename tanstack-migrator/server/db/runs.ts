@@ -1,7 +1,13 @@
 /** CRUD for sitemig_runs — one row per phase attempt / parity iteration. */
 
 import { requireSupabase } from "./client.ts";
-import type { ParitySummary, RunKind, RunRow, RunStatus } from "./types.ts";
+import type {
+  ParitySummary,
+  RunKind,
+  RunMeta,
+  RunRow,
+  RunStatus,
+} from "./types.ts";
 
 export async function createRun(input: {
   siteId: string;
@@ -32,6 +38,7 @@ export async function finishRun(
     summary?: ParitySummary;
     artifactPrefix?: string;
     logsTail?: string;
+    meta?: RunMeta;
   },
 ): Promise<void> {
   const client = requireSupabase();
@@ -43,6 +50,7 @@ export async function finishRun(
       summary: patch.summary ?? null,
       artifact_prefix: patch.artifactPrefix ?? null,
       logs_tail: patch.logsTail ?? null,
+      meta: patch.meta ?? null,
       finished_at: new Date().toISOString(),
     })
     .eq("id", runId);

@@ -147,6 +147,19 @@ export async function acquireLease(
   return null;
 }
 
+/** Accrue a session's cost onto the site (read-modify-write; drift is fine). */
+export async function incrementCost(
+  siteId: string,
+  delta: number | undefined,
+): Promise<void> {
+  if (!delta || !Number.isFinite(delta) || delta <= 0) return;
+  const site = await getSite(siteId).catch(() => null);
+  if (!site) return;
+  await updateSite(siteId, {
+    cost_total: Number(site.cost_total ?? 0) + delta,
+  }).catch(() => {});
+}
+
 /** Hard delete — runs/events cascade via FK. Frees the source_repo unique slot. */
 export async function deleteSite(id: string): Promise<void> {
   const client = requireSupabase();

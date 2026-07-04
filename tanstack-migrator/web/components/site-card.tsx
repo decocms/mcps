@@ -1,8 +1,58 @@
-import { ExternalLink, GitBranch, Github, Globe } from "lucide-react";
+import {
+  CircleDot,
+  ExternalLink,
+  GitBranch,
+  Github,
+  GitPullRequest,
+  Globe,
+} from "lucide-react";
 import { ParityBar } from "@/components/parity-bar.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { cn, duration, timeAgo } from "@/lib/utils.ts";
 import type { SiteView } from "@/types.ts";
+
+export function issuesFilterUrl(targetRepo: string | null): string | null {
+  return targetRepo
+    ? `https://github.com/${targetRepo}/issues?q=is%3Aissue+label%3Atanstack-migrator`
+    : null;
+}
+
+/** Thin closed/total progress over the GitHub-issue backlog. */
+function IssuesBar({ site }: { site: SiteView }) {
+  if (site.issuesTotal <= 0) return null;
+  const pct = Math.min(
+    100,
+    Math.round((site.issuesClosed / site.issuesTotal) * 100),
+  );
+  const href = issuesFilterUrl(site.targetRepo);
+  const bar = (
+    <span className="flex w-full items-center gap-2">
+      <span className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+        <span
+          className="block h-full rounded-full bg-emerald-500 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </span>
+      <span className="inline-flex shrink-0 items-center gap-1 text-[11px] text-muted-foreground tabular-nums">
+        <CircleDot className="h-3 w-3" />
+        issues {site.issuesClosed}/{site.issuesTotal}
+      </span>
+    </span>
+  );
+  if (!href) return bar;
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="w-full hover:opacity-80"
+      title="Abrir issues label:tanstack-migrator no GitHub"
+    >
+      {bar}
+    </a>
+  );
+}
 
 function RepoLink({
   repo,
@@ -68,6 +118,7 @@ export function SiteCard({
       </div>
 
       <ParityBar score={site.parityScore} target={site.parityTarget} />
+      {!isDone && <IssuesBar site={site} />}
 
       {site.phaseDetail && !isDone && (
         <p className="line-clamp-2 text-xs text-muted-foreground">
@@ -88,6 +139,13 @@ export function SiteCard({
       <div className="flex flex-col gap-1">
         <RepoLink repo={site.sourceRepo} label="source" icon={Github} />
         <RepoLink repo={site.targetRepo} label="tanstack" icon={GitBranch} />
+        {site.prUrl && (
+          <RepoLink
+            repo={site.prUrl}
+            label={`PR #${site.prNumber ?? "?"} (${site.workBranch})`}
+            icon={GitPullRequest}
+          />
+        )}
         <div className="flex items-center gap-3">
           <RepoLink repo={site.prodUrl} label="produção" icon={Globe} />
           {site.previewUrl && site.previewReady && (
@@ -118,9 +176,11 @@ export function SiteCard({
 
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
         <span>
-          {site.status === "validating" || isDone
-            ? `iteração ${site.iterationsDone}/${site.maxIterations}`
-            : `cadastrado ${timeAgo(site.createdAt)}`}
+          {site.status === "fixing"
+            ? `sessões ${site.fixSessionsDone}/${site.maxFixSessions}`
+            : site.status === "paritying" || isDone
+              ? `rodada ${site.iterationsDone}/${site.maxIterations}`
+              : `cadastrado ${timeAgo(site.createdAt)}`}
         </span>
         <span>
           {isDone

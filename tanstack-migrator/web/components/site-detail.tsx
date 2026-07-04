@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { ParityBar } from "@/components/parity-bar.tsx";
+import { issuesFilterUrl } from "@/components/site-card.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
 import { duration, clockTime, cn, timeAgo } from "@/lib/utils.ts";
@@ -79,12 +80,16 @@ function RunRow({ run }: { run: RunView }) {
   };
 
   const kindLabel: Record<string, string> = {
-    migrate: "migração inicial",
-    fix_iteration: `iteração ${run.iteration}`,
+    migrate: "script de migração",
+    triage: "triagem",
+    fix: `fix ${run.iteration}`,
     parity: `parity ${run.iteration}`,
+    fix_iteration: `iteração ${run.iteration}`,
     install_sync: "instalação do sync",
     deploy_cf: "deploy CF",
   };
+  const usage = run.meta?.usage;
+  const issueMoves = run.meta?.issues;
 
   return (
     <div className="rounded-md border border-border">
@@ -167,13 +172,75 @@ function RunRow({ run }: { run: RunView }) {
         <div className="border-t border-border px-3 py-2 text-xs">
           {!run.summary?.topIssues?.length &&
             !run.logsTail &&
-            !heatmaps?.length && (
+            !heatmaps?.length &&
+            !run.meta?.commands?.length &&
+            !issueMoves && (
               <p className="text-muted-foreground">
                 Sem logs desta sessão
                 {run.threadId ? ` — thread ${run.threadId}` : ""}
                 {run.status === "running" ? " (ainda em execução)" : ""}.
               </p>
             )}
+          {(issueMoves || usage) && (
+            <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+              {issueMoves?.taken && issueMoves.taken.length > 0 && (
+                <span>
+                  issues: {issueMoves.taken.map((n) => `#${n}`).join(", ")}
+                </span>
+              )}
+              {issueMoves?.resolved && issueMoves.resolved.length > 0 && (
+                <span className="text-emerald-600 dark:text-emerald-400">
+                  resolvidas:{" "}
+                  {issueMoves.resolved.map((n) => `#${n}`).join(", ")}
+                </span>
+              )}
+              {issueMoves?.blocked && issueMoves.blocked.length > 0 && (
+                <span className="text-amber-600 dark:text-amber-400">
+                  bloqueadas:{" "}
+                  {issueMoves.blocked.map((b) => `#${b.number}`).join(", ")}
+                </span>
+              )}
+              {issueMoves?.created !== undefined && issueMoves.created > 0 && (
+                <span>criadas no GitHub: {issueMoves.created}</span>
+              )}
+              {usage?.costUsd !== undefined && (
+                <span className="tabular-nums">
+                  custo ${usage.costUsd.toFixed(2)}
+                </span>
+              )}
+              {usage?.totalTokens !== undefined && (
+                <span className="tabular-nums">
+                  {Math.round(usage.totalTokens / 1000)}k tokens
+                </span>
+              )}
+            </div>
+          )}
+          {run.meta?.commands && run.meta.commands.length > 0 && (
+            <details className="mb-2">
+              <summary className="cursor-pointer text-muted-foreground select-none">
+                {run.meta.commands.length} comandos da sessão
+              </summary>
+              <ul className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-auto font-mono text-[10px] leading-snug">
+                {run.meta.commands.map((c, i) => (
+                  <li key={i} className="flex gap-1.5">
+                    <span
+                      className={cn(
+                        "shrink-0 tabular-nums",
+                        c.exit === 0 || c.exit === undefined
+                          ? "text-muted-foreground"
+                          : "text-red-600 dark:text-red-400",
+                      )}
+                    >
+                      {c.exit !== undefined ? `[${c.exit}]` : "[·]"}
+                    </span>
+                    <span className="truncate" title={c.cmd}>
+                      {c.cmd}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
           {run.summary?.topIssues && run.summary.topIssues.length > 0 && (
             <ul className="flex flex-col gap-1">
               {run.summary.topIssues.map((issue, i) => (
@@ -318,6 +385,39 @@ export function SiteDetailPanel({
                   {site.phaseDetail}
                 </p>
               )}
+              {(site.issuesTotal > 0 ||
+                site.fixSessionsDone > 0 ||
+                site.costTotal > 0) && (
+                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  {site.issuesTotal > 0 &&
+                    (issuesFilterUrl(site.targetRepo) ? (
+                      <a
+                        href={issuesFilterUrl(site.targetRepo) ?? "#"}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="tabular-nums hover:underline"
+                        title="Issues label:tanstack-migrator no GitHub"
+                      >
+                        issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                      </a>
+                    ) : (
+                      <span className="tabular-nums">
+                        issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                      </span>
+                    ))}
+                  {site.fixSessionsDone > 0 && (
+                    <span className="tabular-nums">
+                      sessões de fix {site.fixSessionsDone}/
+                      {site.maxFixSessions}
+                    </span>
+                  )}
+                  {site.costTotal > 0 && (
+                    <span className="tabular-nums">
+                      custo ${site.costTotal.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {site.needsHumanReason && (
@@ -417,6 +517,13 @@ export function SiteDetailPanel({
                       "TanStack",
                       site.targetRepo,
                       `https://github.com/${site.targetRepo}`,
+                    ]
+                  : null,
+                site.prUrl
+                  ? [
+                      "PR",
+                      `#${site.prNumber ?? "?"} (${site.workBranch} → main)`,
+                      site.prUrl,
                     ]
                   : null,
                 ["Produção", site.prodUrl, site.prodUrl],
