@@ -156,7 +156,16 @@ export async function fixing(
       await incrementCost(site.id, result.meta?.usage?.costUsd);
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "fixing") return;
+      if (!current || current.status !== "fixing") {
+        // site paused/changed mid-session — close the run row so the
+        // history never shows a phantom "running" entry
+        await finishRun(run.id, {
+          status: "failed",
+          logsTail: `[abandonada: site saiu de fixing durante a sessão]`,
+          meta: result.meta,
+        });
+        return;
+      }
 
       if (!result.ok) {
         await finishRun(run.id, {

@@ -90,6 +90,14 @@ function RunRow({ run }: { run: RunView }) {
   };
   const usage = run.meta?.usage;
   const issueMoves = run.meta?.issues;
+  const hasIssueMoves =
+    (issueMoves?.taken?.length ?? 0) +
+      (issueMoves?.resolved?.length ?? 0) +
+      (issueMoves?.blocked?.length ?? 0) +
+      (issueMoves?.created ?? 0) >
+    0;
+  const hasUsage =
+    usage?.costUsd !== undefined || usage?.totalTokens !== undefined;
 
   return (
     <div className="rounded-md border border-border">
@@ -174,14 +182,15 @@ function RunRow({ run }: { run: RunView }) {
             !run.logsTail &&
             !heatmaps?.length &&
             !run.meta?.commands?.length &&
-            !issueMoves && (
+            !hasIssueMoves &&
+            !hasUsage && (
               <p className="text-muted-foreground">
                 Sem logs desta sessão
                 {run.threadId ? ` — thread ${run.threadId}` : ""}
                 {run.status === "running" ? " (ainda em execução)" : ""}.
               </p>
             )}
-          {(issueMoves || usage) && (
+          {(hasIssueMoves || hasUsage) && (
             <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
               {issueMoves?.taken && issueMoves.taken.length > 0 && (
                 <span>

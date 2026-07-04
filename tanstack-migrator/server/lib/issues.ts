@@ -310,10 +310,14 @@ export async function markBlockedIssues(
       item.number,
       `Bloqueada pela sessão de fix: ${item.reason ?? "sem motivo informado"}`,
     ).catch(() => {});
-    await issueUpdateLabels(ctx, ref, item.number, [
-      ...(issue?.labels ?? [TSM_LABEL]),
-      BLOCKED_LABEL,
-    ]).catch(() => {});
+    // only touch labels when we KNOW the current set — replacing blind would
+    // wipe severity/category (GitHub label updates overwrite)
+    if (issue) {
+      await issueUpdateLabels(ctx, ref, item.number, [
+        ...issue.labels,
+        BLOCKED_LABEL,
+      ]).catch(() => {});
+    }
     await addEvent(
       site.id,
       `Issue #${item.number} bloqueada: ${item.reason ?? "?"}`,

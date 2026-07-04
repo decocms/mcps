@@ -146,7 +146,16 @@ export async function paritying(
       await incrementCost(site.id, result.meta?.usage?.costUsd);
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "paritying") return;
+      if (!current || current.status !== "paritying") {
+        // site paused/changed mid-session — close the run row so the
+        // history never shows a phantom "running" entry
+        await finishRun(run.id, {
+          status: "failed",
+          logsTail: `[abandonada: site saiu de paritying durante a sessão]`,
+          meta: result.meta,
+        });
+        return;
+      }
 
       if (!result.ok) {
         await finishRun(run.id, {

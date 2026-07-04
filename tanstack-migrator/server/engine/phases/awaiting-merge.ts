@@ -46,11 +46,19 @@ export async function awaitingMerge(
     return;
   }
 
-  const pr = await getPullRequest(
-    ctx,
-    parseRepo(site.target_repo),
-    site.pr_number,
-  );
+  // read failures must not fail a passive polling state — warn and retry
+  let pr: Awaited<ReturnType<typeof getPullRequest>>;
+  try {
+    pr = await getPullRequest(ctx, parseRepo(site.target_repo), site.pr_number);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    await addEvent(
+      site.id,
+      `Poll do PR #${site.pr_number} falhou (${message.slice(0, 120)}) — tentando no próximo tick`,
+      "warn",
+    );
+    return;
+  }
   if (!pr) {
     await updateSite(site.id, {
       status: "needs_human",

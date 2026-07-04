@@ -178,7 +178,9 @@ export function SiteCard({
         <span>
           {site.status === "fixing"
             ? `sessões ${site.fixSessionsDone}/${site.maxFixSessions}`
-            : site.status === "paritying" || isDone
+            : site.status === "paritying" ||
+                site.status.startsWith("validating") ||
+                isDone
               ? `rodada ${site.iterationsDone}/${site.maxIterations}`
               : `cadastrado ${timeAgo(site.createdAt)}`}
         </span>

@@ -135,7 +135,7 @@ export async function ensureApiKeyFromRequest(env: Env): Promise<void> {
     // erase these — their code doesn't know the column.
     const pinned: Record<string, unknown> = {
       ...(existing?.pinned ?? {}),
-      ...(typeof fresh.SESSION_HARNESS === "string"
+      ...(typeof fresh.SESSION_HARNESS === "string" && fresh.SESSION_HARNESS
         ? { SESSION_HARNESS: fresh.SESSION_HARNESS }
         : {}),
       ...(typeof orgSlug === "string" && orgSlug

@@ -58,7 +58,16 @@ export async function migratingScript(
       await incrementCost(site.id, result.meta?.usage?.costUsd);
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "migrating_script") return; // paused/changed meanwhile
+      if (!current || current.status !== "migrating_script") {
+        // site paused/changed mid-session — close the run row so the
+        // history never shows a phantom "running" entry
+        await finishRun(run.id, {
+          status: "failed",
+          logsTail: `[abandonada: site saiu de migrating_script durante a sessão]`,
+          meta: result.meta,
+        });
+        return;
+      }
 
       if (result.ok) {
         await finishRun(run.id, {

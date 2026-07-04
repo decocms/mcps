@@ -55,7 +55,16 @@ export async function triaging(
       await incrementCost(site.id, result.meta?.usage?.costUsd);
 
       const current = await getSite(site.id);
-      if (!current || current.status !== "triaging") return;
+      if (!current || current.status !== "triaging") {
+        // site paused/changed mid-session — close the run row so the
+        // history never shows a phantom "running" entry
+        await finishRun(run.id, {
+          status: "failed",
+          logsTail: `[abandonada: site saiu de triaging durante a sessão]`,
+          meta: result.meta,
+        });
+        return;
+      }
 
       if (!result.ok) {
         await finishRun(run.id, {
