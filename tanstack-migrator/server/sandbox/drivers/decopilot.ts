@@ -21,6 +21,9 @@
  */
 
 import { collectFullStreamText } from "@decocms/mcps-shared/mesh-chat";
+import { addEvent } from "../../db/events.ts";
+import { attachThreadToRun } from "../../db/runs.ts";
+import { updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
 import {
   callSelfTool,
@@ -125,10 +128,12 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
  */
 async function runDecopilotSession(
   ctx: WorkerCtx,
+  site: SiteRow,
   virtualMcpId: string,
   prompt: string,
   timeoutMs: number,
   kind: string,
+  runId?: string,
 ): Promise<string> {
   const base = resolveMeshUrl(ctx.meshUrl);
   // decopilot routes are keyed by org SLUG (an org-id 404s: "organization not found")
@@ -193,11 +198,22 @@ async function runDecopilotSession(
       `decopilot message dispatch failed (${post.status}): ${errorText.slice(0, 300)}`,
     );
   }
+  await addEvent(
+    site.id,
+    `Sessão despachada (202) — thread ${threadId} · harness ${ctx.config.sessionHarness}`,
+  );
+  if (runId) await attachThreadToRun(runId, threadId).catch(() => {});
+  await updateSite(site.id, {
+    phase_detail: `sessão ${threadId} na fila do decopilot`,
+    last_progress_at: new Date().toISOString(),
+  }).catch(() => {});
 
   // Consume the thread stream until RESULT_JSON shows up or time runs out.
   const streamUrl = `${base}/api/${org}/decopilot/threads/${threadId}/stream`;
-  const deadline = Date.now() + timeoutMs;
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutMs;
   let output = "";
+  let lastHeartbeat = 0;
 
   while (Date.now() < deadline) {
     const remaining = Math.max(10_000, deadline - Date.now());
@@ -220,6 +236,32 @@ async function runDecopilotSession(
         output = await collectFullStreamText(response.body);
         if (parseResultJson(output)) return output;
       }
+
+      // SSE gave no marker — the run may have already finished (v2 storage
+      // persists the assistant message at completion; the stream buffer can
+      // be empty by then). Check the thread status and rescue the final text
+      // instead of spinning until the timeout.
+      const status = await getThreadStatus(ctx, threadId);
+      if (status && status !== "in_progress" && status !== "requires_action") {
+        const finalText = await fetchThreadFinalText(ctx, threadId);
+        if (finalText) output = `${output}\n${finalText}`.trim();
+        await addEvent(
+          site.id,
+          `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
+          parseResultJson(output) ? "info" : "warn",
+        );
+        return output;
+      }
+
+      // Heartbeat: keep the dashboard honest about what the reader is doing
+      if (Date.now() - lastHeartbeat > 60_000) {
+        lastHeartbeat = Date.now();
+        const minutes = Math.round((Date.now() - startedAt) / 60_000);
+        await updateSite(site.id, {
+          phase_detail: `sessão ${threadId}: ${status ?? "streamando"} há ${minutes}min`,
+          last_progress_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
     } catch (err) {
       if (Date.now() >= deadline) break;
       const message = err instanceof Error ? err.message : String(err);
@@ -230,7 +272,59 @@ async function runDecopilotSession(
     await sleep(STREAM_RECONNECT_DELAY_MS);
   }
 
+  await addEvent(
+    site.id,
+    `Sessão ${threadId} atingiu o timeout de ${Math.round(timeoutMs / 60_000)}min sem RESULT_JSON`,
+    "warn",
+  );
   return output;
+}
+
+async function getThreadStatus(
+  ctx: WorkerCtx,
+  threadId: string,
+): Promise<string | null> {
+  try {
+    const result = await callSelfTool<{ item?: { status?: string } }>(
+      ctx,
+      "COLLECTION_THREADS_GET",
+      { id: threadId },
+      20_000,
+    );
+    return result?.item?.status ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Assistant text parts of the thread — where the RESULT_JSON lives after completion. */
+async function fetchThreadFinalText(
+  ctx: WorkerCtx,
+  threadId: string,
+): Promise<string> {
+  try {
+    const result = await callSelfTool<{
+      messages?: Array<{
+        role?: string;
+        parts?: Array<Record<string, unknown>>;
+      }>;
+      items?: Array<{ role?: string; parts?: Array<Record<string, unknown>> }>;
+    }>(
+      ctx,
+      "COLLECTION_THREAD_MESSAGES_LIST",
+      { thread_id: threadId, limit: 50 },
+      30_000,
+    );
+    const messages = result?.messages ?? result?.items ?? [];
+    return messages
+      .filter((m) => m.role === "assistant")
+      .flatMap((m) => m.parts ?? [])
+      .filter((p) => p.type === "text" && typeof p.text === "string")
+      .map((p) => p.text as string)
+      .join("\n");
+  } catch {
+    return "";
+  }
 }
 
 export const decopilotDriver: SandboxDriver = {
@@ -274,10 +368,12 @@ export const decopilotDriver: SandboxDriver = {
     const timeoutMs = task.timeoutMs ?? DEFAULT_TASK_TIMEOUT_MS;
     const output = await runDecopilotSession(
       ctx,
+      site,
       site.virtual_mcp_id,
       task.prompt,
       timeoutMs,
       ctx.config.sandboxKind,
+      task.runId,
     );
     const tail = output.slice(-4000);
     const result = parseResultJson(output);

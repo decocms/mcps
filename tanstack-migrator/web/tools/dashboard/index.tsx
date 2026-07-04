@@ -4,7 +4,7 @@ import { RegisterModal } from "@/components/register-modal.tsx";
 import { SiteCard } from "@/components/site-card.tsx";
 import { SiteDetailPanel } from "@/components/site-detail.tsx";
 import { usePollingTool } from "@/hooks/use-tool.ts";
-import { cn } from "@/lib/utils.ts";
+import { clockTime, cn } from "@/lib/utils.ts";
 import type { DashboardData, SiteView } from "@/types.ts";
 
 type Tab = "migrating" | "needs_human" | "done";
@@ -62,6 +62,11 @@ export default function DashboardPage() {
           )}
         </div>
         <div className="flex items-center gap-2">
+          {data && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              atualizado às {clockTime(data.updatedAt)}
+            </span>
+          )}
           <button
             type="button"
             onClick={refresh}

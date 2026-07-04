@@ -14,7 +14,7 @@ import { useState } from "react";
 import { ParityBar } from "@/components/parity-bar.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
-import { cn, timeAgo } from "@/lib/utils.ts";
+import { duration, clockTime, cn, timeAgo } from "@/lib/utils.ts";
 import type { ReportUrls, RunView, SiteDetail } from "@/types.ts";
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -105,11 +105,31 @@ function RunRow({ run }: { run: RunView }) {
             )}
           />
           <span className="font-medium">{kindLabel[run.kind] ?? run.kind}</span>
-          <span className="text-muted-foreground">
-            {timeAgo(run.startedAt)}
+          <span className="text-muted-foreground tabular-nums">
+            {clockTime(run.startedAt)} · {timeAgo(run.startedAt)}
           </span>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {run.finishedAt && (
+            <span className="text-muted-foreground tabular-nums">
+              {duration(run.startedAt, run.finishedAt)}
+            </span>
+          )}
+          {run.threadId && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigator.clipboard?.writeText(run.threadId ?? "");
+              }}
+              onKeyDown={(e) => e.key === "Enter" && e.stopPropagation()}
+              className="inline-flex max-w-28 items-center gap-1 truncate rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+              title={`Thread da sessão: ${run.threadId} (clique pra copiar)`}
+            >
+              {run.threadId}
+            </span>
+          )}
           {run.parityScore !== null && (
             <span className="font-semibold tabular-nums">
               {Math.round(run.parityScore)}%
@@ -284,6 +304,11 @@ export function SiteDetailPanel({
                 </span>
               </div>
               <ParityBar score={site.parityScore} target={site.parityTarget} />
+              {site.phaseDetail && (
+                <p className="mt-1.5 text-xs text-muted-foreground">
+                  {site.phaseDetail}
+                </p>
+              )}
             </div>
 
             {site.needsHumanReason && (
@@ -386,7 +411,7 @@ export function SiteDetailPanel({
                     ]
                   : null,
                 ["Produção", site.prodUrl, site.prodUrl],
-                site.previewUrl
+                site.previewUrl && site.previewReady
                   ? ["Preview", site.previewUrl, site.previewUrl]
                   : null,
                 site.cfDeployUrl
@@ -435,8 +460,11 @@ export function SiteDetailPanel({
               <ul className="flex flex-col gap-1">
                 {data.events.map((event) => (
                   <li key={event.id} className="flex gap-2 text-xs">
-                    <span className="shrink-0 text-muted-foreground">
-                      {timeAgo(event.createdAt)}
+                    <span
+                      className="shrink-0 text-muted-foreground tabular-nums"
+                      title={timeAgo(event.createdAt)}
+                    >
+                      {clockTime(event.createdAt)}
                     </span>
                     <span
                       className={cn(

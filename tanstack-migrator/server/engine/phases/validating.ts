@@ -142,6 +142,7 @@ export async function validating(
         result = await getDriver(ctx).runTask(site, ctx, {
           kind: "fix_iteration",
           iteration,
+          runId: run.id,
           prompt: fixIterationPrompt({
             site,
             iteration,

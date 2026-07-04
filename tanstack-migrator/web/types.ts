@@ -33,6 +33,7 @@ export interface SiteView {
   iterationsDone: number;
   maxIterations: number;
   previewUrl: string | null;
+  previewReady: boolean;
   cfDeployUrl: string | null;
   error: string | null;
   needsHumanReason: string | null;
@@ -91,6 +92,7 @@ export interface RunView {
   parityScore: number | null;
   summary: ParitySummary | null;
   hasArtifacts: boolean;
+  threadId: string | null;
   logsTail: string | null;
   startedAt: string;
   finishedAt: string | null;

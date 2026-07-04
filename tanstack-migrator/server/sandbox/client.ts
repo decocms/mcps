@@ -31,6 +31,8 @@ export interface SandboxTaskInput {
   prompt: string;
   /** Parity iteration number, for logging/artifacts. */
   iteration?: number;
+  /** sitemig_runs row to stamp with the session threadId. */
+  runId?: string;
   timeoutMs?: number;
 }
 

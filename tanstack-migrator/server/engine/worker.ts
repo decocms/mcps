@@ -28,6 +28,7 @@ import {
 } from "../db/sites.ts";
 import {
   ACTIVE_STATUSES,
+  isActiveStatus,
   isMigratingStatus,
   isValidatingStatus,
   type SiteRow,
@@ -76,6 +77,29 @@ async function watchdog(site: SiteRow): Promise<boolean> {
     "error",
   );
   return true;
+}
+
+/** Preview link only counts when the dev server actually answers. */
+async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
+  if (!site.sandbox_preview_url || site.preview_ready) return;
+  if (!isActiveStatus(site.status)) return;
+  try {
+    const response = await fetch(site.sandbox_preview_url, {
+      method: "GET",
+      redirect: "manual",
+      signal: AbortSignal.timeout(3_000),
+    });
+    // anything the dev server answers (2xx-4xx) counts as "up"
+    if (response.status < 500) {
+      await updateSite(site.id, { preview_ready: true });
+      await addEvent(
+        site.id,
+        `Dev server respondendo — preview liberado: ${site.sandbox_preview_url}`,
+      );
+    }
+  } catch {
+    // still down — keep hidden
+  }
 }
 
 async function keepaliveIfNeeded(site: SiteRow, ctx: WorkerCtx): Promise<void> {
@@ -222,6 +246,7 @@ async function tickConnection(ctx: WorkerCtx): Promise<void> {
   for (const site of survivors) {
     await advanceSite(site, ctx);
     await keepaliveIfNeeded(site, ctx);
+    await probePreviewIfNeeded(site);
   }
 }
 

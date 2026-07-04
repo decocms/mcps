@@ -26,3 +26,9 @@ export function duration(
   if (minutes < 60) return `${minutes}min`;
   return `${Math.floor(minutes / 60)}h${minutes % 60 ? ` ${minutes % 60}min` : ""}`;
 }
+
+export function clockTime(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("pt-BR", { hour12: false });
+}

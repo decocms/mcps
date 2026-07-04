@@ -26,6 +26,7 @@ export async function provisioningSandbox(
   await updateSite(site.id, {
     sandbox_handle: info.handle,
     sandbox_preview_url: info.previewUrl,
+    preview_ready: false,
     virtual_mcp_id: info.virtualMcpId ?? site.virtual_mcp_id,
     status: "migrating2", // zombie-invisible session phase
     phase_detail: "sandbox de pé, iniciando migração",
