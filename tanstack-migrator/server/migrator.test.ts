@@ -201,6 +201,19 @@ describe("prompts", () => {
     expect(migrate).toContain(`>> ${CONVENTIONS_PATH}`);
   });
 
+  test("fixIssuesPrompt ships the proven deco.cx→TanStack loader recipes", () => {
+    const prompt = fixIssuesPrompt({
+      site,
+      issues: [{ number: 1, title: "home em branco" }],
+    });
+    // the ctx-undefined recipe (the empty-page root cause)
+    expect(prompt).toContain("ctx?: AppContext");
+    expect(prompt).toContain("useDevice()");
+    // the SEO defaultLoader recipe
+    expect(prompt).toContain("@decocms/apps/website/components/Seo");
+    expect(prompt).toContain("defaultLoader");
+  });
+
   test("parityOnlyPrompt: measure-only with uploads", () => {
     const prompt = parityOnlyPrompt({
       site,
