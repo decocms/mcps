@@ -24,7 +24,9 @@ export default function WidgetActivePage() {
       </div>
     );
   }
-  if (error) {
+  // only surface errors when there's no prior snapshot — a transient poll
+  // failure shouldn't blank a widget that already has data
+  if (error && !data) {
     return (
       <div className="p-4 text-xs text-red-600 dark:text-red-400">{error}</div>
     );
@@ -54,6 +56,7 @@ export default function WidgetActivePage() {
 
       <PipelineStepper
         status={site.status}
+        resumeStatus={site.resumeStatus}
         phaseDetail={site.phaseDetail}
         compact
       />

@@ -26,6 +26,7 @@ export interface SiteView {
   targetRepo: string | null;
   prodUrl: string;
   status: string;
+  resumeStatus: string | null;
   phaseDetail: string | null;
   parityScore: number | null;
   parityTarget: number;

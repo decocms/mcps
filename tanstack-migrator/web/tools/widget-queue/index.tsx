@@ -17,7 +17,7 @@ export default function WidgetQueuePage() {
       </div>
     );
   }
-  if (error) {
+  if (error && !data) {
     return (
       <div className="p-4 text-xs text-red-600 dark:text-red-400">{error}</div>
     );

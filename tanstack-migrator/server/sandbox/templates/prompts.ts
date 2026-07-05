@@ -325,9 +325,9 @@ Rodar a parity CLI comparando produção vs candidato, subir os artefatos e repo
 1. \`cd /app/repo && git checkout ${site.work_branch} && git pull origin ${site.work_branch}\`. ${devServerNote}
 2. Detecte a porta do dev server: \`DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo 5173)\` (o @cloudflare/vite-plugin usa 5173 por padrão, não 3000).
 3. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "http://localhost:$DEV_PORT" --preset ci\`
-3. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
-${uploadSteps.length > 0 ? `4. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "4. (sem upload de artefatos configurado)"}
-5. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
+4. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
+${uploadSteps.length > 0 ? `5. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "5. (sem upload de artefatos configurado)"}
+6. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
 
 ${progressInstruction(site)}
 

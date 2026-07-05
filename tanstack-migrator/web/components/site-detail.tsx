@@ -262,6 +262,7 @@ export function SiteDetailPanel({
               {/* pipeline stepper — always visible */}
               <PipelineStepper
                 status={site.status}
+                resumeStatus={site.resumeStatus}
                 phaseDetail={site.phaseDetail}
               />
             </div>

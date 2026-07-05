@@ -65,6 +65,8 @@ function phaseIndexFor(status: string): number {
 
 export interface PipelineStepperProps {
   status: string;
+  /** phase the site was in when it blocked (resume_status), used for needs_human/failed */
+  resumeStatus?: string | null;
   phaseDetail?: string | null;
   /** compact = smaller icons/labels for the home widget */
   compact?: boolean;
@@ -73,13 +75,18 @@ export interface PipelineStepperProps {
 
 export function PipelineStepper({
   status,
+  resumeStatus,
   phaseDetail,
   compact,
   className,
 }: PipelineStepperProps) {
-  const currentIdx = phaseIndexFor(status);
   const isDone = status === "done";
   const isBlocked = status === "needs_human" || status === "failed";
+  // blocked statuses aren't phases — highlight the phase they blocked AT
+  // (resume_status), so the stepper never renders all-grey when it matters most
+  const currentIdx = isBlocked
+    ? phaseIndexFor(resumeStatus ?? "")
+    : phaseIndexFor(status);
   const iconSize = compact ? "h-3 w-3" : "h-3.5 w-3.5";
   const dot = compact ? "h-6 w-6" : "h-7 w-7";
 
