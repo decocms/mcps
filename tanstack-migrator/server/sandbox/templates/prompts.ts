@@ -399,6 +399,12 @@ ${memorySection(site, [
   },
 ])}
 
+# Receitas conhecidas (padrões que JÁ funcionaram em migrações deco.cx→TanStack)
+Se o erro bater com um destes, aplique direto — não reinvente nem gaste sessão investigando loader por loader:
+- **Section loader usa \`ctx.algo\` e estoura \`Cannot read properties of undefined\`** (ex: \`ctx.device\`, \`ctx.invoke\`, \`ctx.salesforce\`, \`ctx.features\`): o \`@decocms/start\` invoca o loader como \`(props, req)\` — o 3º arg \`ctx\` quase sempre vem \`undefined\` (o start só compõe device/search params; salesforce/features/invoke NEM sempre são injetados). Fix comprovado: torne \`ctx\` OPCIONAL (\`ctx?: AppContext\`) e use optional-chaining em TODO acesso, com fallback: \`ctx?.device\`, \`ctx?.salesforce?.x\`, \`ctx?.features?.y ?? false\`. Para device no componente, use o hook \`useDevice()\` de \`@decocms/start/sdk/useDevice\` (não \`ctx.device\`). E NÃO faça fetch pesado via \`ctx.invoke\` dentro do section loader — o loader deve só derivar props baratas. (Isso destrava a home inteira: cada loader que estoura deixa a seção vazia → página em branco.)
+- **\`defaultLoader\`/\`DefaultProps\` não definidos** (seções de SEO tipo SeoPDP/SeoPLP): são convenções do deco.cx Fresh que não existem no start. Fix comprovado: importe \`renderTemplateString\`, \`type SEOSection\`, \`type Props as SeoProps\` de \`@decocms/apps/website/components/Seo\` e faça a normalização de title/description/canonical INLINE (assinatura \`(props, req): SeoProps\`, sem \`ctx\` nem \`defaultLoader\`).
+Ambos têm causa raiz no migrate transform do \`@decocms/start\` (não converte a API \`ctx.*\`/\`defaultLoader\` do deco.cx) — registre no \`framework-notes.md\` com prefixo \`[framework?]\`.
+
 # Issues a resolver
 ${list}
 
