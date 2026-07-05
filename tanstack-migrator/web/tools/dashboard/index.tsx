@@ -53,6 +53,11 @@ export default function DashboardPage() {
     return result;
   }, [data]);
 
+  const totalCost = useMemo(
+    () => (data?.sites ?? []).reduce((sum, s) => sum + (s.costTotal ?? 0), 0),
+    [data],
+  );
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <header className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -63,6 +68,7 @@ export default function DashboardPage() {
               {data.queue.active}/{data.queue.maxConcurrent} slots ·{" "}
               {data.queue.queued} na fila
               {data.queue.provider === "manual" ? " · simulação" : ""}
+              {totalCost > 0 && ` · $${totalCost.toFixed(2)}`}
             </span>
           )}
         </div>

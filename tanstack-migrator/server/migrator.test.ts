@@ -168,7 +168,7 @@ describe("prompts", () => {
       },
     });
     expect(prompt).toContain(
-      "@decocms/parity run --prod https://www.granado.com.br",
+      "@decocms/parity@latest run --prod https://www.granado.com.br",
     );
     expect(prompt).toContain("ANTHROPIC_API_KEY=sk-ant-xxx");
     expect(prompt).toContain("SOMENTE MEDIÇÃO");

@@ -11,6 +11,17 @@ import { StatusBadge } from "@/components/status-badge.tsx";
 import { cn, duration, timeAgo } from "@/lib/utils.ts";
 import type { SiteView } from "@/types.ts";
 
+const ACTIVE_STATUSES = new Set([
+  "creating_repo",
+  "provisioning_sandbox",
+  "migrating_script",
+  "opening_pr",
+  "triaging",
+  "fixing",
+  "paritying",
+  "deploying",
+]);
+
 export function issuesFilterUrl(targetRepo: string | null): string | null {
   return targetRepo
     ? `https://github.com/${targetRepo}/issues?q=is%3Aissue+label%3Atanstack-migrator`
@@ -94,6 +105,10 @@ export function SiteCard({
   simulation?: boolean;
 }) {
   const isDone = site.status === "done";
+  // active site whose row hasn't moved in >5min looks stuck
+  const stalled =
+    ACTIVE_STATUSES.has(site.status) &&
+    Date.now() - Date.parse(site.updatedAt) > 5 * 60_000;
 
   return (
     <button
@@ -111,6 +126,14 @@ export function SiteCard({
           {simulation && !isDone && (
             <span className="shrink-0 rounded-full border border-dashed border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
               simulação
+            </span>
+          )}
+          {stalled && (
+            <span
+              className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+              title={`Sem atualização há ${timeAgo(site.updatedAt)} — pode estar travado`}
+            >
+              parado?
             </span>
           )}
         </span>

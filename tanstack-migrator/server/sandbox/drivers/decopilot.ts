@@ -459,7 +459,12 @@ async function fetchThreadUsage(
   ctx: WorkerCtx,
   threadId: string,
 ): Promise<RunMeta["usage"]> {
-  for (const args of [{ threadId }, { thread_id: threadId }]) {
+  // API requires threadIds (array) and returns { items: [{threadId, ...}] }
+  for (const args of [
+    { threadIds: [threadId] },
+    { threadId },
+    { thread_id: threadId },
+  ]) {
     try {
       const raw = await callSelfTool<Record<string, unknown>>(
         ctx,
@@ -468,10 +473,13 @@ async function fetchThreadUsage(
         20_000,
       );
       if (!raw || typeof raw !== "object") continue;
-      const totals = (raw.totals ?? raw.usage ?? raw.item ?? raw) as Record<
-        string,
-        unknown
-      >;
+      // unwrap items array (threadIds shape) or fall back to flat object
+      const items = Array.isArray(raw.items) ? raw.items : null;
+      const totals = (items?.[0] ??
+        raw.totals ??
+        raw.usage ??
+        raw.item ??
+        raw) as Record<string, unknown>;
       const usage = {
         inputTokens: num(totals.inputTokens ?? totals.input_tokens),
         outputTokens: num(totals.outputTokens ?? totals.output_tokens),
