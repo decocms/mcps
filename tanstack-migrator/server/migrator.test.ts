@@ -12,8 +12,12 @@ import {
 } from "./lib/issues.ts";
 import { simulatedParityScore } from "./sandbox/drivers/manual.ts";
 import {
+  CONVENTIONS_PATH,
+  FIXES_PATH,
+  FRAMEWORK_NOTES_PATH,
   fixIssuesPrompt,
   migrateScriptPrompt,
+  PARITY_GOTCHAS_PATH,
   parityOnlyPrompt,
   parseResultJson,
   triagePrompt,
@@ -156,6 +160,35 @@ describe("prompts", () => {
     expect(prompt).toContain("fix(#<número>)");
     expect(prompt).toContain("SOMENTE as issues listadas");
     expect(prompt).toContain('"resolved": [12]');
+  });
+
+  test("cross-migration memory: fix reads+writes all files, triage reads them", () => {
+    const fix = fixIssuesPrompt({
+      site,
+      issues: [{ number: 12, title: "rota / 500" }],
+    });
+    // all four org-fs memory files are wired into the fix phase...
+    for (const path of [
+      FRAMEWORK_NOTES_PATH,
+      FIXES_PATH,
+      CONVENTIONS_PATH,
+      PARITY_GOTCHAS_PATH,
+    ]) {
+      expect(fix).toContain(path);
+    }
+    // ...with append instructions (fix is where solutions get recorded)
+    expect(fix).toContain(`>> ${FIXES_PATH}`);
+    expect(fix).toContain(`>> ${PARITY_GOTCHAS_PATH}`);
+    expect(fix).toContain("org-fs do Studio");
+
+    // triage reads the playbook (but doesn't write fixes — analysis only)
+    const triage = triagePrompt({ site, maxIssues: 15 });
+    expect(triage).toContain(FIXES_PATH);
+    expect(triage).not.toContain(`>> ${FIXES_PATH}`);
+
+    // migrate-script records new setup gotchas in conventions
+    const migrate = migrateScriptPrompt({ site });
+    expect(migrate).toContain(`>> ${CONVENTIONS_PATH}`);
   });
 
   test("parityOnlyPrompt: measure-only with uploads", () => {

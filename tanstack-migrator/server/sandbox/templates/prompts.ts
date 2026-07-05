@@ -17,16 +17,86 @@ import type { SiteRow } from "../../db/types.ts";
 export const RESULT_MARKER = "RESULT_JSON:";
 
 /**
- * Cross-migration memory file, lives in the Studio org-fs mounted into every
- * sandbox (`/app/org` — the same mount the repo's `org` symlink points at), so
- * it persists across sandboxes and sites. Triage/fix sessions read it at start
- * (to recognize framework-suspected errors already seen elsewhere) and append
- * to it when they hit a new one — turning "seen once" into "seen in N sites =
- * likely a framework bug" over time. This is NOT a Supabase table on purpose:
- * the knowledge belongs to the org's filesystem, reachable by the agent itself.
+ * Cross-migration memory lives in the Studio org-fs (`/app/org` — the same mount
+ * the repo's `org` symlink points at) mounted into every sandbox, so these files
+ * persist across sandboxes and sites. The agent reads them at session start and
+ * appends one-liners when it learns something reusable — turning per-site
+ * discovery into shared knowledge. NOT Supabase on purpose: the knowledge
+ * belongs to the org's filesystem, reachable by the agent itself.
+ *
+ *  - framework-notes: SUSPICIONS  ("this looks like a framework bug")
+ *  - fixes:           SOLUTIONS   ("this error → this fix worked")
+ *  - conventions:     SETUP GOTCHAS of the migration itself
+ *  - parity-gotchas:  recurring VISUAL mismatches and how they were resolved
  */
-export const FRAMEWORK_NOTES_PATH =
-  "/app/org/home/.tanstack-migrator/framework-notes.md";
+export const MEMORY_DIR = "/app/org/home/.tanstack-migrator";
+export const FRAMEWORK_NOTES_PATH = `${MEMORY_DIR}/framework-notes.md`;
+export const FIXES_PATH = `${MEMORY_DIR}/fixes.md`;
+export const CONVENTIONS_PATH = `${MEMORY_DIR}/conventions.md`;
+export const PARITY_GOTCHAS_PATH = `${MEMORY_DIR}/parity-gotchas.md`;
+
+interface MemorySpec {
+  path: string;
+  /** one-line description of what the file holds */
+  holds: string;
+  /** how to use what it says (read guidance) */
+  read: string;
+  /** condition to append a line (omit = read-only for this phase) */
+  writeWhen?: string;
+  /** the payload after the `timestamp | site` columns */
+  entry?: string;
+}
+
+/**
+ * Render the shared "# Memória entre migrações" section for a phase prompt from
+ * a list of file specs. Keeps every phase's memory instructions consistent
+ * (same dir, same one-line-append discipline, same dedupe rule).
+ */
+function memorySection(site: SiteRow, specs: MemorySpec[]): string {
+  const blocks = specs.map((s) => {
+    const lines = [
+      `- **${s.path}** — ${s.holds}`,
+      `  LEIA no início (\`cat ${s.path} 2>/dev/null\`): ${s.read}`,
+    ];
+    if (s.writeWhen) {
+      lines.push(
+        `  APENDE quando ${s.writeWhen}: \`mkdir -p ${MEMORY_DIR} && echo "$(date -u +%FT%TZ) | ${site.name} | ${s.entry}" >> ${s.path}\``,
+      );
+    }
+    return lines.join("\n");
+  });
+  return `# Memória entre migrações (org-fs do Studio — persiste entre sandboxes)
+Arquivos compartilhados da org já montados no sandbox. Regra: entradas de UMA linha; NÃO duplique uma linha que já exista equivalente.
+${blocks.join("\n")}`;
+}
+
+// Reusable specs (read guidance/write conditions are phase-agnostic).
+const FRAMEWORK_NOTES_SPEC: MemorySpec = {
+  path: FRAMEWORK_NOTES_PATH,
+  holds:
+    "erros SUSPEITOS de bug do framework (@decocms/start / @decocms/apps) vistos em migrações anteriores",
+  read: 'se algum bater com o que você achou, cite no corpo da issue ("já visto em N sites — provável bug de framework")',
+  writeWhen:
+    "achar um erro NOVO com cara de framework (stack dentro de node_modules de @decocms/*, ou padrão não-corrigível no código do site)",
+  entry: "<assinatura curta do erro> | <arquivo:linha ou pacote>",
+};
+const FIXES_SPEC: MemorySpec = {
+  path: FIXES_PATH,
+  holds:
+    "receitas de correção que JÁ FUNCIONARAM em outros sites (erro → solução)",
+  read: "se um erro seu casa com uma receita, APLIQUE-A antes de investigar do zero",
+};
+const CONVENTIONS_SPEC: MemorySpec = {
+  path: CONVENTIONS_PATH,
+  holds:
+    "convenções/gotchas de setup da migração (predev, symlink `org`, porta do dev, não tem rsync, etc.)",
+  read: "confira se alguma se aplica a este repo antes de começar",
+};
+const PARITY_GOTCHAS_SPEC: MemorySpec = {
+  path: PARITY_GOTCHAS_PATH,
+  holds: "mismatches VISUAIS recorrentes e como foram resolvidos",
+  read: "útil pras issues de visual/content e pra chegar em paridade mais rápido",
+};
 
 export interface ParityArtifactUrls {
   reportHtmlPut?: string;
@@ -194,6 +264,15 @@ Nunca fique mais de 10 minutos sem \`git commit\` + \`git push\` — todo progre
 ${gitAuthNote(ghToken)}
 ${progressInstruction(site)}
 
+${memorySection(site, [
+  {
+    ...CONVENTIONS_SPEC,
+    writeWhen:
+      "descobrir um passo de setup NOVO que não está nos Passos acima (ex: script extra necessário pro dev subir, dependência faltando)",
+    entry: "<convenção/gotcha de setup em uma linha>",
+  },
+])}
+
 # Resultado
 Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
 RESULT_JSON: {"ok": true, "detail": "script rodou, checkpoint pushado na branch ${branch}"}
@@ -243,10 +322,12 @@ O critério de sucesso desta migração é: **\`npm run build\` passa** (exit 0)
 - **Suspeita de bug do framework**: se um erro parece vir de \`@decocms/start\` ou \`@decocms/apps\` (stack aponta pra dentro de node_modules desses pacotes, ou é um padrão que não dá pra corrigir no código do site), prefixe o título com \`[framework?]\` e use category **infra** — o MCP cataloga esses para detectar bugs recorrentes do framework entre sites.
 - Se o \`npm run build\` já passa E o site renderiza HTML real em \`/\`, a maior parte do trabalho está feita — reporte poucas issues (só o que afeta paridade/visual).
 
-# Memória entre migrações (org-fs do Studio — persiste entre sandboxes)
-Há um arquivo compartilhado da org montado no sandbox: \`${FRAMEWORK_NOTES_PATH}\`.
-1. LEIA-O primeiro: \`cat ${FRAMEWORK_NOTES_PATH} 2>/dev/null\`. Ele lista erros que migrações ANTERIORES marcaram como suspeitos de bug do framework (\`@decocms/start\`/\`@decocms/apps\`). Se algum bater com o que você achou aqui, mencione no corpo da issue ("já visto em N sites — provável bug de framework").
-2. Quando você achar um erro NOVO com cara de framework (stack dentro de node_modules de @decocms/*, ou padrão não-corrigível no código do site), APENDE uma linha nesse arquivo: \`mkdir -p $(dirname ${FRAMEWORK_NOTES_PATH}) && echo "$(date -u +%FT%TZ) | ${site.name} | <assinatura curta do erro> | <arquivo:linha ou pacote>" >> ${FRAMEWORK_NOTES_PATH}\`. Assim os próximos sites herdam esse conhecimento e, se o mesmo erro reaparecer em vários, fica evidente que é bug do framework.
+${memorySection(site, [
+  FRAMEWORK_NOTES_SPEC,
+  FIXES_SPEC,
+  CONVENTIONS_SPEC,
+  PARITY_GOTCHAS_SPEC,
+])}
 
 # Formato das issues
 - No máximo ${maxIssues} issues, ordenadas da mais grave para a menos grave.
@@ -293,8 +374,29 @@ Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não 
 - UM commit POR issue resolvida, mensagem \`fix(#<número>): <o que fez>\` e push ao final de cada uma: \`git push origin ${site.work_branch}\`. Nunca fique >10min sem commit+push.
 - **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo. ${devServerNote}
 - **O preview TEM que renderizar (pré-requisito da paridade)**: para issues de runtime/SSR, a correção só está pronta quando \`curl -sL http://localhost:$DEV_PORT/\` devolve HTML renderizado de verdade — NÃO o placeholder "No web page at this URL" nem um shell vazio (\`<div id="root"></div>\` sem conteúdo). Se ainda vier placeholder/shell, o SSR continua quebrado: leia \`tail -80 /tmp/dev.log\`, ache o stack e o arquivo:linha, e corrija de verdade antes de marcar como resolved.
-- **Memória entre migrações (org-fs do Studio)**: leia \`cat ${FRAMEWORK_NOTES_PATH} 2>/dev/null\` — lista erros que outras migrações marcaram como suspeitos de bug do framework (\`@decocms/start\`/\`@decocms/apps\`); pode conter a pista do fix. Se durante o fix você concluir que um erro vem do framework (stack dentro de node_modules de @decocms/*, não corrigível no código do site), APENDE: \`mkdir -p $(dirname ${FRAMEWORK_NOTES_PATH}) && echo "$(date -u +%FT%TZ) | ${site.name} | <assinatura curta> | <arquivo:linha ou pacote>" >> ${FRAMEWORK_NOTES_PATH}\` e marque a issue como blocked com motivo \`[framework?]\`.
+- **Antes de investigar do zero, consulte a "Memória entre migrações" abaixo** — uma receita conhecida pode resolver na hora, e o que você aprender aqui alimenta os próximos sites. Se concluir que um erro vem do framework, marque a issue como blocked com motivo \`[framework?]\` além de registrar na memória.
 - Se uma issue for impossível, já estiver resolvida (ex: o build já passa e o erro sumiu após o codegen), ou depender de outra, marque como blocked/resolved com o motivo e siga.
+
+${memorySection(site, [
+  FRAMEWORK_NOTES_SPEC,
+  {
+    ...FIXES_SPEC,
+    writeWhen:
+      "resolver um erro de runtime/build e CONFIRMAR que sumiu (build passa / rota responde)",
+    entry:
+      "<assinatura do erro> → <o que resolveu: arquivo/import/patch curto>",
+  },
+  {
+    ...CONVENTIONS_SPEC,
+    writeWhen: "descobrir um gotcha de setup novo durante o fix",
+    entry: "<convenção/gotcha em uma linha>",
+  },
+  {
+    ...PARITY_GOTCHAS_SPEC,
+    writeWhen: "resolver um mismatch visual/de conteúdo",
+    entry: "<mismatch visual> → <como resolveu>",
+  },
+])}
 
 # Issues a resolver
 ${list}
