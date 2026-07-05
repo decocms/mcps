@@ -210,22 +210,28 @@ export function triagePrompt(input: {
   return `Você é o agente de triagem da migração ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
 
 # Objetivo (SOMENTE ANÁLISE — NÃO CORRIJA NADA)
-Levantar TODOS os problemas do código migrado em /app/repo e reportá-los como uma lista de issues no RESULT_JSON. Eles viram issues no GitHub e serão resolvidos um a um em sessões futuras — capriche no corpo: cada issue precisa ser resolvível SEM nenhum contexto além do próprio texto.
+Levantar os problemas REAIS do código migrado em /app/repo e reportá-los como issues no RESULT_JSON. Cada issue precisa ser resolvível SEM contexto além do próprio texto.
 
-# Levantamento
-1. \`cd /app/repo && git checkout ${site.work_branch}\` e confirme que está na branch certa.
-2. Instale dependências se necessário (\`npm install\`).
-3. Typecheck: \`npx tsc --noEmit 2>&1 | head -100\` — agrupe erros por causa raiz (1 issue por causa, não por linha).
-4. Build: \`npm run build 2>&1 | tail -50\`.
-5. Runtime: ${devServerNote} Depois:
-   a. \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -80\` — se HTML vazio ou sem \`<body\`, é problema de CMS/blocos, não de build.
-   b. Se rota raiz retornar HTML vazio/sem conteúdo: leia \`tail -60 /tmp/dev.log\` e liste \`ls .deco/blocks/ 2>/dev/null | head -20\`. Os blocos JSON em \`.deco/blocks/\` podem referenciar loaders/seções com nomes Fresh/Preact que não existem mais — verifique se os \`__resolveType\` batem com os exports reais de \`src/sections/\` e \`src/apps/\`.
-   c. Teste rotas principais: home, uma categoria, um produto (consulte URLs em /app/source/routes/).
-6. Compare a estrutura com o original em /app/source: seções/componentes que existem lá e não foram portados.
+# O que "pronto" significa (LEIA ANTES)
+O critério de sucesso desta migração é: **\`npm run build\` passa** (exit 0) + o site responde HTML + paridade visual bate. NÃO é \`tsc --noEmit\` zerado. O \`npm run build\` roda o codegen (generate:blocks/sections/loaders/schema/invoke) e o Vite/esbuild — que NÃO faz type-check estrito. Erros de \`tsc\` que NÃO quebram o \`npm run build\` são **dívida de tipo**, não bloqueadores: reporte-os como severity "low", nunca critical/high.
+
+# Levantamento (nesta ordem de prioridade)
+1. \`cd /app/repo && git checkout ${site.work_branch}\` e \`npm install\`.
+2. **Build (gate crítico)**: \`npm run build 2>&1 | tail -60\`. Se FALHAR (exit≠0), o(s) erro(s) que quebram o build são as issues critical/high — foque nelas.
+3. Runtime: ${devServerNote} Depois:
+   a. \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -80\` — HTML vazio/sem \`<body\` = problema de CMS/blocos (não de build).
+   b. Se a home vier vazia: \`tail -60 /tmp/dev.log\` + \`ls .deco/blocks/ 2>/dev/null | head -20\` — confira se os \`__resolveType\` batem com os exports de \`src/sections/\` e \`src/apps/\`.
+   c. Teste rotas: home, categoria, produto (URLs em /app/source/routes/).
+4. Typecheck SECUNDÁRIO: \`npx tsc --noEmit 2>&1 | head -60\` — SÓ se o build passou. Agrupe por causa raiz; entram como severity "low" (dívida de tipo), pois não bloqueiam deploy nem paridade.
+5. Compare com /app/source: seções/componentes que existem lá e não foram portados (esses SÃO relevantes — visual/content).
+
+# REGRAS IMPORTANTES
+- **NUNCA reporte issue para editar arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen, etc.) — são REGENERADOS pelo \`npm run build\`. Se um import de \`*.gen\` está quebrado, a issue é "rodar npm run build/generate", não "editar o arquivo".
+- Se o \`npm run build\` já passa e a home responde, a maior parte do trabalho está feita — reporte poucas issues (só o que afeta paridade/visual), não uma lista de erros de tsc.
 
 # Formato das issues
 - No máximo ${maxIssues} issues, ordenadas da mais grave para a menos grave.
-- severity: "critical" (não builda/não sobe) | "high" (página quebrada/rota 500) | "medium" (seção faltando, hydration) | "low" (estilo, warning).
+- severity: "critical" (npm run build falha) | "high" (rota 500/página não renderiza) | "medium" (seção faltando, hydration, visual quebrado) | "low" (dívida de tipo do tsc, warning, estilo).
 - category: "build" | "runtime" | "visual" | "content" | "infra".
 - body ≤ 1200 caracteres, seguindo o template:
 ${ISSUE_BODY_TEMPLATE}
@@ -264,9 +270,10 @@ Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não 
 # Regras
 - \`cd /app/repo && git checkout ${site.work_branch}\` antes de tudo (remote: ${targetUrl}).
 - Regra de ouro: NUNCA reescreva componentes — porte o original de /app/source com mudanças mecânicas (imports preact→react, class→className, signals→estado react). Consulte /app/source sempre que precisar do comportamento original.
+- **NUNCA edite arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen…) — são regenerados pelo \`npm run build\`. Se uma issue aponta erro num \`.gen\`, a correção é rodar \`npm run build\` (que roda o codegen) e verificar se sumiu — NÃO editar o arquivo à mão (seria sobrescrito).
 - UM commit POR issue resolvida, mensagem \`fix(#<número>): <o que fez>\` e push ao final de cada uma: \`git push origin ${site.work_branch}\`. Nunca fique >10min sem commit+push.
-- Valide cada fix: \`npx tsc --noEmit\` sem erros novos e, para issues de runtime/visual, a rota afetada respondendo. ${devServerNote}
-- Se uma issue for impossível/depender de outra coisa, marque como blocked com o motivo e siga para a próxima.
+- **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo. ${devServerNote}
+- Se uma issue for impossível, já estiver resolvida (ex: o build já passa e o erro sumiu após o codegen), ou depender de outra, marque como blocked/resolved com o motivo e siga.
 
 # Issues a resolver
 ${list}
