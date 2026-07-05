@@ -48,10 +48,21 @@ export default function WidgetActivePage() {
   const isDone = site.status === "done";
 
   return (
-    <div className="flex h-full flex-col gap-3 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <span className="truncate text-sm font-semibold">{site.name}</span>
-        <StatusBadge status={site.status} />
+    // compact, top-aligned (no h-full/mt-auto) so the card hugs its content
+    <div className="flex flex-col gap-2.5 p-3">
+      {/* name on its own line, badge below — avoids the truncate+badge clash */}
+      <div className="flex flex-col gap-1">
+        <span className="truncate text-sm font-semibold" title={site.name}>
+          {site.name}
+        </span>
+        <div className="flex items-center gap-2">
+          <StatusBadge status={site.status} />
+          {site.parityScore !== null && (
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {Math.round(site.parityScore)}%
+            </span>
+          )}
+        </div>
       </div>
 
       <PipelineStepper
@@ -61,15 +72,15 @@ export default function WidgetActivePage() {
         compact
       />
 
-      <ParityBar score={site.parityScore} target={site.parityTarget} />
+      <ParityBar score={site.parityScore} target={site.parityTarget} compact />
 
       {site.phaseDetail && !isDone && (
-        <p className="line-clamp-2 text-xs text-muted-foreground">
+        <p className="line-clamp-1 text-[11px] text-muted-foreground">
           {site.phaseDetail}
         </p>
       )}
 
-      <div className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground tabular-nums">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground tabular-nums">
         {site.issuesTotal > 0 && (
           <span>
             issues {site.issuesClosed}/{site.issuesTotal}

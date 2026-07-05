@@ -1,6 +1,6 @@
 {
   "name": "tanstack-migrator",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Orchestrates Fresh/Deno → TanStack Start storefront migrations: issue-driven pipeline, mesh sandboxes running Claude, branch+PR flow, parity via Playwright, visual dashboard + home widgets",
   "private": true,
   "type": "module",
