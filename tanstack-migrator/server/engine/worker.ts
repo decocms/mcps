@@ -231,7 +231,10 @@ export function looksLikeRealSite(html: string): boolean {
   const content = body
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<template[\s\S]*?<\/template>/gi, "");
+    .replace(/<template[\s\S]*?<\/template>/gi, "")
+    // <noscript> is a static fallback ("enable JavaScript"), not rendered SSR —
+    // its text would otherwise pass the visible-text signal on a broken shell
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
   // visible rendered text is the strongest signal — a storefront always has it
   const text = content
     .replace(/<[^>]+>/g, " ")

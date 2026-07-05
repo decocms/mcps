@@ -439,19 +439,35 @@ async function rescueFinalText(
 const num = (v: unknown): number | undefined =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
-/** Command text goes to sitemig_runs.meta and the dashboard — mask secrets. */
-function redactSecrets(cmd: string): string {
-  return cmd
-    .replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
-    .replace(
-      /\b(gh[pousr]_|github_pat_|sk-ant-|sk-|aik_|or-)[A-Za-z0-9_-]{8,}/g,
-      "$1***",
-    )
-    .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi, "$1***")
-    .replace(
-      /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
-      "$1=***",
-    );
+/**
+ * Mask secrets before they reach sitemig_runs.meta, the dashboard, and the live
+ * terminal. Covers known token prefixes, auth headers, env-style assignments,
+ * and — since the terminal now surfaces command OUTPUT too — secrets embedded in
+ * URLs (query strings) and JSON key/value pairs (lowercase keys included).
+ */
+export function redactSecrets(text: string): string {
+  return (
+    text
+      .replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
+      .replace(
+        /\b(gh[pousr]_|github_pat_|sk-ant-|sk-|aik_|or-)[A-Za-z0-9_-]{8,}/g,
+        "$1***",
+      )
+      .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi, "$1***")
+      // env-style KEY=value / TOKEN=value (uppercase names)
+      .replace(
+        /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
+        "$1=***",
+      )
+      // query-string or JSON key/value: token=..., "api_key": "...", auth:'...'
+      // (case-insensitive key, = or : separator, optional quotes). The `(?!\*)`
+      // skips values already masked by an earlier rule so we don't clobber the
+      // surrounding text (e.g. the host after x-access-token:***@).
+      .replace(
+        /\b([a-z0-9_-]*(?:key|token|secret|password|passwd)[a-z0-9_-]*)(["']?\s*[:=]\s*["']?)(?!\*)[^\s"'&]{6,}/gi,
+        "$1$2***",
+      )
+  );
 }
 
 /** Session cost/tokens — MONITORING_THREAD_USAGE arg/result shapes vary. */

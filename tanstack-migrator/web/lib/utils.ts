@@ -32,3 +32,11 @@ export function clockTime(iso: string | null): string {
   const d = new Date(iso);
   return d.toLocaleTimeString("pt-BR", { hour12: false });
 }
+
+/** Studio host — single source for deep links into the CMS. */
+export const STUDIO_URL = "https://studio.decocms.com";
+
+/** Deep link to a decopilot thread in the studio (Run rows + live terminal). */
+export function studioThreadUrl(threadId: string): string {
+  return `${STUDIO_URL}/threads/${threadId}`;
+}

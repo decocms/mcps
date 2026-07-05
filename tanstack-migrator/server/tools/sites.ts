@@ -223,10 +223,15 @@ export const createSiteTerminalTool = (env: Env) =>
     }),
     annotations: { readOnlyHint: true },
     execute: async ({ context }) => {
-      requireConnectionId(env);
+      const connectionId = requireConnectionId(env);
       const now = new Date().toISOString();
       const site = await getSite(context.siteId);
-      if (!site) throw new Error("Site not found");
+      // tenant isolation: this tool loads the site's worker credentials and
+      // fetches its thread — never let a foreign siteId reach another org's
+      // transcript. "not found" (not "forbidden") avoids leaking existence.
+      if (!site || site.connection_id !== connectionId) {
+        throw new Error("Site not found");
+      }
 
       // live phase thread first; fall back to the newest run that has a thread
       let threadId = site.phase_thread_id ?? null;

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ExternalLink,
   Loader2,
@@ -7,7 +7,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { usePollingTool } from "@/hooks/use-tool.ts";
-import { cn } from "@/lib/utils.ts";
+import { cn, studioThreadUrl } from "@/lib/utils.ts";
 import type { TerminalData } from "@/types.ts";
 
 /**
@@ -20,19 +20,24 @@ import type { TerminalData } from "@/types.ts";
 export function TerminalPanel({
   siteId,
   active,
-  threadUrlBase,
 }: {
   siteId: string;
-  /** the site is in an active phase — poll fast so it feels live */
+  /** the site is in an active phase — initial guess for the poll cadence */
   active: boolean;
-  /** e.g. https://studio.decocms.com — used to deep-link the thread */
-  threadUrlBase?: string;
 }) {
+  // poll fast while there's live work; the server's `live` flag (a running
+  // phase thread) is the source of truth, so a mismatched `active` guess (e.g.
+  // a legacy status) self-corrects after the first fetch. `active` still keeps
+  // us fast in the gap between phases before a thread exists.
+  const [fast, setFast] = useState(active);
   const { data, loading, error } = usePollingTool<TerminalData>(
     "SITE_TERMINAL",
     { siteId },
-    active ? 3500 : 12000,
+    fast ? 3500 : 12000,
   );
+  useEffect(() => {
+    if (data) setFast(data.live || active);
+  }, [data?.live, active]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const atBottomRef = useRef(true);
@@ -51,10 +56,7 @@ export function TerminalPanel({
     atBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
   };
 
-  const threadUrl =
-    threadUrlBase && data?.threadId
-      ? `${threadUrlBase.replace(/\/$/, "")}/threads/${data.threadId}`
-      : null;
+  const threadUrl = data?.threadId ? studioThreadUrl(data.threadId) : null;
 
   return (
     <div className="flex min-h-[24rem] flex-1 flex-col overflow-hidden rounded-lg border border-zinc-800 bg-zinc-950 text-zinc-200">

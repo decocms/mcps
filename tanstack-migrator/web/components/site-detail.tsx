@@ -572,7 +572,6 @@ export function SiteDetailPanel({
               <TerminalPanel
                 siteId={siteId}
                 active={ACTIVE_STATUSES.has(site.status)}
-                threadUrlBase="https://studio.decocms.com"
               />
             )}
 
