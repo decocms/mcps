@@ -235,6 +235,8 @@ const DEV_PORT = 5173; // fallback; sempre confirmar com DEV_LOG
  * roda como passo 0. O sandbox pode chegar em qualquer estado — clone fresco
  * pós-recreate, sandbox reapado+recriado, ou generates defasados — então antes
  * de qualquer trabalho o agente traz o projeto a um estado bom conhecido:
+ *   0. /app/source (clone do original deco.cx) — SOME no recreate do sandbox
+ *      (o clone só rodava no migrate); sem ele o fix não tem de onde portar
  *   1. branch certa + pull do último push
  *   2. deps limpas (node_modules NUNCA vem da branch — é gitignored)
  *   3. generates gitignored (routeTree.gen.ts, *.gen.* do cms/admin) — sem eles
@@ -243,11 +245,15 @@ const DEV_PORT = 5173; // fallback; sempre confirmar com DEV_LOG
  * Isso torna cada fase self-healing: não depende do sandbox ter sido recriado
  * corretamente na fase anterior.
  */
-function ensureReadyPreamble(site: SiteRow): string {
+function ensureReadyPreamble(site: SiteRow, ghToken?: string): string {
   const branch = site.work_branch;
+  const sourceUrl = repoUrl(site.source_repo, ghToken);
   return `# Setup (rode ISTO PRIMEIRO, sempre — deixa o projeto de pé antes de qualquer coisa)
 Este bloco é idempotente e self-healing: rode-o inteiro antes de analisar/corrigir/medir. Não pule.
 \`\`\`bash
+# /app/source = clone pristino do site deco.cx original (p/ portar componentes/comparar). SOME no recreate
+# do sandbox — reclona idempotente. NUNCA modifique nem rode o migrate nele.
+[ -d /app/source/.git ] || git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source 2>/dev/null || true
 cd /app/repo && git checkout ${branch} && git pull origin ${branch} 2>/dev/null || true
 rm -f org 2>/dev/null || true                          # symlink de montagem do sandbox
 [ -d node_modules ] || bun install || npm install       # deps limpas (node_modules é gitignored — nunca vem da branch)
@@ -398,7 +404,7 @@ export function fixIssuesPrompt(input: {
 # Objetivo (ESCOPO FECHADO)
 Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não "aproveite pra melhorar" outras coisas.
 
-${ensureReadyPreamble(site)}
+${ensureReadyPreamble(site, ghToken)}
 
 # Regras
 - Remote da branch: ${targetUrl} (o Setup acima já fez checkout + pull).
