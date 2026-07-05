@@ -22,6 +22,7 @@ import {
   syncPackageScriptCommand,
   syncWorkflowYaml,
 } from "./sandbox/templates/sync-files.ts";
+import { looksLikeRealSite } from "./engine/worker.ts";
 import type { SiteRow } from "./db/types.ts";
 
 const site = {
@@ -337,6 +338,29 @@ describe("simulation", () => {
     expect(simulatedParityScore(1)).toBe(73);
     expect(simulatedParityScore(3)).toBe(95);
     expect(simulatedParityScore(10)).toBe(100);
+  });
+});
+
+describe("looksLikeRealSite (preview readiness)", () => {
+  test("rejects the sandbox proxy placeholder", () => {
+    const placeholder = `<!DOCTYPE html><html><head><title>Preview</title></head><body><div style="padding:2rem"><h1>No web page at this URL</h1><p>The dev server is running but doesn't serve HTML at /.</p></div></body></html>`;
+    expect(looksLikeRealSite(placeholder)).toBe(false);
+  });
+
+  test("rejects an empty SSR shell even when scripts inflate the size", () => {
+    const shell = `<!DOCTYPE html><html><head>${"<script src='/x.js'></script>".repeat(30)}</head><body><div id="root"></div><script type="module" src="/entry.js"></script></body></html>`;
+    expect(shell.length).toBeGreaterThan(800); // would pass a naive size gate
+    expect(looksLikeRealSite(shell)).toBe(false);
+  });
+
+  test("accepts a rendered page with visible text", () => {
+    const rendered = `<!DOCTYPE html><html><head><title>Granado</title></head><body><div id="root"><header><nav>Início Produtos Contato</nav></header><main><h1>Bem-vindo à Granado</h1><p>Perfumaria e cosméticos desde 1870.</p></main></div></body></html>`;
+    expect(looksLikeRealSite(rendered)).toBe(true);
+  });
+
+  test("accepts a text-light page that has a real element tree", () => {
+    const gallery = `<html><body><div id="root"><section><img/><img/><img/></section><section><img/><img/></section><footer><ul><li></li><li></li></ul></footer></div></body></html>`;
+    expect(looksLikeRealSite(gallery)).toBe(true);
   });
 });
 

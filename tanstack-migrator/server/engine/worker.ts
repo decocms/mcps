@@ -218,20 +218,30 @@ async function probeSessionLiveness(
 
 /**
  * Preview only counts as ready when the site RENDERS real HTML — not when the
- * sandbox proxy answers with its "No web page at this URL" placeholder. That
- * placeholder is served with HTTP 200 + text/html when the dev server is up
- * but responds to `/` with non-HTML (e.g. a broken SSR render), so a plain
- * status check gives a false positive. We fetch the body and reject the
- * placeholder / near-empty shells.
+ * sandbox proxy answers with its "No web page at this URL" placeholder, and not
+ * when the dev server returns an empty SSR shell (`<div id="root"></div>` with
+ * no content). Both are served with HTTP 200 + text/html, so a status check
+ * gives a false positive. We judge the BODY's rendered content, ignoring size:
+ * visible text, or a real element tree (an empty shell has neither).
  */
-function looksLikeRealSite(html: string): boolean {
+export function looksLikeRealSite(html: string): boolean {
   if (/No web page/i.test(html)) return false; // sandbox proxy placeholder
-  if (html.length < 800) return false; // placeholder is ~662 bytes; real SSR is larger
-  // needs an actual body with content, not just an empty root shell
-  const body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? "";
-  return (
-    body.replace(/<[^>]+>/g, "").trim().length > 40 || /<[a-z]/i.test(body)
-  );
+  const body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? html;
+  // strip non-content nodes so head/scripts/styles don't inflate the signal
+  const content = body
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<template[\s\S]*?<\/template>/gi, "");
+  // visible rendered text is the strongest signal — a storefront always has it
+  const text = content
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length > 40) return true;
+  // no visible text: accept only a real element tree, not an empty root shell.
+  // `<div id="root"></div>` is 1 element; a rendered page has many.
+  const elements = content.match(/<[a-z][a-z0-9]*[\s/>]/gi)?.length ?? 0;
+  return elements >= 8;
 }
 
 async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
@@ -244,7 +254,7 @@ async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
       signal: AbortSignal.timeout(4_000),
     });
     if (response.status >= 500) return;
-    const ct = response.headers.get("content-type") ?? "";
+    const ct = (response.headers.get("content-type") ?? "").toLowerCase();
     if (!ct.includes("text/html")) return;
     const html = await response.text();
     if (!looksLikeRealSite(html)) return; // proxy placeholder / empty shell
