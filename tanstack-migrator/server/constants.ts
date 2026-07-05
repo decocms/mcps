@@ -1,4 +1,7 @@
 export const DASHBOARD_RESOURCE_URI = "ui://tanstack-migrator/dashboard";
+export const WIDGET_ACTIVE_RESOURCE_URI =
+  "ui://tanstack-migrator/widget-active";
+export const WIDGET_QUEUE_RESOURCE_URI = "ui://tanstack-migrator/widget-queue";
 
 /** Worker cadence + safety rails. */
 export const TICK_INTERVAL_MS = 30_000;

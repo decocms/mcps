@@ -143,7 +143,11 @@ const gitAuthNote = (ghToken?: string) =>
     ? ""
     : "\nObs: o git do sandbox já está autenticado (credenciais sincronizadas pelo mesh) — clone e push funcionam com as URLs https normais.";
 
-const devServerNote = `Se http://localhost:3000 não responder: \`cd /app/repo && nohup bun run dev > /tmp/dev.log 2>&1 &\` e aguarde até 60s (o daemon do sandbox também gerencia o dev server quando o package.json existe).`;
+// A porta do dev server é determinada pelo script do projeto (wrangler usa 5173
+// por padrão quando @cloudflare/vite-plugin está configurado). NUNCA matar o
+// processo existente gerenciado pelo daemon — apenas detectar a porta real.
+const DEV_PORT = 5173; // fallback; sempre confirmar com DEV_LOG
+const devServerNote = `Para confirmar a porta do dev server: \`DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo ${DEV_PORT})\`. Se o dev não estiver rodando (nenhum processo na porta): \`cd /app/repo && nohup bun run dev > /tmp/dev.log 2>&1 & sleep 20 && DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log | tail -1 | cut -d: -f2 || echo ${DEV_PORT})\`. IMPORTANTE: NÃO use \`-- --port\` nem mate o processo existente — o daemon do sandbox gerencia o dev server e reinicializa se morrer.`;
 
 /**
  * Phase migrating_script: run the migrate script and push the checkpoint to
@@ -213,7 +217,10 @@ Levantar TODOS os problemas do código migrado em /app/repo e reportá-los como 
 2. Instale dependências se necessário (\`npm install\`).
 3. Typecheck: \`npx tsc --noEmit 2>&1 | head -100\` — agrupe erros por causa raiz (1 issue por causa, não por linha).
 4. Build: \`npm run build 2>&1 | tail -50\`.
-5. Runtime: ${devServerNote} Depois \`curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/\` e nas rotas principais (home, uma categoria, um produto se descobrir as URLs em /app/source). Erros 500 → leia /tmp/dev.log.
+5. Runtime: ${devServerNote} Depois:
+   a. \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -80\` — se HTML vazio ou sem \`<body\`, é problema de CMS/blocos, não de build.
+   b. Se rota raiz retornar HTML vazio/sem conteúdo: leia \`tail -60 /tmp/dev.log\` e liste \`ls .deco/blocks/ 2>/dev/null | head -20\`. Os blocos JSON em \`.deco/blocks/\` podem referenciar loaders/seções com nomes Fresh/Preact que não existem mais — verifique se os \`__resolveType\` batem com os exports reais de \`src/sections/\` e \`src/apps/\`.
+   c. Teste rotas principais: home, uma categoria, um produto (consulte URLs em /app/source/routes/).
 6. Compare a estrutura com o original em /app/source: seções/componentes que existem lá e não foram portados.
 
 # Formato das issues
@@ -316,7 +323,8 @@ Rodar a parity CLI comparando produção vs candidato, subir os artefatos e repo
 
 # Passos
 1. \`cd /app/repo && git checkout ${site.work_branch} && git pull origin ${site.work_branch}\`. ${devServerNote}
-2. Rode a parity CLI: \`cd /app/repo && ${parityEnv} npx -y @decocms/parity run --prod ${site.prod_url} --cand http://localhost:3000 --preset ci\`
+2. Detecte a porta do dev server: \`DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo 5173)\` (o @cloudflare/vite-plugin usa 5173 por padrão, não 3000).
+3. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "http://localhost:$DEV_PORT" --preset ci\`
 3. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
 ${uploadSteps.length > 0 ? `4. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "4. (sem upload de artefatos configurado)"}
 5. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.

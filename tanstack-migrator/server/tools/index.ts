@@ -1,5 +1,6 @@
 import { createAdvanceQueueTool, createGithubProbeTool } from "./admin.ts";
 import { createDashboardTool } from "./dashboard.ts";
+import { createActiveWidgetTool, createQueueWidgetTool } from "./widgets.ts";
 import { createReportProgressTool } from "./progress.ts";
 import { createParityReportUrlsTool } from "./reports.ts";
 import {
@@ -16,6 +17,8 @@ import {
 
 export const tools = [
   createDashboardTool,
+  createActiveWidgetTool,
+  createQueueWidgetTool,
   createSiteRegisterTool,
   createSiteListTool,
   createSiteGetTool,

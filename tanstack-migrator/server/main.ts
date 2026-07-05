@@ -30,7 +30,11 @@ import {
   bindingConnectionId,
   extractPersistableState,
 } from "./lib/persist-state.ts";
-import { dashboardResource } from "./resources/index.ts";
+import {
+  dashboardResource,
+  widgetActiveResource,
+  widgetQueueResource,
+} from "./resources/index.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
@@ -123,7 +127,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     },
   },
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
-  resources: [dashboardResource],
+  resources: [dashboardResource, widgetActiveResource, widgetQueueResource],
 });
 
 function gracefulShutdown() {

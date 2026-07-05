@@ -1,29 +1,45 @@
 import {
   Archive,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  CircleDot,
+  DollarSign,
   ExternalLink,
-  FileText,
   Loader2,
+  Monitor,
   Pause,
   Play,
   RotateCcw,
   Trash2,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ParityBar } from "@/components/parity-bar.tsx";
+import { PipelineStepper } from "@/components/pipeline-stepper.tsx";
+import { RunRow } from "@/components/run-row.tsx";
 import { issuesFilterUrl } from "@/components/site-card.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
-import { duration, clockTime, cn, timeAgo } from "@/lib/utils.ts";
-import type { ReportUrls, RunView, SiteDetail } from "@/types.ts";
+import { clockTime, cn, duration, timeAgo } from "@/lib/utils.ts";
+import type { RunView, SiteDetail, SiteView } from "@/types.ts";
 
-const SEVERITY_COLOR: Record<string, string> = {
-  critical: "text-red-600 dark:text-red-400",
-  high: "text-orange-600 dark:text-orange-400",
-  medium: "text-amber-600 dark:text-amber-400",
-  low: "text-muted-foreground",
-};
+const ACTIVE_STATUSES = new Set([
+  "creating_repo",
+  "provisioning_sandbox",
+  "migrating_script",
+  "opening_pr",
+  "triaging",
+  "fixing",
+  "paritying",
+  "deploying",
+]);
+
+/** Active site whose row hasn't moved in >5min looks stuck — surface it. */
+function isStalled(site: SiteView): boolean {
+  if (!ACTIVE_STATUSES.has(site.status)) return false;
+  return Date.now() - Date.parse(site.updatedAt) > 5 * 60_000;
+}
 
 function ActionButton({
   icon: Icon,
@@ -58,246 +74,61 @@ function ActionButton({
   );
 }
 
-function RunRow({ run }: { run: RunView }) {
-  const callTool = useToolCaller();
-  const [expanded, setExpanded] = useState(false);
-  const [loadingReport, setLoadingReport] = useState(false);
-  const [heatmaps, setHeatmaps] = useState<ReportUrls["heatmaps"] | null>(null);
+/** Live preview of the migrated site running in the sandbox (collapsible). */
+function PreviewPanel({ site }: { site: SiteView }) {
+  const [open, setOpen] = useState(false);
+  if (!site.previewUrl) return null;
 
-  const openReport = async () => {
-    setLoadingReport(true);
-    try {
-      const urls = await callTool<ReportUrls>("PARITY_REPORT_URLS", {
-        runId: run.id,
-      });
-      setHeatmaps(urls.heatmaps);
-      if (urls.reportHtml) window.open(urls.reportHtml, "_blank");
-    } catch (err) {
-      console.error("report urls failed", err);
-    } finally {
-      setLoadingReport(false);
-    }
-  };
-
-  const takenIssues = run.meta?.issues?.taken;
-  const kindLabel: Record<string, string> = {
-    migrate: "script de migração",
-    triage: "triagem",
-    // show WHICH issues the session took, not just a sequence number
-    fix: takenIssues?.length
-      ? `fix ${takenIssues.map((n) => `#${n}`).join(" ")}`
-      : `fix ${run.iteration}`,
-    parity: `parity ${run.iteration}`,
-    fix_iteration: `iteração ${run.iteration}`,
-    install_sync: "instalação do sync",
-    deploy_cf: "deploy CF",
-  };
-  const usage = run.meta?.usage;
-  const issueMoves = run.meta?.issues;
-  const hasIssueMoves =
-    (issueMoves?.taken?.length ?? 0) +
-      (issueMoves?.resolved?.length ?? 0) +
-      (issueMoves?.blocked?.length ?? 0) +
-      (issueMoves?.created ?? 0) >
-    0;
-  const hasUsage =
-    usage?.costUsd !== undefined || usage?.totalTokens !== undefined;
+  if (!site.previewReady) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+        <Monitor className="h-3.5 w-3.5 shrink-0" />
+        Sandbox criado — o preview aparece quando o dev server responder.
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-md border border-border">
-      <button
-        type="button"
-        onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left"
-      >
-        <div className="flex items-center gap-2 text-xs">
-          <span
-            className={cn(
-              "h-2 w-2 rounded-full",
-              run.status === "succeeded"
-                ? "bg-emerald-500"
-                : run.status === "failed"
-                  ? "bg-red-500"
-                  : "animate-pulse bg-blue-500",
-            )}
+      <div className="flex items-center justify-between px-3 py-2">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="inline-flex items-center gap-1.5 text-xs font-medium"
+        >
+          {open ? (
+            <ChevronDown className="h-3.5 w-3.5" />
+          ) : (
+            <ChevronRight className="h-3.5 w-3.5" />
+          )}
+          <Monitor className="h-3.5 w-3.5 text-emerald-500" />
+          Preview ao vivo
+        </button>
+        <a
+          href={site.previewUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
+        >
+          abrir <ExternalLink className="h-3 w-3" />
+        </a>
+      </div>
+      {open && (
+        <div className="border-t border-border">
+          <iframe
+            src={site.previewUrl}
+            title="preview"
+            className="aspect-[16/10] w-full bg-white"
+            sandbox="allow-scripts allow-same-origin"
           />
-          <span className="font-medium">{kindLabel[run.kind] ?? run.kind}</span>
-          <span className="text-muted-foreground tabular-nums">
-            {clockTime(run.startedAt)} · {timeAgo(run.startedAt)}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-xs">
-          {/* running rows show live elapsed time (re-rendered by the 10s poll) */}
-          <span className="text-muted-foreground tabular-nums">
-            {run.finishedAt
-              ? duration(run.startedAt, run.finishedAt)
-              : `${duration(run.startedAt, new Date().toISOString())}…`}
-          </span>
-          {run.threadId && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigator.clipboard?.writeText(run.threadId ?? "");
-              }}
-              onKeyDown={(e) => e.key === "Enter" && e.stopPropagation()}
-              className="inline-flex max-w-28 items-center gap-1 truncate rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-              title={`Thread da sessão: ${run.threadId} (clique pra copiar)`}
-            >
-              {run.threadId}
-            </span>
-          )}
-          {run.parityScore !== null && (
-            <span className="font-semibold tabular-nums">
-              {Math.round(run.parityScore)}%
-            </span>
-          )}
-          {run.hasArtifacts && (
-            <span
-              role="button"
-              tabIndex={0}
-              onClick={(e) => {
-                e.stopPropagation();
-                openReport();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.stopPropagation();
-                  openReport();
-                }
-              }}
-              className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 hover:bg-muted"
-              title="Abrir report HTML completo"
-            >
-              {loadingReport ? (
-                <Loader2 className="h-3 w-3 animate-spin" />
-              ) : (
-                <FileText className="h-3 w-3" />
-              )}
-              report
-            </span>
-          )}
-        </div>
-      </button>
-
-      {expanded && (
-        <div className="border-t border-border px-3 py-2 text-xs">
-          {!run.summary?.topIssues?.length &&
-            !run.logsTail &&
-            !heatmaps?.length &&
-            !run.meta?.commands?.length &&
-            !hasIssueMoves &&
-            !hasUsage && (
-              <p className="text-muted-foreground">
-                Sem logs desta sessão
-                {run.threadId ? ` — thread ${run.threadId}` : ""}
-                {run.status === "running" ? " (ainda em execução)" : ""}.
-              </p>
-            )}
-          {(hasIssueMoves || hasUsage) && (
-            <div className="mb-2 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
-              {issueMoves?.taken && issueMoves.taken.length > 0 && (
-                <span>
-                  issues: {issueMoves.taken.map((n) => `#${n}`).join(", ")}
-                </span>
-              )}
-              {issueMoves?.resolved && issueMoves.resolved.length > 0 && (
-                <span className="text-emerald-600 dark:text-emerald-400">
-                  resolvidas:{" "}
-                  {issueMoves.resolved.map((n) => `#${n}`).join(", ")}
-                </span>
-              )}
-              {issueMoves?.blocked && issueMoves.blocked.length > 0 && (
-                <span className="text-amber-600 dark:text-amber-400">
-                  bloqueadas:{" "}
-                  {issueMoves.blocked.map((b) => `#${b.number}`).join(", ")}
-                </span>
-              )}
-              {issueMoves?.created !== undefined && issueMoves.created > 0 && (
-                <span>criadas no GitHub: {issueMoves.created}</span>
-              )}
-              {usage?.costUsd !== undefined && (
-                <span className="tabular-nums">
-                  custo ${usage.costUsd.toFixed(2)}
-                </span>
-              )}
-              {usage?.totalTokens !== undefined && (
-                <span className="tabular-nums">
-                  {Math.round(usage.totalTokens / 1000)}k tokens
-                </span>
-              )}
-            </div>
-          )}
-          {run.meta?.commands && run.meta.commands.length > 0 && (
-            <details className="mb-2">
-              <summary className="cursor-pointer text-muted-foreground select-none">
-                {run.meta.commands.length} comandos da sessão
-              </summary>
-              <ul className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-auto font-mono text-[10px] leading-snug">
-                {run.meta.commands.map((c, i) => (
-                  <li key={i} className="flex gap-1.5">
-                    <span
-                      className={cn(
-                        "shrink-0 tabular-nums",
-                        c.exit === 0 || c.exit === undefined
-                          ? "text-muted-foreground"
-                          : "text-red-600 dark:text-red-400",
-                      )}
-                    >
-                      {c.exit !== undefined ? `[${c.exit}]` : "[·]"}
-                    </span>
-                    <span className="truncate" title={c.cmd}>
-                      {c.cmd}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-          {run.summary?.topIssues && run.summary.topIssues.length > 0 && (
-            <ul className="flex flex-col gap-1">
-              {run.summary.topIssues.map((issue, i) => (
-                <li key={i} className="flex gap-1.5">
-                  <span
-                    className={cn(
-                      "font-semibold uppercase",
-                      SEVERITY_COLOR[issue.severity] ?? "text-muted-foreground",
-                    )}
-                  >
-                    {issue.severity}
-                  </span>
-                  <span className="text-muted-foreground">
-                    {issue.page ? `${issue.page} — ` : ""}
-                    {issue.summary}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {heatmaps && heatmaps.length > 0 && (
-            <div className="mt-2 grid grid-cols-3 gap-1.5">
-              {heatmaps.map((h) => (
-                <a key={h.name} href={h.url} target="_blank" rel="noreferrer">
-                  <img
-                    src={h.url}
-                    alt={h.name}
-                    className="h-20 w-full rounded border border-border object-cover object-top"
-                  />
-                </a>
-              ))}
-            </div>
-          )}
-          {run.logsTail && (
-            <pre className="mt-2 max-h-32 overflow-auto rounded bg-muted p-2 text-[10px] leading-snug whitespace-pre-wrap">
-              {run.logsTail}
-            </pre>
-          )}
         </div>
       )}
     </div>
   );
 }
+
+type Tab = "overview" | "runs" | "activity";
+type RunFilter = "all" | "migrate" | "triage" | "fix" | "parity";
 
 export function SiteDetailPanel({
   siteId,
@@ -319,6 +150,8 @@ export function SiteDetailPanel({
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("overview");
+  const [runFilter, setRunFilter] = useState<RunFilter>("all");
 
   const action = async (tool: string, extra?: Record<string, unknown>) => {
     setBusy(tool);
@@ -353,27 +186,120 @@ export function SiteDetailPanel({
   };
 
   const site = data?.site;
+  const runs = data?.runs ?? [];
+  const events = data?.events ?? [];
+
+  // total tokens across all runs (backend persists per-run usage)
+  const totalTokens = useMemo(
+    () => runs.reduce((sum, r) => sum + (r.meta?.usage?.totalTokens ?? 0), 0),
+    [runs],
+  );
+
+  const filteredRuns = useMemo(() => {
+    if (runFilter === "all") return runs;
+    return runs.filter((r: RunView) =>
+      runFilter === "fix"
+        ? r.kind === "fix" || r.kind === "fix_iteration"
+        : r.kind === runFilter,
+    );
+  }, [runs, runFilter]);
 
   return (
     <div className="fixed inset-0 z-40 flex justify-end bg-black/30">
       <div className="flex h-full w-full max-w-lg flex-col overflow-hidden border-l border-border bg-background shadow-2xl">
-        <div className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold">{site?.name ?? "…"}</h2>
-            {site && <StatusBadge status={site.status} />}
+        {/* ── sticky header ── */}
+        <div className="shrink-0 border-b border-border">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-sm font-semibold">
+                {site?.name ?? "…"}
+              </h2>
+              {site && <StatusBadge status={site.status} />}
+              {site && isStalled(site) && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
+                  title={`Sem atualização há ${timeAgo(site.updatedAt)} — pode estar travado`}
+                >
+                  <CircleDot className="h-2.5 w-2.5" />
+                  parado?
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded p-1 text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded p-1 text-muted-foreground hover:bg-muted"
-          >
-            <X className="h-4 w-4" />
-          </button>
+
+          {site && (
+            <div className="px-4 pb-3">
+              {/* key metrics */}
+              <div className="mb-2 flex items-center gap-3">
+                <ParityBar
+                  score={site.parityScore}
+                  target={site.parityTarget}
+                />
+                <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground tabular-nums">
+                  {site.issuesTotal > 0 && (
+                    <span title="issues fechadas/total">
+                      {site.issuesClosed}/{site.issuesTotal} issues
+                    </span>
+                  )}
+                  {site.costTotal > 0 && (
+                    <span
+                      className="inline-flex items-center"
+                      title="custo acumulado"
+                    >
+                      <DollarSign className="h-3 w-3" />
+                      {site.costTotal.toFixed(2)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              {/* pipeline stepper — always visible */}
+              <PipelineStepper
+                status={site.status}
+                phaseDetail={site.phaseDetail}
+              />
+            </div>
+          )}
+
+          {/* tabs */}
+          {site && (
+            <div className="flex gap-1 border-t border-border px-2">
+              {(
+                [
+                  ["overview", "Visão geral"],
+                  ["runs", `Runs ${runs.length}`],
+                  ["activity", `Atividade ${events.length}`],
+                ] as [Tab, string][]
+              ).map(([id, label]) => (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setTab(id)}
+                  className={cn(
+                    "relative px-3 py-2 text-xs font-medium",
+                    tab === id
+                      ? "text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                  {tab === id && (
+                    <span className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-primary" />
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
+        {/* ── body ── */}
         {loadError && /not found/i.test(loadError) ? (
-          // the site was deleted while the drawer was open — never freeze
-          // showing stale data
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-sm text-muted-foreground">
               Este site foi excluído — os dados não existem mais.
@@ -392,218 +318,261 @@ export function SiteDetailPanel({
           </div>
         ) : (
           <div className="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-            {simulation && site.status !== "done" && (
-              <div className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
-                Modo simulação (SANDBOX_PROVIDER=manual): nenhum efeito externo
-                — repos, sandbox e deploy são fictícios. Troque para{" "}
-                <code>decopilot</code> no state pra migrar de verdade.
-              </div>
-            )}
-            <div>
-              <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Paridade (alvo {site.parityTarget}%)</span>
-                <span>
-                  iteração {site.iterationsDone}/{site.maxIterations}
-                  {site.bestScore !== null &&
-                    ` · melhor ${Math.round(site.bestScore)}%`}
-                </span>
-              </div>
-              <ParityBar score={site.parityScore} target={site.parityTarget} />
-              {site.phaseDetail && (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  {site.phaseDetail}
-                </p>
-              )}
-              {(site.issuesTotal > 0 ||
-                site.fixSessionsDone > 0 ||
-                site.costTotal > 0) && (
-                <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                  {site.issuesTotal > 0 &&
-                    (issuesFilterUrl(site.targetRepo) ? (
-                      <a
-                        href={issuesFilterUrl(site.targetRepo) ?? "#"}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="tabular-nums hover:underline"
-                        title="Issues label:tanstack-migrator no GitHub"
-                      >
-                        issues fechadas {site.issuesClosed}/{site.issuesTotal}
-                      </a>
-                    ) : (
-                      <span className="tabular-nums">
-                        issues fechadas {site.issuesClosed}/{site.issuesTotal}
-                      </span>
-                    ))}
-                  {site.fixSessionsDone > 0 && (
-                    <span className="tabular-nums">
-                      sessões de fix {site.fixSessionsDone}/
-                      {site.maxFixSessions}
-                    </span>
-                  )}
-                  {site.costTotal > 0 && (
-                    <span className="tabular-nums">
-                      custo ${site.costTotal.toFixed(2)}
-                    </span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {site.needsHumanReason && (
-              <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs whitespace-pre-wrap">
-                {site.needsHumanReason}
-              </div>
-            )}
-            {site.error && (
-              <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs whitespace-pre-wrap">
-                {site.error}
-              </div>
-            )}
-
-            <div className="flex flex-wrap gap-2">
-              {(site.status === "queued" ||
-                ![
-                  "done",
-                  "paused",
-                  "failed",
-                  "needs_human",
-                  "archived",
-                ].includes(site.status)) && (
-                <ActionButton
-                  icon={Pause}
-                  label="Pausar"
-                  busy={busy === "SITE_PAUSE"}
-                  onClick={() => action("SITE_PAUSE")}
-                />
-              )}
-              {site.status === "paused" && (
-                <ActionButton
-                  icon={Play}
-                  label="Retomar"
-                  busy={busy === "SITE_RESUME"}
-                  onClick={() => action("SITE_RESUME")}
-                />
-              )}
-              {(site.status === "failed" || site.status === "needs_human") && (
-                <ActionButton
-                  icon={RotateCcw}
-                  label="Retry"
-                  busy={busy === "SITE_RETRY"}
-                  onClick={() => action("SITE_RETRY")}
-                />
-              )}
-              {site.status !== "done" && site.status !== "archived" && (
-                <ActionButton
-                  icon={CheckCircle2}
-                  label="Marcar concluído"
-                  busy={busy === "SITE_MARK_DONE"}
-                  onClick={() => action("SITE_MARK_DONE")}
-                />
-              )}
-              {["done", "failed", "paused", "needs_human", "queued"].includes(
-                site.status,
-              ) && (
-                <ActionButton
-                  icon={Archive}
-                  label="Arquivar"
-                  busy={busy === "SITE_ARCHIVE"}
-                  onClick={() => action("SITE_ARCHIVE")}
-                />
-              )}
-              {[
-                "done",
-                "failed",
-                "paused",
-                "needs_human",
-                "queued",
-                "archived",
-              ].includes(site.status) && (
-                <ActionButton
-                  icon={Trash2}
-                  label={confirmDelete ? "Confirmar exclusão?" : "Excluir"}
-                  busy={busy === "SITE_DELETE"}
-                  danger
-                  onClick={removeSite}
-                />
-              )}
-            </div>
-
-            {error && (
-              <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2.5 text-xs">
-                {error}
-              </div>
-            )}
-
-            <div className="flex flex-col gap-1 text-xs">
-              {[
-                [
-                  "Source",
-                  site.sourceRepo,
-                  `https://github.com/${site.sourceRepo}`,
-                ],
-                site.targetRepo
-                  ? [
-                      "TanStack",
-                      site.targetRepo,
-                      `https://github.com/${site.targetRepo}`,
-                    ]
-                  : null,
-                site.prUrl
-                  ? [
-                      "PR",
-                      `#${site.prNumber ?? "?"} (${site.workBranch} → main)`,
-                      site.prUrl,
-                    ]
-                  : null,
-                ["Produção", site.prodUrl, site.prodUrl],
-                site.previewUrl && site.previewReady
-                  ? ["Preview", site.previewUrl, site.previewUrl]
-                  : null,
-                site.cfDeployUrl
-                  ? ["Deploy", site.cfDeployUrl, site.cfDeployUrl]
-                  : null,
-              ]
-                .filter((x): x is [string, string, string] => !!x)
-                .map(([label, text, href]) => (
-                  <div key={label} className="flex items-center gap-2">
-                    <span className="w-16 shrink-0 text-muted-foreground">
-                      {label}
-                    </span>
-                    <a
-                      href={href}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-1 truncate hover:underline"
-                    >
-                      <span className="truncate">{text}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                    </a>
+            {tab === "overview" && (
+              <>
+                {simulation && site.status !== "done" && (
+                  <div className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
+                    Modo simulação (SANDBOX_PROVIDER=manual): nenhum efeito
+                    externo — repos, sandbox e deploy são fictícios. Troque para{" "}
+                    <code>decopilot</code> no state pra migrar de verdade.
                   </div>
-                ))}
-            </div>
+                )}
 
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
-                Runs
-              </h3>
-              <div className="flex flex-col gap-1.5">
-                {data.runs.length === 0 && (
+                {site.phaseDetail && (
                   <p className="text-xs text-muted-foreground">
-                    Nenhum run ainda.
+                    {site.phaseDetail}
                   </p>
                 )}
-                {data.runs.map((run) => (
-                  <RunRow key={run.id} run={run} />
-                ))}
-              </div>
-            </div>
 
-            <div>
-              <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase">
-                Atividade
-              </h3>
+                {site.needsHumanReason && (
+                  <div className="rounded-md border border-amber-500/40 bg-amber-500/10 p-3 text-xs whitespace-pre-wrap">
+                    {site.needsHumanReason}
+                  </div>
+                )}
+                {site.error && (
+                  <div className="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs whitespace-pre-wrap">
+                    {site.error}
+                  </div>
+                )}
+
+                <PreviewPanel site={site} />
+
+                {/* stats */}
+                {(site.issuesTotal > 0 ||
+                  site.fixSessionsDone > 0 ||
+                  site.costTotal > 0 ||
+                  totalTokens > 0) && (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      iteração {site.iterationsDone}/{site.maxIterations}
+                      {site.bestScore !== null &&
+                        ` · melhor ${Math.round(site.bestScore)}%`}
+                    </span>
+                    {site.issuesTotal > 0 &&
+                      (issuesFilterUrl(site.targetRepo) ? (
+                        <a
+                          href={issuesFilterUrl(site.targetRepo) ?? "#"}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="tabular-nums hover:underline"
+                          title="Issues label:tanstack-migrator no GitHub"
+                        >
+                          issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                        </a>
+                      ) : (
+                        <span className="tabular-nums">
+                          issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                        </span>
+                      ))}
+                    {site.fixSessionsDone > 0 && (
+                      <span className="tabular-nums">
+                        sessões de fix {site.fixSessionsDone}/
+                        {site.maxFixSessions}
+                      </span>
+                    )}
+                    {site.costTotal > 0 && (
+                      <span className="tabular-nums">
+                        custo ${site.costTotal.toFixed(2)}
+                      </span>
+                    )}
+                    {totalTokens > 0 && (
+                      <span className="tabular-nums">
+                        {Math.round(totalTokens / 1000)}k tokens
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* actions */}
+                <div className="flex flex-wrap gap-2">
+                  {(site.status === "queued" ||
+                    ![
+                      "done",
+                      "paused",
+                      "failed",
+                      "needs_human",
+                      "archived",
+                    ].includes(site.status)) && (
+                    <ActionButton
+                      icon={Pause}
+                      label="Pausar"
+                      busy={busy === "SITE_PAUSE"}
+                      onClick={() => action("SITE_PAUSE")}
+                    />
+                  )}
+                  {site.status === "paused" && (
+                    <ActionButton
+                      icon={Play}
+                      label="Retomar"
+                      busy={busy === "SITE_RESUME"}
+                      onClick={() => action("SITE_RESUME")}
+                    />
+                  )}
+                  {(site.status === "failed" ||
+                    site.status === "needs_human") && (
+                    <ActionButton
+                      icon={RotateCcw}
+                      label="Retry"
+                      busy={busy === "SITE_RETRY"}
+                      onClick={() => action("SITE_RETRY")}
+                    />
+                  )}
+                  {site.status !== "done" && site.status !== "archived" && (
+                    <ActionButton
+                      icon={CheckCircle2}
+                      label="Marcar concluído"
+                      busy={busy === "SITE_MARK_DONE"}
+                      onClick={() => action("SITE_MARK_DONE")}
+                    />
+                  )}
+                  {[
+                    "done",
+                    "failed",
+                    "paused",
+                    "needs_human",
+                    "queued",
+                  ].includes(site.status) && (
+                    <ActionButton
+                      icon={Archive}
+                      label="Arquivar"
+                      busy={busy === "SITE_ARCHIVE"}
+                      onClick={() => action("SITE_ARCHIVE")}
+                    />
+                  )}
+                  {[
+                    "done",
+                    "failed",
+                    "paused",
+                    "needs_human",
+                    "queued",
+                    "archived",
+                  ].includes(site.status) && (
+                    <ActionButton
+                      icon={Trash2}
+                      label={confirmDelete ? "Confirmar exclusão?" : "Excluir"}
+                      busy={busy === "SITE_DELETE"}
+                      danger
+                      onClick={removeSite}
+                    />
+                  )}
+                </div>
+
+                {error && (
+                  <div className="rounded-md border border-red-500/40 bg-red-500/10 p-2.5 text-xs">
+                    {error}
+                  </div>
+                )}
+
+                {/* links */}
+                <div className="flex flex-col gap-1 text-xs">
+                  {[
+                    [
+                      "Source",
+                      site.sourceRepo,
+                      `https://github.com/${site.sourceRepo}`,
+                    ],
+                    site.targetRepo
+                      ? [
+                          "TanStack",
+                          site.targetRepo,
+                          `https://github.com/${site.targetRepo}`,
+                        ]
+                      : null,
+                    site.prUrl
+                      ? [
+                          "PR",
+                          `#${site.prNumber ?? "?"} (${site.workBranch} → main)`,
+                          site.prUrl,
+                        ]
+                      : null,
+                    ["Produção", site.prodUrl, site.prodUrl],
+                    site.previewUrl && site.previewReady
+                      ? ["Preview", site.previewUrl, site.previewUrl]
+                      : null,
+                    site.cfDeployUrl
+                      ? ["Deploy", site.cfDeployUrl, site.cfDeployUrl]
+                      : null,
+                  ]
+                    .filter((x): x is [string, string, string] => !!x)
+                    .map(([label, text, href]) => (
+                      <div key={label} className="flex items-center gap-2">
+                        <span className="w-16 shrink-0 text-muted-foreground">
+                          {label}
+                        </span>
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 truncate hover:underline"
+                        >
+                          <span className="truncate">{text}</span>
+                          <ExternalLink className="h-3 w-3 shrink-0" />
+                        </a>
+                      </div>
+                    ))}
+                </div>
+              </>
+            )}
+
+            {tab === "runs" && (
+              <>
+                <div className="flex flex-wrap gap-1">
+                  {(
+                    [
+                      ["all", "Todos"],
+                      ["migrate", "Script"],
+                      ["triage", "Triagem"],
+                      ["fix", "Fixes"],
+                      ["parity", "Paridade"],
+                    ] as [RunFilter, string][]
+                  ).map(([id, label]) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setRunFilter(id)}
+                      className={cn(
+                        "rounded-full border px-2.5 py-0.5 text-[11px] font-medium",
+                        runFilter === id
+                          ? "border-primary bg-primary/15 text-foreground"
+                          : "border-border text-muted-foreground hover:bg-muted",
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {filteredRuns.length === 0 && (
+                    <p className="text-xs text-muted-foreground">
+                      Nenhum run{runFilter !== "all" ? " deste tipo" : " ainda"}
+                      .
+                    </p>
+                  )}
+                  {filteredRuns.map((run) => (
+                    <RunRow key={run.id} run={run} />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {tab === "activity" && (
               <ul className="flex flex-col gap-1">
-                {data.events.map((event) => (
+                {events.length === 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Nenhuma atividade ainda.
+                  </p>
+                )}
+                {events.map((event) => (
                   <li key={event.id} className="flex gap-2 text-xs">
                     <span
                       className="shrink-0 text-muted-foreground tabular-nums"
@@ -624,7 +593,7 @@ export function SiteDetailPanel({
                   </li>
                 ))}
               </ul>
-            </div>
+            )}
           </div>
         )}
       </div>

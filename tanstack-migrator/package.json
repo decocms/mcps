@@ -1,7 +1,7 @@
 {
   "name": "tanstack-migrator",
-  "version": "0.5.1",
-  "description": "Orchestrates Fresh/Deno \u2192 TanStack Start storefront migrations: FIFO queue, mesh sandboxes running Claude in short issue-driven sessions (GitHub issues as durable memory), branch+PR flow and Cloudflare deploy on merge",
+  "version": "0.6.0",
+  "description": "Orchestrates Fresh/Deno → TanStack Start storefront migrations: issue-driven pipeline, mesh sandboxes running Claude, branch+PR flow, parity via Playwright, visual dashboard + home widgets",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,7 +10,7 @@
     "dev:web": "MCP_APP_ENTRY=dashboard MCP_APP_EMPTY_OUTDIR=true vite build --watch",
     "configure": "deco configure",
     "check": "tsc --noEmit",
-    "build:web": "MCP_APP_ENTRY=dashboard MCP_APP_EMPTY_OUTDIR=true vite build",
+    "build:web": "MCP_APP_ENTRY=dashboard MCP_APP_EMPTY_OUTDIR=true vite build && MCP_APP_ENTRY=widget-active MCP_APP_EMPTY_OUTDIR=false vite build && MCP_APP_ENTRY=widget-queue MCP_APP_EMPTY_OUTDIR=false vite build",
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:web && bun run build:server",
     "test": "bun test"

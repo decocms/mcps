@@ -6,6 +6,8 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 
 const MCP_APP_ENTRIES = {
   dashboard: path.resolve(__dirname, "dashboard.html"),
+  "widget-active": path.resolve(__dirname, "widget-active.html"),
+  "widget-queue": path.resolve(__dirname, "widget-queue.html"),
 } as const;
 
 type McpAppEntry = keyof typeof MCP_APP_ENTRIES;
