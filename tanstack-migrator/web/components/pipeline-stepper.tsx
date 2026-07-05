@@ -83,10 +83,12 @@ export function PipelineStepper({
   const isDone = status === "done";
   const isBlocked = status === "needs_human" || status === "failed";
   // blocked statuses aren't phases — highlight the phase they blocked AT
-  // (resume_status), so the stepper never renders all-grey when it matters most
-  const currentIdx = isBlocked
+  // (resume_status). Fall back to phase 0 when resume_status is missing/unmapped
+  // so a blocked stepper is NEVER all-grey (that's exactly when it matters).
+  const rawIdx = isBlocked
     ? phaseIndexFor(resumeStatus ?? "")
     : phaseIndexFor(status);
+  const currentIdx = isBlocked && rawIdx < 0 ? 0 : rawIdx;
   const iconSize = compact ? "h-3 w-3" : "h-3.5 w-3.5";
   const dot = compact ? "h-6 w-6" : "h-7 w-7";
 

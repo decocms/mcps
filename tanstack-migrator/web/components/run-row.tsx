@@ -70,7 +70,10 @@ export function RunRow({ run }: { run: RunView }) {
         tabIndex={0}
         onClick={() => setExpanded((v) => !v)}
         onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") setExpanded((v) => !v);
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setExpanded((v) => !v);
+          }
         }}
         className="flex w-full cursor-pointer items-center justify-between gap-2 px-3 py-2 text-left"
       >
