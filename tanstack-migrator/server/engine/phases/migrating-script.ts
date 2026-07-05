@@ -75,6 +75,37 @@ export async function migratingScript(
           logsTail: result.output,
           meta: result.meta,
         });
+
+        // Re-provision the sandbox so the daemon detects the new package.json.
+        // The initial clone ran before the migration push → packageManager was
+        // null → predev never fires → routeTree.gen.ts never generated → placeholder.
+        // Destroy + recreate forces a fresh clone with the TanStack package.json.
+        if (!isSimulation(ctx)) {
+          try {
+            await getDriver(ctx).destroy(current, ctx);
+          } catch {
+            // Already reaped by TTL or manual delete — that's fine.
+          }
+          try {
+            const info = await getDriver(ctx).ensure(current, ctx);
+            await updateSite(site.id, {
+              sandbox_handle: info.handle,
+              sandbox_preview_url:
+                info.previewUrl ?? current.sandbox_preview_url,
+            });
+            await addEvent(
+              site.id,
+              "Sandbox recriado com package.json TanStack",
+            );
+          } catch (err) {
+            // Non-fatal — pipeline continues, preview may be delayed.
+            await addEvent(
+              site.id,
+              `Aviso: falha ao recriar sandbox pós-migração: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          }
+        }
+
         await updateSite(site.id, {
           status: "opening_pr",
           phase_detail: `checkpoint pushado na branch ${site.work_branch}, abrindo PR`,
