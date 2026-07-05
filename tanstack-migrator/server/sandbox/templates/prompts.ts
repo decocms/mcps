@@ -229,7 +229,36 @@ const gitAuthNote = (ghToken?: string) =>
 // por padrão quando @cloudflare/vite-plugin está configurado). NUNCA matar o
 // processo existente gerenciado pelo daemon — apenas detectar a porta real.
 const DEV_PORT = 5173; // fallback; sempre confirmar com DEV_LOG
-const devServerNote = `Para confirmar a porta do dev server: \`DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo ${DEV_PORT})\`. Se o dev não estiver rodando (nenhum processo na porta): \`cd /app/repo && nohup bun run dev > /tmp/dev.log 2>&1 & sleep 20 && DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log | tail -1 | cut -d: -f2 || echo ${DEV_PORT})\`. IMPORTANTE: NÃO use \`-- --port\` nem mate o processo existente — o daemon do sandbox gerencia o dev server e reinicializa se morrer.`;
+
+/**
+ * "Script de start" idempotente que TODA sessão de sessão (triage/fix/parity)
+ * roda como passo 0. O sandbox pode chegar em qualquer estado — clone fresco
+ * pós-recreate, sandbox reapado+recriado, ou generates defasados — então antes
+ * de qualquer trabalho o agente traz o projeto a um estado bom conhecido:
+ *   1. branch certa + pull do último push
+ *   2. deps limpas (node_modules NUNCA vem da branch — é gitignored)
+ *   3. generates gitignored (routeTree.gen.ts, *.gen.* do cms/admin) — sem eles
+ *      o router não tem rotas e o dev serve o placeholder "No web page"
+ *   4. dev server de pé servindo HTML real (sobe só se não estiver servindo)
+ * Isso torna cada fase self-healing: não depende do sandbox ter sido recriado
+ * corretamente na fase anterior.
+ */
+function ensureReadyPreamble(site: SiteRow): string {
+  const branch = site.work_branch;
+  return `# Setup (rode ISTO PRIMEIRO, sempre — deixa o projeto de pé antes de qualquer coisa)
+Este bloco é idempotente e self-healing: rode-o inteiro antes de analisar/corrigir/medir. Não pule.
+\`\`\`bash
+cd /app/repo && git checkout ${branch} && git pull origin ${branch} 2>/dev/null || true
+rm -f org 2>/dev/null || true                          # symlink de montagem do sandbox
+[ -d node_modules ] || bun install || npm install       # deps limpas (node_modules é gitignored — nunca vem da branch)
+# generates gitignored: sem routeTree.gen.ts o router fica sem rotas → placeholder "No web page"
+if [ ! -f src/routeTree.gen.ts ]; then bun run predev 2>/dev/null || npm run predev 2>/dev/null || bun run build 2>/dev/null || npm run build 2>/dev/null || true; fi
+# dev server: sobe só se ainda não estiver servindo (o daemon do sandbox pode já ter subido)
+DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo ${DEV_PORT})
+curl -sf "http://localhost:$DEV_PORT/" >/dev/null 2>&1 || { nohup bun run dev > /tmp/dev.log 2>&1 & sleep 20; DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log | tail -1 | cut -d: -f2 || echo ${DEV_PORT}); }
+\`\`\`
+NÃO mate o processo do dev gerenciado pelo daemon nem force \`--port\`. Se depois desse bloco \`curl http://localhost:$DEV_PORT/\` AINDA devolver o placeholder "No web page at this URL" ou um shell vazio, aí sim o SSR está quebrado de verdade — investigue \`tail -80 /tmp/dev.log\`.`;
+}
 
 /**
  * Phase migrating_script: run the migrate script and push the checkpoint to
@@ -307,16 +336,17 @@ Levantar os problemas REAIS do código migrado em /app/repo e reportá-los como 
 # O que "pronto" significa (LEIA ANTES)
 O critério de sucesso desta migração é: **\`npm run build\` passa** (exit 0) + o site responde HTML + paridade visual bate. NÃO é \`tsc --noEmit\` zerado. O \`npm run build\` roda o codegen (generate:blocks/sections/loaders/schema/invoke) e o Vite/esbuild — que NÃO faz type-check estrito. Erros de \`tsc\` que NÃO quebram o \`npm run build\` são **dívida de tipo**, não bloqueadores: reporte-os como severity "low", nunca critical/high.
 
+${ensureReadyPreamble(site)}
+
 # Levantamento (nesta ordem de prioridade)
-1. \`cd /app/repo && git checkout ${site.work_branch}\` e \`npm install\`.
-2. **Build (gate crítico)**: \`npm run build 2>&1 | tail -60\`. Se FALHAR (exit≠0), o(s) erro(s) que quebram o build são as issues critical/high — foque nelas.
-3. **Runtime — o site TEM que renderizar HTML (pré-requisito da paridade)**: ${devServerNote} Depois \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
+1. **Build (gate crítico)**: \`npm run build 2>&1 | tail -60\`. Se FALHAR (exit≠0), o(s) erro(s) que quebram o build são as issues critical/high — foque nelas.
+2. **Runtime — o site TEM que renderizar HTML (pré-requisito da paridade)**: com o dev já de pé pelo Setup, \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
    a. Se retornar **"No web page at this URL"** (placeholder do sandbox) OU um shell quase vazio (só \`<div id="root"></div>\` sem conteúdo) → o **SSR está quebrado**: o dev sobe mas \`/\` não devolve HTML renderizado (severity **high**, category **runtime**). Causa comum #1: **node_modules com versão errada** (se foi commitado na branch, ex: vite ≠ package.json) — a correção é \`rm -rf node_modules && npm install\` e nunca commitar node_modules. Investigue também \`tail -80 /tmp/dev.log\` pelo stack do SSR (\`is not a function\`, módulo faltando) e abra o arquivo:linha.
    a2. Se \`/\` DEVOLVE HTML (200, milhares de bytes) mas contém \`Switched to client rendering because the server rendering errored\` → o SSR **degradou pra client-render**: a página renderiza, mas com um bug de SSR real (severity **medium**, runtime). Grep o stack: \`curl -sL http://localhost:$DEV_PORT/ | grep -o "server rendering errored[^<]*"\` e \`tail -80 /tmp/dev.log\`. Causa MAIS comum: **globais client-only usados no render do server** (\`globalThis.location\`, \`window\`, \`document\`) → dá \`Cannot read properties of undefined (reading 'href')\`. Fix: guardar com \`typeof window !== "undefined"\` (ou mover pra useEffect). Reporte com o arquivo:linha.
    b. Se \`/\` renderiza mas os blocos estão vazios: \`ls .deco/blocks/ 2>/dev/null | head -20\` — confira se os \`__resolveType\` batem com os exports de \`src/sections/\` e \`src/apps/\`.
    c. Teste rotas: home, categoria, produto (URLs em /app/source/routes/).
-4. Typecheck SECUNDÁRIO: \`npx tsc --noEmit 2>&1 | head -60\` — SÓ se o build passou. Agrupe por causa raiz; entram como severity "low" (dívida de tipo), pois não bloqueiam deploy nem paridade.
-5. Compare com /app/source: seções/componentes que existem lá e não foram portados (esses SÃO relevantes — visual/content).
+3. Typecheck SECUNDÁRIO: \`npx tsc --noEmit 2>&1 | head -60\` — SÓ se o build passou. Agrupe por causa raiz; entram como severity "low" (dívida de tipo), pois não bloqueiam deploy nem paridade.
+4. Compare com /app/source: seções/componentes que existem lá e não foram portados (esses SÃO relevantes — visual/content).
 
 # REGRAS IMPORTANTES
 - **NUNCA reporte issue para editar arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen, etc.) — são REGENERADOS pelo \`npm run build\`. Se um import de \`*.gen\` está quebrado, a issue é "rodar npm run build/generate", não "editar o arquivo".
@@ -368,12 +398,14 @@ export function fixIssuesPrompt(input: {
 # Objetivo (ESCOPO FECHADO)
 Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não "aproveite pra melhorar" outras coisas.
 
+${ensureReadyPreamble(site)}
+
 # Regras
-- \`cd /app/repo && git checkout ${site.work_branch}\` antes de tudo (remote: ${targetUrl}).
+- Remote da branch: ${targetUrl} (o Setup acima já fez checkout + pull).
 - Regra de ouro: NUNCA reescreva componentes — porte o original de /app/source com mudanças mecânicas (imports preact→react, class→className, signals→estado react). Consulte /app/source sempre que precisar do comportamento original.
 - **NUNCA edite arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen…) — são regenerados pelo \`npm run build\`. Se uma issue aponta erro num \`.gen\`, a correção é rodar \`npm run build\` (que roda o codegen) e verificar se sumiu — NÃO editar o arquivo à mão (seria sobrescrito).
 - UM commit POR issue resolvida, mensagem \`fix(#<número>): <o que fez>\` e push ao final de cada uma: \`git push origin ${site.work_branch}\`. Nunca fique >10min sem commit+push.
-- **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo. ${devServerNote}
+- **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo (o dev já está de pé pelo Setup).
 - **O preview TEM que renderizar (pré-requisito da paridade)**: para issues de runtime/SSR, a correção só está pronta quando \`curl -sL http://localhost:$DEV_PORT/\` devolve HTML renderizado de verdade — NÃO o placeholder "No web page at this URL" nem um shell vazio (\`<div id="root"></div>\` sem conteúdo). Se ainda vier placeholder/shell, o SSR continua quebrado: leia \`tail -80 /tmp/dev.log\`, ache o stack e o arquivo:linha, e corrija de verdade antes de marcar como resolved.
 - **Antes de investigar do zero, consulte a "Memória entre migrações" abaixo** — uma receita conhecida pode resolver na hora, e o que você aprender aqui alimenta os próximos sites. Se concluir que um erro vem do framework, marque a issue como blocked com motivo \`[framework?]\` além de registrar na memória.
 - Se uma issue for impossível, já estiver resolvida (ex: o build já passa e o erro sumiu após o codegen), ou depender de outra, marque como blocked/resolved com o motivo e siga.
@@ -458,13 +490,13 @@ export function parityOnlyPrompt(input: {
 # Objetivo (SOMENTE MEDIÇÃO — NÃO CORRIJA NADA)
 Rodar a parity CLI comparando produção vs candidato, subir os artefatos e reportar o score. Os problemas apontados pelo report viram issues no GitHub e serão corrigidos em outras sessões.
 
+${ensureReadyPreamble(site)}
+
 # Passos
-1. \`cd /app/repo && git checkout ${site.work_branch} && git pull origin ${site.work_branch}\`. ${devServerNote}
-2. Detecte a porta do dev server: \`DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo 5173)\` (o @cloudflare/vite-plugin usa 5173 por padrão, não 3000).
-3. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "http://localhost:$DEV_PORT" --preset ci\`
-4. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
-${uploadSteps.length > 0 ? `5. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "5. (sem upload de artefatos configurado)"}
-6. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
+1. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "http://localhost:$DEV_PORT" --preset ci\`
+2. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
+${uploadSteps.length > 0 ? `3. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "3. (sem upload de artefatos configurado)"}
+4. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
 
 ${progressInstruction(site)}
 
