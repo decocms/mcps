@@ -4,6 +4,11 @@ import { createActiveWidgetTool, createQueueWidgetTool } from "./widgets.ts";
 import { createReportProgressTool } from "./progress.ts";
 import { createParityReportUrlsTool } from "./reports.ts";
 import {
+  createSandboxExecTool,
+  createSandboxTestTool,
+  createSiteSetStatusTool,
+} from "./sandbox-test.ts";
+import {
   createSiteArchiveTool,
   createSiteDeleteTool,
   createSiteGetTool,
@@ -34,4 +39,7 @@ export const tools = [
   createReportProgressTool,
   createAdvanceQueueTool,
   createGithubProbeTool,
+  createSandboxTestTool,
+  createSandboxExecTool,
+  createSiteSetStatusTool,
 ];
