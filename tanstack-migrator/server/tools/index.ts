@@ -13,6 +13,7 @@ import {
   createSiteRegisterTool,
   createSiteResumeTool,
   createSiteRetryTool,
+  createSiteTerminalTool,
 } from "./sites.ts";
 
 export const tools = [
@@ -22,6 +23,7 @@ export const tools = [
   createSiteRegisterTool,
   createSiteListTool,
   createSiteGetTool,
+  createSiteTerminalTool,
   createSitePauseTool,
   createSiteResumeTool,
   createSiteRetryTool,

@@ -139,6 +139,25 @@ export interface SiteDetail {
   events: EventView[];
 }
 
+export interface TerminalEntry {
+  seq: number;
+  role: string;
+  kind: "text" | "command" | "tool" | "reasoning";
+  text?: string;
+  command?: string;
+  exitCode?: number;
+  output?: string;
+  tool?: string;
+}
+
+export interface TerminalData {
+  threadId: string | null;
+  /** true when this is the still-running phase thread (not a past run). */
+  live: boolean;
+  entries: TerminalEntry[];
+  updatedAt: string;
+}
+
 export interface ReportUrls {
   reportHtml: string | null;
   reportJson: string | null;

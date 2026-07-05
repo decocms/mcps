@@ -439,19 +439,36 @@ async function rescueFinalText(
 const num = (v: unknown): number | undefined =>
   typeof v === "number" && Number.isFinite(v) ? v : undefined;
 
-/** Command text goes to sitemig_runs.meta and the dashboard — mask secrets. */
-function redactSecrets(cmd: string): string {
-  return cmd
-    .replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
-    .replace(
-      /\b(gh[pousr]_|github_pat_|sk-ant-|sk-|aik_|or-)[A-Za-z0-9_-]{8,}/g,
-      "$1***",
-    )
-    .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi, "$1***")
-    .replace(
-      /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
-      "$1=***",
-    );
+/**
+ * Mask secrets before they reach sitemig_runs.meta, the dashboard, and the live
+ * terminal. Covers known token prefixes, auth headers, env-style assignments,
+ * and — since the terminal now surfaces command OUTPUT too — secrets embedded in
+ * URLs (query strings) and JSON key/value pairs (lowercase keys included).
+ */
+export function redactSecrets(text: string): string {
+  return (
+    text
+      .replace(/x-access-token:[^@\s]+@/g, "x-access-token:***@")
+      .replace(
+        /\b(gh[pousr]_|github_pat_|sk-ant-|sk-|aik_|or-)[A-Za-z0-9_-]{8,}/g,
+        "$1***",
+      )
+      .replace(/(Bearer\s+)[A-Za-z0-9._~+/-]{8,}/gi, "$1***")
+      // env-style KEY=value / TOKEN=value (uppercase names)
+      .replace(
+        /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
+        "$1=***",
+      )
+      // query-string or JSON key/value: token=..., "api_key": "...", secret:'...'
+      // The secret word must be a DELIMITED key segment (start/`_`/`-` before it,
+      // separator right after) so we don't mask normal identifiers that merely
+      // contain the substring — `monkey=`, `keyboard:`, `tokenizer=` stay
+      // readable. `(?!\*)` skips values an earlier rule already masked.
+      .replace(
+        /(?<![a-z0-9_-])((?:[a-z0-9]+[_-])*(?:key|token|secret|password|passwd|apikey))(["']?\s*[:=]\s*["']?)(?!\*)[^\s"'&]{6,}/gi,
+        "$1$2***",
+      )
+  );
 }
 
 /** Session cost/tokens — MONITORING_THREAD_USAGE arg/result shapes vary. */
@@ -541,6 +558,134 @@ async function fetchThreadCommands(
   } catch {
     return undefined;
   }
+}
+
+/** Best-effort extraction of a tool part's output as displayable text. */
+function partOutputText(output: unknown): string {
+  if (output == null) return "";
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    return output
+      .map((c) =>
+        typeof c === "string"
+          ? c
+          : c &&
+              typeof c === "object" &&
+              typeof (c as { text?: unknown }).text === "string"
+            ? (c as { text: string }).text
+            : "",
+      )
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof output === "object") {
+    const o = output as Record<string, unknown>;
+    const parts = [o.stdout, o.stderr, o.output, o.result, o.text]
+      .map((v) => (typeof v === "string" ? v : ""))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join("\n");
+  }
+  return "";
+}
+
+/** One line in the drawer's live terminal — the agent's narration or a command. */
+export interface TerminalEntry {
+  seq: number;
+  role: string;
+  kind: "text" | "command" | "tool" | "reasoning";
+  text?: string;
+  command?: string;
+  exitCode?: number;
+  output?: string;
+  tool?: string;
+}
+
+/**
+ * Ordered transcript of a decopilot thread for the live terminal in the drawer:
+ * the agent's narration + every bash command (with exit code and an output
+ * snippet) + other tool calls, oldest→newest. Best-effort (part shapes vary by
+ * harness); secrets are redacted and output truncated. Returns the last `limit`
+ * entries so a long session stays cheap to poll.
+ */
+export async function fetchThreadTranscript(
+  ctx: WorkerCtx,
+  threadId: string,
+  limit = 150,
+): Promise<TerminalEntry[]> {
+  const messages = await listThreadMessages(ctx, threadId);
+  const entries: TerminalEntry[] = [];
+  let seq = 0;
+  for (const message of messages) {
+    const role = typeof message.role === "string" ? message.role : "assistant";
+    if (role === "user" || role === "system") continue; // prompts, not activity
+    for (const part of message.parts ?? []) {
+      const p = part as Record<string, unknown>;
+      const type = typeof p.type === "string" ? p.type : "";
+      if (type === "text" && typeof p.text === "string" && p.text.trim()) {
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "text",
+          text: p.text.trim().slice(0, 2000),
+        });
+        continue;
+      }
+      if (type === "reasoning" && typeof p.text === "string" && p.text.trim()) {
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "reasoning",
+          text: p.text.trim().slice(0, 1000),
+        });
+        continue;
+      }
+      const toolName =
+        typeof p.toolName === "string"
+          ? p.toolName
+          : type.startsWith("tool-")
+            ? type.slice(5)
+            : "";
+      if (!toolName) continue;
+      const input = (p.input ?? p.args ?? {}) as Record<string, unknown>;
+      const output = (p.output ?? {}) as Record<string, unknown>;
+      if (/bash|shell|terminal|exec|command/i.test(toolName)) {
+        const cmd =
+          typeof input.command === "string"
+            ? input.command
+            : typeof input.cmd === "string"
+              ? input.cmd
+              : "";
+        if (!cmd) continue;
+        const rawOut = partOutputText(p.output);
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "command",
+          command: redactSecrets(cmd).slice(0, 400),
+          exitCode: num(output.exitCode ?? output.exit_code ?? output.exit),
+          output: rawOut ? redactSecrets(rawOut).slice(0, 800) : undefined,
+        });
+      } else {
+        // non-bash tool call — surface the tool name + a compact arg hint
+        const hint =
+          typeof input.path === "string"
+            ? input.path
+            : typeof input.file === "string"
+              ? input.file
+              : typeof input.url === "string"
+                ? input.url
+                : "";
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "tool",
+          tool: toolName,
+          text: hint ? redactSecrets(hint).slice(0, 200) : undefined,
+        });
+      }
+    }
+  }
+  return entries.length > limit ? entries.slice(-limit) : entries;
 }
 
 export const decopilotDriver: SandboxDriver = {

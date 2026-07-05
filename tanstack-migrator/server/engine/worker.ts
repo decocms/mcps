@@ -216,7 +216,37 @@ async function probeSessionLiveness(
   }
 }
 
-/** Preview link only counts when the dev server actually answers. */
+/**
+ * Preview only counts as ready when the site RENDERS real HTML — not when the
+ * sandbox proxy answers with its "No web page at this URL" placeholder, and not
+ * when the dev server returns an empty SSR shell (`<div id="root"></div>` with
+ * no content). Both are served with HTTP 200 + text/html, so a status check
+ * gives a false positive. We judge the BODY's rendered content, ignoring size:
+ * visible text, or a real element tree (an empty shell has neither).
+ */
+export function looksLikeRealSite(html: string): boolean {
+  if (/No web page/i.test(html)) return false; // sandbox proxy placeholder
+  const body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? html;
+  // strip non-content nodes so head/scripts/styles don't inflate the signal
+  const content = body
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<template[\s\S]*?<\/template>/gi, "")
+    // <noscript> is a static fallback ("enable JavaScript"), not rendered SSR —
+    // its text would otherwise pass the visible-text signal on a broken shell
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, "");
+  // visible rendered text is the strongest signal — a storefront always has it
+  const text = content
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (text.length > 40) return true;
+  // no visible text: accept only a real element tree, not an empty root shell.
+  // `<div id="root"></div>` is 1 element; a rendered page has many.
+  const elements = content.match(/<[a-z][a-z0-9]*[\s/>]/gi)?.length ?? 0;
+  return elements >= 8;
+}
+
 async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
   if (!site.sandbox_preview_url || site.preview_ready) return;
   if (!isActiveStatus(site.status)) return;
@@ -224,16 +254,18 @@ async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
     const response = await fetch(site.sandbox_preview_url, {
       method: "GET",
       redirect: "manual",
-      signal: AbortSignal.timeout(3_000),
+      signal: AbortSignal.timeout(4_000),
     });
-    // anything the dev server answers (2xx-4xx) counts as "up"
-    if (response.status < 500) {
-      await updateSite(site.id, { preview_ready: true });
-      await addEvent(
-        site.id,
-        `Dev server respondendo — preview liberado: ${site.sandbox_preview_url}`,
-      );
-    }
+    if (response.status >= 500) return;
+    const ct = (response.headers.get("content-type") ?? "").toLowerCase();
+    if (!ct.includes("text/html")) return;
+    const html = await response.text();
+    if (!looksLikeRealSite(html)) return; // proxy placeholder / empty shell
+    await updateSite(site.id, { preview_ready: true });
+    await addEvent(
+      site.id,
+      `Site renderizando HTML — preview liberado: ${site.sandbox_preview_url}`,
+    );
   } catch {
     // still down — keep hidden
   }

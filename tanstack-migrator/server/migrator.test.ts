@@ -11,9 +11,14 @@ import {
   titleHash,
 } from "./lib/issues.ts";
 import { simulatedParityScore } from "./sandbox/drivers/manual.ts";
+import { redactSecrets } from "./sandbox/drivers/decopilot.ts";
 import {
+  CONVENTIONS_PATH,
+  FIXES_PATH,
+  FRAMEWORK_NOTES_PATH,
   fixIssuesPrompt,
   migrateScriptPrompt,
+  PARITY_GOTCHAS_PATH,
   parityOnlyPrompt,
   parseResultJson,
   triagePrompt,
@@ -22,6 +27,7 @@ import {
   syncPackageScriptCommand,
   syncWorkflowYaml,
 } from "./sandbox/templates/sync-files.ts";
+import { looksLikeRealSite } from "./engine/worker.ts";
 import type { SiteRow } from "./db/types.ts";
 
 const site = {
@@ -155,6 +161,35 @@ describe("prompts", () => {
     expect(prompt).toContain("fix(#<número>)");
     expect(prompt).toContain("SOMENTE as issues listadas");
     expect(prompt).toContain('"resolved": [12]');
+  });
+
+  test("cross-migration memory: fix reads+writes all files, triage reads them", () => {
+    const fix = fixIssuesPrompt({
+      site,
+      issues: [{ number: 12, title: "rota / 500" }],
+    });
+    // all four org-fs memory files are wired into the fix phase...
+    for (const path of [
+      FRAMEWORK_NOTES_PATH,
+      FIXES_PATH,
+      CONVENTIONS_PATH,
+      PARITY_GOTCHAS_PATH,
+    ]) {
+      expect(fix).toContain(path);
+    }
+    // ...with append instructions (fix is where solutions get recorded)
+    expect(fix).toContain(`>> ${FIXES_PATH}`);
+    expect(fix).toContain(`>> ${PARITY_GOTCHAS_PATH}`);
+    expect(fix).toContain("org-fs do Studio");
+
+    // triage reads the playbook (but doesn't write fixes — analysis only)
+    const triage = triagePrompt({ site, maxIssues: 15 });
+    expect(triage).toContain(FIXES_PATH);
+    expect(triage).not.toContain(`>> ${FIXES_PATH}`);
+
+    // migrate-script records new setup gotchas in conventions
+    const migrate = migrateScriptPrompt({ site });
+    expect(migrate).toContain(`>> ${CONVENTIONS_PATH}`);
   });
 
   test("parityOnlyPrompt: measure-only with uploads", () => {
@@ -337,6 +372,79 @@ describe("simulation", () => {
     expect(simulatedParityScore(1)).toBe(73);
     expect(simulatedParityScore(3)).toBe(95);
     expect(simulatedParityScore(10)).toBe(100);
+  });
+});
+
+describe("redactSecrets (terminal/command output)", () => {
+  test("masks token prefixes, bearer, and git x-access-token", () => {
+    expect(
+      redactSecrets("clone https://x-access-token:ghs_abc123def@github.com"),
+    ).toContain("x-access-token:***@");
+    expect(redactSecrets("export FOO=sk-ant-abc123def456")).toContain(
+      "sk-ant-***",
+    );
+    expect(redactSecrets("Authorization: Bearer eyJhbGciOiJI")).toContain(
+      "Bearer ***",
+    );
+  });
+
+  test("masks query-string and JSON key/value secrets in output", () => {
+    const qs = redactSecrets("GET /api?access_token=supersecretvalue&x=1");
+    expect(qs).not.toContain("supersecretvalue");
+    expect(qs).toContain("access_token=***");
+
+    const json = redactSecrets('{"api_key": "supersecretvalue", "ok": true}');
+    expect(json).not.toContain("supersecretvalue");
+    expect(json).toContain("***");
+
+    const env = redactSecrets("ANTHROPIC_API_KEY=sk-ant-longtokenvalue");
+    expect(env).not.toContain("longtokenvalue");
+  });
+
+  test("leaves non-secret text untouched", () => {
+    expect(redactSecrets("npm run build && vite dev")).toBe(
+      "npm run build && vite dev",
+    );
+  });
+
+  test("does not mask identifiers that merely contain a secret substring", () => {
+    // 'monkey' contains 'key', 'tokenizer' starts with 'token', 'keyboard' too —
+    // none are delimited secret keys, so they must stay readable in the terminal
+    expect(redactSecrets("monkey=5 tokenizer=fast keyboard: qwerty12")).toBe(
+      "monkey=5 tokenizer=fast keyboard: qwerty12",
+    );
+    // but a prefixed real key IS masked
+    const masked = redactSecrets("github_token=ghlongsecretvalue");
+    expect(masked).not.toContain("ghlongsecretvalue");
+    expect(masked).toContain("github_token=***");
+  });
+});
+
+describe("looksLikeRealSite (preview readiness)", () => {
+  test("rejects the sandbox proxy placeholder", () => {
+    const placeholder = `<!DOCTYPE html><html><head><title>Preview</title></head><body><div style="padding:2rem"><h1>No web page at this URL</h1><p>The dev server is running but doesn't serve HTML at /.</p></div></body></html>`;
+    expect(looksLikeRealSite(placeholder)).toBe(false);
+  });
+
+  test("rejects an empty SSR shell even when scripts inflate the size", () => {
+    const shell = `<!DOCTYPE html><html><head>${"<script src='/x.js'></script>".repeat(30)}</head><body><div id="root"></div><script type="module" src="/entry.js"></script></body></html>`;
+    expect(shell.length).toBeGreaterThan(800); // would pass a naive size gate
+    expect(looksLikeRealSite(shell)).toBe(false);
+  });
+
+  test("rejects an empty shell whose only text is a <noscript> fallback", () => {
+    const shell = `<html><head><title>App</title></head><body><noscript>You need to enable JavaScript to run this app. Please turn it on and reload the page.</noscript><div id="root"></div></body></html>`;
+    expect(looksLikeRealSite(shell)).toBe(false);
+  });
+
+  test("accepts a rendered page with visible text", () => {
+    const rendered = `<!DOCTYPE html><html><head><title>Granado</title></head><body><div id="root"><header><nav>Início Produtos Contato</nav></header><main><h1>Bem-vindo à Granado</h1><p>Perfumaria e cosméticos desde 1870.</p></main></div></body></html>`;
+    expect(looksLikeRealSite(rendered)).toBe(true);
+  });
+
+  test("accepts a text-light page that has a real element tree", () => {
+    const gallery = `<html><body><div id="root"><section><img/><img/><img/></section><section><img/><img/></section><footer><ul><li></li><li></li></ul></footer></div></body></html>`;
+    expect(looksLikeRealSite(gallery)).toBe(true);
   });
 });
 

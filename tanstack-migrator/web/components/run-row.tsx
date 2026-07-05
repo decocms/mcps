@@ -1,7 +1,13 @@
 import { FileText, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useToolCaller } from "@/hooks/use-tool.ts";
-import { clockTime, cn, duration, timeAgo } from "@/lib/utils.ts";
+import {
+  clockTime,
+  cn,
+  duration,
+  studioThreadUrl,
+  timeAgo,
+} from "@/lib/utils.ts";
 import type { ReportUrls, RunView } from "@/types.ts";
 
 const SEVERITY_COLOR: Record<string, string> = {
@@ -10,11 +16,6 @@ const SEVERITY_COLOR: Record<string, string> = {
   medium: "text-amber-600 dark:text-amber-400",
   low: "text-muted-foreground",
 };
-
-/** Best-effort studio thread URL from a threadId (deep link into the session). */
-function threadUrl(threadId: string): string {
-  return `https://studio.decocms.com/threads/${threadId}`;
-}
 
 export function RunRow({ run }: { run: RunView }) {
   const callTool = useToolCaller();
@@ -102,7 +103,7 @@ export function RunRow({ run }: { run: RunView }) {
           </span>
           {run.threadId && (
             <a
-              href={threadUrl(run.threadId)}
+              href={studioThreadUrl(run.threadId)}
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
