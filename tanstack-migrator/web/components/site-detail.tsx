@@ -22,7 +22,7 @@ import { issuesFilterUrl } from "@/components/site-card.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
 import { TerminalPanel } from "@/components/terminal-panel.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
-import { clockTime, cn, duration, timeAgo } from "@/lib/utils.ts";
+import { clockTime, cn, timeAgo } from "@/lib/utils.ts";
 import type { RunView, SiteDetail, SiteView } from "@/types.ts";
 
 const ACTIVE_STATUSES = new Set([
