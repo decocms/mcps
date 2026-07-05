@@ -459,12 +459,13 @@ export function redactSecrets(text: string): string {
         /\b([A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD)[A-Z0-9_]*)=\S+/g,
         "$1=***",
       )
-      // query-string or JSON key/value: token=..., "api_key": "...", auth:'...'
-      // (case-insensitive key, = or : separator, optional quotes). The `(?!\*)`
-      // skips values already masked by an earlier rule so we don't clobber the
-      // surrounding text (e.g. the host after x-access-token:***@).
+      // query-string or JSON key/value: token=..., "api_key": "...", secret:'...'
+      // The secret word must be a DELIMITED key segment (start/`_`/`-` before it,
+      // separator right after) so we don't mask normal identifiers that merely
+      // contain the substring — `monkey=`, `keyboard:`, `tokenizer=` stay
+      // readable. `(?!\*)` skips values an earlier rule already masked.
       .replace(
-        /\b([a-z0-9_-]*(?:key|token|secret|password|passwd)[a-z0-9_-]*)(["']?\s*[:=]\s*["']?)(?!\*)[^\s"'&]{6,}/gi,
+        /(?<![a-z0-9_-])((?:[a-z0-9]+[_-])*(?:key|token|secret|password|passwd|apikey))(["']?\s*[:=]\s*["']?)(?!\*)[^\s"'&]{6,}/gi,
         "$1$2***",
       )
   );

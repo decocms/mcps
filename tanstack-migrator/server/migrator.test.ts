@@ -406,6 +406,18 @@ describe("redactSecrets (terminal/command output)", () => {
       "npm run build && vite dev",
     );
   });
+
+  test("does not mask identifiers that merely contain a secret substring", () => {
+    // 'monkey' contains 'key', 'tokenizer' starts with 'token', 'keyboard' too —
+    // none are delimited secret keys, so they must stay readable in the terminal
+    expect(redactSecrets("monkey=5 tokenizer=fast keyboard: qwerty12")).toBe(
+      "monkey=5 tokenizer=fast keyboard: qwerty12",
+    );
+    // but a prefixed real key IS masked
+    const masked = redactSecrets("github_token=ghlongsecretvalue");
+    expect(masked).not.toContain("ghlongsecretvalue");
+    expect(masked).toContain("github_token=***");
+  });
 });
 
 describe("looksLikeRealSite (preview readiness)", () => {

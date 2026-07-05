@@ -36,7 +36,9 @@ export function TerminalPanel({
     fast ? 3500 : 12000,
   );
   useEffect(() => {
-    if (data) setFast(data.live || active);
+    // follow `active` immediately (don't wait for a response) and upgrade to the
+    // server's `live` truth once it arrives
+    setFast((data?.live ?? false) || active);
   }, [data?.live, active]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
