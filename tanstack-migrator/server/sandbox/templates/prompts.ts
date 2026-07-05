@@ -16,6 +16,18 @@ import type { SiteRow } from "../../db/types.ts";
 
 export const RESULT_MARKER = "RESULT_JSON:";
 
+/**
+ * Cross-migration memory file, lives in the Studio org-fs mounted into every
+ * sandbox (`/app/org` — the same mount the repo's `org` symlink points at), so
+ * it persists across sandboxes and sites. Triage/fix sessions read it at start
+ * (to recognize framework-suspected errors already seen elsewhere) and append
+ * to it when they hit a new one — turning "seen once" into "seen in N sites =
+ * likely a framework bug" over time. This is NOT a Supabase table on purpose:
+ * the knowledge belongs to the org's filesystem, reachable by the agent itself.
+ */
+export const FRAMEWORK_NOTES_PATH =
+  "/app/org/home/.tanstack-migrator/framework-notes.md";
+
 export interface ParityArtifactUrls {
   reportHtmlPut?: string;
   reportJsonPut?: string;
@@ -176,8 +188,9 @@ Nunca fique mais de 10 minutos sem \`git commit\` + \`git push\` — todo progre
 1. Se /app/source ainda não existe: \`git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source\` (cópia pristina do site original — NUNCA modifique nem rode o script de migração nela).
 2. O repo alvo JÁ está clonado pelo sandbox em /app/repo (origin = ${targetUrl}) — trabalhe NELE, na branch de trabalho: \`cd /app/repo && git checkout -B ${branch}\`. ATENÇÃO: existe um symlink \`org -> ../org\` dentro de /app/repo (montagem do sandbox) — remova antes de tudo: \`rm -f org\`. Copie o conteúdo do original pra dentro SEM rsync (não existe na imagem): \`shopt -s dotglob && for f in /app/source/*; do b=$(basename "$f"); [ "$b" = ".git" ] && continue; cp -r "$f" .; done\`.
 3. Em /app/repo: \`npm install @decocms/start tsx\` e rode o script de migração IN PLACE (o script TRANSFORMA o diretório passado em --source): \`npx tsx node_modules/@decocms/start/scripts/migrate.ts --source /app/repo\`. Ele roda 7 fases (analyze, scaffold, transform, cleanup, report, verify, bootstrap). Se /app/repo já tiver MIGRATION_REPORT.md de uma execução anterior, pule esta etapa.
-4. Checkpoint final: \`git add -A && git commit -m "feat: tanstack migration (script output)" && git push -u -f origin ${branch}\` (a branch é gerenciada pela migração — o force é seguro).
-5. PARE AQUI. Não instale dependências extras, não corrija build, não suba dev server.
+4. CRÍTICO p/ o preview funcionar: garanta que o \`package.json\` tenha um script \`"predev"\` que roda TODOS os generates do \`build\` (sem o \`vite build\` final). O \`dev\` é só \`vite dev\` e NÃO gera route tree/manifests/blocks — sem os generates o dev server serve 404. Copie a sequência de generates do script \`build\` para um \`predev\` (ex: \`"predev": "npm run generate:blocks && npm run generate:sections && npm run generate:loaders && npm run generate:schema && npm run generate:invoke && tsr generate"\`). Assim \`bun run dev\` (que o daemon do sandbox roda) dispara o codegen automaticamente antes de servir.
+5. Checkpoint final: \`git add -A && git commit -m "feat: tanstack migration (script output + predev)" && git push -u -f origin ${branch}\` (a branch é gerenciada pela migração — o force é seguro).
+6. PARE AQUI. Não corrija erros de build — isso é das próximas fases.
 ${gitAuthNote(ghToken)}
 ${progressInstruction(site)}
 
@@ -218,16 +231,22 @@ O critério de sucesso desta migração é: **\`npm run build\` passa** (exit 0)
 # Levantamento (nesta ordem de prioridade)
 1. \`cd /app/repo && git checkout ${site.work_branch}\` e \`npm install\`.
 2. **Build (gate crítico)**: \`npm run build 2>&1 | tail -60\`. Se FALHAR (exit≠0), o(s) erro(s) que quebram o build são as issues critical/high — foque nelas.
-3. Runtime: ${devServerNote} Depois:
-   a. \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -80\` — HTML vazio/sem \`<body\` = problema de CMS/blocos (não de build).
-   b. Se a home vier vazia: \`tail -60 /tmp/dev.log\` + \`ls .deco/blocks/ 2>/dev/null | head -20\` — confira se os \`__resolveType\` batem com os exports de \`src/sections/\` e \`src/apps/\`.
+3. **Runtime — o site TEM que renderizar HTML (pré-requisito da paridade)**: ${devServerNote} Depois \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
+   a. Se retornar **"No web page at this URL"** (placeholder do sandbox) OU um shell quase vazio (só \`<div id="root"></div>\` sem conteúdo) → o **SSR está quebrado**: o dev sobe mas \`/\` não devolve HTML renderizado. Essa é a issue MAIS importante (severity **high**, category **runtime**). Investigue a causa REAL: \`tail -80 /tmp/dev.log\` procurando o stack do erro de SSR (ex: \`Cannot read properties of undefined (reading 'href')\`, \`is not a function\`, módulo faltando) e abra o arquivo/linha apontado. Reporte com o stack literal e o arquivo:linha no corpo. NOTA: quase toda migração cai aqui no primeiro preview — é esperado, é o principal a corrigir.
+   b. Se \`/\` renderiza mas os blocos estão vazios: \`ls .deco/blocks/ 2>/dev/null | head -20\` — confira se os \`__resolveType\` batem com os exports de \`src/sections/\` e \`src/apps/\`.
    c. Teste rotas: home, categoria, produto (URLs em /app/source/routes/).
 4. Typecheck SECUNDÁRIO: \`npx tsc --noEmit 2>&1 | head -60\` — SÓ se o build passou. Agrupe por causa raiz; entram como severity "low" (dívida de tipo), pois não bloqueiam deploy nem paridade.
 5. Compare com /app/source: seções/componentes que existem lá e não foram portados (esses SÃO relevantes — visual/content).
 
 # REGRAS IMPORTANTES
 - **NUNCA reporte issue para editar arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen, etc.) — são REGENERADOS pelo \`npm run build\`. Se um import de \`*.gen\` está quebrado, a issue é "rodar npm run build/generate", não "editar o arquivo".
-- Se o \`npm run build\` já passa e a home responde, a maior parte do trabalho está feita — reporte poucas issues (só o que afeta paridade/visual), não uma lista de erros de tsc.
+- **Suspeita de bug do framework**: se um erro parece vir de \`@decocms/start\` ou \`@decocms/apps\` (stack aponta pra dentro de node_modules desses pacotes, ou é um padrão que não dá pra corrigir no código do site), prefixe o título com \`[framework?]\` e use category **infra** — o MCP cataloga esses para detectar bugs recorrentes do framework entre sites.
+- Se o \`npm run build\` já passa E o site renderiza HTML real em \`/\`, a maior parte do trabalho está feita — reporte poucas issues (só o que afeta paridade/visual).
+
+# Memória entre migrações (org-fs do Studio — persiste entre sandboxes)
+Há um arquivo compartilhado da org montado no sandbox: \`${FRAMEWORK_NOTES_PATH}\`.
+1. LEIA-O primeiro: \`cat ${FRAMEWORK_NOTES_PATH} 2>/dev/null\`. Ele lista erros que migrações ANTERIORES marcaram como suspeitos de bug do framework (\`@decocms/start\`/\`@decocms/apps\`). Se algum bater com o que você achou aqui, mencione no corpo da issue ("já visto em N sites — provável bug de framework").
+2. Quando você achar um erro NOVO com cara de framework (stack dentro de node_modules de @decocms/*, ou padrão não-corrigível no código do site), APENDE uma linha nesse arquivo: \`mkdir -p $(dirname ${FRAMEWORK_NOTES_PATH}) && echo "$(date -u +%FT%TZ) | ${site.name} | <assinatura curta do erro> | <arquivo:linha ou pacote>" >> ${FRAMEWORK_NOTES_PATH}\`. Assim os próximos sites herdam esse conhecimento e, se o mesmo erro reaparecer em vários, fica evidente que é bug do framework.
 
 # Formato das issues
 - No máximo ${maxIssues} issues, ordenadas da mais grave para a menos grave.
@@ -273,6 +292,8 @@ Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não 
 - **NUNCA edite arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen…) — são regenerados pelo \`npm run build\`. Se uma issue aponta erro num \`.gen\`, a correção é rodar \`npm run build\` (que roda o codegen) e verificar se sumiu — NÃO editar o arquivo à mão (seria sobrescrito).
 - UM commit POR issue resolvida, mensagem \`fix(#<número>): <o que fez>\` e push ao final de cada uma: \`git push origin ${site.work_branch}\`. Nunca fique >10min sem commit+push.
 - **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo. ${devServerNote}
+- **O preview TEM que renderizar (pré-requisito da paridade)**: para issues de runtime/SSR, a correção só está pronta quando \`curl -sL http://localhost:$DEV_PORT/\` devolve HTML renderizado de verdade — NÃO o placeholder "No web page at this URL" nem um shell vazio (\`<div id="root"></div>\` sem conteúdo). Se ainda vier placeholder/shell, o SSR continua quebrado: leia \`tail -80 /tmp/dev.log\`, ache o stack e o arquivo:linha, e corrija de verdade antes de marcar como resolved.
+- **Memória entre migrações (org-fs do Studio)**: leia \`cat ${FRAMEWORK_NOTES_PATH} 2>/dev/null\` — lista erros que outras migrações marcaram como suspeitos de bug do framework (\`@decocms/start\`/\`@decocms/apps\`); pode conter a pista do fix. Se durante o fix você concluir que um erro vem do framework (stack dentro de node_modules de @decocms/*, não corrigível no código do site), APENDE: \`mkdir -p $(dirname ${FRAMEWORK_NOTES_PATH}) && echo "$(date -u +%FT%TZ) | ${site.name} | <assinatura curta> | <arquivo:linha ou pacote>" >> ${FRAMEWORK_NOTES_PATH}\` e marque a issue como blocked com motivo \`[framework?]\`.
 - Se uma issue for impossível, já estiver resolvida (ex: o build já passa e o erro sumiu após o codegen), ou depender de outra, marque como blocked/resolved com o motivo e siga.
 
 # Issues a resolver

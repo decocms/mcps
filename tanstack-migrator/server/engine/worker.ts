@@ -216,7 +216,24 @@ async function probeSessionLiveness(
   }
 }
 
-/** Preview link only counts when the dev server actually answers. */
+/**
+ * Preview only counts as ready when the site RENDERS real HTML — not when the
+ * sandbox proxy answers with its "No web page at this URL" placeholder. That
+ * placeholder is served with HTTP 200 + text/html when the dev server is up
+ * but responds to `/` with non-HTML (e.g. a broken SSR render), so a plain
+ * status check gives a false positive. We fetch the body and reject the
+ * placeholder / near-empty shells.
+ */
+function looksLikeRealSite(html: string): boolean {
+  if (/No web page/i.test(html)) return false; // sandbox proxy placeholder
+  if (html.length < 800) return false; // placeholder is ~662 bytes; real SSR is larger
+  // needs an actual body with content, not just an empty root shell
+  const body = html.match(/<body[^>]*>([\s\S]*)<\/body>/i)?.[1] ?? "";
+  return (
+    body.replace(/<[^>]+>/g, "").trim().length > 40 || /<[a-z]/i.test(body)
+  );
+}
+
 async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
   if (!site.sandbox_preview_url || site.preview_ready) return;
   if (!isActiveStatus(site.status)) return;
@@ -224,16 +241,18 @@ async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
     const response = await fetch(site.sandbox_preview_url, {
       method: "GET",
       redirect: "manual",
-      signal: AbortSignal.timeout(3_000),
+      signal: AbortSignal.timeout(4_000),
     });
-    // anything the dev server answers (2xx-4xx) counts as "up"
-    if (response.status < 500) {
-      await updateSite(site.id, { preview_ready: true });
-      await addEvent(
-        site.id,
-        `Dev server respondendo — preview liberado: ${site.sandbox_preview_url}`,
-      );
-    }
+    if (response.status >= 500) return;
+    const ct = response.headers.get("content-type") ?? "";
+    if (!ct.includes("text/html")) return;
+    const html = await response.text();
+    if (!looksLikeRealSite(html)) return; // proxy placeholder / empty shell
+    await updateSite(site.id, { preview_ready: true });
+    await addEvent(
+      site.id,
+      `Site renderizando HTML — preview liberado: ${site.sandbox_preview_url}`,
+    );
   } catch {
     // still down — keep hidden
   }
