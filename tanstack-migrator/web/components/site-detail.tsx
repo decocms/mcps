@@ -20,6 +20,7 @@ import { PipelineStepper } from "@/components/pipeline-stepper.tsx";
 import { RunRow } from "@/components/run-row.tsx";
 import { issuesFilterUrl } from "@/components/site-card.tsx";
 import { StatusBadge } from "@/components/status-badge.tsx";
+import { TerminalPanel } from "@/components/terminal-panel.tsx";
 import { usePollingTool, useToolCaller } from "@/hooks/use-tool.ts";
 import { clockTime, cn, duration, timeAgo } from "@/lib/utils.ts";
 import type { RunView, SiteDetail, SiteView } from "@/types.ts";
@@ -127,7 +128,7 @@ function PreviewPanel({ site }: { site: SiteView }) {
   );
 }
 
-type Tab = "overview" | "runs" | "activity";
+type Tab = "overview" | "runs" | "terminal" | "activity";
 type RunFilter = "all" | "migrate" | "triage" | "fix" | "parity";
 
 export function SiteDetailPanel({
@@ -275,6 +276,7 @@ export function SiteDetailPanel({
                 [
                   ["overview", "Visão geral"],
                   ["runs", `Runs ${runs.length}`],
+                  ["terminal", "Terminal"],
                   ["activity", `Atividade ${events.length}`],
                 ] as [Tab, string][]
               ).map(([id, label]) => (
@@ -564,6 +566,14 @@ export function SiteDetailPanel({
                   ))}
                 </div>
               </>
+            )}
+
+            {tab === "terminal" && (
+              <TerminalPanel
+                siteId={siteId}
+                active={ACTIVE_STATUSES.has(site.status)}
+                threadUrlBase="https://studio.decocms.com"
+              />
             )}
 
             {tab === "activity" && (

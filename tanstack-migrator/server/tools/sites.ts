@@ -20,6 +20,8 @@ import {
   type SiteStatus,
   toCurrentStatus,
 } from "../db/types.ts";
+import { buildWorkerCtx } from "../lib/mesh.ts";
+import { fetchThreadTranscript } from "../sandbox/drivers/decopilot.ts";
 import type { Env } from "../types/env.ts";
 import {
   EventViewSchema,
@@ -185,6 +187,71 @@ export const createSiteGetTool = (env: Env) =>
         runs: runs.map(toRunView),
         events: events.map(toEventView),
       };
+    },
+  });
+
+const TerminalEntrySchema = z.object({
+  seq: z.number(),
+  role: z.string(),
+  kind: z.enum(["text", "command", "tool", "reasoning"]),
+  text: z.string().optional(),
+  command: z.string().optional(),
+  exitCode: z.number().optional(),
+  output: z.string().optional(),
+  tool: z.string().optional(),
+});
+
+/**
+ * Live terminal for the drawer — replays the current migration session's thread
+ * as a command/narration transcript (like the agentic CMS terminal). Prefers
+ * the live phase thread; falls back to the latest run's thread when idle so the
+ * panel shows the last session instead of going blank. Read-only, meant to be
+ * polled every few seconds while a run is active.
+ */
+export const createSiteTerminalTool = (env: Env) =>
+  createTool({
+    id: "SITE_TERMINAL",
+    description:
+      "Live terminal transcript of a site's current migration session: the agent's narration + every bash command it ran (with exit code and output snippet). Powers the drawer's Terminal tab. Read-only — poll it.",
+    inputSchema: z.object({ siteId: z.string() }),
+    outputSchema: z.object({
+      threadId: z.string().nullable(),
+      /** true when this is the still-running phase thread (not a past run). */
+      live: z.boolean(),
+      entries: z.array(TerminalEntrySchema),
+      updatedAt: z.string(),
+    }),
+    annotations: { readOnlyHint: true },
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      const now = new Date().toISOString();
+      const site = await getSite(context.siteId);
+      if (!site) throw new Error("Site not found");
+
+      // live phase thread first; fall back to the newest run that has a thread
+      let threadId = site.phase_thread_id ?? null;
+      const live = Boolean(site.phase_thread_id);
+      if (!threadId) {
+        const runs = await listRunsForSite(site.id);
+        threadId = runs.find((r) => r.meta?.threadId)?.meta?.threadId ?? null;
+      }
+      if (!threadId) {
+        return { threadId: null, live: false, entries: [], updatedAt: now };
+      }
+
+      const row = await loadConnection(site.connection_id);
+      if (!row) return { threadId, live, entries: [], updatedAt: now };
+      try {
+        const entries = await fetchThreadTranscript(
+          buildWorkerCtx(row),
+          threadId,
+          150,
+        );
+        return { threadId, live, entries, updatedAt: now };
+      } catch {
+        // thread not readable yet (just dispatched) — empty is fine, keep polling
+        return { threadId, live, entries: [], updatedAt: now };
+      }
     },
   });
 

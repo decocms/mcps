@@ -543,6 +543,134 @@ async function fetchThreadCommands(
   }
 }
 
+/** Best-effort extraction of a tool part's output as displayable text. */
+function partOutputText(output: unknown): string {
+  if (output == null) return "";
+  if (typeof output === "string") return output;
+  if (Array.isArray(output)) {
+    return output
+      .map((c) =>
+        typeof c === "string"
+          ? c
+          : c &&
+              typeof c === "object" &&
+              typeof (c as { text?: unknown }).text === "string"
+            ? (c as { text: string }).text
+            : "",
+      )
+      .filter(Boolean)
+      .join("\n");
+  }
+  if (typeof output === "object") {
+    const o = output as Record<string, unknown>;
+    const parts = [o.stdout, o.stderr, o.output, o.result, o.text]
+      .map((v) => (typeof v === "string" ? v : ""))
+      .filter(Boolean);
+    if (parts.length > 0) return parts.join("\n");
+  }
+  return "";
+}
+
+/** One line in the drawer's live terminal — the agent's narration or a command. */
+export interface TerminalEntry {
+  seq: number;
+  role: string;
+  kind: "text" | "command" | "tool" | "reasoning";
+  text?: string;
+  command?: string;
+  exitCode?: number;
+  output?: string;
+  tool?: string;
+}
+
+/**
+ * Ordered transcript of a decopilot thread for the live terminal in the drawer:
+ * the agent's narration + every bash command (with exit code and an output
+ * snippet) + other tool calls, oldest→newest. Best-effort (part shapes vary by
+ * harness); secrets are redacted and output truncated. Returns the last `limit`
+ * entries so a long session stays cheap to poll.
+ */
+export async function fetchThreadTranscript(
+  ctx: WorkerCtx,
+  threadId: string,
+  limit = 150,
+): Promise<TerminalEntry[]> {
+  const messages = await listThreadMessages(ctx, threadId);
+  const entries: TerminalEntry[] = [];
+  let seq = 0;
+  for (const message of messages) {
+    const role = typeof message.role === "string" ? message.role : "assistant";
+    if (role === "user" || role === "system") continue; // prompts, not activity
+    for (const part of message.parts ?? []) {
+      const p = part as Record<string, unknown>;
+      const type = typeof p.type === "string" ? p.type : "";
+      if (type === "text" && typeof p.text === "string" && p.text.trim()) {
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "text",
+          text: p.text.trim().slice(0, 2000),
+        });
+        continue;
+      }
+      if (type === "reasoning" && typeof p.text === "string" && p.text.trim()) {
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "reasoning",
+          text: p.text.trim().slice(0, 1000),
+        });
+        continue;
+      }
+      const toolName =
+        typeof p.toolName === "string"
+          ? p.toolName
+          : type.startsWith("tool-")
+            ? type.slice(5)
+            : "";
+      if (!toolName) continue;
+      const input = (p.input ?? p.args ?? {}) as Record<string, unknown>;
+      const output = (p.output ?? {}) as Record<string, unknown>;
+      if (/bash|shell|terminal|exec|command/i.test(toolName)) {
+        const cmd =
+          typeof input.command === "string"
+            ? input.command
+            : typeof input.cmd === "string"
+              ? input.cmd
+              : "";
+        if (!cmd) continue;
+        const rawOut = partOutputText(p.output);
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "command",
+          command: redactSecrets(cmd).slice(0, 400),
+          exitCode: num(output.exitCode ?? output.exit_code ?? output.exit),
+          output: rawOut ? redactSecrets(rawOut).slice(0, 800) : undefined,
+        });
+      } else {
+        // non-bash tool call — surface the tool name + a compact arg hint
+        const hint =
+          typeof input.path === "string"
+            ? input.path
+            : typeof input.file === "string"
+              ? input.file
+              : typeof input.url === "string"
+                ? input.url
+                : "";
+        entries.push({
+          seq: seq++,
+          role,
+          kind: "tool",
+          tool: toolName,
+          text: hint ? redactSecrets(hint).slice(0, 200) : undefined,
+        });
+      }
+    }
+  }
+  return entries.length > limit ? entries.slice(-limit) : entries;
+}
+
 export const decopilotDriver: SandboxDriver = {
   name: "decopilot",
 
