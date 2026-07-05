@@ -131,6 +131,15 @@ describe("prompts", () => {
     expect(prompt).toContain("RESULT_JSON");
   });
 
+  test("migrateScriptPrompt never commits node_modules + is idempotent on re-run", () => {
+    const prompt = migrateScriptPrompt({ site, ghToken: "ghs_abc" });
+    // never vendor node_modules into the branch (wrong-version deps break dev)
+    expect(prompt).toContain("git rm -r --cached");
+    expect(prompt).toContain("node_modules");
+    // skip the source copy when already migrated (no clobber on re-run)
+    expect(prompt).toContain("if [ ! -f MIGRATION_REPORT.md ]");
+  });
+
   test("migrateScriptPrompt without ghToken notes mesh-synced git auth", () => {
     const prompt = migrateScriptPrompt({ site });
     expect(prompt).toContain("https://github.com/deco-sites/granadobr.git");
