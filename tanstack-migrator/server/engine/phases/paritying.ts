@@ -23,11 +23,85 @@ import {
   syncIssuesFromDrafts,
 } from "../../lib/issues.ts";
 import type { WorkerCtx } from "../../lib/mesh.ts";
+import { previewRendersRealHtml } from "../../lib/preview.ts";
 import { getDriver, isSimulation } from "../../sandbox/client.ts";
-import { parityOnlyPrompt } from "../../sandbox/templates/prompts.ts";
+import {
+  type IssueDraft,
+  parityOnlyPrompt,
+} from "../../sandbox/templates/prompts.ts";
 import type { EngineDeps } from "../machine.ts";
 import { clearStaleSession, markSessionStart } from "./session-guard.ts";
 import { failOrAutoRetry } from "./transient.ts";
+
+// The synthetic issue filed when the pipeline reaches parity with a candidate
+// that doesn't render — deduped by title across rounds so it never spams.
+const PREVIEW_BROKEN_DRAFT: IssueDraft = {
+  title: "[runtime] preview não renderiza HTML real em /",
+  body: [
+    "## Contexto",
+    "O backlog de issues drenou mas o preview do sandbox NÃO renderiza HTML de verdade — a paridade não pode medir contra um placeholder/shell vazio.",
+    "## Erro",
+    'Um GET em `/` devolve o placeholder "No web page at this URL" ou um shell vazio (`<div id="root"></div>` sem conteúdo renderizado).',
+    "## Como reproduzir",
+    "Garanta o dev de pé (bloco Setup) e `curl -sL http://localhost:$DEV_PORT/ | head -120`.",
+    "## Dica de fix",
+    'SSR quebrado. Causas comuns: (1) section loader estoura por `ctx` undefined → torne `ctx?: AppContext` opcional + optional-chaining em todo acesso; (2) global client-only no render do server (`window`/`document`/`globalThis.location`) → guardar com `typeof window !== "undefined"`; (3) generates faltando → `bun run predev`. Leia `tail -80 /tmp/dev.log` pelo stack e corrija o arquivo:linha.',
+  ].join("\n"),
+  severity: "high",
+  category: "runtime",
+  page: "/",
+};
+
+/**
+ * Parity is meaningless against a candidate that doesn't render — measuring a
+ * placeholder/empty shell just burns a session and reports a garbage score.
+ * Gate the phase on a LIVE preview probe (independent of the issue backlog,
+ * which triage/fix may have drained without ever fixing the actual SSR). If the
+ * preview is broken, file a deduped SSR issue and bounce back to fixing — or
+ * escalate to needs_human when the fix budget is spent. Returns true when it's
+ * safe to proceed with the parity measurement.
+ */
+async function previewGate(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
+  if (isSimulation(ctx)) return true; // no real preview to probe
+  if (!site.sandbox_preview_url) return true; // no URL — don't deadlock
+  if (await previewRendersRealHtml(site.sandbox_preview_url)) return true;
+
+  if (site.fix_sessions_done >= site.max_fix_sessions) {
+    await updateSite(site.id, {
+      status: "needs_human",
+      resume_status: "fixing",
+      needs_human_reason: `O preview não renderiza HTML real (SSR quebrado) e o orçamento de ${site.max_fix_sessions} sessões de fix acabou. Preview: ${site.sandbox_preview_url}`,
+      last_progress_at: new Date().toISOString(),
+    });
+    await addEvent(
+      site.id,
+      "Preview não renderiza e orçamento de fix esgotado — precisa de humano",
+      "error",
+    );
+    return false;
+  }
+
+  const { created, refreshed } = await syncIssuesFromDrafts(
+    ctx,
+    site,
+    [PREVIEW_BROKEN_DRAFT],
+    "triage",
+    1,
+  );
+  await updateSite(site.id, {
+    status: "fixing",
+    phase_detail:
+      "preview não renderiza HTML — voltando pro fix antes de medir paridade",
+    last_progress_at: new Date().toISOString(),
+  });
+  const issueNum = created[0] ?? refreshed[0];
+  await addEvent(
+    site.id,
+    `Preview não renderiza HTML real — ${created.length > 0 ? `issue #${issueNum} criada` : `issue de SSR já aberta (#${issueNum ?? "?"})`}, voltando pro fix (paridade adiada)`,
+    "warn",
+  );
+  return false;
+}
 
 function simulatedSummary(score: number): ParitySummary {
   return {
@@ -99,6 +173,11 @@ export async function paritying(
   }
 
   if (deps.inflight.has(site.id)) return;
+
+  // Never measure parity against a candidate that doesn't render — bounces back
+  // to fixing (with a synthetic SSR issue) or needs_human if the budget's spent.
+  if (!(await previewGate(site, ctx))) return;
+
   const proceed = await clearStaleSession(site, deps);
   if (!proceed) return;
 

@@ -27,7 +27,7 @@ import {
   syncPackageScriptCommand,
   syncWorkflowYaml,
 } from "./sandbox/templates/sync-files.ts";
-import { looksLikeRealSite } from "./engine/worker.ts";
+import { looksLikeRealSite } from "./lib/preview.ts";
 import type { SiteRow } from "./db/types.ts";
 
 const site = {
