@@ -89,90 +89,105 @@ export function PipelineStepper({
     ? phaseIndexFor(resumeStatus ?? "")
     : phaseIndexFor(status);
   const currentIdx = isBlocked && rawIdx < 0 ? 0 : rawIdx;
-  const iconSize = compact ? "h-3 w-3" : "h-3.5 w-3.5";
-  const dot = compact ? "h-6 w-6" : "h-7 w-7";
+  const iconSize = compact ? "h-2.5 w-2.5" : "h-3.5 w-3.5";
+  const dot = compact ? "h-5 w-5" : "h-7 w-7";
+  const blockedColor =
+    status === "failed"
+      ? "border-red-500 bg-red-500/15 text-red-600 dark:text-red-400"
+      : "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400";
+
+  // compact (home widgets): dots-only row + one caption for the current phase,
+  // so 9 phases never overflow a narrow card or overlap their labels.
+  const currentPhase = PIPELINE_PHASES[currentIdx];
 
   return (
-    <div
-      className={cn("flex w-full items-start overflow-x-auto pb-1", className)}
-    >
-      {PIPELINE_PHASES.map((phase, i) => {
-        const concluded = isDone || i < currentIdx;
-        const current = !isDone && i === currentIdx;
-        const Icon = phase.icon;
+    <div className={cn("flex w-full flex-col gap-1", className)}>
+      <div className="flex w-full items-center">
+        {PIPELINE_PHASES.map((phase, i) => {
+          const concluded = isDone || i < currentIdx;
+          const current = !isDone && i === currentIdx;
+          const Icon = phase.icon;
 
-        const ring = concluded
-          ? "border-primary bg-primary/15 text-emerald-600 dark:text-emerald-400"
-          : current
-            ? isBlocked
-              ? status === "failed"
-                ? "border-red-500 bg-red-500/15 text-red-600 dark:text-red-400"
-                : "border-amber-500 bg-amber-500/15 text-amber-600 dark:text-amber-400"
-              : "border-indigo-500 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
-            : "border-border bg-muted text-muted-foreground/50";
+          const ring = concluded
+            ? "border-primary bg-primary/15 text-emerald-600 dark:text-emerald-400"
+            : current
+              ? isBlocked
+                ? blockedColor
+                : "border-indigo-500 bg-indigo-500/15 text-indigo-600 dark:text-indigo-400"
+              : "border-border bg-muted text-muted-foreground/50";
 
-        return (
-          <div
-            key={phase.key}
-            className="flex min-w-0 flex-1 flex-col items-center gap-1"
-            title={current && phaseDetail ? phaseDetail : phase.label}
-          >
-            <div className="flex w-full items-center">
-              {/* connector left */}
-              <span
-                className={cn(
-                  "h-0.5 flex-1",
-                  i === 0
-                    ? "bg-transparent"
-                    : concluded || current
-                      ? "bg-primary/60"
-                      : "bg-border",
-                )}
-              />
-              <span
-                className={cn(
-                  "relative flex shrink-0 items-center justify-center rounded-full border-2",
-                  dot,
-                  ring,
-                )}
-              >
-                {concluded ? (
-                  <Check className={iconSize} />
-                ) : (
-                  <Icon className={iconSize} />
-                )}
-                {current && !isBlocked && (
-                  <span className="absolute inset-0 animate-ping rounded-full border-2 border-indigo-500 opacity-40" />
-                )}
-              </span>
-              {/* connector right */}
-              <span
-                className={cn(
-                  "h-0.5 flex-1",
-                  i === PIPELINE_PHASES.length - 1
-                    ? "bg-transparent"
-                    : concluded
-                      ? "bg-primary/60"
-                      : "bg-border",
-                )}
-              />
-            </div>
-            <span
-              className={cn(
-                "truncate text-center leading-tight",
-                compact ? "text-[9px]" : "text-[10px]",
-                current
-                  ? "font-semibold text-foreground"
-                  : concluded
-                    ? "text-muted-foreground"
-                    : "text-muted-foreground/50",
-              )}
+          return (
+            <div
+              key={phase.key}
+              className="flex min-w-0 flex-1 flex-col items-center gap-1"
+              title={current && phaseDetail ? phaseDetail : phase.label}
             >
-              {phase.label}
-            </span>
-          </div>
-        );
-      })}
+              <div className="flex w-full items-center">
+                <span
+                  className={cn(
+                    "h-0.5 flex-1",
+                    i === 0
+                      ? "bg-transparent"
+                      : concluded || current
+                        ? "bg-primary/60"
+                        : "bg-border",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "relative flex shrink-0 items-center justify-center rounded-full border-2",
+                    dot,
+                    ring,
+                  )}
+                >
+                  {concluded ? (
+                    <Check className={iconSize} />
+                  ) : (
+                    <Icon className={iconSize} />
+                  )}
+                  {current && !isBlocked && (
+                    <span className="absolute inset-0 animate-ping rounded-full border-2 border-indigo-500 opacity-40" />
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "h-0.5 flex-1",
+                    i === PIPELINE_PHASES.length - 1
+                      ? "bg-transparent"
+                      : concluded
+                        ? "bg-primary/60"
+                        : "bg-border",
+                  )}
+                />
+              </div>
+              {!compact && (
+                <span
+                  className={cn(
+                    "truncate text-center text-[10px] leading-tight",
+                    current
+                      ? "font-semibold text-foreground"
+                      : concluded
+                        ? "text-muted-foreground"
+                        : "text-muted-foreground/50",
+                  )}
+                >
+                  {phase.label}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {compact && (
+        <span className="text-center text-[10px] font-medium text-muted-foreground">
+          {isDone
+            ? "concluído"
+            : currentPhase
+              ? `${currentPhase.label} · ${Math.min(currentIdx + 1, PIPELINE_PHASES.length)}/${PIPELINE_PHASES.length}`
+              : "na fila"}
+        </span>
+      )}
     </div>
   );
 }

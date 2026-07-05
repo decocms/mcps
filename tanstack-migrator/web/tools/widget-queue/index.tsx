@@ -27,7 +27,8 @@ export default function WidgetQueuePage() {
   const q = data?.queue;
 
   return (
-    <div className="flex h-full flex-col gap-2 p-4">
+    // top-aligned + compact; scroll only if the list gets long
+    <div className="flex flex-col gap-2 p-3">
       <div className="flex items-center justify-between">
         <span className="text-sm font-semibold">Fila de migração</span>
         {q && (
@@ -38,15 +39,18 @@ export default function WidgetQueuePage() {
         )}
       </div>
 
-      <div className="flex flex-col divide-y divide-border">
+      <div className="flex max-h-48 flex-col divide-y divide-border overflow-y-auto">
         {sites.length === 0 && (
-          <p className="py-3 text-xs text-muted-foreground">
+          <p className="py-2 text-xs text-muted-foreground">
             Nenhum site em migração.
           </p>
         )}
         {sites.map((s) => (
           <div key={s.id} className="flex items-center gap-2 py-1.5">
-            <span className="flex-1 truncate text-xs font-medium">
+            <span
+              className="flex-1 truncate text-xs font-medium"
+              title={s.name}
+            >
               {s.name}
             </span>
             <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
@@ -58,7 +62,7 @@ export default function WidgetQueuePage() {
       </div>
 
       {q && (
-        <div className="mt-auto flex flex-wrap gap-x-3 gap-y-1 pt-1 text-[11px] text-muted-foreground tabular-nums">
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border pt-1.5 text-[11px] text-muted-foreground tabular-nums">
           <span>{q.active} migrando</span>
           <span>{q.queued} na fila</span>
           <span className="text-emerald-600 dark:text-emerald-400">
