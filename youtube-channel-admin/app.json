@@ -1,0 +1,22 @@
+{
+  "scopeName": "deco",
+  "name": "youtube-channel-admin",
+  "friendlyName": "YouTube Channel Admin",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-youtube-channel-admin.deco.site/mcp"
+  },
+  "description": "Manage your YouTube channel: upload videos and thumbnails, edit titles/descriptions/tags/privacy, moderate and reply to comments, fetch captions and query analytics — with a performance dashboard and home widgets for top videos and alerts.",
+  "icon": "https://assets.decocache.com/mcp/cac50532-150e-437d-a996-91fd9a0c115e/YouTube.svg",
+  "unlisted": true,
+  "bindings": {
+    "OBJECT_STORAGE": "@deco/object-storage"
+  },
+  "metadata": {
+    "categories": ["Media", "Marketing"],
+    "official": false,
+    "tags": ["youtube", "channel", "upload", "comments", "analytics", "thumbnails", "creator"],
+    "short_description": "Manage your YouTube channel: uploads, metadata, comments and analytics.",
+    "mesh_description": "The YouTube Channel Admin MCP connects to your Google account (OAuth) and manages your channel end-to-end: resumable video uploads (from a URL or from the org's object storage), custom thumbnails, title/description/tags/privacy edits, caption listing and transcript export, comment listing/reply/moderation, and YouTube Analytics queries. Ships a channel dashboard plus home widgets showing top videos, 28-day performance and alerts for videos with upload/processing problems or comments held for review."
+  }
+}

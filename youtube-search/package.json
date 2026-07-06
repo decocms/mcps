@@ -1,0 +1,27 @@
+{
+  "name": "youtube-search",
+  "version": "1.0.0",
+  "description": "YouTube Search MCP — keyless search, video details, transcripts and downloads",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "^1.6.2",
+    "youtubei.js": "17.2.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "bun-types": "^1.3.7",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}
