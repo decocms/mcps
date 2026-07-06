@@ -280,6 +280,7 @@ export function migrateScriptPrompt(input: {
   const sourceUrl = repoUrl(site.source_repo, ghToken);
   const targetUrl = repoUrl(site.target_repo, ghToken);
   const branch = site.work_branch;
+  const workerName = (site.target_repo ?? "").split("/").pop() || "site";
 
   return `Você é o agente de migração Fresh→TanStack da deco. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Seja objetivo e não peça confirmação — execute até o fim.
 
@@ -298,7 +299,7 @@ Nunca fique mais de 10 minutos sem \`git commit\` + \`git push\` — todo progre
    b. Rode os generates uma vez: \`npm install @decocms/start tsx && npm run build\` (ou a chain de generates sem o \`vite build\`).
    c. \`.gitignore\`: ignore **apenas** \`src/routeTree.gen.ts\` e \`.tanstack/\` (o tanstackStart regenera o routeTree). REMOVA qualquer linha que ignore \`src/server/cms/*.gen.*\`, \`blocks.gen.*\` ou \`src/server/admin/*.gen.*\`.
    d. COMITE todos os gens (menos o routeTree), com \`git add -f\` se necessário: \`src/server/cms/blocks.gen.json\`, \`src/server/cms/blocks.gen.ts\`, \`src/server/cms/sections.gen.ts\`, \`src/server/cms/loaders.gen.ts\`, \`src/server/admin/meta.gen.json\`, \`src/server/invoke.gen.ts\` e \`src/*/manifest.gen.ts\`.
-   e. \`wrangler.jsonc\`: garanta \`compatibility_flags\` com \`"nodejs_compat"\` E \`"no_handle_cross_request_promise_resolution"\` (evita worker travado; ambos os sites que funcionam têm).
+   e. \`wrangler.jsonc\` deploy-ready (o Workers Builds da CF usa isto): \`"name": "${workerName}"\` (NÃO deixe "repo"), \`"account_id": "c95fc4cec7fc52453228d9db170c372c"\` (deco-cx), \`"main": "./src/worker-entry.ts"\`, \`"compatibility_flags": ["nodejs_compat", "no_handle_cross_request_promise_resolution"]\`, \`"workers_dev": true\` e \`"preview_urls": true\` (habilita URL de preview por PR). Igual ao granadobr-tanstack que funciona.
 5. Checkpoint final. ANTES do commit, garanta que \`node_modules\`/artefatos NUNCA vão pra branch (node_modules commitado carrega deps de versão errada — ex: vite diferente do package.json — e quebra o dev no sandbox): \`grep -qxF 'node_modules/' .gitignore 2>/dev/null || printf '\\nnode_modules/\\ndist/\\n.wrangler/\\n.vite/\\n' >> .gitignore; git rm -r --cached --quiet node_modules dist .wrangler .vite 2>/dev/null || true\` (NÃO remova os \`*.gen.*\` do deco nem o \`.tanstack\` já tratado no passo 4). Depois comite TAMBÉM os gens do passo 4d e: \`git add -A && git add -f src/server/cms/*.gen.* src/server/admin/*.gen.* src/server/invoke.gen.ts && git commit -m "feat: tanstack migration (script output + committed gens)" && git push -u -f origin ${branch}\` (a branch é gerenciada pela migração — o force é seguro).
 6. PARE AQUI. Não corrija erros de build — isso é das próximas fases.
 ${gitAuthNote(ghToken)}

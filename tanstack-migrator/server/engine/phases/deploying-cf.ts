@@ -1,19 +1,17 @@
 /**
- * Phase: deploying_cf — create the Cloudflare Workers Builds project
- * (git-connected, watching MAIN: the deploy happens when the PR merges).
- * With a PR registered the site parks in awaiting_merge (human merge =
- * go-live); without one it finishes directly. Degrades to needs_human with
- * manual instructions when the API/token isn't available.
+ * Phase: deploying_cf — set up the Cloudflare Workers Builds deploy.
+ *
+ * The git connection (repo → Workers Builds) is DASHBOARD-ONLY — Cloudflare has
+ * no API to connect a repo (CF docs + workers-sdk#12058). So this phase can't
+ * automate it: it routes to needs_human with the one-time dashboard steps. Once
+ * connected, PRs get preview deploys and main → prod. Simulation still
+ * "finishes" so the manual-driver e2e flow completes.
  */
 
 import { addEvent } from "../../db/events.ts";
-import { createRun, finishRun } from "../../db/runs.ts";
 import { updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
-import {
-  createWorkersBuildsProject,
-  manualCfInstructions,
-} from "../../lib/cloudflare.ts";
+import { manualCfInstructions } from "../../lib/cloudflare.ts";
 import { parseRepo } from "../../lib/github.ts";
 import type { WorkerCtx } from "../../lib/mesh.ts";
 import { getDriver, isSimulation } from "../../sandbox/client.ts";
@@ -67,49 +65,29 @@ export async function deployingCf(
     return;
   }
 
-  if (!ctx.config.cloudflareApiToken) {
-    await updateSite(site.id, {
-      status: "needs_human",
-      resume_status: "deploying",
-      needs_human_reason: manualCfInstructions({
-        workerName,
-        repoFull: site.target_repo,
-      }),
-      last_progress_at: new Date().toISOString(),
-    });
-    await addEvent(
-      site.id,
-      "Sem CLOUDFLARE_API_TOKEN — criação do projeto CF é manual",
-      "warn",
-    );
-    return;
-  }
-
-  const run = await createRun({ siteId: site.id, kind: "deploy_cf" });
+  // Real path: the Workers Builds git connection can't be created via API
+  // (dashboard-only). Park in needs_human with the one-time connect steps; the
+  // PR preview deploy is where the migrated site first renders.
+  const prNote = site.pr_number
+    ? ` Depois de conectar, o PR #${site.pr_number} ganha um preview deploy (é onde o site migrado renderiza); o merge em main faz o go-live.`
+    : "";
+  await updateSite(site.id, {
+    status: "needs_human",
+    resume_status: "deploying",
+    cf_project_name: workerName,
+    cf_deploy_url: `https://${workerName}.deco-cx.workers.dev`,
+    needs_human_reason:
+      manualCfInstructions({ workerName, repoFull: site.target_repo }) + prNote,
+    last_progress_at: new Date().toISOString(),
+  });
+  await addEvent(
+    site.id,
+    `Deploy CF: conecte o repo no dashboard (1x) — o Workers Builds não tem API pra conectar git.${prNote}`,
+    "warn",
+  );
   try {
-    const project = await createWorkersBuildsProject(ctx, {
-      workerName,
-      repoFull: site.target_repo,
-    });
-    await finishRun(run.id, { status: "succeeded" });
-    await addEvent(site.id, `Projeto CF criado: ${project.projectName}`);
-    await finishMigration(site, ctx, {
-      cf_project_name: project.projectName,
-      cf_deploy_url: project.deployUrl,
-    });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    await finishRun(run.id, { status: "failed", logsTail: message });
-    await updateSite(site.id, {
-      status: "needs_human",
-      resume_status: "deploying",
-      needs_human_reason: `${message}\n\n${manualCfInstructions({ workerName, repoFull: site.target_repo })}`,
-      last_progress_at: new Date().toISOString(),
-    });
-    await addEvent(
-      site.id,
-      `API da CF recusou (${message}) — criação manual`,
-      "warn",
-    );
+    await getDriver(ctx).destroy(site, ctx);
+  } catch {
+    // idle TTL will reap it anyway
   }
 }

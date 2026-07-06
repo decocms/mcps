@@ -1,109 +1,26 @@
 /**
- * Cloudflare Workers Builds — create the git-connected project so pushes to
- * the -tanstack repo deploy automatically (same setup granadobr-tanstack
- * uses, minus the dashboard clicks).
+ * Cloudflare Workers Builds — the git connection (repo → Workers Builds) is
+ * DASHBOARD-ONLY. Cloudflare provides no API to connect a repo: per the CF docs
+ * (workers/ci-cd/builds/api-reference) and workers-sdk#12058, "a connection
+ * between your GitHub repository and Cloudflare must be established through the
+ * GitHub App installation process in the Cloudflare dashboard before using the
+ * API." The Builds API only manages triggers/builds AFTER a dashboard connect
+ * (and needs a repo_connection_uuid that only the dashboard hands out).
  *
- * The Workers Builds API is recent; the exact endpoint shape is a
- * VERIFY-ON-PHASE-C item. Everything here degrades to a clear error that the
- * deploy-cf phase turns into a needs_human note with manual instructions.
+ * So the deploy_cf phase routes to needs_human with these one-time steps. After
+ * the connect, pushes auto-build: PRs get preview deploys, main → prod.
  */
-
-import type { WorkerCtx } from "./mesh.ts";
-
-const CF_API = "https://api.cloudflare.com/client/v4";
-
-async function cfFetch<T>(
-  ctx: WorkerCtx,
-  path: string,
-  init?: RequestInit,
-): Promise<T> {
-  const token = ctx.config.cloudflareApiToken;
-  if (!token) {
-    throw new Error("CLOUDFLARE_API_TOKEN is not configured in the MCP state.");
-  }
-  const response = await fetch(`${CF_API}${path}`, {
-    ...init,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
-    signal: AbortSignal.timeout(60_000),
-  });
-  const payload = (await response.json().catch(() => ({}))) as {
-    success?: boolean;
-    result?: T;
-    errors?: Array<{ code: number; message: string }>;
-  };
-  if (!response.ok || payload.success === false) {
-    const detail =
-      payload.errors?.map((e) => `${e.code}: ${e.message}`).join("; ") ??
-      `HTTP ${response.status}`;
-    throw new Error(`Cloudflare API ${path} failed — ${detail}`);
-  }
-  return payload.result as T;
-}
-
-export async function workerExists(
-  ctx: WorkerCtx,
-  name: string,
-): Promise<boolean> {
-  try {
-    await cfFetch(
-      ctx,
-      `/accounts/${ctx.config.cloudflareAccountId}/workers/services/${name}`,
-    );
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export interface CfProjectResult {
-  projectName: string;
-  deployUrl: string | null;
-}
-
-/**
- * Create the Workers Builds project connected to the GitHub repo.
- * Throws with a descriptive message when the API rejects — the phase maps
- * that to needs_human with manual instructions.
- */
-export async function createWorkersBuildsProject(
-  ctx: WorkerCtx,
-  input: { workerName: string; repoFull: string; branch?: string },
-): Promise<CfProjectResult> {
-  const accountId = ctx.config.cloudflareAccountId;
-  const [owner, repo] = input.repoFull.split("/");
-
-  // VERIFY-ON-PHASE-C: Workers Builds trigger creation endpoint. Shape based
-  // on the beta API (builds/triggers); adjust after probing with the real token.
-  await cfFetch(ctx, `/accounts/${accountId}/builds/triggers`, {
-    method: "POST",
-    body: JSON.stringify({
-      external_script_id: input.workerName,
-      trigger_name: `${input.workerName}-main`,
-      repo_connection: { provider: "github", owner, repo },
-      branch_includes: [input.branch ?? "main"],
-      build_command: "npm run build",
-      deploy_command: "npx wrangler deploy",
-      root_directory: "/",
-    }),
-  });
-
-  return {
-    projectName: input.workerName,
-    deployUrl: `https://${input.workerName}.deco-cx.workers.dev`,
-  };
-}
 
 export function manualCfInstructions(input: {
   workerName: string;
   repoFull: string;
 }): string {
   return (
-    `Criar o projeto Workers Builds manualmente: Cloudflare dashboard → Workers & Pages → ` +
-    `Create → Import a repository → ${input.repoFull} (build: npm run build; deploy: npx wrangler deploy; ` +
-    `worker name: ${input.workerName}). Depois marque a fase como concluída com SITE_RETRY.`
+    `Deploy Cloudflare (1x, no dashboard — o Workers Builds não tem API pra conectar repo): ` +
+    `Cloudflare → Workers & Pages → Create → Import a repository → ${input.repoFull}. ` +
+    `Worker name: ${input.workerName}; production branch: main; build command: "npm run build"; ` +
+    `deploy command: "npx wrangler deploy"; root directory: "/"; habilite Preview URLs / builds de ` +
+    `branches non-prod. Depois de conectar, cada PR ganha um preview deploy e o merge em main vai pra ` +
+    `prod. Marque a fase como concluída com SITE_MARK_DONE (ou SITE_RETRY) após conectar.`
   );
 }
