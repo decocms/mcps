@@ -1,0 +1,22 @@
+{
+  "scopeName": "deco",
+  "name": "youtube-search",
+  "friendlyName": "YouTube Search",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-youtube-search.deco.site/mcp"
+  },
+  "description": "Search YouTube, read full video details and transcripts (including auto-generated captions), and download videos — no API key or Google account required.",
+  "icon": "https://assets.decocache.com/mcp/cac50532-150e-437d-a996-91fd9a0c115e/YouTube.svg",
+  "unlisted": false,
+  "bindings": {
+    "OBJECT_STORAGE": "@deco/object-storage"
+  },
+  "metadata": {
+    "categories": ["Media", "Research"],
+    "official": false,
+    "tags": ["youtube", "video", "search", "transcript", "captions", "download"],
+    "short_description": "Keyless YouTube search, transcripts and video downloads.",
+    "mesh_description": "The YouTube Search MCP gives agents public YouTube access with zero configuration: search videos/channels/playlists with filters, read full video metadata and descriptions, fetch transcripts (including YouTube's auto-generated captions) as plain text, SRT, VTT or timed JSON, and download videos or audio into the organization's object storage with a shareable download link. No Google account, OAuth or API key required."
+  }
+}

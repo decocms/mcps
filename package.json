@@ -84,7 +84,9 @@
     "vtex-docs",
     "whatsapp",
     "whatsapp-management",
-    "whisper"
+    "whisper",
+    "youtube-channel-admin",
+    "youtube-search"
   ],
   "dependencies": {
     "@decocms/runtime": "1.3.1",

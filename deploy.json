@@ -484,5 +484,23 @@
       "tanstack-migrator/**",
       "shared/**"
     ]
+  },
+  "youtube-channel-admin": {
+    "site": "youtube-channel-admin",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "youtube-channel-admin/**",
+      "shared/**"
+    ]
+  },
+  "youtube-search": {
+    "site": "youtube-search",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "youtube-search/**",
+      "shared/**"
+    ]
   }
 }
