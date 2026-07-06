@@ -1,5 +1,5 @@
 import { Loader2, UserCircle2, X } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useToolCaller } from "@/hooks/use-tool.ts";
 
 const ORG = "deco-sites";
@@ -15,7 +15,62 @@ interface GhUser {
   avatar_url: string;
 }
 
-function useRepoSearch(query: string) {
+interface CatalogSite {
+  name: string;
+  repo: string | null;
+  prodUrl: string | null;
+  thumbUrl: string | null;
+}
+
+/** Unified repo suggestion (catalog or GitHub) shown in the repo dropdown. */
+interface RepoSuggestion {
+  name: string;
+  repo: string;
+  prodUrl: string | null;
+  thumbUrl: string | null;
+  source: "catalog" | "github";
+}
+
+type CallTool = ReturnType<typeof useToolCaller>;
+
+/** Search the decocms site catalog via the MCP tool (our own DB — no rate limit). */
+function useCatalogSearch(query: string, callTool: CallTool) {
+  const [results, setResults] = useState<CatalogSite[]>([]);
+  const [configured, setConfigured] = useState<boolean | null>(null);
+  const [searching, setSearching] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    timerRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const r = await callTool<{
+          configured: boolean;
+          sites: CatalogSite[];
+        }>("SITE_CATALOG_SEARCH", { query: query.trim() });
+        setConfigured(!!r?.configured);
+        setResults(r?.sites ?? []);
+      } catch {
+        // ignore — GitHub fallback still works
+      } finally {
+        setSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [query, callTool]);
+
+  return { results, configured, searching };
+}
+
+function useRepoSearch(query: string, enabled: boolean) {
   const [results, setResults] = useState<GhRepo[]>([]);
   const [searching, setSearching] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
@@ -23,7 +78,7 @@ function useRepoSearch(query: string) {
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim()) {
+    if (!query.trim() || !enabled) {
       setResults([]);
       setRateLimited(false);
       return;
@@ -59,12 +114,12 @@ function useRepoSearch(query: string) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query]);
+  }, [query, enabled]);
 
   return { results, searching, rateLimited };
 }
 
-function useUserSearch(query: string) {
+function useUserSearch(query: string, enabled: boolean) {
   const [results, setResults] = useState<GhUser[]>([]);
   const [searching, setSearching] = useState(false);
   const [rateLimited, setRateLimited] = useState(false);
@@ -72,7 +127,7 @@ function useUserSearch(query: string) {
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim()) {
+    if (!query.trim() || !enabled) {
       setResults([]);
       setRateLimited(false);
       return;
@@ -107,7 +162,7 @@ function useUserSearch(query: string) {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
-  }, [query]);
+  }, [query, enabled]);
 
   return { results, searching, rateLimited };
 }
@@ -127,11 +182,46 @@ export function RegisterModal({
   const [repoActiveIndex, setRepoActiveIndex] = useState(-1);
   const repoDropdownRef = useRef<HTMLDivElement>(null);
   const repoInputRef = useRef<HTMLInputElement>(null);
+
+  // catalog first (our DB — no rate limit); GitHub only when catalog is off
   const {
-    results: repoResults,
-    searching: repoSearching,
+    results: catalogResults,
+    configured: catalogConfigured,
+    searching: catalogSearching,
+  } = useCatalogSearch(repoName, callTool);
+  const {
+    results: githubRepoResults,
+    searching: githubSearching,
     rateLimited: repoRateLimited,
-  } = useRepoSearch(repoName);
+  } = useRepoSearch(repoName, catalogConfigured === false);
+
+  const repoSearching = catalogSearching || githubSearching;
+
+  // unified suggestions: catalog (repo + prod URL + thumb) preferred over GitHub
+  const repoResults = useMemo<RepoSuggestion[]>(() => {
+    if (catalogResults.length > 0) {
+      return catalogResults
+        .filter((c) => c.repo)
+        .map((c) => ({
+          name: c.name,
+          repo: c.repo as string,
+          prodUrl: c.prodUrl,
+          thumbUrl: c.thumbUrl,
+          source: "catalog" as const,
+        }));
+    }
+    return githubRepoResults.map((g) => ({
+      name: g.name,
+      repo: g.full_name,
+      prodUrl: g.homepage
+        ? g.homepage.startsWith("http")
+          ? g.homepage
+          : `https://${g.homepage}`
+        : null,
+      thumbUrl: null,
+      source: "github" as const,
+    }));
+  }, [catalogResults, githubRepoResults]);
 
   // assignee field
   const [assigneeQuery, setAssigneeQuery] = useState("");
@@ -142,11 +232,57 @@ export function RegisterModal({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [userActiveIndex, setUserActiveIndex] = useState(-1);
   const userDropdownRef = useRef<HTMLDivElement>(null);
+
+  // cached team (rate-limit-free) — people already assigned across this connection
+  const [team, setTeam] = useState<GhUser[]>([]);
+  useEffect(() => {
+    let cancelled = false;
+    callTool<{ assignees: Array<{ login: string; avatarUrl: string | null }> }>(
+      "ASSIGNEE_LIST",
+      {},
+    )
+      .then((r) => {
+        if (cancelled) return;
+        setTeam(
+          (r?.assignees ?? []).map((a) => ({
+            login: a.login,
+            avatar_url: a.avatarUrl ?? "",
+          })),
+        );
+      })
+      .catch(() => {
+        /* ignore — GitHub search still works */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [callTool]);
+
+  const q = assigneeQuery.trim().toLowerCase();
+  const localMatches = useMemo(
+    () => (q ? team.filter((u) => u.login.toLowerCase().includes(q)) : team),
+    [team, q],
+  );
+
+  // Only hit GitHub when the cached team has no match — reusing teammates costs 0 calls
   const {
-    results: userResults,
+    results: githubResults,
     searching: userSearching,
     rateLimited: userRateLimited,
-  } = useUserSearch(assigneeQuery);
+  } = useUserSearch(assigneeQuery, localMatches.length === 0);
+
+  // merged suggestions: cached team first, then GitHub results (deduped by login)
+  const userResults = useMemo(() => {
+    const seen = new Set(localMatches.map((u) => u.login.toLowerCase()));
+    const merged = [...localMatches];
+    for (const u of githubResults) {
+      if (!seen.has(u.login.toLowerCase())) {
+        seen.add(u.login.toLowerCase());
+        merged.push(u);
+      }
+    }
+    return merged.slice(0, 8);
+  }, [localMatches, githubResults]);
 
   // other form fields
   const [prodUrl, setProdUrl] = useState("");
@@ -196,16 +332,16 @@ export function RegisterModal({
     setUserActiveIndex(-1);
   }, [userResults]);
 
-  const pickRepo = (repo: GhRepo) => {
-    setRepoName(repo.name);
+  const pickRepo = (s: RepoSuggestion) => {
+    // display the slug under the fixed "deco-sites/" prefix; keep the full
+    // owner/repo when it's a different org (sourceRepo stays correct)
+    const slug = s.repo.startsWith(`${ORG}/`)
+      ? s.repo.slice(ORG.length + 1)
+      : s.repo;
+    setRepoName(slug);
     setShowRepoDropdown(false);
     setRepoActiveIndex(-1);
-    if (repo.homepage && !prodUrl) {
-      const url = repo.homepage.startsWith("http")
-        ? repo.homepage
-        : `https://${repo.homepage}`;
-      setProdUrl(url);
-    }
+    if (s.prodUrl && !prodUrl) setProdUrl(s.prodUrl);
     repoInputRef.current?.focus();
   };
 
@@ -369,7 +505,7 @@ export function RegisterModal({
                     ) : (
                       repoResults.map((r, idx) => (
                         <li
-                          key={r.name}
+                          key={`${r.repo}-${idx}`}
                           role="option"
                           aria-selected={idx === repoActiveIndex}
                           id={`repo-option-${idx}`}
@@ -377,18 +513,25 @@ export function RegisterModal({
                           <button
                             type="button"
                             onMouseDown={() => pickRepo(r)}
-                            className={`flex w-full flex-col px-3 py-2 text-left hover:bg-muted ${
+                            className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted ${
                               idx === repoActiveIndex ? "bg-muted" : ""
                             }`}
                           >
-                            <span className="text-xs font-medium">
-                              {r.name}
-                            </span>
-                            {r.homepage && (
-                              <span className="truncate text-[10px] text-muted-foreground">
-                                {r.homepage}
+                            {r.thumbUrl ? (
+                              <img
+                                src={r.thumbUrl}
+                                alt=""
+                                className="h-7 w-7 shrink-0 rounded object-cover"
+                              />
+                            ) : null}
+                            <span className="flex min-w-0 flex-col">
+                              <span className="truncate text-xs font-medium">
+                                {r.name}
                               </span>
-                            )}
+                              <span className="truncate text-[10px] text-muted-foreground">
+                                {r.prodUrl ?? r.repo}
+                              </span>
+                            </span>
                           </button>
                         </li>
                       ))
@@ -531,11 +674,15 @@ export function RegisterModal({
                               idx === userActiveIndex ? "bg-muted" : ""
                             }`}
                           >
-                            <img
-                              src={u.avatar_url}
-                              alt={u.login}
-                              className="h-5 w-5 rounded-full"
-                            />
+                            {u.avatar_url ? (
+                              <img
+                                src={u.avatar_url}
+                                alt={u.login}
+                                className="h-5 w-5 rounded-full"
+                              />
+                            ) : (
+                              <UserCircle2 className="h-5 w-5 text-muted-foreground" />
+                            )}
                             <span className="text-xs font-medium">
                               {u.login}
                             </span>

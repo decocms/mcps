@@ -2,6 +2,7 @@
 
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
+import { isCatalogConfigured, searchSiteCatalog } from "../db/catalog.ts";
 import { loadConnection, saveConnection } from "../db/connections.ts";
 import { ensureApiKeyFromRequest } from "../lib/ensure-api-key.ts";
 import { addEvent } from "../db/events.ts";
@@ -11,6 +12,7 @@ import {
   deleteSite,
   getSite,
   insertSite,
+  listAssignees,
   listSites,
   reorderSites,
   updateSite,
@@ -467,6 +469,55 @@ export const createSiteReorderTool = (env: Env) =>
       const connectionId = requireConnectionId(env);
       await reorderSites(connectionId, context.orderedIds);
       return { ok: true };
+    },
+  });
+
+export const createSiteCatalogSearchTool = (env: Env) =>
+  createTool({
+    id: "SITE_CATALOG_SEARCH",
+    description:
+      "Search the decocms site catalog by name (read-only). Returns the GitHub repo and production URL so the register form can autocomplete without hitting the GitHub API. Empty when the catalog isn't configured.",
+    inputSchema: z.object({
+      query: z.string().describe("Partial site name, e.g. 'farm'"),
+    }),
+    outputSchema: z.object({
+      configured: z.boolean(),
+      sites: z.array(
+        z.object({
+          name: z.string(),
+          repo: z.string().nullable(),
+          prodUrl: z.string().nullable(),
+          thumbUrl: z.string().nullable(),
+        }),
+      ),
+    }),
+    annotations: { readOnlyHint: true },
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      const sites = await searchSiteCatalog(context.query);
+      return { configured: isCatalogConfigured(), sites };
+    },
+  });
+
+export const createAssigneeListTool = (env: Env) =>
+  createTool({
+    id: "ASSIGNEE_LIST",
+    description:
+      "List the distinct GitHub users already assigned across this connection's sites — a rate-limit-free team cache for the register/assign pickers.",
+    inputSchema: z.object({}),
+    outputSchema: z.object({
+      assignees: z.array(
+        z.object({
+          login: z.string(),
+          avatarUrl: z.string().nullable(),
+        }),
+      ),
+    }),
+    annotations: { readOnlyHint: true },
+    execute: async () => {
+      const connectionId = requireConnectionId(env);
+      const assignees = await listAssignees(connectionId);
+      return { assignees };
     },
   });
 

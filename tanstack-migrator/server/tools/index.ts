@@ -9,8 +9,10 @@ import {
   createSiteSetStatusTool,
 } from "./sandbox-test.ts";
 import {
+  createAssigneeListTool,
   createSiteArchiveTool,
   createSiteAssignTool,
+  createSiteCatalogSearchTool,
   createSiteDeleteTool,
   createSiteEnqueueTool,
   createSiteGetTool,
@@ -40,6 +42,8 @@ export const tools = [
   createSiteMarkDoneTool,
   createSiteArchiveTool,
   createSiteAssignTool,
+  createAssigneeListTool,
+  createSiteCatalogSearchTool,
   createSiteDeleteTool,
   createParityReportUrlsTool,
   createReportProgressTool,

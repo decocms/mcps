@@ -123,6 +123,41 @@ export async function listSites(filter?: {
   return (data as SiteRow[]) ?? [];
 }
 
+/**
+ * Distinct assignees already used across a connection's sites — a rate-limit-free
+ * cache of the team, so the register modal can suggest people without hitting the
+ * GitHub API. Most recently touched sites first.
+ */
+export async function listAssignees(
+  connectionId: string,
+): Promise<Array<{ login: string; avatarUrl: string | null }>> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("sitemig_sites")
+    .select("assignee_login, assignee_avatar_url, updated_at")
+    .eq("connection_id", connectionId)
+    .not("assignee_login", "is", null)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(`Failed to list assignees: ${error.message}`);
+  const rows =
+    (data as Array<{
+      assignee_login: string;
+      assignee_avatar_url: string | null;
+    }>) ?? [];
+
+  const seen = new Map<string, string | null>();
+  for (const r of rows) {
+    if (!seen.has(r.assignee_login)) {
+      seen.set(r.assignee_login, r.assignee_avatar_url);
+    }
+  }
+  return [...seen.entries()].map(([login, avatarUrl]) => ({
+    login,
+    avatarUrl,
+  }));
+}
+
 export async function updateSite(
   id: string,
   patch: Partial<SiteRow>,
