@@ -1,4 +1,4 @@
-import { Loader2, X } from "lucide-react";
+import { Loader2, UserCircle2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useToolCaller } from "@/hooks/use-tool.ts";
 
@@ -8,6 +8,11 @@ interface GhRepo {
   name: string;
   full_name: string;
   homepage: string | null;
+}
+
+interface GhUser {
+  login: string;
+  avatar_url: string;
 }
 
 function useRepoSearch(query: string) {
@@ -38,7 +43,48 @@ function useRepoSearch(query: string) {
           })),
         );
       } catch {
-        // ignore network errors silently
+        // ignore
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [query]);
+
+  return { results, searching };
+}
+
+function useUserSearch(query: string) {
+  const [results, setResults] = useState<GhUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    if (!query.trim()) {
+      setResults([]);
+      return;
+    }
+    timerRef.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const url = `https://api.github.com/search/users?q=${encodeURIComponent(query)}&per_page=8`;
+        const res = await fetch(url, {
+          headers: { Accept: "application/vnd.github+json" },
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { items?: GhUser[] };
+        setResults(
+          (json.items ?? []).map((u: GhUser) => ({
+            login: u.login,
+            avatar_url: u.avatar_url,
+          })),
+        );
+      } catch {
+        // ignore
       } finally {
         setSearching(false);
       }
@@ -60,18 +106,34 @@ export function RegisterModal({
   onRegistered: () => void;
 }) {
   const callTool = useToolCaller();
+
+  // repo field
   const [repoName, setRepoName] = useState("");
+  const [showRepoDropdown, setShowRepoDropdown] = useState(false);
+  const [repoActiveIndex, setRepoActiveIndex] = useState(-1);
+  const repoDropdownRef = useRef<HTMLDivElement>(null);
+  const repoInputRef = useRef<HTMLInputElement>(null);
+  const { results: repoResults, searching: repoSearching } =
+    useRepoSearch(repoName);
+
+  // assignee field
+  const [assigneeQuery, setAssigneeQuery] = useState("");
+  const [assigneeLogin, setAssigneeLogin] = useState<string | null>(null);
+  const [assigneeAvatarUrl, setAssigneeAvatarUrl] = useState<string | null>(
+    null,
+  );
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [userActiveIndex, setUserActiveIndex] = useState(-1);
+  const userDropdownRef = useRef<HTMLDivElement>(null);
+  const { results: userResults, searching: userSearching } =
+    useUserSearch(assigneeQuery);
+
+  // other form fields
   const [prodUrl, setProdUrl] = useState("");
   const [alreadyDone, setAlreadyDone] = useState(false);
   const [startNow, setStartNow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(-1);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const { results, searching } = useRepoSearch(repoName);
 
   const sourceRepo = repoName.trim()
     ? repoName.includes("/")
@@ -79,59 +141,105 @@ export function RegisterModal({
       : `${ORG}/${repoName.trim()}`
     : "";
 
-  // Close dropdown on outside click
+  // close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (!dropdownRef.current?.contains(e.target as Node)) {
-        setShowDropdown(false);
-        setActiveIndex(-1);
+      if (!repoDropdownRef.current?.contains(e.target as Node)) {
+        setShowRepoDropdown(false);
+        setRepoActiveIndex(-1);
+      }
+      if (!userDropdownRef.current?.contains(e.target as Node)) {
+        setShowUserDropdown(false);
+        setUserActiveIndex(-1);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Escape closes modal
+  // Escape closes modal (only when no dropdown is open)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && !showRepoDropdown && !showUserDropdown) {
+        onClose();
+      }
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [onClose]);
+  }, [onClose, showRepoDropdown, showUserDropdown]);
 
-  // Reset activeIndex when results change
+  // reset active indices when results change
   useEffect(() => {
-    setActiveIndex(-1);
-  }, [results]);
+    setRepoActiveIndex(-1);
+  }, [repoResults]);
+  useEffect(() => {
+    setUserActiveIndex(-1);
+  }, [userResults]);
 
   const pickRepo = (repo: GhRepo) => {
     setRepoName(repo.name);
-    setShowDropdown(false);
-    setActiveIndex(-1);
+    setShowRepoDropdown(false);
+    setRepoActiveIndex(-1);
     if (repo.homepage && !prodUrl) {
       const url = repo.homepage.startsWith("http")
         ? repo.homepage
         : `https://${repo.homepage}`;
       setProdUrl(url);
     }
-    inputRef.current?.focus();
+    repoInputRef.current?.focus();
   };
 
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!showDropdown || results.length === 0) return;
+  const pickUser = (user: GhUser) => {
+    setAssigneeLogin(user.login);
+    setAssigneeAvatarUrl(user.avatar_url);
+    setAssigneeQuery("");
+    setShowUserDropdown(false);
+    setUserActiveIndex(-1);
+  };
+
+  const clearAssignee = () => {
+    setAssigneeLogin(null);
+    setAssigneeAvatarUrl(null);
+    setAssigneeQuery("");
+  };
+
+  const handleRepoKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      setShowRepoDropdown(false);
+      setRepoActiveIndex(-1);
+      return;
+    }
+    if (!showRepoDropdown || repoResults.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIndex((i) => (i + 1) % results.length);
+      setRepoActiveIndex((i) => (i + 1) % repoResults.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIndex((i) => (i <= 0 ? results.length - 1 : i - 1));
-    } else if (e.key === "Enter" && activeIndex >= 0) {
+      setRepoActiveIndex((i) => (i <= 0 ? repoResults.length - 1 : i - 1));
+    } else if (e.key === "Enter" && repoActiveIndex >= 0) {
       e.preventDefault();
-      pickRepo(results[activeIndex]);
-    } else if (e.key === "Escape") {
-      setShowDropdown(false);
-      setActiveIndex(-1);
+      pickRepo(repoResults[repoActiveIndex]);
+    }
+  };
+
+  const handleUserKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      setShowUserDropdown(false);
+      setUserActiveIndex(-1);
+      return;
+    }
+    if (!showUserDropdown || userResults.length === 0) return;
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setUserActiveIndex((i) => (i + 1) % userResults.length);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setUserActiveIndex((i) => (i <= 0 ? userResults.length - 1 : i - 1));
+    } else if (e.key === "Enter" && userActiveIndex >= 0) {
+      e.preventDefault();
+      pickUser(userResults[userActiveIndex]);
     }
   };
 
@@ -143,12 +251,19 @@ export function RegisterModal({
     setSubmitting(true);
     setError(null);
     try {
-      await callTool("SITE_REGISTER", {
+      const result = await callTool<{ siteId: string }>("SITE_REGISTER", {
         sourceRepo,
         prodUrl: prodUrl.trim(),
         alreadyDone,
         startNow: alreadyDone ? false : startNow,
       });
+      if (assigneeLogin && result?.siteId) {
+        await callTool("SITE_ASSIGN", {
+          siteId: result.siteId,
+          login: assigneeLogin,
+          avatarUrl: assigneeAvatarUrl,
+        });
+      }
       onRegistered();
       onClose();
     } catch (err) {
@@ -173,55 +288,58 @@ export function RegisterModal({
         </div>
 
         <div className="flex flex-col gap-3">
+          {/* repo */}
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">Repo de origem (Fresh/Deno)</span>
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative" ref={repoDropdownRef}>
               <div className="flex items-stretch overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                 <span className="flex items-center bg-muted px-2.5 text-xs text-muted-foreground select-none">
                   deco-sites/
                 </span>
                 <input
-                  ref={inputRef}
+                  ref={repoInputRef}
                   value={repoName}
                   onChange={(e) => {
                     setRepoName(e.target.value);
-                    setShowDropdown(true);
+                    setShowRepoDropdown(true);
                   }}
-                  onFocus={() => setShowDropdown(true)}
-                  onKeyDown={handleInputKeyDown}
+                  onFocus={() => setShowRepoDropdown(true)}
+                  onKeyDown={handleRepoKeyDown}
                   placeholder="granadobr"
                   aria-autocomplete="list"
-                  aria-expanded={showDropdown && results.length > 0}
+                  aria-expanded={showRepoDropdown && repoResults.length > 0}
                   aria-activedescendant={
-                    activeIndex >= 0 ? `repo-option-${activeIndex}` : undefined
+                    repoActiveIndex >= 0
+                      ? `repo-option-${repoActiveIndex}`
+                      : undefined
                   }
                   className="flex-1 bg-transparent px-2 py-2 text-sm outline-none"
                   autoFocus
                 />
-                {searching && (
+                {repoSearching && (
                   <span className="flex items-center pr-2">
                     <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
                   </span>
                 )}
               </div>
 
-              {showDropdown && results.length > 0 && (
+              {showRepoDropdown && repoResults.length > 0 && (
                 <ul
                   role="listbox"
                   className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-card shadow-lg"
                 >
-                  {results.map((r, idx) => (
+                  {repoResults.map((r, idx) => (
                     <li
                       key={r.name}
                       role="option"
-                      aria-selected={idx === activeIndex}
+                      aria-selected={idx === repoActiveIndex}
                       id={`repo-option-${idx}`}
                     >
                       <button
                         type="button"
                         onMouseDown={() => pickRepo(r)}
                         className={`flex w-full flex-col px-3 py-2 text-left hover:bg-muted ${
-                          idx === activeIndex ? "bg-muted" : ""
+                          idx === repoActiveIndex ? "bg-muted" : ""
                         }`}
                       >
                         <span className="text-xs font-medium">{r.name}</span>
@@ -238,6 +356,7 @@ export function RegisterModal({
             </div>
           </label>
 
+          {/* prod URL */}
           <label className="flex flex-col gap-1 text-sm">
             <span className="font-medium">URL de produção</span>
             <input
@@ -248,6 +367,98 @@ export function RegisterModal({
             />
           </label>
 
+          {/* assignee */}
+          <div className="flex flex-col gap-1 text-sm">
+            <span className="font-medium">Responsável (opcional)</span>
+            {assigneeLogin ? (
+              <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
+                {assigneeAvatarUrl ? (
+                  <img
+                    src={assigneeAvatarUrl}
+                    alt={assigneeLogin}
+                    className="h-5 w-5 rounded-full"
+                  />
+                ) : (
+                  <UserCircle2 className="h-5 w-5 text-muted-foreground" />
+                )}
+                <span className="flex-1 text-sm">@{assigneeLogin}</span>
+                <button
+                  type="button"
+                  onClick={clearAssignee}
+                  className="text-muted-foreground hover:text-foreground"
+                  title="Remover"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="relative" ref={userDropdownRef}>
+                <div className="flex items-stretch overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
+                  <span className="flex items-center pl-2.5">
+                    <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+                  </span>
+                  <input
+                    value={assigneeQuery}
+                    onChange={(e) => {
+                      setAssigneeQuery(e.target.value);
+                      setShowUserDropdown(true);
+                    }}
+                    onFocus={() => {
+                      if (assigneeQuery.trim()) setShowUserDropdown(true);
+                    }}
+                    onKeyDown={handleUserKeyDown}
+                    placeholder="Buscar por login ou nome…"
+                    aria-autocomplete="list"
+                    aria-expanded={showUserDropdown && userResults.length > 0}
+                    aria-activedescendant={
+                      userActiveIndex >= 0
+                        ? `user-option-${userActiveIndex}`
+                        : undefined
+                    }
+                    className="flex-1 bg-transparent px-2 py-2 text-sm outline-none"
+                  />
+                  {userSearching && (
+                    <span className="flex items-center pr-2">
+                      <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />
+                    </span>
+                  )}
+                </div>
+
+                {showUserDropdown && userResults.length > 0 && (
+                  <ul
+                    role="listbox"
+                    className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-card shadow-lg"
+                  >
+                    {userResults.map((u, idx) => (
+                      <li
+                        key={u.login}
+                        role="option"
+                        aria-selected={idx === userActiveIndex}
+                        id={`user-option-${idx}`}
+                      >
+                        <button
+                          type="button"
+                          onMouseDown={() => pickUser(u)}
+                          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted ${
+                            idx === userActiveIndex ? "bg-muted" : ""
+                          }`}
+                        >
+                          <img
+                            src={u.avatar_url}
+                            alt={u.login}
+                            className="h-5 w-5 rounded-full"
+                          />
+                          <span className="text-xs font-medium">{u.login}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* checkboxes */}
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
