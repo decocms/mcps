@@ -9,6 +9,7 @@ const MCP_APP_ENTRIES = {
   "widget-top-videos": path.resolve(__dirname, "widget-top-videos.html"),
   "widget-performance": path.resolve(__dirname, "widget-performance.html"),
   "widget-alerts": path.resolve(__dirname, "widget-alerts.html"),
+  "widget-lives": path.resolve(__dirname, "widget-lives.html"),
 } as const;
 
 type McpAppEntry = keyof typeof MCP_APP_ENTRIES;

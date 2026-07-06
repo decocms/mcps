@@ -191,3 +191,46 @@ export const createGetVideosTool = (env: Env) =>
       videos: await getVideosByIds(env, context.videoIds),
     }),
   });
+
+export const createDeleteVideoTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_DELETE_VIDEO",
+    description:
+      "Permanently delete one of the channel's videos. This cannot be undone. Quota: 50 units.",
+    inputSchema: z.object({
+      videoId: z.string(),
+    }),
+    outputSchema: z.object({
+      videoId: z.string(),
+      deleted: z.boolean(),
+    }),
+    execute: async ({ context }) => {
+      await dataApi(env, "/videos", {
+        method: "DELETE",
+        params: { id: context.videoId },
+      });
+      return { videoId: context.videoId, deleted: true };
+    },
+  });
+
+export const createRateVideoTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_RATE_VIDEO",
+    description:
+      "Like, dislike or remove your rating from any YouTube video. rating: 'like' | 'dislike' | 'none'.",
+    inputSchema: z.object({
+      videoId: z.string(),
+      rating: z.enum(["like", "dislike", "none"]),
+    }),
+    outputSchema: z.object({
+      videoId: z.string(),
+      rating: z.string(),
+    }),
+    execute: async ({ context }) => {
+      await dataApi(env, "/videos/rate", {
+        method: "POST",
+        params: { id: context.videoId, rating: context.rating },
+      });
+      return { videoId: context.videoId, rating: context.rating };
+    },
+  });

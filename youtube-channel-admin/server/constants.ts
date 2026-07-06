@@ -25,3 +25,5 @@ export const WIDGET_PERFORMANCE_RESOURCE_URI =
   "ui://youtube-channel-admin/widget-performance";
 export const WIDGET_ALERTS_RESOURCE_URI =
   "ui://youtube-channel-admin/widget-alerts";
+export const WIDGET_LIVES_RESOURCE_URI =
+  "ui://youtube-channel-admin/widget-lives";

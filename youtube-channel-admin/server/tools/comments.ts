@@ -201,3 +201,55 @@ export const createModerateCommentTool = (env: Env) =>
       };
     },
   });
+
+export const createUpdateCommentTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_UPDATE_COMMENT",
+    description:
+      "Edit the text of a comment you posted (top-level or reply). Only the comment author can edit.",
+    inputSchema: z.object({
+      commentId: z.string(),
+      text: z.string().min(1).max(10000),
+    }),
+    outputSchema: z.object({
+      commentId: z.string(),
+      text: z.string(),
+      updatedAt: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const result = await dataApi<RawComment>(env, "/comments", {
+        method: "PUT",
+        params: { part: "snippet" },
+        body: {
+          id: context.commentId,
+          snippet: { textOriginal: context.text },
+        },
+      });
+      return {
+        commentId: result.id,
+        text: result.snippet?.textOriginal ?? context.text,
+        updatedAt: result.snippet?.updatedAt,
+      };
+    },
+  });
+
+export const createDeleteCommentTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_DELETE_COMMENT",
+    description:
+      "Delete a comment or reply. Only the comment author or the video owner can delete.",
+    inputSchema: z.object({
+      commentId: z.string(),
+    }),
+    outputSchema: z.object({
+      commentId: z.string(),
+      deleted: z.boolean(),
+    }),
+    execute: async ({ context }) => {
+      await dataApi<undefined>(env, "/comments", {
+        method: "DELETE",
+        params: { id: context.commentId },
+      });
+      return { commentId: context.commentId, deleted: true };
+    },
+  });
