@@ -18,21 +18,28 @@ interface GhUser {
 function useRepoSearch(query: string) {
   const [results, setResults] = useState<GhRepo[]>([]);
   const [searching, setSearching] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!query.trim()) {
       setResults([]);
+      setRateLimited(false);
       return;
     }
     timerRef.current = setTimeout(async () => {
       setSearching(true);
+      setRateLimited(false);
       try {
         const url = `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}+org:${ORG}&sort=updated&per_page=8`;
         const res = await fetch(url, {
           headers: { Accept: "application/vnd.github+json" },
         });
+        if (res.status === 403 || res.status === 429) {
+          setRateLimited(true);
+          return;
+        }
         if (!res.ok) return;
         const json = (await res.json()) as { items?: GhRepo[] };
         setResults(
@@ -43,7 +50,7 @@ function useRepoSearch(query: string) {
           })),
         );
       } catch {
-        // ignore
+        // ignore network errors
       } finally {
         setSearching(false);
       }
@@ -54,27 +61,34 @@ function useRepoSearch(query: string) {
     };
   }, [query]);
 
-  return { results, searching };
+  return { results, searching, rateLimited };
 }
 
 function useUserSearch(query: string) {
   const [results, setResults] = useState<GhUser[]>([]);
   const [searching, setSearching] = useState(false);
+  const [rateLimited, setRateLimited] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (!query.trim()) {
       setResults([]);
+      setRateLimited(false);
       return;
     }
     timerRef.current = setTimeout(async () => {
       setSearching(true);
+      setRateLimited(false);
       try {
         const url = `https://api.github.com/search/users?q=${encodeURIComponent(query)}&per_page=8`;
         const res = await fetch(url, {
           headers: { Accept: "application/vnd.github+json" },
         });
+        if (res.status === 403 || res.status === 429) {
+          setRateLimited(true);
+          return;
+        }
         if (!res.ok) return;
         const json = (await res.json()) as { items?: GhUser[] };
         setResults(
@@ -84,7 +98,7 @@ function useUserSearch(query: string) {
           })),
         );
       } catch {
-        // ignore
+        // ignore network errors
       } finally {
         setSearching(false);
       }
@@ -95,7 +109,7 @@ function useUserSearch(query: string) {
     };
   }, [query]);
 
-  return { results, searching };
+  return { results, searching, rateLimited };
 }
 
 export function RegisterModal({
@@ -113,8 +127,11 @@ export function RegisterModal({
   const [repoActiveIndex, setRepoActiveIndex] = useState(-1);
   const repoDropdownRef = useRef<HTMLDivElement>(null);
   const repoInputRef = useRef<HTMLInputElement>(null);
-  const { results: repoResults, searching: repoSearching } =
-    useRepoSearch(repoName);
+  const {
+    results: repoResults,
+    searching: repoSearching,
+    rateLimited: repoRateLimited,
+  } = useRepoSearch(repoName);
 
   // assignee field
   const [assigneeQuery, setAssigneeQuery] = useState("");
@@ -125,8 +142,11 @@ export function RegisterModal({
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [userActiveIndex, setUserActiveIndex] = useState(-1);
   const userDropdownRef = useRef<HTMLDivElement>(null);
-  const { results: userResults, searching: userSearching } =
-    useUserSearch(assigneeQuery);
+  const {
+    results: userResults,
+    searching: userSearching,
+    rateLimited: userRateLimited,
+  } = useUserSearch(assigneeQuery);
 
   // other form fields
   const [prodUrl, setProdUrl] = useState("");
@@ -230,6 +250,20 @@ export function RegisterModal({
       setUserActiveIndex(-1);
       return;
     }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (userActiveIndex >= 0 && userResults[userActiveIndex]) {
+        pickUser(userResults[userActiveIndex]);
+      } else if (assigneeQuery.trim()) {
+        // fallback: use the typed login directly (no avatar)
+        setAssigneeLogin(assigneeQuery.trim());
+        setAssigneeAvatarUrl(null);
+        setAssigneeQuery("");
+        setShowUserDropdown(false);
+        setUserActiveIndex(-1);
+      }
+      return;
+    }
     if (!showUserDropdown || userResults.length === 0) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -237,9 +271,6 @@ export function RegisterModal({
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       setUserActiveIndex((i) => (i <= 0 ? userResults.length - 1 : i - 1));
-    } else if (e.key === "Enter" && userActiveIndex >= 0) {
-      e.preventDefault();
-      pickUser(userResults[userActiveIndex]);
     }
   };
 
@@ -323,36 +354,47 @@ export function RegisterModal({
                 )}
               </div>
 
-              {showRepoDropdown && repoResults.length > 0 && (
-                <ul
-                  role="listbox"
-                  className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-card shadow-lg"
-                >
-                  {repoResults.map((r, idx) => (
-                    <li
-                      key={r.name}
-                      role="option"
-                      aria-selected={idx === repoActiveIndex}
-                      id={`repo-option-${idx}`}
-                    >
-                      <button
-                        type="button"
-                        onMouseDown={() => pickRepo(r)}
-                        className={`flex w-full flex-col px-3 py-2 text-left hover:bg-muted ${
-                          idx === repoActiveIndex ? "bg-muted" : ""
-                        }`}
-                      >
-                        <span className="text-xs font-medium">{r.name}</span>
-                        {r.homepage && (
-                          <span className="truncate text-[10px] text-muted-foreground">
-                            {r.homepage}
-                          </span>
-                        )}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
+              {showRepoDropdown &&
+                repoName.trim() &&
+                !repoSearching &&
+                (repoResults.length > 0 || repoRateLimited) && (
+                  <ul
+                    role="listbox"
+                    className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-card shadow-lg"
+                  >
+                    {repoRateLimited ? (
+                      <li className="px-3 py-2 text-[11px] text-amber-600 dark:text-amber-400">
+                        GitHub rate limit — use o nome exato no campo acima
+                      </li>
+                    ) : (
+                      repoResults.map((r, idx) => (
+                        <li
+                          key={r.name}
+                          role="option"
+                          aria-selected={idx === repoActiveIndex}
+                          id={`repo-option-${idx}`}
+                        >
+                          <button
+                            type="button"
+                            onMouseDown={() => pickRepo(r)}
+                            className={`flex w-full flex-col px-3 py-2 text-left hover:bg-muted ${
+                              idx === repoActiveIndex ? "bg-muted" : ""
+                            }`}
+                          >
+                            <span className="text-xs font-medium">
+                              {r.name}
+                            </span>
+                            {r.homepage && (
+                              <span className="truncate text-[10px] text-muted-foreground">
+                                {r.homepage}
+                              </span>
+                            )}
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                )}
             </div>
           </label>
 
@@ -424,34 +466,83 @@ export function RegisterModal({
                   )}
                 </div>
 
-                {showUserDropdown && userResults.length > 0 && (
+                {showUserDropdown && assigneeQuery.trim() && !userSearching && (
                   <ul
                     role="listbox"
                     className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-md border border-border bg-card shadow-lg"
                   >
-                    {userResults.map((u, idx) => (
-                      <li
-                        key={u.login}
-                        role="option"
-                        aria-selected={idx === userActiveIndex}
-                        id={`user-option-${idx}`}
-                      >
+                    {userRateLimited ? (
+                      <>
+                        <li className="px-3 py-2 text-[11px] text-amber-600 dark:text-amber-400">
+                          GitHub rate limit — pressione Enter para usar como
+                          está
+                        </li>
+                        <li>
+                          <button
+                            type="button"
+                            onMouseDown={() => {
+                              setAssigneeLogin(assigneeQuery.trim());
+                              setAssigneeAvatarUrl(null);
+                              setAssigneeQuery("");
+                              setShowUserDropdown(false);
+                            }}
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted"
+                          >
+                            <UserCircle2 className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-xs font-medium">
+                              @{assigneeQuery.trim()}
+                            </span>
+                          </button>
+                        </li>
+                      </>
+                    ) : userResults.length === 0 ? (
+                      <li>
                         <button
                           type="button"
-                          onMouseDown={() => pickUser(u)}
-                          className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted ${
-                            idx === userActiveIndex ? "bg-muted" : ""
-                          }`}
+                          onMouseDown={() => {
+                            setAssigneeLogin(assigneeQuery.trim());
+                            setAssigneeAvatarUrl(null);
+                            setAssigneeQuery("");
+                            setShowUserDropdown(false);
+                          }}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-muted"
                         >
-                          <img
-                            src={u.avatar_url}
-                            alt={u.login}
-                            className="h-5 w-5 rounded-full"
-                          />
-                          <span className="text-xs font-medium">{u.login}</span>
+                          <UserCircle2 className="h-5 w-5 text-muted-foreground" />
+                          <span className="text-xs font-medium">
+                            @{assigneeQuery.trim()}
+                          </span>
+                          <span className="ml-auto text-[10px] text-muted-foreground">
+                            usar assim
+                          </span>
                         </button>
                       </li>
-                    ))}
+                    ) : (
+                      userResults.map((u, idx) => (
+                        <li
+                          key={u.login}
+                          role="option"
+                          aria-selected={idx === userActiveIndex}
+                          id={`user-option-${idx}`}
+                        >
+                          <button
+                            type="button"
+                            onMouseDown={() => pickUser(u)}
+                            className={`flex w-full items-center gap-2.5 px-3 py-2 text-left hover:bg-muted ${
+                              idx === userActiveIndex ? "bg-muted" : ""
+                            }`}
+                          >
+                            <img
+                              src={u.avatar_url}
+                              alt={u.login}
+                              className="h-5 w-5 rounded-full"
+                            />
+                            <span className="text-xs font-medium">
+                              {u.login}
+                            </span>
+                          </button>
+                        </li>
+                      ))
+                    )}
                   </ul>
                 )}
               </div>
