@@ -119,3 +119,105 @@ export const createUpdateChannelTool = (env: Env) =>
       };
     },
   });
+
+export const createListVideoCategoryTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_LIST_VIDEO_CATEGORIES",
+    description:
+      "List available YouTube video categories for a region. Useful for getting categoryId values for UPDATE_VIDEO.",
+    inputSchema: z.object({
+      regionCode: z
+        .string()
+        .length(2)
+        .default("BR")
+        .describe("ISO 3166-1 alpha-2 country code"),
+    }),
+    outputSchema: z.object({
+      categories: z.array(
+        z.object({
+          id: z.string(),
+          title: z.string(),
+          assignable: z.boolean(),
+        }),
+      ),
+    }),
+    execute: async ({ context }) => {
+      const data = await dataApi<{
+        items?: Array<{
+          id: string;
+          snippet?: { title?: string; assignable?: boolean };
+        }>;
+      }>(env, "/videoCategories", {
+        params: {
+          part: "snippet",
+          regionCode: context.regionCode,
+          hl: "pt_BR",
+        },
+      });
+
+      const categories = (data.items ?? [])
+        .filter((item) => item.snippet?.assignable === true)
+        .map((item) => ({
+          id: item.id,
+          title: item.snippet?.title ?? "",
+          assignable: true,
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id));
+
+      return { categories };
+    },
+  });
+
+export const createListSubscribersTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_LIST_SUBSCRIBERS",
+    description:
+      "List the channel's most recent subscribers. Note: the YouTube API only returns subscribers who have made their subscriptions public.",
+    inputSchema: z.object({
+      maxResults: z.coerce.number().int().min(1).max(1000).default(50),
+      pageToken: z.string().optional(),
+    }),
+    outputSchema: z.object({
+      subscribers: z.array(
+        z.object({
+          subscriberChannelId: z.string(),
+          subscriberTitle: z.string().optional(),
+          subscriberThumbnailUrl: z.string().optional(),
+          subscribedAt: z.string().optional(),
+        }),
+      ),
+      nextPageToken: z.string().optional(),
+    }),
+    execute: async ({ context }) => {
+      const data = await dataApi<{
+        items?: Array<{
+          snippet?: {
+            subscriberSnippet?: {
+              title?: string;
+              thumbnails?: { default?: { url?: string } };
+            };
+            publishedAt?: string;
+            resourceId?: { channelId?: string };
+          };
+        }>;
+        nextPageToken?: string;
+      }>(env, "/subscriptions", {
+        params: {
+          part: "snippet",
+          mySubscribers: true,
+          maxResults: context.maxResults,
+          pageToken: context.pageToken,
+        },
+      });
+
+      const subscribers = (data.items ?? []).map((item) => ({
+        subscriberChannelId: item.snippet?.resourceId?.channelId ?? "",
+        subscriberTitle: item.snippet?.subscriberSnippet?.title,
+        subscriberThumbnailUrl:
+          item.snippet?.subscriberSnippet?.thumbnails?.default?.url,
+        subscribedAt: item.snippet?.publishedAt,
+      }));
+
+      return { subscribers, nextPageToken: data.nextPageToken };
+    },
+  });

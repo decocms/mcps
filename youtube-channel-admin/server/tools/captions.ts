@@ -232,6 +232,102 @@ export const createUploadCaptionTool = (env: Env) =>
     },
   });
 
+export const createUpdateCaptionTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_UPDATE_CAPTION",
+    description:
+      "Replace the content of an existing caption track. Quota: 450 units.",
+    inputSchema: z.object({
+      captionId: z.string(),
+      content: z.string().describe("New full SRT or VTT content"),
+      format: z.enum(["srt", "vtt"]).default("srt"),
+      isDraft: z.boolean().optional(),
+    }),
+    outputSchema: z.object({
+      captionId: z.string(),
+      language: z.string().optional(),
+      name: z.string().optional(),
+      isDraft: z.boolean().optional(),
+    }),
+    execute: async ({ context }) => {
+      const { getAccessToken } = await import("../lib/auth.ts");
+      const token = getAccessToken(env);
+
+      const snippet = {
+        id: context.captionId,
+        isDraft: context.isDraft,
+      };
+
+      const boundary = `caption_boundary_${Date.now()}`;
+      const body = [
+        `--${boundary}`,
+        "Content-Type: application/json; charset=UTF-8",
+        "",
+        JSON.stringify({ snippet }),
+        `--${boundary}`,
+        `Content-Type: text/${context.format === "vtt" ? "vtt" : "plain"}`,
+        "",
+        context.content,
+        `--${boundary}--`,
+      ].join("\r\n");
+
+      const response = await fetch(
+        `https://www.googleapis.com/upload/youtube/v3/captions?uploadType=multipart&part=snippet`,
+        {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": `multipart/related; boundary=${boundary}`,
+          },
+          body,
+        },
+      );
+
+      if (!response.ok) {
+        const text = await response.text();
+        throw new Error(
+          `Caption update failed (${response.status}): ${text.slice(0, 500)}`,
+        );
+      }
+
+      const result = (await response.json()) as {
+        id: string;
+        snippet?: {
+          language?: string;
+          name?: string;
+          isDraft?: boolean;
+        };
+      };
+
+      return {
+        captionId: result.id,
+        language: result.snippet?.language,
+        name: result.snippet?.name,
+        isDraft: result.snippet?.isDraft,
+      };
+    },
+  });
+
+export const createDeleteCaptionTool = (env: Env) =>
+  createPrivateTool({
+    id: "YOUTUBE_ADMIN_DELETE_CAPTION",
+    description: "Delete a caption track from a video.",
+    inputSchema: z.object({
+      captionId: z.string(),
+    }),
+    outputSchema: z.object({
+      captionId: z.string(),
+      deleted: z.boolean(),
+    }),
+    execute: async ({ context }) => {
+      await dataApi(env, "/captions", {
+        method: "DELETE",
+        params: { id: context.captionId },
+      });
+      return { captionId: context.captionId, deleted: true };
+    },
+  });
+
 /** Strips SRT indexes/timestamps, leaving one caption line per row. */
 function srtToPlainText(srt: string): string {
   return srt
