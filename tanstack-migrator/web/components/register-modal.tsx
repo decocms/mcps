@@ -13,6 +13,7 @@ export function RegisterModal({
   const [sourceRepo, setSourceRepo] = useState("");
   const [prodUrl, setProdUrl] = useState("");
   const [alreadyDone, setAlreadyDone] = useState(false);
+  const [startNow, setStartNow] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,6 +29,7 @@ export function RegisterModal({
         sourceRepo: sourceRepo.trim(),
         prodUrl: prodUrl.trim(),
         alreadyDone,
+        startNow: alreadyDone ? false : startNow,
       });
       onRegistered();
       onClose();
@@ -78,13 +80,28 @@ export function RegisterModal({
             <input
               type="checkbox"
               checked={alreadyDone}
-              onChange={(e) => setAlreadyDone(e.target.checked)}
+              onChange={(e) => {
+                setAlreadyDone(e.target.checked);
+                if (e.target.checked) setStartNow(false);
+              }}
               className="h-4 w-4 rounded border-input"
             />
             <span>
               Migração já concluída (entra direto na lista 100% TanStack)
             </span>
           </label>
+
+          {!alreadyDone && (
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={startNow}
+                onChange={(e) => setStartNow(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
+              <span>Iniciar migração agora (entra na fila imediatamente)</span>
+            </label>
+          )}
 
           {error && <p className="text-sm text-red-500">{error}</p>}
 
@@ -95,7 +112,11 @@ export function RegisterModal({
             className="mt-1 inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            {alreadyDone ? "Cadastrar como concluído" : "Entrar na fila"}
+            {alreadyDone
+              ? "Cadastrar como concluído"
+              : startNow
+                ? "Entrar na fila agora"
+                : "Adicionar ao backlog"}
           </button>
         </div>
       </div>

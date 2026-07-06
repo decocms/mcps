@@ -96,11 +96,22 @@ export const createQueueWidgetTool = (env: Env) =>
       );
       const all = await listSites({ connectionId });
       const visible = all.filter((s) => s.status !== "archived");
-      // widget list = everything not done/failed first (active + queued),
-      // sorted active-first then by created; cap for a compact card
-      const inFlight = visible
-        .filter((s) => isActive(s.status) || s.status === "queued")
-        .sort((a, b) => a.created_at.localeCompare(b.created_at));
+      // widget list = active + queued + draft (done/failed/needs_human hidden)
+      // active first (by updated), then backlog sorted by queue_position
+      const inFlight = [
+        ...visible
+          .filter((s) => isActive(s.status))
+          .sort((a, b) => b.updated_at.localeCompare(a.updated_at)),
+        ...visible
+          .filter((s) => s.status === "queued" || s.status === "draft")
+          .sort((a, b) => {
+            const pa = (a.queue_position as number | null) ?? 9999;
+            const pb = (b.queue_position as number | null) ?? 9999;
+            return pa !== pb
+              ? pa - pb
+              : a.created_at.localeCompare(b.created_at);
+          }),
+      ];
       return {
         sites: inFlight.slice(0, 20).map(toSiteView),
         queue: {

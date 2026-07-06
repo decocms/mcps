@@ -25,8 +25,8 @@ export const PIPELINE_PHASES = [
   { key: "pr", label: "PR", icon: GitPullRequest },
   { key: "triage", label: "Triagem", icon: ListChecks },
   { key: "fix", label: "Fixes", icon: Wrench },
-  { key: "parity", label: "Paridade", icon: Gauge },
   { key: "deploy", label: "Deploy", icon: Rocket },
+  { key: "parity", label: "Paridade", icon: Gauge },
   { key: "merge", label: "Merge", icon: GitMerge },
 ] as const;
 

@@ -25,7 +25,12 @@ export interface SandboxInfo {
   virtualMcpId?: string;
 }
 
-export type SandboxTaskKind = "migrate" | "triage" | "fix" | "parity";
+export type SandboxTaskKind =
+  | "migrate"
+  | "triage"
+  | "fix"
+  | "parity"
+  | "deploy";
 
 export interface SandboxTaskInput {
   kind: SandboxTaskKind;

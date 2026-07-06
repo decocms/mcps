@@ -497,15 +497,24 @@ export function parityOnlyPrompt(input: {
     );
   });
 
+  // Parity measures against the real CF worker URL (deploy happens before parity).
+  // The sandbox dev server is still useful for console.log debugging — keep it
+  // running but do NOT use localhost as the candidate.
+  const candUrl =
+    site.cf_deploy_url ??
+    `https://${(site.target_repo ?? "").split("/").pop()}.deco-cx.workers.dev`;
+
   return `Você é o agente de medição de paridade da migração ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
 
 # Objetivo (SOMENTE MEDIÇÃO — NÃO CORRIJA NADA)
-Rodar a parity CLI comparando produção vs candidato, subir os artefatos e reportar o score. Os problemas apontados pelo report viram issues no GitHub e serão corrigidos em outras sessões.
+Rodar a parity CLI comparando produção vs candidato (URL real do Cloudflare Workers), subir os artefatos e reportar o score. Os problemas viram issues no GitHub e serão corrigidos em outras sessões.
 
-${ensureReadyPreamble(site)}
+# Candidato (URL real — NÃO localhost)
+O candidato é a URL do CF worker já deployado: **${candUrl}**
+O dev server em localhost fica de pé para debug de console.log, mas a MEDIÇÃO é sempre contra a URL real.
 
 # Passos
-1. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "http://localhost:$DEV_PORT" --preset ci\`
+1. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "${candUrl}" --preset ci\`
 2. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
 ${uploadSteps.length > 0 ? `3. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "3. (sem upload de artefatos configurado)"}
 4. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
@@ -516,4 +525,44 @@ ${progressInstruction(site)}
 Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
 RESULT_JSON: {"ok": true, "parityScore": <verdict.score do report.json>, "detail": "<resumo do report>"}
 (ok=false apenas se a parity CLI nem conseguiu rodar)`;
+}
+
+/**
+ * Phase deploying_cf: build the site and deploy to Cloudflare Workers via
+ * `wrangler deploy` (direct upload — no dashboard, no git integration).
+ * Requires CLOUDFLARE_API_TOKEN injected via the prompt env block.
+ * Returns the deployed URL in RESULT_JSON.deployUrl.
+ */
+export function deployPrompt(input: {
+  site: SiteRow;
+  cfApiToken: string;
+}): string {
+  const { site, cfApiToken } = input;
+  const workerName = (site.target_repo ?? "").split("/").pop() || "site";
+
+  return `Você é o agente de deploy Cloudflare da migração ${site.source_repo} → ${site.target_repo}. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+
+# Objetivo
+Buildar o site TanStack Start e deployar no Cloudflare Workers via \`wrangler deploy\` (upload direto — sem dashboard, sem git integration). O token CF já está na variável de ambiente.
+
+# Passos
+\`\`\`bash
+cd /app/repo
+git checkout ${site.work_branch} && git pull origin ${site.work_branch} 2>/dev/null || true
+[ -d node_modules ] || bun install || npm install
+# build: generate all gens + vite build
+npm run build
+# deploy: wrangler lê wrangler.jsonc — name + account_id já estão configurados
+export CLOUDFLARE_API_TOKEN=${cfApiToken}
+npx wrangler deploy 2>&1 | tee /tmp/wrangler-deploy.log
+\`\`\`
+
+Após o deploy, leia /tmp/wrangler-deploy.log e extraia a URL do worker (linha com "Deployed" ou "https://${workerName}.*.workers.dev"). Se o deploy falhar, reporte ok=false com o erro.
+
+${progressInstruction(site)}
+
+# Resultado
+Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
+RESULT_JSON: {"ok": true, "deployUrl": "https://${workerName}.deco-cx.workers.dev", "detail": "deploy ok"}
+(ok=false com detail explicando o erro se o wrangler deploy falhar)`;
 }

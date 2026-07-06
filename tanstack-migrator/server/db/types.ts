@@ -2,6 +2,7 @@
 
 export type SiteStatus =
   // current pipeline (v0.5.0 issue-driven, branch + PR)
+  | "draft"
   | "queued"
   | "creating_repo"
   | "provisioning_sandbox"
@@ -222,6 +223,7 @@ export interface SiteRow {
   cf_project_name: string | null;
   cf_deploy_url: string | null;
 
+  queue_position: number | null;
   cost_total: number;
 
   lease_owner: string | null;

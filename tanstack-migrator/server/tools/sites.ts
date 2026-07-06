@@ -12,6 +12,7 @@ import {
   getSite,
   insertSite,
   listSites,
+  reorderSites,
   updateSite,
 } from "../db/sites.ts";
 import {
@@ -95,6 +96,12 @@ export const createSiteRegisterTool = (env: Env) =>
         .describe(
           "Register a migration that is already finished (shows up in the done list)",
         ),
+      startNow: z
+        .boolean()
+        .optional()
+        .describe(
+          "Start the migration immediately (queued). Default: false — adds to backlog as draft.",
+        ),
       targetRepo: z
         .string()
         .optional()
@@ -115,6 +122,12 @@ export const createSiteRegisterTool = (env: Env) =>
         throw new Error("prodUrl must be an absolute http(s) URL");
       }
 
+      const status = context.alreadyDone
+        ? "done"
+        : context.startNow
+          ? "queued"
+          : "draft";
+
       const site = await insertSite({
         connectionId,
         name: context.name ?? sourceRepo.split("/")[1],
@@ -123,7 +136,7 @@ export const createSiteRegisterTool = (env: Env) =>
         prodUrl,
         parityTarget: context.parityTarget,
         maxIterations: context.maxIterations,
-        status: context.alreadyDone ? "done" : "queued",
+        status,
         targetRepo:
           context.targetRepo ??
           (context.alreadyDone ? `${sourceRepo}-tanstack` : undefined),
@@ -132,13 +145,12 @@ export const createSiteRegisterTool = (env: Env) =>
         site.id,
         context.alreadyDone
           ? "Cadastrado como migração já concluída"
-          : "Site cadastrado na fila de migração",
+          : status === "queued"
+            ? "Site cadastrado e enfileirado para migração"
+            : "Site cadastrado no backlog (draft)",
       );
 
-      const queued = await listSites({ connectionId, statuses: ["queued"] });
-      const position = context.alreadyDone
-        ? 0
-        : queued.findIndex((s) => s.id === site.id) + 1;
+      const position = site.queue_position ?? 0;
       return { siteId: site.id, position };
     },
   });
@@ -411,5 +423,49 @@ export const createSiteDeleteTool = (env: Env) =>
       }
       await deleteSite(site.id);
       return { deleted: true };
+    },
+  });
+
+export const createSiteEnqueueTool = (env: Env) =>
+  createTool({
+    id: "SITE_ENQUEUE",
+    description:
+      "Move a draft site to the migration queue (queued). The site keeps its queue_position so it runs in the planned order.",
+    inputSchema: z.object({ siteId: z.string() }),
+    outputSchema: siteOutput,
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      const site = await getSite(context.siteId);
+      if (!site) throw new Error("Site not found");
+      if (site.status !== "draft") {
+        throw new Error(
+          `Site is not a draft (status: ${site.status}) — only drafts can be enqueued`,
+        );
+      }
+      const updated = await updateSite(site.id, {
+        status: "queued",
+        last_progress_at: new Date().toISOString(),
+      });
+      await addEvent(site.id, "Site movido do backlog para a fila de migração");
+      return { site: toSiteView(updated) };
+    },
+  });
+
+export const createSiteReorderTool = (env: Env) =>
+  createTool({
+    id: "SITE_REORDER",
+    description:
+      "Set the priority order of backlog/queued sites. Pass the site IDs in the desired order — position 1 migrates first.",
+    inputSchema: z.object({
+      orderedIds: z
+        .array(z.string())
+        .min(1)
+        .describe("Site IDs in priority order (first = next to migrate)"),
+    }),
+    outputSchema: z.object({ ok: z.boolean() }),
+    execute: async ({ context }) => {
+      const connectionId = requireConnectionId(env);
+      await reorderSites(connectionId, context.orderedIds);
+      return { ok: true };
     },
   });

@@ -61,44 +61,27 @@ const PREVIEW_BROKEN_DRAFT: IssueDraft = {
  * escalate to needs_human when the fix budget is spent. Returns true when it's
  * safe to proceed with the parity measurement.
  */
+/**
+ * Gate parity on the CF deploy URL rendering real HTML. If the CF worker is
+ * broken, park in needs_human (re-deploy needed, not a code fix).
+ */
 async function previewGate(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
-  if (isSimulation(ctx)) return true; // no real preview to probe
-  if (!site.sandbox_preview_url) return true; // no URL — don't deadlock
-  if (await previewRendersRealHtml(site.sandbox_preview_url)) return true;
+  if (isSimulation(ctx)) return true;
+  // Parity now runs against the CF URL (deploy comes before parity).
+  const cfUrl = site.cf_deploy_url;
+  if (!cfUrl) return true; // no URL yet — don't deadlock
+  if (await previewRendersRealHtml(cfUrl, 15_000)) return true;
 
-  if (site.fix_sessions_done >= site.max_fix_sessions) {
-    await updateSite(site.id, {
-      status: "needs_human",
-      resume_status: "fixing",
-      needs_human_reason: `O preview não renderiza HTML real (SSR quebrado) e o orçamento de ${site.max_fix_sessions} sessões de fix acabou. Preview: ${site.sandbox_preview_url}`,
-      last_progress_at: new Date().toISOString(),
-    });
-    await addEvent(
-      site.id,
-      "Preview não renderiza e orçamento de fix esgotado — precisa de humano",
-      "error",
-    );
-    return false;
-  }
-
-  const { created, refreshed } = await syncIssuesFromDrafts(
-    ctx,
-    site,
-    [PREVIEW_BROKEN_DRAFT],
-    "triage",
-    1,
-  );
   await updateSite(site.id, {
-    status: "fixing",
-    phase_detail:
-      "preview não renderiza HTML — voltando pro fix antes de medir paridade",
+    status: "needs_human",
+    resume_status: "deploying",
+    needs_human_reason: `A URL do CF worker não renderiza HTML real (deploy pode estar quebrado): ${cfUrl}. Re-faça o deploy (SITE_RETRY fromStatus=deploying) e tente novamente.`,
     last_progress_at: new Date().toISOString(),
   });
-  const issueNum = created[0] ?? refreshed[0];
   await addEvent(
     site.id,
-    `Preview não renderiza HTML real — ${created.length > 0 ? `issue #${issueNum} criada` : `issue de SSR já aberta (#${issueNum ?? "?"})`}, voltando pro fix (paridade adiada)`,
-    "warn",
+    `CF worker ${cfUrl} não renderiza HTML — precisa de re-deploy`,
+    "error",
   );
   return false;
 }
@@ -136,14 +119,20 @@ export async function paritying(
   // Terminal checks first (idempotent re-entry)
   const target = site.parity_target;
   if (site.parity_score !== null && site.parity_score >= target) {
+    const hasPr = Boolean(site.pr_number);
     await updateSite(site.id, {
-      status: "deploying",
-      phase_detail: `paridade ${site.parity_score} >= ${target}, indo pro deploy`,
+      status: hasPr ? "awaiting_merge" : "done",
+      phase_detail: hasPr
+        ? `paridade ${site.parity_score}% ✓ — aguardando merge do PR #${site.pr_number}`
+        : `paridade ${site.parity_score}% ✓ — migração concluída`,
+      finished_at: hasPr ? undefined : new Date().toISOString(),
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Paridade atingiu ${site.parity_score}% — deploy CF`,
+      hasPr
+        ? `Paridade ${site.parity_score}% — falta o merge do PR #${site.pr_number}`
+        : `Paridade ${site.parity_score}% — migração concluída 🎉`,
     );
     return;
   }
@@ -282,6 +271,7 @@ export async function paritying(
       });
 
       const hitTarget = score !== null && score >= target;
+      const hasPr = Boolean(current.pr_number);
       await updateSite(site.id, {
         parity_score: score,
         best_score: improved ? score : current.best_score,
@@ -290,8 +280,9 @@ export async function paritying(
         sandbox_session_id: null,
         phase_thread_id: null,
         transient_retries: 0,
-        status: hitTarget ? "deploying" : "fixing",
+        status: hitTarget ? (hasPr ? "awaiting_merge" : "done") : "fixing",
         phase_detail: `rodada ${iteration}: score ${score ?? "?"}${hitTarget ? " — meta atingida!" : ` (${createdCount} issues novas)`}`,
+        finished_at: hitTarget && !hasPr ? new Date().toISOString() : undefined,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(

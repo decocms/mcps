@@ -16,8 +16,29 @@ export interface RegisterSiteInput {
   status?: SiteStatus;
 }
 
+/** Next queue_position for a connection (current MAX + 1). */
+async function nextQueuePosition(connectionId: string): Promise<number> {
+  const client = requireSupabase();
+  const { data } = await client
+    .from("sitemig_sites")
+    .select("queue_position")
+    .eq("connection_id", connectionId)
+    .not("queue_position", "is", null)
+    .order("queue_position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const max = (data as { queue_position: number } | null)?.queue_position ?? 0;
+  return max + 1;
+}
+
 export async function insertSite(input: RegisterSiteInput): Promise<SiteRow> {
   const client = requireSupabase();
+  const status = input.status ?? "draft";
+  const queuePosition =
+    status === "draft" || status === "queued"
+      ? await nextQueuePosition(input.connectionId)
+      : null;
+
   const { data, error } = await client
     .from("sitemig_sites")
     .insert({
@@ -27,9 +48,10 @@ export async function insertSite(input: RegisterSiteInput): Promise<SiteRow> {
       source_branch: input.sourceBranch ?? "main",
       prod_url: input.prodUrl,
       target_repo: input.targetRepo ?? null,
-      status: input.status ?? "queued",
+      status,
       parity_target: input.parityTarget ?? 95,
       max_iterations: input.maxIterations ?? 8,
+      queue_position: queuePosition,
     })
     .select("*")
     .single();
@@ -41,6 +63,29 @@ export async function insertSite(input: RegisterSiteInput): Promise<SiteRow> {
     throw new Error(`Failed to register site: ${error.message}`);
   }
   return data as SiteRow;
+}
+
+/**
+ * Assign positions 1..N to the given site IDs (in order). IDs not in the list
+ * are untouched. Used by the backlog reorder UI.
+ */
+export async function reorderSites(
+  connectionId: string,
+  orderedIds: string[],
+): Promise<void> {
+  const client = requireSupabase();
+  await Promise.all(
+    orderedIds.map((id, idx) =>
+      client
+        .from("sitemig_sites")
+        .update({
+          queue_position: idx + 1,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", id)
+        .eq("connection_id", connectionId),
+    ),
+  );
 }
 
 export async function getSite(id: string): Promise<SiteRow | null> {
@@ -63,6 +108,7 @@ export async function listSites(filter?: {
   let query = client
     .from("sitemig_sites")
     .select("*")
+    .order("queue_position", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: true });
 
   if (filter?.connectionId) {

@@ -50,7 +50,9 @@ export const createDashboardTool = (env: Env) =>
           active: visible.filter((s) =>
             (ACTIVE_STATUSES as string[]).includes(s.status),
           ).length,
-          queued: visible.filter((s) => s.status === "queued").length,
+          queued: visible.filter(
+            (s) => s.status === "queued" || s.status === "draft",
+          ).length,
           needsHuman: visible.filter((s) => s.status === "needs_human").length,
           done: visible.filter((s) => s.status === "done").length,
           maxConcurrent: config.maxConcurrent,

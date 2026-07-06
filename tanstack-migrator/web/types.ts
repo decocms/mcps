@@ -45,6 +45,7 @@ export interface SiteView {
   previewUrl: string | null;
   previewReady: boolean;
   cfDeployUrl: string | null;
+  queuePosition: number | null;
   error: string | null;
   needsHumanReason: string | null;
   createdAt: string;
