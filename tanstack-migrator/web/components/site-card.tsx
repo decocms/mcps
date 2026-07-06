@@ -207,7 +207,26 @@ export function SiteCard({
               ? `rodada ${site.iterationsDone}/${site.maxIterations}`
               : `cadastrado ${timeAgo(site.createdAt)}`}
         </span>
-        <span>
+        <span className="flex items-center gap-1.5">
+          {site.assigneeLogin && (
+            <span
+              className="flex items-center gap-1"
+              title={`@${site.assigneeLogin}`}
+              onClick={(e) => e.stopPropagation()}
+            >
+              {site.assigneeAvatarUrl ? (
+                <img
+                  src={site.assigneeAvatarUrl}
+                  alt={site.assigneeLogin}
+                  className="h-4 w-4 rounded-full ring-1 ring-border"
+                />
+              ) : (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-muted text-[8px] font-bold uppercase ring-1 ring-border">
+                  {site.assigneeLogin[0]}
+                </span>
+              )}
+            </span>
+          )}
           {isDone
             ? `durou ${duration(site.startedAt, site.finishedAt)}`
             : `atualizado ${timeAgo(site.updatedAt)}`}

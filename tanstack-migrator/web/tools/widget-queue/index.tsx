@@ -71,12 +71,22 @@ export default function WidgetQueuePage() {
                 key={s.id}
                 className="rounded-md border border-border bg-card px-3 py-2"
               >
-                <p
-                  className="mb-1.5 truncate text-xs font-medium"
-                  title={s.name}
-                >
-                  {s.name}
-                </p>
+                <div className="mb-1.5 flex items-center gap-1.5">
+                  <p
+                    className="flex-1 truncate text-xs font-medium"
+                    title={s.name}
+                  >
+                    {s.name}
+                  </p>
+                  {s.assigneeAvatarUrl && (
+                    <img
+                      src={s.assigneeAvatarUrl}
+                      alt={s.assigneeLogin ?? ""}
+                      title={`@${s.assigneeLogin}`}
+                      className="h-4 w-4 shrink-0 rounded-full ring-1 ring-border"
+                    />
+                  )}
+                </div>
                 <PipelineStepper
                   status={s.status}
                   resumeStatus={s.resumeStatus}
@@ -147,6 +157,14 @@ function NextRow({
       <span className="flex-1 truncate text-xs font-medium" title={site.name}>
         {site.name}
       </span>
+      {site.assigneeAvatarUrl && (
+        <img
+          src={site.assigneeAvatarUrl}
+          alt={site.assigneeLogin ?? ""}
+          title={`@${site.assigneeLogin}`}
+          className="h-4 w-4 shrink-0 rounded-full ring-1 ring-border"
+        />
+      )}
       {site.status === "draft" ? (
         <button
           type="button"

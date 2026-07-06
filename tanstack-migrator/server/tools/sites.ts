@@ -469,3 +469,38 @@ export const createSiteReorderTool = (env: Env) =>
       return { ok: true };
     },
   });
+
+export const createSiteAssignTool = (env: Env) =>
+  createTool({
+    id: "SITE_ASSIGN",
+    description:
+      "Assign (or unassign) a GitHub user as the responsible supervisor for a migration site.",
+    inputSchema: z.object({
+      siteId: z.string(),
+      login: z
+        .string()
+        .nullable()
+        .describe("GitHub login, or null to unassign"),
+      avatarUrl: z
+        .string()
+        .nullable()
+        .describe("GitHub avatar URL for the user"),
+    }),
+    outputSchema: siteOutput,
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      const site = await getSite(context.siteId);
+      if (!site) throw new Error("Site not found");
+      const updated = await updateSite(site.id, {
+        assignee_login: context.login,
+        assignee_avatar_url: context.avatarUrl,
+      });
+      await addEvent(
+        site.id,
+        context.login
+          ? `Responsável atribuído: @${context.login}`
+          : "Responsável removido",
+      );
+      return { site: toSiteView(updated) };
+    },
+  });

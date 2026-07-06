@@ -234,6 +234,9 @@ export interface SiteRow {
   baseline_report_prefix: string | null;
   baseline_verdict: ParitySummary | null;
 
+  assignee_login: string | null;
+  assignee_avatar_url: string | null;
+
   lease_owner: string | null;
   lease_expires_at: string | null;
 

@@ -12,6 +12,7 @@ import {
   Play,
   RotateCcw,
   Trash2,
+  UserCircle2,
   X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -128,6 +129,137 @@ function PreviewPanel({ site }: { site: SiteView }) {
   );
 }
 
+interface GhContributor {
+  login: string;
+  avatar_url: string;
+}
+
+function useContributors(repo: string) {
+  const [list, setList] = useState<GhContributor[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    if (!repo) return;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${repo}/contributors?per_page=30`,
+        { headers: { Accept: "application/vnd.github+json" } },
+      );
+      if (res.ok) {
+        const json = (await res.json()) as GhContributor[];
+        setList(json.filter((c) => !c.login.endsWith("[bot]")));
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { list, loading, load };
+}
+
+function AssigneePicker({
+  site,
+  onAssign,
+}: {
+  site: {
+    assigneeLogin: string | null;
+    assigneeAvatarUrl: string | null;
+    sourceRepo: string;
+  };
+  onAssign: (login: string | null, avatarUrl: string | null) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const { list, loading, load } = useContributors(site.sourceRepo);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    load();
+    const handler = (e: MouseEvent) => {
+      if (!ref.current?.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
+        title={
+          site.assigneeLogin ? `@${site.assigneeLogin}` : "Atribuir responsável"
+        }
+      >
+        {site.assigneeAvatarUrl ? (
+          <img
+            src={site.assigneeAvatarUrl}
+            alt={site.assigneeLogin ?? ""}
+            className="h-4 w-4 rounded-full"
+          />
+        ) : (
+          <UserCircle2 className="h-4 w-4 text-muted-foreground" />
+        )}
+        <span className="text-muted-foreground">
+          {site.assigneeLogin ? `@${site.assigneeLogin}` : "Atribuir"}
+        </span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 min-w-[180px] overflow-hidden rounded-md border border-border bg-card shadow-lg">
+          {site.assigneeLogin && (
+            <button
+              type="button"
+              onClick={() => {
+                onAssign(null, null);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
+            >
+              <X className="h-3 w-3" /> Remover atribuição
+            </button>
+          )}
+          {loading ? (
+            <div className="flex items-center justify-center py-3">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            </div>
+          ) : list.length === 0 ? (
+            <p className="px-3 py-2 text-xs text-muted-foreground">
+              Sem contribuidores públicos
+            </p>
+          ) : (
+            list.map((c) => (
+              <button
+                key={c.login}
+                type="button"
+                onClick={() => {
+                  onAssign(c.login, c.avatar_url);
+                  setOpen(false);
+                }}
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-1.5 text-xs hover:bg-muted",
+                  site.assigneeLogin === c.login && "bg-muted font-semibold",
+                )}
+              >
+                <img
+                  src={c.avatar_url}
+                  alt={c.login}
+                  className="h-5 w-5 rounded-full"
+                />
+                {c.login}
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 type Tab = "overview" | "runs" | "terminal" | "activity";
 type RunFilter = "all" | "migrate" | "triage" | "fix" | "parity";
 
@@ -227,6 +359,14 @@ export function SiteDetailPanel({
                 {site?.name ?? "…"}
               </h2>
               {site && <StatusBadge status={site.status} />}
+              {site?.assigneeAvatarUrl && (
+                <img
+                  src={site.assigneeAvatarUrl}
+                  alt={site.assigneeLogin ?? ""}
+                  title={`@${site.assigneeLogin}`}
+                  className="h-5 w-5 shrink-0 rounded-full ring-1 ring-border"
+                />
+              )}
               {site && isStalled(site) && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
@@ -560,6 +700,25 @@ export function SiteDetailPanel({
                     {error}
                   </div>
                 )}
+
+                {/* assignee */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    Responsável
+                  </span>
+                  <AssigneePicker
+                    site={site}
+                    onAssign={async (login, avatarUrl) => {
+                      await callTool("SITE_ASSIGN", {
+                        siteId,
+                        login,
+                        avatarUrl,
+                      });
+                      refresh();
+                      onChanged();
+                    }}
+                  />
+                </div>
 
                 {/* links */}
                 <div className="flex flex-col gap-1 text-xs">

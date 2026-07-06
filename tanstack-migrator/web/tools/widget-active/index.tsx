@@ -52,9 +52,22 @@ export default function WidgetActivePage() {
     <div className="flex flex-col gap-2.5 p-3">
       {/* name on its own line, badge below — avoids the truncate+badge clash */}
       <div className="flex flex-col gap-1">
-        <span className="truncate text-sm font-semibold" title={site.name}>
-          {site.name}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className="flex-1 truncate text-sm font-semibold"
+            title={site.name}
+          >
+            {site.name}
+          </span>
+          {site.assigneeAvatarUrl && (
+            <img
+              src={site.assigneeAvatarUrl}
+              alt={site.assigneeLogin ?? ""}
+              title={`@${site.assigneeLogin}`}
+              className="h-5 w-5 shrink-0 rounded-full ring-1 ring-border"
+            />
+          )}
+        </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={site.status} />
           {site.parityScore !== null && (

@@ -49,6 +49,8 @@ export interface SiteView {
   baselineScore: number | null;
   baselineMeasuredAt: string | null;
   baselineReportUrl: string | null;
+  assigneeLogin: string | null;
+  assigneeAvatarUrl: string | null;
   error: string | null;
   needsHumanReason: string | null;
   createdAt: string;
