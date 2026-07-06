@@ -1,6 +1,7 @@
 export const ACTIVE_STATUSES_SET = new Set([
   "creating_repo",
   "provisioning_sandbox",
+  "baselining",
   "migrating_script",
   "opening_pr",
   "triaging",

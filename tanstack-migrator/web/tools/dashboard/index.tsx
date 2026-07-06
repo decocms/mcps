@@ -6,7 +6,7 @@ import {
   Plus,
   RefreshCw,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { RegisterModal } from "@/components/register-modal.tsx";
 import { SiteCard } from "@/components/site-card.tsx";
 import { SiteDetailPanel } from "@/components/site-detail.tsx";
@@ -175,6 +175,7 @@ export default function DashboardPage() {
   const [tab, setTab] = useState<Tab>("backlog");
   const [showRegister, setShowRegister] = useState(false);
   const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
+  const navRef = useRef<HTMLElement>(null);
 
   const buckets = useMemo(() => {
     const result: Record<Tab, SiteView[]> = {
@@ -243,11 +244,35 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <nav className="flex gap-1 border-b border-border px-4 pt-2">
+      <nav
+        ref={navRef}
+        role="tablist"
+        className="flex gap-1 border-b border-border px-4 pt-2"
+        onKeyDown={(e) => {
+          const ids = TAB_META.map((t) => t.id);
+          const cur = ids.indexOf(tab);
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            setTab(ids[(cur + 1) % ids.length]);
+          } else if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            setTab(ids[(cur - 1 + ids.length) % ids.length]);
+          } else if (e.key === "Home") {
+            e.preventDefault();
+            setTab(ids[0]);
+          } else if (e.key === "End") {
+            e.preventDefault();
+            setTab(ids[ids.length - 1]);
+          }
+        }}
+      >
         {TAB_META.map((t) => (
           <button
             key={t.id}
             type="button"
+            role="tab"
+            aria-selected={tab === t.id}
+            tabIndex={tab === t.id ? 0 : -1}
             onClick={() => setTab(t.id)}
             className={cn(
               "rounded-t-md px-3 py-2 text-xs font-medium",

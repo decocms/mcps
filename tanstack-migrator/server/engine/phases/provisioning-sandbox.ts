@@ -28,8 +28,8 @@ export async function provisioningSandbox(
     sandbox_preview_url: info.previewUrl,
     preview_ready: false,
     virtual_mcp_id: info.virtualMcpId ?? site.virtual_mcp_id,
-    status: "migrating_script",
-    phase_detail: "sandbox de pé, rodando o script de migração",
+    status: "baselining",
+    phase_detail: "sandbox de pé, capturando baseline do site original",
     last_progress_at: new Date().toISOString(),
   });
   await addEvent(

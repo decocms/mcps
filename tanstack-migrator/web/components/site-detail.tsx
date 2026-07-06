@@ -14,7 +14,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ParityBar } from "@/components/parity-bar.tsx";
 import { PipelineStepper } from "@/components/pipeline-stepper.tsx";
 import { RunRow } from "@/components/run-row.tsx";
@@ -153,6 +153,17 @@ export function SiteDetailPanel({
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [runFilter, setRunFilter] = useState<RunFilter>("all");
+  const tabBarRef = useRef<HTMLDivElement>(null);
+  const filterBarRef = useRef<HTMLDivElement>(null);
+
+  // Escape closes the drawer
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   const action = async (tool: string, extra?: Record<string, unknown>) => {
     setBusy(tool);
@@ -242,6 +253,7 @@ export function SiteDetailPanel({
                 <ParityBar
                   score={site.parityScore}
                   target={site.parityTarget}
+                  baselineScore={site.baselineScore}
                 />
                 <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground tabular-nums">
                   {site.issuesTotal > 0 && (
@@ -271,7 +283,33 @@ export function SiteDetailPanel({
 
           {/* tabs */}
           {site && (
-            <div className="flex gap-1 border-t border-border px-2">
+            <div
+              ref={tabBarRef}
+              role="tablist"
+              className="flex gap-1 border-t border-border px-2"
+              onKeyDown={(e) => {
+                const tabs: Tab[] = [
+                  "overview",
+                  "runs",
+                  "terminal",
+                  "activity",
+                ];
+                const cur = tabs.indexOf(tab);
+                if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  setTab(tabs[(cur + 1) % tabs.length]);
+                } else if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  setTab(tabs[(cur - 1 + tabs.length) % tabs.length]);
+                } else if (e.key === "Home") {
+                  e.preventDefault();
+                  setTab(tabs[0]);
+                } else if (e.key === "End") {
+                  e.preventDefault();
+                  setTab(tabs[tabs.length - 1]);
+                }
+              }}
+            >
               {(
                 [
                   ["overview", "Visão geral"],
@@ -283,6 +321,9 @@ export function SiteDetailPanel({
                 <button
                   key={id}
                   type="button"
+                  role="tab"
+                  aria-selected={tab === id}
+                  tabIndex={tab === id ? 0 : -1}
                   onClick={() => setTab(id)}
                   className={cn(
                     "relative px-3 py-2 text-xs font-medium",
@@ -349,6 +390,50 @@ export function SiteDetailPanel({
                 )}
 
                 <PreviewPanel site={site} />
+
+                {/* before/after baseline card */}
+                {site.baselineScore !== null && (
+                  <div className="rounded-md border border-border bg-card p-3">
+                    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      Antes / Depois
+                    </p>
+                    <div className="flex items-center gap-3 text-xs tabular-nums">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-muted-foreground">antes</span>
+                        <span className="text-sm font-bold">
+                          {Math.round(site.baselineScore)}%
+                        </span>
+                      </div>
+                      <div className="flex-1">
+                        <ParityBar
+                          score={site.parityScore}
+                          target={site.parityTarget}
+                          baselineScore={site.baselineScore}
+                        />
+                      </div>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span className="text-muted-foreground">agora</span>
+                        <span className="text-sm font-bold">
+                          {site.parityScore !== null
+                            ? `${Math.round(site.parityScore)}%`
+                            : "—"}
+                        </span>
+                      </div>
+                    </div>
+                    {site.parityScore !== null &&
+                      site.parityScore > site.baselineScore && (
+                        <p className="mt-1.5 text-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          +{Math.round(site.parityScore - site.baselineScore)}{" "}
+                          pp de melhoria
+                        </p>
+                      )}
+                    {site.costTotal > 0 && (
+                      <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                        custo da migração: ${site.costTotal.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* stats */}
                 {(site.issuesTotal > 0 ||
@@ -529,7 +614,30 @@ export function SiteDetailPanel({
 
             {tab === "runs" && (
               <>
-                <div className="flex flex-wrap gap-1">
+                <div
+                  ref={filterBarRef}
+                  role="tablist"
+                  className="flex flex-wrap gap-1"
+                  onKeyDown={(e) => {
+                    const filters: RunFilter[] = [
+                      "all",
+                      "migrate",
+                      "triage",
+                      "fix",
+                      "parity",
+                    ];
+                    const cur = filters.indexOf(runFilter);
+                    if (e.key === "ArrowRight") {
+                      e.preventDefault();
+                      setRunFilter(filters[(cur + 1) % filters.length]);
+                    } else if (e.key === "ArrowLeft") {
+                      e.preventDefault();
+                      setRunFilter(
+                        filters[(cur - 1 + filters.length) % filters.length],
+                      );
+                    }
+                  }}
+                >
                   {(
                     [
                       ["all", "Todos"],
@@ -542,6 +650,9 @@ export function SiteDetailPanel({
                     <button
                       key={id}
                       type="button"
+                      role="tab"
+                      aria-selected={runFilter === id}
+                      tabIndex={runFilter === id ? 0 : -1}
                       onClick={() => setRunFilter(id)}
                       className={cn(
                         "rounded-full border px-2.5 py-0.5 text-[11px] font-medium",

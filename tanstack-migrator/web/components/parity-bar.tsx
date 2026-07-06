@@ -3,10 +3,12 @@ import { cn } from "@/lib/utils.ts";
 export function ParityBar({
   score,
   target,
+  baselineScore,
   compact,
 }: {
   score: number | null;
   target: number;
+  baselineScore?: number | null;
   compact?: boolean;
 }) {
   const value = score ?? 0;
@@ -22,6 +24,14 @@ export function ParityBar({
           )}
           style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
         />
+        {/* baseline marker */}
+        {baselineScore != null && (
+          <div
+            className="absolute top-0 h-full w-0.5 bg-zinc-400/60 dark:bg-zinc-500/60"
+            style={{ left: `${Math.min(100, Math.max(0, baselineScore))}%` }}
+            title={`baseline Fresh: ${Math.round(baselineScore)}%`}
+          />
+        )}
         {/* target marker */}
         <div
           className="absolute top-0 h-full w-0.5 bg-foreground/40"

@@ -528,6 +528,64 @@ RESULT_JSON: {"ok": true, "parityScore": <verdict.score do report.json>, "detail
 }
 
 /**
+ * Phase baselining: capture the production site's Lighthouse / SEO snapshot
+ * BEFORE the migration starts. Runs parity with --prod == --cand (same URL)
+ * so the visual diff is always 0 % / 100 score, but the report.json contains
+ * per-page Lighthouse data (performance, SEO, accessibility) that serves as the
+ * "before" baseline for the before/after comparison in the UI.
+ * Failure is soft — the phase logs a warning and advances to migrating_script.
+ */
+export function baselinePrompt(input: {
+  site: SiteRow;
+  putUrls: { reportJson?: string; reportHtml?: string };
+}): string {
+  const { site, putUrls } = input;
+  const reportJsonPut = putUrls.reportJson
+    ? `curl -s -X PUT -H "Content-Type: application/json" --data-binary @"$RUN_DIR/report.json" "${putUrls.reportJson}"`
+    : "# (sem OBJECT_STORAGE configurado — artefato não será salvo)";
+  const reportHtmlPut = putUrls.reportHtml
+    ? `curl -s -X PUT -H "Content-Type: text/html" --data-binary @"$RUN_DIR/report.html" "${putUrls.reportHtml}"`
+    : "";
+
+  return `Você é o agente de baseline da migração ${site.source_repo}. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+
+# Objetivo (SOMENTE MEDIÇÃO — NÃO CORRIJA NADA)
+Capturar um snapshot Lighthouse/SEO do site de produção ANTES de qualquer alteração, usando a parity CLI com --prod == --cand (mesma URL). O score visual será ~100 %; o que importa é o report.json com as métricas por página.
+
+# Passos
+\`\`\`bash
+cd /app/repo
+[ -d node_modules ] || bun install || npm install
+
+# 1. Roda a parity CLI com prod == cand (baseline do site original)
+npx @decocms/parity@latest run \\
+  --prod "${site.prod_url}" \\
+  --cand "${site.prod_url}" \\
+  --preset ci 2>&1 | tee /tmp/baseline-parity.log
+
+# 2. Localiza o diretório do run mais recente
+RUN_DIR=$(ls -td parity-output/runs/*/ 2>/dev/null | head -1)
+echo "RUN_DIR=$RUN_DIR"
+
+# 3. Faz upload dos artefatos (se OBJECT_STORAGE configurado)
+if [ -f "$RUN_DIR/report.json" ]; then
+  ${reportJsonPut}
+fi
+${reportHtmlPut ? `if [ -f "$RUN_DIR/report.html" ]; then\n  ${reportHtmlPut}\nfi` : ""}
+
+# 4. Extrai verdict.score
+cat "$RUN_DIR/report.json" | head -100
+\`\`\`
+
+${progressInstruction(site)}
+
+# Resultado
+Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
+RESULT_JSON: {"ok": true, "parityScore": <verdict.score do report.json, tipicamente 100>, "detail": "<resumo das métricas capturadas>"}
+(ok=false apenas se a parity CLI nem conseguiu rodar — não falhe por métricas ruins)`;
+}
+
+/**
  * Phase deploying_cf: build the site and deploy to Cloudflare Workers via
  * `wrangler deploy` (direct upload — no dashboard, no git integration).
  * Requires CLOUDFLARE_API_TOKEN injected via the prompt env block.

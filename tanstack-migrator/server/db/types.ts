@@ -6,6 +6,7 @@ export type SiteStatus =
   | "queued"
   | "creating_repo"
   | "provisioning_sandbox"
+  | "baselining"
   | "migrating_script"
   | "opening_pr"
   | "triaging"
@@ -43,6 +44,7 @@ export type SiteStatus =
 export const ACTIVE_STATUSES: SiteStatus[] = [
   "creating_repo",
   "provisioning_sandbox",
+  "baselining",
   "migrating_script",
   "opening_pr",
   "triaging",
@@ -104,6 +106,7 @@ export function isLegacyStatus(status: string): boolean {
 /** Phases whose work happens inside a bounded decopilot session in the sandbox. */
 export function isSessionStatus(status: string): boolean {
   return (
+    status === "baselining" ||
     status === "migrating_script" ||
     status === "triaging" ||
     status === "fixing" ||
@@ -225,6 +228,11 @@ export interface SiteRow {
 
   queue_position: number | null;
   cost_total: number;
+
+  baseline_score: number | null;
+  baseline_measured_at: string | null;
+  baseline_report_prefix: string | null;
+  baseline_verdict: ParitySummary | null;
 
   lease_owner: string | null;
   lease_expires_at: string | null;

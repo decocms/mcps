@@ -1,4 +1,5 @@
 import {
+  Activity,
   Box,
   Check,
   GitBranch,
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils.ts";
 export const PIPELINE_PHASES = [
   { key: "repo", label: "Repo", icon: GitBranch },
   { key: "sandbox", label: "Sandbox", icon: Box },
+  { key: "baseline", label: "Baseline", icon: Activity },
   { key: "script", label: "Script", icon: Play },
   { key: "pr", label: "PR", icon: GitPullRequest },
   { key: "triage", label: "Triagem", icon: ListChecks },
@@ -36,6 +38,7 @@ type PhaseKey = (typeof PIPELINE_PHASES)[number]["key"];
 const STATUS_TO_PHASE: Record<string, PhaseKey> = {
   creating_repo: "repo",
   provisioning_sandbox: "sandbox",
+  baselining: "baseline",
   migrating_script: "script",
   // legacy migrating* → script
   migrating: "script",

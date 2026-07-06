@@ -30,7 +30,8 @@ export type SandboxTaskKind =
   | "triage"
   | "fix"
   | "parity"
-  | "deploy";
+  | "deploy"
+  | "baseline";
 
 export interface SandboxTaskInput {
   kind: SandboxTaskKind;

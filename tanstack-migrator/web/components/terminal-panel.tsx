@@ -104,7 +104,8 @@ export function TerminalPanel({
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[11px] leading-relaxed"
+        tabIndex={0}
+        className="flex-1 overflow-y-auto px-3 py-2 font-mono text-[11px] leading-relaxed outline-none focus:ring-1 focus:ring-zinc-600"
       >
         {loading && !data && (
           <div className="flex items-center gap-2 text-zinc-500">

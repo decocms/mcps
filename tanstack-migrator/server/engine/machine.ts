@@ -4,6 +4,7 @@ import type { SiteRow, SiteStatus } from "../db/types.ts";
 import type { WorkerCtx } from "../lib/mesh.ts";
 import type { InflightTracker } from "./inflight.ts";
 import { awaitingMerge } from "./phases/awaiting-merge.ts";
+import { baselining } from "./phases/baselining.ts";
 import { creatingRepo } from "./phases/creating-repo.ts";
 import { deployingCf } from "./phases/deploying-cf.ts";
 import { fixing } from "./phases/fixing.ts";
@@ -31,6 +32,7 @@ export type PhaseHandler = (
 export const PHASE_HANDLERS: Partial<Record<SiteStatus, PhaseHandler>> = {
   creating_repo: creatingRepo,
   provisioning_sandbox: provisioningSandbox,
+  baselining,
   migrating_script: migratingScript,
   opening_pr: openingPr,
   triaging,
