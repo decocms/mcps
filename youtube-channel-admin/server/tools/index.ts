@@ -10,8 +10,16 @@ import {
   createGetMyChannelTool,
   createListSubscribersTool,
   createListVideoCategoryTool,
+  createSetWatermarkTool,
+  createUnsetWatermarkTool,
   createUpdateChannelTool,
 } from "./channel.ts";
+import {
+  createCreateChannelSectionTool,
+  createDeleteChannelSectionTool,
+  createListChannelSectionsTool,
+  createUpdateChannelSectionTool,
+} from "./channel-sections.ts";
 import {
   createDeleteCommentTool,
   createCommentOnVideoTool,
@@ -22,6 +30,8 @@ import {
 } from "./comments.ts";
 import { createDashboardTool } from "./dashboard.ts";
 import {
+  createAddLiveChatModeratorTool,
+  createBanLiveChatUserTool,
   createBindBroadcastTool,
   createCreateBroadcastTool,
   createCreateLiveStreamTool,
@@ -29,11 +39,16 @@ import {
   createDeleteLiveChatMessageTool,
   createDeleteLiveStreamTool,
   createListBroadcastsTool,
+  createListLiveChatBansTool,
   createListLiveChatMessagesTool,
+  createListLiveChatModeratorsTool,
   createListLiveStreamsTool,
+  createRemoveLiveChatModeratorTool,
   createSendLiveChatMessageTool,
   createTransitionBroadcastTool,
+  createUnbanLiveChatUserTool,
   createUpdateBroadcastTool,
+  createUpdateLiveStreamTool,
 } from "./live.ts";
 import {
   createAddToPlaylistTool,
@@ -56,6 +71,7 @@ import {
 } from "./videos.ts";
 import {
   createAlertsWidgetTool,
+  createLivesWidgetTool,
   createPerformanceWidgetTool,
   createTopVideosWidgetTool,
 } from "./widgets.ts";
@@ -66,6 +82,13 @@ export const tools = [
   createUpdateChannelTool,
   createListVideoCategoryTool,
   createListSubscribersTool,
+  createSetWatermarkTool,
+  createUnsetWatermarkTool,
+  // channel sections
+  createListChannelSectionsTool,
+  createCreateChannelSectionTool,
+  createUpdateChannelSectionTool,
+  createDeleteChannelSectionTool,
   // search
   createSearchMyVideosTool,
   // videos
@@ -106,10 +129,17 @@ export const tools = [
   createTransitionBroadcastTool,
   createListLiveStreamsTool,
   createCreateLiveStreamTool,
+  createUpdateLiveStreamTool,
   createDeleteLiveStreamTool,
   createListLiveChatMessagesTool,
   createSendLiveChatMessageTool,
   createDeleteLiveChatMessageTool,
+  createListLiveChatBansTool,
+  createBanLiveChatUserTool,
+  createUnbanLiveChatUserTool,
+  createListLiveChatModeratorsTool,
+  createAddLiveChatModeratorTool,
+  createRemoveLiveChatModeratorTool,
   // analytics
   createQueryAnalyticsTool,
   // ui
@@ -117,4 +147,5 @@ export const tools = [
   createTopVideosWidgetTool,
   createPerformanceWidgetTool,
   createAlertsWidgetTool,
+  createLivesWidgetTool,
 ];

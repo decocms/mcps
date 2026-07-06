@@ -14,6 +14,7 @@ import { GOOGLE_SCOPES } from "./constants.ts";
 import {
   dashboardResource,
   widgetAlertsResource,
+  widgetLivesResource,
   widgetPerformanceResource,
   widgetTopVideosResource,
 } from "./resources/index.ts";
@@ -37,6 +38,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     widgetTopVideosResource,
     widgetPerformanceResource,
     widgetAlertsResource,
+    widgetLivesResource,
   ],
 });
 

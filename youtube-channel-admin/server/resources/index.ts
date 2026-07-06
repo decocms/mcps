@@ -1,6 +1,7 @@
 import {
   DASHBOARD_RESOURCE_URI,
   WIDGET_ALERTS_RESOURCE_URI,
+  WIDGET_LIVES_RESOURCE_URI,
   WIDGET_PERFORMANCE_RESOURCE_URI,
   WIDGET_TOP_VIDEOS_RESOURCE_URI,
 } from "../constants.ts";
@@ -34,4 +35,12 @@ export const widgetAlertsResource = createMcpAppResource({
   description:
     "Home widget: videos with upload/processing problems and comments held for review.",
   htmlFile: "widget-alerts.html",
+});
+
+export const widgetLivesResource = createMcpAppResource({
+  uri: WIDGET_LIVES_RESOURCE_URI,
+  name: "YouTube — Lives & Estreias",
+  description:
+    "Home widget: upcoming and active live broadcasts and Premieres.",
+  htmlFile: "widget-lives.html",
 });
