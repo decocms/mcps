@@ -453,6 +453,17 @@ ${ensureReadyPreamble(site)}
 - tsc/type-only errors that don't break \`npm run build\` (type debt), lint/format nits, style.
 - Missing-but-unrelated features, TODOs.
 
+${memorySection(site, [
+  {
+    ...FRAMEWORK_NOTES_SPEC,
+    read: "if the diff reproduces a signature listed here, it is a KNOWN framework bug — do not block the merge on it (it is not fixable in the site code); note it in the detail instead",
+  },
+  {
+    ...FIXES_SPEC,
+    read: "if the diff applies one of these proven recipes, that is a GOOD sign — approve; if it works AROUND a recipe in a fragile way, call it out",
+  },
+])}
+
 ${progressInstruction(site)}
 
 # Result
