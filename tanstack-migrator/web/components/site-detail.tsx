@@ -10,6 +10,7 @@ import {
   Monitor,
   Pause,
   Play,
+  Rewind,
   RotateCcw,
   Trash2,
   UserCircle2,
@@ -282,6 +283,7 @@ export function SiteDetailPanel({
   } = usePollingTool<SiteDetail>("SITE_GET", { siteId }, 10_000);
   const [busy, setBusy] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [confirmReset, setConfirmReset] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("overview");
   const [runFilter, setRunFilter] = useState<RunFilter>("all");
@@ -309,6 +311,16 @@ export function SiteDetailPanel({
     } finally {
       setBusy(null);
     }
+  };
+
+  const resetSite = async () => {
+    if (!confirmReset) {
+      setConfirmReset(true);
+      setTimeout(() => setConfirmReset(false), 4000);
+      return;
+    }
+    setConfirmReset(false);
+    await action("SITE_RESET");
   };
 
   const removeSite = async () => {
@@ -664,6 +676,15 @@ export function SiteDetailPanel({
                       onClick={() => action("SITE_RETRY")}
                     />
                   )}
+                  {site.targetRepo &&
+                    !["queued", "archived"].includes(site.status) && (
+                      <ActionButton
+                        icon={Rewind}
+                        label={confirmReset ? "Reset to triage?" : "Reset"}
+                        busy={busy === "SITE_RESET"}
+                        onClick={resetSite}
+                      />
+                    )}
                   {site.status !== "done" && site.status !== "archived" && (
                     <ActionButton
                       icon={CheckCircle2}
