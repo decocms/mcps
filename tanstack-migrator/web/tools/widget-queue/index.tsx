@@ -9,6 +9,11 @@ import { ACTIVE_STATUSES_SET } from "@/lib/status.ts";
 /** Show queue + suggestions side by side once the tile is at least this wide. */
 const WIDE_PX = 520;
 
+/** Grafana stores the raw 7-day COGS; show it extrapolated to ~monthly (×30/7). */
+function estMonthly(cogs7d: number): string {
+  return `≈$${Math.round((cogs7d * 30) / 7).toLocaleString()}/mês`;
+}
+
 /** True when the observed element is at least `px` wide (tile ≠ viewport → ResizeObserver). */
 function useWide(
   ref: React.RefObject<HTMLElement | null>,
@@ -246,7 +251,9 @@ function SuggestionsContent({
       <div className="flex items-center gap-1.5">
         <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-sm font-semibold">Sugestões</span>
-        <span className="text-[10px] text-muted-foreground">custo 7d</span>
+        <span className="text-[10px] text-muted-foreground">
+          custo/mês (est.)
+        </span>
       </div>
 
       {loading && !data ? (
@@ -375,8 +382,11 @@ function SuggestionRow({
           )}
         </span>
         <span className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
-          <span className="font-semibold text-foreground/80">
-            ${Math.round(s.cogsUsd).toLocaleString()}/7d
+          <span
+            className="font-semibold text-foreground/80"
+            title={`$${Math.round(s.cogsUsd).toLocaleString()}/7d (Grafana)`}
+          >
+            {estMonthly(s.cogsUsd)}
           </span>
           {wide && host && (
             <a

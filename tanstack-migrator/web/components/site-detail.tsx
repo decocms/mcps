@@ -574,9 +574,11 @@ export function SiteDetailPanel({
                     )}
                     {site.costBeforeUsd != null && (
                       <p className="mt-1 text-center text-[10px] text-muted-foreground">
-                        custo infra: antes $
-                        {Math.round(site.costBeforeUsd).toLocaleString()}/7d ·
-                        depois <span className="italic">em breve</span>
+                        custo infra: antes ≈$
+                        {Math.round(
+                          (site.costBeforeUsd * 30) / 7,
+                        ).toLocaleString()}
+                        /mês · depois <span className="italic">em breve</span>
                       </p>
                     )}
                   </div>
