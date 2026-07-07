@@ -129,9 +129,13 @@ function ActiveSite({ site, wide }: { site: SiteView; wide: boolean }) {
         </p>
       )}
 
-      {/* metrics + links fill the remaining space instead of stretching the stepper */}
-      <Metrics site={site} wide={wide} />
-      <Links site={site} />
+      {/* extra info only on a wide tile — small stays minimal (no scroll) */}
+      {wide && (
+        <>
+          <Metrics site={site} wide={wide} />
+          <Links site={site} />
+        </>
+      )}
     </>
   );
 }
