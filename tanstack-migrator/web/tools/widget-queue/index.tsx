@@ -83,7 +83,7 @@ export default function WidgetQueuePage() {
             />
           </div>
           <div className="min-h-0 overflow-y-auto border-l border-border pl-3">
-            <SuggestionsContent onAdded={refresh} />
+            <SuggestionsContent onAdded={refresh} wide />
           </div>
         </div>
       ) : (
@@ -209,7 +209,13 @@ interface Suggestion {
   top3: boolean;
 }
 
-function SuggestionsContent({ onAdded }: { onAdded: () => void }) {
+function SuggestionsContent({
+  onAdded,
+  wide = false,
+}: {
+  onAdded: () => void;
+  wide?: boolean;
+}) {
   const { data, loading, refresh } = usePollingTool<{
     configured: boolean;
     sites: Suggestion[];
@@ -240,7 +246,7 @@ function SuggestionsContent({ onAdded }: { onAdded: () => void }) {
       <div className="flex items-center gap-1.5">
         <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
         <span className="text-sm font-semibold">Sugestões</span>
-        <span className="text-[10px] text-muted-foreground">por custo/mês</span>
+        <span className="text-[10px] text-muted-foreground">custo 7d</span>
       </div>
 
       {loading && !data ? (
@@ -253,6 +259,7 @@ function SuggestionsContent({ onAdded }: { onAdded: () => void }) {
             <SuggestionRow
               key={s.repo}
               s={s}
+              wide={wide}
               busy={adding === s.repo}
               onAdd={() => add(s)}
             />
@@ -323,15 +330,27 @@ function SiteIcon({
   );
 }
 
+function prodHost(prodUrl: string | null): string | null {
+  if (!prodUrl) return null;
+  try {
+    return new URL(prodUrl).hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
 function SuggestionRow({
   s,
+  wide,
   busy,
   onAdd,
 }: {
   s: Suggestion;
+  wide: boolean;
   busy: boolean;
   onAdd: () => void;
 }) {
+  const host = prodHost(s.prodUrl);
   return (
     <div className="flex items-center gap-2 px-2.5 py-1.5">
       <SiteIcon prodUrl={s.prodUrl} thumbUrl={s.thumbUrl} name={s.name} />
@@ -345,9 +364,32 @@ function SuggestionRow({
           <span className="truncate" title={s.name}>
             {s.name}
           </span>
+          {/* repo alongside the name when there's room */}
+          {wide && (
+            <span
+              className="truncate text-[10px] font-normal text-muted-foreground"
+              title={s.repo}
+            >
+              · {s.repo}
+            </span>
+          )}
         </span>
-        <span className="text-[10px] text-muted-foreground tabular-nums">
-          ${Math.round(s.cogsUsd).toLocaleString()}/mês
+        <span className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
+          <span className="font-semibold text-foreground/80">
+            ${Math.round(s.cogsUsd).toLocaleString()}/7d
+          </span>
+          {wide && host && (
+            <a
+              href={s.prodUrl ?? "#"}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="truncate hover:text-foreground hover:underline"
+              title={s.prodUrl ?? ""}
+            >
+              {host}
+            </a>
+          )}
         </span>
       </div>
       <button
