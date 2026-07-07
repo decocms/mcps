@@ -48,8 +48,9 @@ export default function WidgetActivePage() {
   const isDone = site.status === "done";
 
   return (
-    // compact, top-aligned (no h-full/mt-auto) so the card hugs its content
-    <div className="flex flex-col gap-2.5 p-3">
+    // fill the tile (home wrapper is h-full overflow-hidden) and scroll if the
+    // tile is shorter than the content instead of getting clipped
+    <div className="flex h-full min-h-0 flex-col gap-2.5 overflow-y-auto p-3">
       {/* name on its own line, badge below — avoids the truncate+badge clash */}
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1.5">
