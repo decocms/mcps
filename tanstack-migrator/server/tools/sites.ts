@@ -369,6 +369,75 @@ export const createSiteRetryTool = (env: Env) =>
     },
   });
 
+/** Phases a reset can rewind INTO (repo/sandbox/script/PR already exist). */
+const RESET_TARGETS = [
+  "provisioning_sandbox",
+  "baselining",
+  "opening_pr",
+  "reviewing",
+  "triaging",
+  "fixing",
+  "paritying",
+  "deploying",
+] as const;
+
+export const createSiteResetTool = (env: Env) =>
+  createTool({
+    id: "SITE_RESET",
+    description:
+      "Rewind a migration back to the start of the loop (default: triaging) WITHOUT redoing the irreversible prefix — it never re-runs the migration script nor re-opens the PR (the existing branch/PR and CF deploy URL are kept). Clears parity score, iteration/fix-session/no-improve counters and session state so the triage → fix → review → merge → deploy → parity loop starts fresh. Use it to unstick a site (e.g. a legacy one trying to measure parity with an open PR from before the incremental-merge flow).",
+    inputSchema: z.object({
+      siteId: z.string(),
+      toStatus: z
+        .enum(RESET_TARGETS)
+        .optional()
+        .describe("Phase to rewind into (default: triaging)."),
+    }),
+    outputSchema: siteOutput,
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      const site = await getSite(context.siteId);
+      if (!site) throw new Error("Site not found");
+      if (!site.target_repo) {
+        throw new Error(
+          "Migration hasn't started yet — nothing to reset (enqueue it instead).",
+        );
+      }
+      if (site.status === "archived") {
+        throw new Error("Cannot reset an archived migration.");
+      }
+      const nextStatus = (context.toStatus ?? "triaging") as SiteStatus;
+      const updated = await updateSite(site.id, {
+        status: nextStatus,
+        // clear blockers + resume marker
+        resume_status: null,
+        error: null,
+        needs_human_reason: null,
+        // restart the loop from zero (keep repo/branch/PR/deploy URL intact)
+        parity_score: null,
+        best_score: null,
+        iterations_done: 0,
+        no_improve_count: 0,
+        fix_sessions_done: 0,
+        // reset the issue cache so triaging re-analyzes (it skips to fixing when
+        // issues_open > 0); GitHub stays the source of truth and is re-synced
+        issues_open: 0,
+        issues_total: 0,
+        issues_closed: 0,
+        // drop any in-flight session so the next tick starts clean
+        sandbox_session_id: null,
+        phase_thread_id: null,
+        transient_retries: 0,
+        last_progress_at: new Date().toISOString(),
+      });
+      await addEvent(
+        site.id,
+        `Reset to ${nextStatus} (kept repo/branch${site.pr_number ? `/PR #${site.pr_number}` : ""}${site.cf_deploy_url ? "/deploy" : ""}; loop restarted)`,
+      );
+      return { site: toSiteView(updated) };
+    },
+  });
+
 export const createSiteMarkDoneTool = (env: Env) =>
   createTool({
     id: "SITE_MARK_DONE",
