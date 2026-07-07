@@ -109,11 +109,12 @@ function ActiveSite({ site, wide }: { site: SiteView; wide: boolean }) {
         </div>
       </div>
 
+      {/* wide tile → labeled steps (uses the horizontal space); small → dots only */}
       <PipelineStepper
         status={site.status}
         resumeStatus={site.resumeStatus}
         phaseDetail={site.phaseDetail}
-        compact
+        compact={!wide}
       />
 
       <ParityBar
