@@ -572,6 +572,13 @@ export function SiteDetailPanel({
                         custo da migração: ${site.costTotal.toFixed(2)}
                       </p>
                     )}
+                    {site.costBeforeUsd != null && (
+                      <p className="mt-1 text-center text-[10px] text-muted-foreground">
+                        custo infra: antes $
+                        {Math.round(site.costBeforeUsd).toLocaleString()}/mês ·
+                        depois <span className="italic">em breve</span>
+                      </p>
+                    )}
                   </div>
                 )}
 

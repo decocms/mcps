@@ -111,3 +111,42 @@ export async function searchSiteCatalog(
     thumbUrl: r.thumb_url ?? null,
   }));
 }
+
+/**
+ * Look up catalog entries for a set of site names (Grafana `site` label). Returns
+ * a Map keyed by BOTH `name` and `full_name` (lowercased) so callers can match on
+ * either. Empty map when the catalog isn't configured.
+ */
+export async function catalogByNames(
+  names: string[],
+): Promise<Map<string, CatalogSite>> {
+  const map = new Map<string, CatalogSite>();
+  const client = getCatalogClient();
+  const unique = [...new Set(names.filter(Boolean))];
+  if (!client || unique.length === 0) return map;
+
+  const { data, error } = await client
+    .from("sites")
+    .select("name, full_name, github_repo_url, domains, thumb_url")
+    .in("name", unique);
+
+  if (error || !data) return map;
+
+  for (const r of data as Array<{
+    name: string;
+    full_name: string | null;
+    github_repo_url: string | null;
+    domains: unknown;
+    thumb_url: string | null;
+  }>) {
+    const site: CatalogSite = {
+      name: r.full_name ?? r.name,
+      repo: toOwnerRepo(r.github_repo_url),
+      prodUrl: bestProdUrl(r.domains),
+      thumbUrl: r.thumb_url ?? null,
+    };
+    if (r.name) map.set(r.name.toLowerCase(), site);
+    if (r.full_name) map.set(r.full_name.toLowerCase(), site);
+  }
+  return map;
+}

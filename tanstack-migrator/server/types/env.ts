@@ -37,6 +37,20 @@ const GITHUB_BINDING_CONTRACT = [
   },
 ] as const satisfies readonly ToolBinder[];
 
+/** Grafana binding: only the query/read tools the cost pipeline needs. */
+const GRAFANA_BINDING_CONTRACT = [
+  {
+    name: "GRAFANA_QUERY_PROMETHEUS",
+    inputSchema: z.object({}).passthrough(),
+  },
+  { name: "GRAFANA_QUERY", inputSchema: z.object({}).passthrough(), opt: true },
+  {
+    name: "GRAFANA_GET_DASHBOARD",
+    inputSchema: z.object({}).passthrough(),
+    opt: true,
+  },
+] as const satisfies readonly ToolBinder[];
+
 /**
  * Installation-time configuration. Kept flat so the studio install form
  * renders every field cleanly.
@@ -51,6 +65,23 @@ export const StateSchema = z.object({
     .optional()
     .describe(
       "Object storage for parity report artifacts (report.html, heatmaps). Optional but required to view reports in the UI.",
+    ),
+  GRAFANA: BindingOf("@deco/grafana", GRAFANA_BINDING_CONTRACT)
+    .optional()
+    .describe(
+      "Grafana connection (self-hosted) — used to read per-site COGS for the migration suggestions. Optional.",
+    ),
+  GRAFANA_DATASOURCE_UID: z
+    .string()
+    .optional()
+    .describe(
+      "Prometheus datasource UID (in the Grafana above) that holds the per-site cost metric.",
+    ),
+  COGS_PROMQL: z
+    .string()
+    .optional()
+    .describe(
+      "PromQL that returns per-site monthly COGS as an instant vector with a `site` label (e.g. topk(50, sum by (site) (site_cost_usd_month))). Leave empty until confirmed from the deco-k8s-cost dashboard.",
     ),
   ANTHROPIC_API_KEY: z
     .string()
@@ -180,6 +211,8 @@ export interface MigratorConfig {
   sandboxProvider: "manual" | "decopilot";
   sandboxKind: "agent-sandbox" | "user-desktop" | "auto";
   sessionHarness: "claude-code" | "decopilot" | "codex";
+  grafanaDatasourceUid?: string;
+  cogsPromql?: string;
 }
 
 export function parseMigratorConfig(
@@ -216,5 +249,7 @@ export function parseMigratorConfig(
       s.SESSION_HARNESS === "decopilot" || s.SESSION_HARNESS === "codex"
         ? s.SESSION_HARNESS
         : "claude-code",
+    grafanaDatasourceUid: str(s.GRAFANA_DATASOURCE_UID),
+    cogsPromql: str(s.COGS_PROMQL),
   };
 }

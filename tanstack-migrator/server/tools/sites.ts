@@ -2,8 +2,13 @@
 
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { isCatalogConfigured, searchSiteCatalog } from "../db/catalog.ts";
+import {
+  catalogByNames,
+  isCatalogConfigured,
+  searchSiteCatalog,
+} from "../db/catalog.ts";
 import { loadConnection, saveConnection } from "../db/connections.ts";
+import { getCostSnapshot, refreshCostSnapshotIfStale } from "../db/cost.ts";
 import { ensureApiKeyFromRequest } from "../lib/ensure-api-key.ts";
 import { addEvent } from "../db/events.ts";
 import { listEventsForSite } from "../db/events.ts";
@@ -24,6 +29,7 @@ import {
   toCurrentStatus,
 } from "../db/types.ts";
 import { buildWorkerCtx } from "../lib/mesh.ts";
+import { isGrafanaConfigured } from "../lib/grafana.ts";
 import { fetchThreadTranscript } from "../sandbox/drivers/decopilot.ts";
 import type { Env } from "../types/env.ts";
 import {
@@ -469,6 +475,76 @@ export const createSiteReorderTool = (env: Env) =>
       const connectionId = requireConnectionId(env);
       await reorderSites(connectionId, context.orderedIds);
       return { ok: true };
+    },
+  });
+
+export const createSiteSuggestionsTool = (env: Env) =>
+  createTool({
+    id: "SITE_SUGGESTIONS",
+    description:
+      "Suggest the next sites to migrate, ranked by monthly infra cost (COGS, from Grafana). Excludes sites already registered. Highest cost first = biggest migration ROI. Empty when Grafana/COGS isn't configured.",
+    inputSchema: z.object({
+      limit: z.number().int().min(1).max(20).optional(),
+    }),
+    outputSchema: z.object({
+      configured: z.boolean(),
+      sites: z.array(
+        z.object({
+          name: z.string(),
+          repo: z.string(),
+          prodUrl: z.string().nullable(),
+          thumbUrl: z.string().nullable(),
+          cogsUsd: z.number(),
+          top3: z.boolean(),
+        }),
+      ),
+    }),
+    annotations: { readOnlyHint: true },
+    execute: async ({ context }) => {
+      const connectionId = requireConnectionId(env);
+      const row = await loadConnection(connectionId).catch(() => null);
+      if (!row) return { configured: false, sites: [] };
+
+      const ctx = buildWorkerCtx(row);
+      // best-effort refresh (no-op if fresh / Grafana off)
+      await refreshCostSnapshotIfStale(ctx, connectionId).catch(() => {});
+
+      const snapshot = await getCostSnapshot(connectionId);
+      if (snapshot.length === 0) {
+        return { configured: isGrafanaConfigured(ctx), sites: [] };
+      }
+
+      // repos already tracked (any status) → excluded from suggestions
+      const registered = await listSites({ connectionId });
+      const taken = new Set(registered.map((s) => s.source_repo.toLowerCase()));
+
+      const catalog = await catalogByNames(snapshot.map((r) => r.site_name));
+      const limit = context.limit ?? 12;
+      const out: Array<{
+        name: string;
+        repo: string;
+        prodUrl: string | null;
+        thumbUrl: string | null;
+        cogsUsd: number;
+        top3: boolean;
+      }> = [];
+
+      for (const r of snapshot) {
+        if (out.length >= limit) break;
+        const cat = catalog.get(r.site_name.toLowerCase());
+        if (!cat?.repo) continue; // only sites we can actually register
+        if (taken.has(cat.repo.toLowerCase())) continue;
+        out.push({
+          name: cat.name,
+          repo: cat.repo,
+          prodUrl: cat.prodUrl,
+          thumbUrl: cat.thumbUrl,
+          cogsUsd: r.cogs_usd,
+          top3: out.length < 3,
+        });
+      }
+
+      return { configured: isGrafanaConfigured(ctx), sites: out };
     },
   });
 

@@ -51,6 +51,8 @@ export interface SiteView {
   baselineReportUrl: string | null;
   assigneeLogin: string | null;
   assigneeAvatarUrl: string | null;
+  costBeforeUsd: number | null;
+  costBeforeAt: string | null;
   error: string | null;
   needsHumanReason: string | null;
   createdAt: string;

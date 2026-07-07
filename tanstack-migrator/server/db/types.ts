@@ -237,6 +237,9 @@ export interface SiteRow {
   assignee_login: string | null;
   assignee_avatar_url: string | null;
 
+  cost_before_usd: number | null;
+  cost_before_at: string | null;
+
   lease_owner: string | null;
   lease_expires_at: string | null;
 

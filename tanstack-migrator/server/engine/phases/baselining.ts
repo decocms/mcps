@@ -10,6 +10,7 @@ import { SESSION_TIMEOUT_MS } from "../../constants.ts";
 
 const BASELINE_TIMEOUT_MS = SESSION_TIMEOUT_MS["parity"] ?? 20 * 60_000;
 import { addEvent } from "../../db/events.ts";
+import { getSiteCost, refreshCostSnapshotIfStale } from "../../db/cost.ts";
 import { createRun, finishRun } from "../../db/runs.ts";
 import { incrementCost, updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
@@ -37,6 +38,23 @@ export async function baselining(
   ctx: WorkerCtx,
   _deps: EngineDeps,
 ): Promise<void> {
+  // Capture pre-migration infra cost (COGS "antes"), best-effort — needs the
+  // Grafana binding + a populated cost snapshot; no-op otherwise.
+  if (site.cost_before_usd == null) {
+    try {
+      await refreshCostSnapshotIfStale(ctx, site.connection_id);
+      const before = await getSiteCost(site.connection_id, site.name);
+      if (before != null) {
+        await updateSite(site.id, {
+          cost_before_usd: before,
+          cost_before_at: new Date().toISOString(),
+        });
+      }
+    } catch {
+      // best-effort — never block the baseline on cost capture
+    }
+  }
+
   // Idempotent: already measured — skip straight to migrating_script
   if (site.baseline_measured_at) {
     await advanceToMigrating(site);

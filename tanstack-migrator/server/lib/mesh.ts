@@ -198,10 +198,12 @@ export async function callSelfTool<T = unknown>(
   );
 }
 
-/** Call a tool on one of this MCP's bindings (GITHUB, OBJECT_STORAGE). */
+type BindingName = "GITHUB" | "OBJECT_STORAGE" | "GRAFANA";
+
+/** Call a tool on one of this MCP's bindings (GITHUB, OBJECT_STORAGE, GRAFANA). */
 export async function callBindingTool<T = unknown>(
   ctx: WorkerCtx,
-  binding: "GITHUB" | "OBJECT_STORAGE",
+  binding: BindingName,
   tool: string,
   args: Record<string, unknown>,
   timeoutMs?: number,
@@ -213,9 +215,6 @@ export async function callBindingTool<T = unknown>(
   return callConnectionTool<T>(ctx, connectionId, tool, args, timeoutMs);
 }
 
-export function hasBinding(
-  ctx: WorkerCtx,
-  binding: "GITHUB" | "OBJECT_STORAGE",
-): boolean {
+export function hasBinding(ctx: WorkerCtx, binding: BindingName): boolean {
   return bindingConnectionId(ctx.state, binding) !== null;
 }

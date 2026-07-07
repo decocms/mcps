@@ -1,0 +1,30 @@
+{
+  "scopeName": "deco",
+  "name": "grafana",
+  "friendlyName": "Grafana",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-grafana.decocache.com/mcp"
+  },
+  "description": "Query self-hosted Grafana: list datasources, search/read dashboards, and run raw datasource or PromQL queries via /api/ds/query.",
+  "icon": "https://grafana.com/static/assets/img/fav32.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": [
+      "Observability"
+    ],
+    "official": false,
+    "tags": [
+      "grafana",
+      "self-hosted",
+      "observability",
+      "monitoring",
+      "prometheus",
+      "dashboards",
+      "promql",
+      "metrics"
+    ],
+    "short_description": "Query self-hosted Grafana datasources, dashboards, and PromQL — connect with your Grafana URL + a service-account token.",
+    "mesh_description": "The Grafana MCP connects AI agents to any self-hosted (or Cloud) Grafana instance over its HTTP API. **Key Features** — **GRAFANA_LIST_DATASOURCES** lists configured datasources (uid/name/type); **GRAFANA_SEARCH_DASHBOARDS** and **GRAFANA_GET_DASHBOARD** discover dashboards and read their full JSON (panels, targets, variables) so agents can learn the exact query a panel uses; **GRAFANA_QUERY** runs any native datasource query through POST /api/ds/query; **GRAFANA_QUERY_PROMETHEUS** is a convenience wrapper for instant or range PromQL. **Use Cases** — pull metrics into agent workflows, reproduce a dashboard panel's query, inspect cost/observability dashboards, and build automations on top of existing Grafana data. **Authentication** — provide your Grafana base URL and a service-account token (Administration → Service accounts → Add token); Viewer role is enough for querying. Ideal for teams running self-hosted Grafana who want programmatic, read-only access to metrics and dashboards without exposing Grafana broadly."
+  }
+}

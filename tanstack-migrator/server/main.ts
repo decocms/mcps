@@ -50,6 +50,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       "GITHUB::*",
       "OBJECT_STORAGE::GET_PRESIGNED_URL",
       "OBJECT_STORAGE::PUT_PRESIGNED_URL",
+      "GRAFANA::*",
     ],
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onChange: async (env, config?: any) => {
