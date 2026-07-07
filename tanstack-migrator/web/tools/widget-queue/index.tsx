@@ -9,6 +9,10 @@ import { ACTIVE_STATUSES_SET } from "@/lib/status.ts";
 /** Show queue + suggestions side by side once the tile is at least this wide. */
 const WIDE_PX = 520;
 
+/** Thin, unobtrusive scrollbar (Firefox + WebKit). */
+const THIN_SCROLL =
+  "[scrollbar-width:thin] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/25 [&::-webkit-scrollbar-track]:bg-transparent";
+
 /** Grafana stores the raw 7-day COGS; show it extrapolated to ~monthly (×30/7). */
 function estMonthly(cogs7d: number): string {
   return `≈$${Math.round((cogs7d * 30) / 7).toLocaleString()}/mo`;
@@ -79,7 +83,7 @@ export default function WidgetQueuePage() {
             queueEmpty ? "grid-cols-[0.8fr_1.2fr]" : "grid-cols-2",
           )}
         >
-          <div className="min-h-0 overflow-y-auto pr-1">
+          <div className={cn("min-h-0 overflow-y-auto pr-1", THIN_SCROLL)}>
             <QueueContent
               active={active}
               next={next}
@@ -87,17 +91,19 @@ export default function WidgetQueuePage() {
               onEnqueue={enqueue}
             />
           </div>
-          <div className="min-h-0 overflow-y-auto border-l border-border pl-3">
-            <SuggestionsContent onAdded={refresh} wide />
+          <div
+            className={cn(
+              "min-h-0 overflow-y-auto border-l border-border pl-3",
+              THIN_SCROLL,
+            )}
+          >
+            <SuggestionsContent onAdded={refresh} />
           </div>
         </div>
       ) : (
-        // narrow: single scroll column, queue then suggestions stacked
-        <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto">
+        // narrow: queue only — suggestions appear once there's room for 2 columns
+        <div className={cn("min-h-0 flex-1 overflow-y-auto", THIN_SCROLL)}>
           <QueueContent active={active} next={next} q={q} onEnqueue={enqueue} />
-          <div className="border-t border-border pt-3">
-            <SuggestionsContent onAdded={refresh} />
-          </div>
         </div>
       )}
     </div>
@@ -214,13 +220,7 @@ interface Suggestion {
   top3: boolean;
 }
 
-function SuggestionsContent({
-  onAdded,
-  wide = false,
-}: {
-  onAdded: () => void;
-  wide?: boolean;
-}) {
+function SuggestionsContent({ onAdded }: { onAdded: () => void }) {
   const { data, loading, refresh } = usePollingTool<{
     configured: boolean;
     sites: Suggestion[];
@@ -266,7 +266,6 @@ function SuggestionsContent({
             <SuggestionRow
               key={s.repo}
               s={s}
-              wide={wide}
               busy={adding === s.repo}
               onAdd={() => add(s)}
             />
@@ -337,69 +336,32 @@ function SiteIcon({
   );
 }
 
-function prodHost(prodUrl: string | null): string | null {
-  if (!prodUrl) return null;
-  try {
-    return new URL(prodUrl).hostname.replace(/^www\./, "");
-  } catch {
-    return null;
-  }
-}
-
 function SuggestionRow({
   s,
-  wide,
   busy,
   onAdd,
 }: {
   s: Suggestion;
-  wide: boolean;
   busy: boolean;
   onAdd: () => void;
 }) {
-  const host = prodHost(s.prodUrl);
   return (
     <div className="flex items-center gap-2 px-2.5 py-1.5">
       <SiteIcon prodUrl={s.prodUrl} thumbUrl={s.thumbUrl} name={s.name} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <span className="flex items-center gap-1 truncate text-xs font-medium">
-          {s.top3 && (
-            <span className="shrink-0 rounded-full bg-amber-500/15 px-1 text-[9px] font-bold text-amber-600 dark:text-amber-400">
-              TOP
-            </span>
-          )}
-          <span className="truncate" title={s.name}>
-            {s.name}
+      <div className="flex min-w-0 flex-1 items-center gap-1.5">
+        {s.top3 && (
+          <span className="shrink-0 rounded-full bg-amber-500/15 px-1 text-[9px] font-bold text-amber-600 dark:text-amber-400">
+            TOP
           </span>
-          {/* repo alongside the name when there's room */}
-          {wide && (
-            <span
-              className="truncate text-[10px] font-normal text-muted-foreground"
-              title={s.repo}
-            >
-              · {s.repo}
-            </span>
-          )}
+        )}
+        <span className="truncate text-xs font-medium" title={s.name}>
+          {s.name}
         </span>
-        <span className="flex items-center gap-2 text-[10px] text-muted-foreground tabular-nums">
-          <span
-            className="font-semibold text-foreground/80"
-            title={`$${Math.round(s.cogsUsd).toLocaleString()}/7d (Grafana)`}
-          >
-            {estMonthly(s.cogsUsd)}
-          </span>
-          {wide && host && (
-            <a
-              href={s.prodUrl ?? "#"}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              className="truncate hover:text-foreground hover:underline"
-              title={s.prodUrl ?? ""}
-            >
-              {host}
-            </a>
-          )}
+        <span
+          className="ml-auto shrink-0 text-[10px] font-semibold tabular-nums text-muted-foreground"
+          title={`$${Math.round(s.cogsUsd).toLocaleString()}/7d (Grafana)`}
+        >
+          {estMonthly(s.cogsUsd)}
         </span>
       </div>
       <button
