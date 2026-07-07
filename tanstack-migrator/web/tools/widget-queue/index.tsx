@@ -237,6 +237,39 @@ function SuggestionsColumn({ onAdded }: { onAdded: () => void }) {
   );
 }
 
+/** Company logo from the prod domain (DuckDuckGo icon service — no tracking). */
+function faviconUrl(prodUrl: string | null): string | null {
+  if (!prodUrl) return null;
+  try {
+    return `https://icons.duckduckgo.com/ip3/${new URL(prodUrl).hostname}.ico`;
+  } catch {
+    return null;
+  }
+}
+
+/** Logo → screenshot → placeholder, falling through on load error. */
+function SiteIcon({
+  prodUrl,
+  thumbUrl,
+}: {
+  prodUrl: string | null;
+  thumbUrl: string | null;
+}) {
+  const chain = [faviconUrl(prodUrl), thumbUrl].filter(Boolean) as string[];
+  const [idx, setIdx] = useState(0);
+  if (idx >= chain.length) {
+    return <div className="h-6 w-6 shrink-0 rounded bg-muted" />;
+  }
+  return (
+    <img
+      src={chain[idx]}
+      alt=""
+      className="h-6 w-6 shrink-0 rounded bg-muted object-contain"
+      onError={() => setIdx((i) => i + 1)}
+    />
+  );
+}
+
 function SuggestionRow({
   s,
   busy,
@@ -248,15 +281,7 @@ function SuggestionRow({
 }) {
   return (
     <div className="flex items-center gap-2 px-2.5 py-1.5">
-      {s.thumbUrl ? (
-        <img
-          src={s.thumbUrl}
-          alt=""
-          className="h-6 w-6 shrink-0 rounded object-cover"
-        />
-      ) : (
-        <div className="h-6 w-6 shrink-0 rounded bg-muted" />
-      )}
+      <SiteIcon prodUrl={s.prodUrl} thumbUrl={s.thumbUrl} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="flex items-center gap-1 truncate text-xs font-medium">
           {s.top3 && (
