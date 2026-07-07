@@ -1,6 +1,6 @@
 {
   "name": "grafana",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Query and manage self-hosted Grafana: datasources, dashboards, and Prometheus/PromQL queries via /api/ds/query",
   "private": true,
   "type": "module",

@@ -485,6 +485,15 @@
       "shared/**"
     ]
   },
+  "grafana": {
+    "site": "grafana",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "grafana/**",
+      "shared/**"
+    ]
+  },
   "youtube-channel-admin": {
     "site": "youtube-channel-admin",
     "entrypoint": "./dist/server/main.js",
