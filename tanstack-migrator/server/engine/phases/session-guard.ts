@@ -28,7 +28,7 @@ export async function clearStaleSession(
   await updateSite(site.id, { sandbox_session_id: null });
   await addEvent(
     site.id,
-    "Sessão anterior ficou sem progresso — relançando",
+    "Previous session made no progress — relaunching",
     "warn",
   );
   return true;

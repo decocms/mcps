@@ -78,7 +78,7 @@ export const createGithubProbeTool = (_env: Env) =>
           : undefined;
       if (!row) {
         throw new Error(
-          `connection não encontrada (${wanted ?? "sem contexto"}) — passe connectionId. Disponíveis: ${rows.map((r) => r.connection_id).join(", ")}`,
+          `connection not found (${wanted ?? "no context"}) — pass connectionId. Available: ${rows.map((r) => r.connection_id).join(", ")}`,
         );
       }
       const ctx = buildWorkerCtx(row);
@@ -145,10 +145,10 @@ export const createGithubProbeTool = (_env: Env) =>
           });
           if (!list.some((i) => i.number === issue.number)) {
             throw new Error(
-              `#${issue.number} NÃO veio na lista closed (${list.length} itens) — wrapper de list/close inconsistente`,
+              `#${issue.number} did NOT show up in the closed list (${list.length} items) — inconsistent list/close wrapper`,
             );
           }
-          return `#${issue.number} veio na lista closed`;
+          return `#${issue.number} showed up in the closed list`;
         });
       }
       if (context.pr) {

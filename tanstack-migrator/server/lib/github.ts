@@ -71,7 +71,7 @@ export async function ensureRepo(ctx: WorkerCtx, full: string): Promise<void> {
     if (/already exists|name already exists/i.test(message)) return;
     if (/403|not accessible by integration|forbidden/i.test(message)) {
       throw new RepoCreatePermissionError(
-        `GitHub App sem permissão para criar repositórios na org ${owner} (${message})`,
+        `GitHub App lacks permission to create repositories in the ${owner} org (${message})`,
       );
     }
     throw err;

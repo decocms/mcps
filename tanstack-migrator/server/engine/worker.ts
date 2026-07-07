@@ -95,14 +95,14 @@ async function watchdog(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
   if (inflight.has(site.id)) return false; // work is genuinely running here
   if (stalenessMs(site) <= WATCHDOG_STALL_MS) return false;
 
-  // The "parou no 59" case: the local mesh process died mid-session and the
+  // The "stuck at 59" case: the local mesh process died mid-session and the
   // pipeline stayed silent. A stalled SESSION with an unreachable mesh is a
   // platform outage, not a migration failure.
   if (isSessionStatus(site.status) && !(await meshReachable(ctx))) {
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: site.status,
-      needs_human_reason: `Mesh inacessível em ${ctx.meshUrl} — a sessão ficou órfã (sem progresso há ${Math.round(stalenessMs(site) / 60_000)}min). Suba o mesh e use Retry.`,
+      needs_human_reason: `Mesh unreachable at ${ctx.meshUrl} — the session was orphaned (no progress for ${Math.round(stalenessMs(site) / 60_000)}min). Bring the mesh up and use Retry.`,
       sandbox_session_id: null,
       lease_owner: null,
       lease_expires_at: null,
@@ -110,7 +110,7 @@ async function watchdog(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
     });
     await addEvent(
       site.id,
-      `Watchdog: mesh offline (${ctx.meshUrl}) — sessão órfã, precisa de humano`,
+      `Watchdog: mesh offline (${ctx.meshUrl}) — orphaned session, needs human`,
       "error",
     );
     return true;
@@ -119,16 +119,12 @@ async function watchdog(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
   await updateSite(site.id, {
     status: "failed",
     resume_status: site.status,
-    error: `Sem progresso há mais de ${Math.round(WATCHDOG_STALL_MS / 60_000)}min (watchdog)`,
+    error: `No progress for more than ${Math.round(WATCHDOG_STALL_MS / 60_000)}min (watchdog)`,
     sandbox_session_id: null,
     lease_owner: null,
     lease_expires_at: null,
   });
-  await addEvent(
-    site.id,
-    "Watchdog: sem progresso, marcado como failed",
-    "error",
-  );
+  await addEvent(site.id, "Watchdog: no progress, marked as failed", "error");
   return true;
 }
 
@@ -164,11 +160,11 @@ async function probeSessionLiveness(
       { id: site.phase_thread_id },
       15_000,
     );
-    const status = result?.item?.status ?? "desconhecido";
+    const status = result?.item?.status ?? "unknown";
     if (status === "in_progress" || status === "requires_action") {
       await addEvent(
         site.id,
-        `Liveness: thread ${site.phase_thread_id} segue ${status}, mas sem heartbeat há ${minutes}min (leitor pode ter morrido — rescue automático segue tentando)`,
+        `Liveness: thread ${site.phase_thread_id} still ${status}, but no heartbeat for ${minutes}min (reader may have died — automatic rescue keeps retrying)`,
         "warn",
       );
       return;
@@ -179,16 +175,16 @@ async function probeSessionLiveness(
     // phantom "running" entry until the 50min sweep.
     await closeOpenRunsForSite(
       site.id,
-      `[leitor morreu; fase repicada — thread ${site.phase_thread_id} ${status}]`,
+      `[reader died; phase relaunched — thread ${site.phase_thread_id} ${status}]`,
     ).catch(() => {});
     await updateSite(site.id, {
       sandbox_session_id: null,
-      phase_detail: `thread terminou (${status}) com o leitor morto — repicando a fase`,
+      phase_detail: `thread finished (${status}) with a dead reader — relaunching the phase`,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Liveness: thread ${site.phase_thread_id} terminou (${status}) mas o leitor morreu — fase será repicada`,
+      `Liveness: thread ${site.phase_thread_id} finished (${status}) but the reader died — the phase will be relaunched`,
       "warn",
     );
   } catch (err) {
@@ -197,7 +193,7 @@ async function probeSessionLiveness(
       // tool-level error (e.g. thread not found) — let the phase machinery deal
       await addEvent(
         site.id,
-        `Liveness: probe da thread falhou (${message.slice(0, 120)})`,
+        `Liveness: thread probe failed (${message.slice(0, 120)})`,
         "warn",
       );
       return;
@@ -205,13 +201,13 @@ async function probeSessionLiveness(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: site.status,
-      needs_human_reason: `Mesh inacessível em ${ctx.meshUrl} (${message.slice(0, 160)}). A sessão ${site.phase_thread_id} ficou órfã — suba o mesh e use Retry.`,
+      needs_human_reason: `Mesh unreachable at ${ctx.meshUrl} (${message.slice(0, 160)}). Session ${site.phase_thread_id} was orphaned — bring the mesh up and use Retry.`,
       sandbox_session_id: null,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Mesh inacessível — sessão órfã (${message.slice(0, 120)})`,
+      `Mesh unreachable — orphaned session (${message.slice(0, 120)})`,
       "error",
     );
   }
@@ -224,7 +220,7 @@ async function probePreviewIfNeeded(site: SiteRow): Promise<void> {
   await updateSite(site.id, { preview_ready: true });
   await addEvent(
     site.id,
-    `Site renderizando HTML — preview liberado: ${site.sandbox_preview_url}`,
+    `Site rendering HTML — preview available: ${site.sandbox_preview_url}`,
   );
 }
 
@@ -268,7 +264,7 @@ async function advanceSite(site: SiteRow, ctx: WorkerCtx): Promise<void> {
       error: `${site.status}: ${message}`,
       sandbox_session_id: null,
     });
-    await addEvent(site.id, `Fase ${site.status} falhou: ${message}`, "error");
+    await addEvent(site.id, `Phase ${site.status} failed: ${message}`, "error");
   } finally {
     await releaseLease(site.id, WORKER_ID).catch(() => {});
   }
@@ -297,7 +293,7 @@ async function sweepSites(sites: SiteRow[]): Promise<void> {
       });
       await addEvent(
         site.id,
-        `Status legado ${site.status} → ${translated} (pipeline v0.5.0)`,
+        `Legacy status ${site.status} → ${translated} (pipeline v0.5.0)`,
       );
       site.status = translated;
       continue;
@@ -316,13 +312,13 @@ async function sweepSites(sites: SiteRow[]): Promise<void> {
       status: resumeInto,
       error: null,
       transient_retries: site.transient_retries + 1,
-      phase_detail: `revivido após falha de réplica desatualizada (${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES})`,
+      phase_detail: `revived after stale-replica failure (${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES})`,
       sandbox_session_id: null,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Falha de réplica desatualizada — retry automático ${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES} (retomando em ${resumeInto})`,
+      `Stale-replica failure — automatic retry ${site.transient_retries + 1}/${MAX_ZOMBIE_REVIVES} (resuming at ${resumeInto})`,
       "warn",
     );
     site.status = resumeInto;
@@ -361,12 +357,12 @@ async function tickConnection(ctx: WorkerCtx): Promise<void> {
       status: "creating_repo",
       started_at: leased.started_at ?? new Date().toISOString(),
       error: null,
-      phase_detail: "iniciando",
+      phase_detail: "starting",
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Migração iniciada (slot ${activeCount + 1}/${ctx.config.maxConcurrent})`,
+      `Migration started (slot ${activeCount + 1}/${ctx.config.maxConcurrent})`,
     );
     await releaseLease(site.id, WORKER_ID).catch(() => {});
     survivors.push({ ...leased, status: "creating_repo" });

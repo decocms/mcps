@@ -28,7 +28,7 @@ import { markSessionStart } from "./session-guard.ts";
 async function advanceToMigrating(site: SiteRow): Promise<void> {
   await updateSite(site.id, {
     status: "migrating_script",
-    phase_detail: "baseline capturado — rodando o script de migração",
+    phase_detail: "baseline captured — running the migration script",
     last_progress_at: new Date().toISOString(),
   });
 }
@@ -38,7 +38,7 @@ export async function baselining(
   ctx: WorkerCtx,
   _deps: EngineDeps,
 ): Promise<void> {
-  // Capture pre-migration infra cost (COGS "antes"), best-effort — needs the
+  // Capture pre-migration infra cost (COGS "before"), best-effort — needs the
   // Grafana binding + a populated cost snapshot; no-op otherwise.
   if (site.cost_before_usd == null) {
     try {
@@ -85,7 +85,7 @@ export async function baselining(
   await markSessionStart(site.id, "baselining");
   await addEvent(
     site.id,
-    "Baseline: capturando snapshot Lighthouse/SEO do site original",
+    "Baseline: capturing Lighthouse/SEO snapshot of the original site",
   );
 
   try {
@@ -128,19 +128,19 @@ export async function baselining(
       });
       await addEvent(
         site.id,
-        `Baseline capturado — score ${result.parityScore ?? 100}%`,
+        `Baseline captured — score ${result.parityScore ?? 100}%`,
       );
     } else {
       await addEvent(
         site.id,
-        `Baseline falhou (não bloqueia pipeline): ${result.error ?? result.output.slice(-200)}`,
+        `Baseline failed (does not block the pipeline): ${result.error ?? result.output.slice(-200)}`,
         "warn",
       );
     }
   } catch (err) {
     await addEvent(
       site.id,
-      `Baseline erro (não bloqueia pipeline): ${String(err).slice(0, 300)}`,
+      `Baseline error (does not block the pipeline): ${String(err).slice(0, 300)}`,
       "warn",
     );
   }

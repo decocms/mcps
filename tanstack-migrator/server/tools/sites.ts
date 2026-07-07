@@ -45,7 +45,7 @@ function requireConnectionId(env: Env): string {
   const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
   if (!connectionId) {
     throw new Error(
-      "Sem contexto de conexão do mesh (connectionId ausente). Chame este MCP através de uma conexão do studio — e se a conexão foi criada com um access token preenchido, limpe o campo Token e salve.",
+      "No mesh connection context (connectionId missing). Call this MCP through a studio connection — and if the connection was created with an access token filled in, clear the Token field and save.",
     );
   }
   return connectionId;
@@ -152,10 +152,10 @@ export const createSiteRegisterTool = (env: Env) =>
       await addEvent(
         site.id,
         context.alreadyDone
-          ? "Cadastrado como migração já concluída"
+          ? "Registered as an already-finished migration"
           : status === "queued"
-            ? "Site cadastrado e enfileirado para migração"
-            : "Site cadastrado no backlog (draft)",
+            ? "Site registered and enqueued for migration"
+            : "Site registered in the backlog (draft)",
       );
 
       const position = site.queue_position ?? 0;
@@ -302,7 +302,7 @@ export const createSitePauseTool = (env: Env) =>
         resume_status: site.status === "queued" ? "queued" : site.status,
         sandbox_session_id: null,
       });
-      await addEvent(site.id, "Migração pausada");
+      await addEvent(site.id, "Migration paused");
       return { site: toSiteView(updated) };
     },
   });
@@ -325,7 +325,7 @@ export const createSiteResumeTool = (env: Env) =>
         resume_status: null,
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(site.id, "Migração retomada");
+      await addEvent(site.id, "Migration resumed");
       return { site: toSiteView(updated) };
     },
   });
@@ -364,7 +364,7 @@ export const createSiteRetryTool = (env: Env) =>
         sandbox_session_id: null,
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(site.id, `Retry: retomando em ${nextStatus}`);
+      await addEvent(site.id, `Retry: resuming at ${nextStatus}`);
       return { site: toSiteView(updated) };
     },
   });
@@ -390,7 +390,7 @@ export const createSiteMarkDoneTool = (env: Env) =>
       });
       await addEvent(
         site.id,
-        `Marcado como concluído manualmente${context.reason ? `: ${context.reason}` : ""}`,
+        `Manually marked as done${context.reason ? `: ${context.reason}` : ""}`,
       );
       return { site: toSiteView(updated) };
     },
@@ -410,7 +410,7 @@ export const createSiteArchiveTool = (env: Env) =>
         throw new Error("Pause the migration before archiving");
       }
       const updated = await updateSite(site.id, { status: "archived" });
-      await addEvent(site.id, "Site arquivado");
+      await addEvent(site.id, "Site archived");
       return { site: toSiteView(updated) };
     },
   });
@@ -454,7 +454,10 @@ export const createSiteEnqueueTool = (env: Env) =>
         status: "queued",
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(site.id, "Site movido do backlog para a fila de migração");
+      await addEvent(
+        site.id,
+        "Site moved from the backlog to the migration queue",
+      );
       return { site: toSiteView(updated) };
     },
   });
@@ -624,9 +627,7 @@ export const createSiteAssignTool = (env: Env) =>
       });
       await addEvent(
         site.id,
-        context.login
-          ? `Responsável atribuído: @${context.login}`
-          : "Responsável removido",
+        context.login ? `Assignee set: @${context.login}` : "Assignee removed",
       );
       return { site: toSiteView(updated) };
     },

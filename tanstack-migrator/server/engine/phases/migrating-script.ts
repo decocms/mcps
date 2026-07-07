@@ -31,7 +31,7 @@ export async function migratingScript(
 
   const run = await createRun({ siteId: site.id, kind: "migrate" });
   await markSessionStart(site.id, "migrate");
-  await addEvent(site.id, "Sessão do script de migração iniciada");
+  await addEvent(site.id, "Migration script session started");
 
   deps.inflight.start(site.id, "migrate", async () => {
     try {
@@ -63,7 +63,7 @@ export async function migratingScript(
         // history never shows a phantom "running" entry
         await finishRun(run.id, {
           status: "failed",
-          logsTail: `[abandonada: site saiu de migrating_script durante a sessão]`,
+          logsTail: `[abandoned: site left migrating_script during the session]`,
           meta: result.meta,
         });
         return;
@@ -95,20 +95,20 @@ export async function migratingScript(
             });
             await addEvent(
               site.id,
-              "Sandbox recriado com package.json TanStack",
+              "Sandbox recreated with TanStack package.json",
             );
           } catch (err) {
             // Non-fatal — pipeline continues, preview may be delayed.
             await addEvent(
               site.id,
-              `Aviso: falha ao recriar sandbox pós-migração: ${err instanceof Error ? err.message : String(err)}`,
+              `Warning: failed to recreate sandbox post-migration: ${err instanceof Error ? err.message : String(err)}`,
             );
           }
         }
 
         await updateSite(site.id, {
           status: "opening_pr",
-          phase_detail: `checkpoint pushado na branch ${site.work_branch}, abrindo PR`,
+          phase_detail: `checkpoint pushed to branch ${site.work_branch}, opening PR`,
           sandbox_session_id: null,
           phase_thread_id: null, // next phase starts a fresh conversation
           transient_retries: 0,
@@ -116,7 +116,7 @@ export async function migratingScript(
         });
         await addEvent(
           site.id,
-          `Script de migração concluído — checkpoint na branch ${site.work_branch}`,
+          `Migration script finished — checkpoint on branch ${site.work_branch}`,
         );
       } else {
         await finishRun(run.id, {
@@ -127,9 +127,9 @@ export async function migratingScript(
         // phase_thread_id stays — a retry continues the same conversation
         await failOrAutoRetry(
           current,
-          result.error ?? "script de migração falhou",
+          result.error ?? "migration script failed",
           "migrating_script",
-          "Script de migração falhou",
+          "Migration script failed",
         );
       }
     } catch (err) {
@@ -141,7 +141,7 @@ export async function migratingScript(
           current,
           message,
           "migrating_script",
-          "Script de migração falhou",
+          "Migration script failed",
         );
       }
     }

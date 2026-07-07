@@ -38,9 +38,7 @@ export default function WidgetActivePage() {
     return (
       <div className="flex h-full min-h-[8rem] flex-col items-center justify-center gap-1 p-4 text-center">
         <CircleDot className="h-5 w-5 text-muted-foreground/50" />
-        <p className="text-xs text-muted-foreground">
-          Nenhuma migração na fila.
-        </p>
+        <p className="text-xs text-muted-foreground">No migrations queued.</p>
       </div>
     );
   }

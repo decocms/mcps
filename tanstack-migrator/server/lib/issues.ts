@@ -88,25 +88,25 @@ export function paritySummaryToDrafts(
     // visual context, not a guaranteed match with the issue's page
     const heatmap = embeds?.heatmaps?.[i];
     const body = [
-      "## Contexto",
-      `Paridade prod vs candidato${issue.page ? ` — página \`${issue.page}\`` : ""} (score ${summary.verdict?.score ?? "?"}).`,
-      "## Erro",
+      "## Context",
+      `Parity prod vs candidate${issue.page ? ` — page \`${issue.page}\`` : ""} (score ${summary.verdict?.score ?? "?"}).`,
+      "## Error",
       issue.summary,
-      "## Como reproduzir",
+      "## How to reproduce",
       issue.page
-        ? `Compare \`${issue.page}\` na produção e no preview do sandbox.`
-        : "Rode a parity CLI (preset ci) e veja o report.",
-      "## Dica de fix",
-      issue.suggestedFix ?? "Porte a seção equivalente de /app/source.",
+        ? `Compare \`${issue.page}\` on production and on the sandbox preview.`
+        : "Run the parity CLI (preset ci) and check the report.",
+      "## Fix hint",
+      issue.suggestedFix ?? "Port the equivalent section from /app/source.",
       ...(heatmap ? ["## Heatmap", `![heatmap](${heatmap})`] : []),
       ...(embeds?.reportHtml
         ? [
-            `[Report completo desta rodada](${embeds.reportHtml}) (expira em 7 dias)`,
+            `[Full report for this round](${embeds.reportHtml}) (expires in 7 days)`,
           ]
         : []),
     ].join("\n");
     return {
-      title: `[parity] ${issue.page ?? "geral"}: ${issue.summary.slice(0, 90)}`,
+      title: `[parity] ${issue.page ?? "general"}: ${issue.summary.slice(0, 90)}`,
       body,
       severity: issue.severity,
       category: issue.category ?? "visual",
@@ -153,7 +153,7 @@ export async function syncIssuesFromDrafts(
   if (skipped > 0) {
     await addEvent(
       site.id,
-      `${source}: ${drafts.length} issues propostas, criando só as ${cap} mais graves (cap)`,
+      `${source}: ${drafts.length} issues proposed, creating only the ${cap} most severe (cap)`,
       "warn",
     );
   }
@@ -193,7 +193,7 @@ export async function syncIssuesFromDrafts(
         ctx,
         ref,
         existing.number,
-        `Ainda presente na rodada de ${source === "parity" ? `paridade ${site.iterations_done + 1}` : "triagem"} (severity ${severity}).`,
+        `Still present in the ${source === "parity" ? `parity ${site.iterations_done + 1}` : "triage"} round (severity ${severity}).`,
       ).catch(() => {});
       refreshed.push(existing.number);
       continue;
@@ -208,7 +208,7 @@ export async function syncIssuesFromDrafts(
     created.push(issue.number);
     await addEvent(
       site.id,
-      `Issue #${issue.number} criada (${severity}/${category}): ${draft.title.slice(0, 100)}`,
+      `Issue #${issue.number} created (${severity}/${category}): ${draft.title.slice(0, 100)}`,
     );
   }
   return { created, refreshed, skipped };
@@ -286,10 +286,10 @@ export async function closeResolvedIssues(
       ctx,
       ref,
       number,
-      `Resolvida pela sessão de fix do tanstack-migrator${threadId ? ` (thread \`${threadId}\`)` : ""} — commit \`fix(#${number})\` na branch \`${site.work_branch}\`.`,
+      `Resolved by the tanstack-migrator fix session${threadId ? ` (thread \`${threadId}\`)` : ""} — commit \`fix(#${number})\` on branch \`${site.work_branch}\`.`,
     ).catch(() => {});
     await closeIssue(ctx, ref, number).catch(() => {});
-    await addEvent(site.id, `Issue #${number} fechada (fix pushado)`);
+    await addEvent(site.id, `Issue #${number} closed (fix pushed)`);
   }
 }
 
@@ -308,7 +308,7 @@ export async function markBlockedIssues(
       ctx,
       ref,
       item.number,
-      `Bloqueada pela sessão de fix: ${item.reason ?? "sem motivo informado"}`,
+      `Blocked by the fix session: ${item.reason ?? "no reason given"}`,
     ).catch(() => {});
     // only touch labels when we KNOW the current set — replacing blind would
     // wipe severity/category (GitHub label updates overwrite)
@@ -320,7 +320,7 @@ export async function markBlockedIssues(
     }
     await addEvent(
       site.id,
-      `Issue #${item.number} bloqueada: ${item.reason ?? "?"}`,
+      `Issue #${item.number} blocked: ${item.reason ?? "?"}`,
       "warn",
     );
   }

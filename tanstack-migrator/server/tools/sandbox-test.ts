@@ -56,12 +56,12 @@ async function resolveSite(
       : undefined;
   if (!row) {
     throw new Error(
-      `connection não encontrada (${wanted ?? "sem contexto"}) — passe connectionId. Disponíveis: ${rows.map((r) => r.connection_id).join(", ")}`,
+      `connection not found (${wanted ?? "no context"}) — pass connectionId. Available: ${rows.map((r) => r.connection_id).join(", ")}`,
     );
   }
   const site = await getSite(siteId);
   if (!site || site.connection_id !== row.connection_id) {
-    throw new Error(`site ${siteId} não encontrado nesta conexão`);
+    throw new Error(`site ${siteId} not found in this connection`);
   }
   return { ctx: buildWorkerCtx(row), site };
 }
@@ -100,7 +100,7 @@ async function probePreview(url: string): Promise<{
       sizeBytes: 0,
       rendersRealHtml: false,
       isPlaceholder: false,
-      snippet: `fetch falhou: ${err instanceof Error ? err.message : String(err)}`,
+      snippet: `fetch failed: ${err instanceof Error ? err.message : String(err)}`,
     };
   }
 }
@@ -161,7 +161,7 @@ export const createSandboxTestTool = (env: Env) =>
       });
       await addEvent(
         site.id,
-        `[SANDBOX_TEST] sandbox ${context.recreate ? "recriado" : "garantido"}: ${info.handle}`,
+        `[SANDBOX_TEST] sandbox ${context.recreate ? "recreated" : "ensured"}: ${info.handle}`,
       );
 
       const previewUrl = info.previewUrl ?? site.sandbox_preview_url ?? null;
@@ -170,7 +170,7 @@ export const createSandboxTestTool = (env: Env) =>
         sizeBytes: 0,
         rendersRealHtml: false,
         isPlaceholder: false,
-        snippet: "sem preview URL",
+        snippet: "no preview URL",
       };
       const started = Date.now();
       if (previewUrl && context.waitSeconds >= 0) {
@@ -186,7 +186,7 @@ export const createSandboxTestTool = (env: Env) =>
         await updateSite(site.id, { preview_ready: true });
         await addEvent(
           site.id,
-          `[SANDBOX_TEST] preview renderizando HTML real: ${previewUrl}`,
+          `[SANDBOX_TEST] preview rendering real HTML: ${previewUrl}`,
         );
       }
       return { handle: info.handle, previewUrl, waitedSeconds, ...probe };
@@ -222,14 +222,14 @@ export const createSandboxExecTool = (env: Env) =>
         context.siteId,
         context.connectionId,
       );
-      const prompt = `Você é um agente de DIAGNÓSTICO no sandbox (tools de vm: bash, read). NÃO modifique nada, NÃO faça commit. Apenas execute o que foi pedido e reporte a saída CRUA.
+      const prompt = `You are a DIAGNOSTIC agent in the sandbox (vm tools: bash, read). Do NOT modify anything, do NOT commit. Just run what was asked and report the RAW output.
 
-# Comando/instrução
+# Command/instruction
 ${context.command}
 
-# Resultado
-Rode e cole a saída relevante (truncada se enorme). Termine sua ÚLTIMA mensagem com exatamente:
-RESULT_JSON: {"ok": true, "detail": "<resumo curto do que a saída mostra>"}`;
+# Result
+Run it and paste the relevant output (truncated if huge). End your LAST message with exactly:
+RESULT_JSON: {"ok": true, "detail": "<short summary of what the output shows>"}`;
       const result = await getDriver(ctx).runTask(site, ctx, {
         kind: "triage",
         prompt,
@@ -269,7 +269,7 @@ export const createSiteSetStatusTool = (env: Env) =>
       );
       const patch: Record<string, unknown> = {
         status: context.status as SiteStatus,
-        phase_detail: `[SITE_SET_STATUS] forçado para ${context.status}`,
+        phase_detail: `[SITE_SET_STATUS] forced to ${context.status}`,
         last_progress_at: new Date().toISOString(),
       };
       if (context.clearSession) {
@@ -286,7 +286,7 @@ export const createSiteSetStatusTool = (env: Env) =>
       const updated = await updateSite(site.id, patch);
       await addEvent(
         site.id,
-        `[SITE_SET_STATUS] status forçado → ${context.status}`,
+        `[SITE_SET_STATUS] status forced → ${context.status}`,
         "warn",
       );
       return { id: updated.id, status: updated.status };

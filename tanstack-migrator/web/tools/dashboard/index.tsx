@@ -18,8 +18,8 @@ type Tab = "backlog" | "migrating" | "needs_human" | "done";
 
 const TAB_META: Array<{ id: Tab; label: string }> = [
   { id: "backlog", label: "Backlog" },
-  { id: "migrating", label: "Em migração" },
-  { id: "needs_human", label: "Precisa de humano" },
+  { id: "migrating", label: "Migrating" },
+  { id: "needs_human", label: "Needs human" },
   { id: "done", label: "100% TanStack" },
 ];
 
@@ -80,7 +80,7 @@ function BacklogList({
   if (sites.length === 0) {
     return (
       <div className="flex h-40 items-center justify-center text-sm text-muted-foreground">
-        Nenhum site no backlog.
+        No sites in the backlog.
       </div>
     );
   }
@@ -104,7 +104,7 @@ function BacklogList({
               disabled={idx === 0 || busy === "reorder"}
               onClick={() => move(idx, -1)}
               className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-30"
-              title="Subir prioridade"
+              title="Raise priority"
             >
               <ArrowUp className="h-3 w-3" />
             </button>
@@ -113,7 +113,7 @@ function BacklogList({
               disabled={idx === sites.length - 1 || busy === "reorder"}
               onClick={() => move(idx, 1)}
               className="rounded p-0.5 text-muted-foreground hover:bg-muted disabled:opacity-30"
-              title="Baixar prioridade"
+              title="Lower priority"
             >
               <ArrowDown className="h-3 w-3" />
             </button>
@@ -140,7 +140,7 @@ function BacklogList({
                 : "bg-muted text-muted-foreground",
             )}
           >
-            {site.status === "queued" ? "na fila" : "rascunho"}
+            {site.status === "queued" ? "queued" : "draft"}
           </span>
 
           {/* enqueue button (only for drafts) */}
@@ -149,7 +149,7 @@ function BacklogList({
               type="button"
               disabled={busy === site.id}
               onClick={() => enqueue(site.id)}
-              title="Iniciar migração"
+              title="Start migration"
               className="inline-flex shrink-0 items-center gap-1 rounded-md bg-primary px-2 py-1 text-[11px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-50"
             >
               {busy === site.id ? (
@@ -157,7 +157,7 @@ function BacklogList({
               ) : (
                 <Play className="h-3 w-3" />
               )}
-              Iniciar
+              Start
             </button>
           )}
         </div>
@@ -213,8 +213,8 @@ export default function DashboardPage() {
           {data && (
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
               {data.queue.active}/{data.queue.maxConcurrent} slots ·{" "}
-              {data.queue.queued} na fila
-              {data.queue.provider === "manual" ? " · simulação" : ""}
+              {data.queue.queued} queued
+              {data.queue.provider === "manual" ? " · simulation" : ""}
               {totalCost > 0 && ` · $${totalCost.toFixed(2)}`}
             </span>
           )}
@@ -222,14 +222,14 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           {data && (
             <span className="text-[11px] text-muted-foreground tabular-nums">
-              atualizado às {clockTime(data.updatedAt)}
+              updated at {clockTime(data.updatedAt)}
             </span>
           )}
           <button
             type="button"
             onClick={refresh}
             className="rounded-md border border-border p-2 text-muted-foreground hover:bg-muted"
-            title="Atualizar"
+            title="Refresh"
           >
             <RefreshCw className="h-3.5 w-3.5" />
           </button>
@@ -239,7 +239,7 @@ export default function DashboardPage() {
             className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground hover:opacity-90"
           >
             <Plus className="h-3.5 w-3.5" />
-            Cadastrar site
+            Register site
           </button>
         </div>
       </header>
@@ -313,19 +313,19 @@ export default function DashboardPage() {
           <div className="flex h-40 flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
             {tab === "migrating" ? (
               <>
-                <p>Nenhuma migração em andamento.</p>
+                <p>No migrations in progress.</p>
                 <button
                   type="button"
                   onClick={() => setShowRegister(true)}
                   className="text-primary-foreground rounded-md bg-primary px-3 py-1.5 text-xs font-semibold"
                 >
-                  Cadastrar o primeiro site
+                  Register the first site
                 </button>
               </>
             ) : tab === "needs_human" ? (
-              <p>Nada esperando humano. 🙌</p>
+              <p>Nothing waiting on a human. 🙌</p>
             ) : (
-              <p>Nenhum site 100% TanStack ainda.</p>
+              <p>No 100% TanStack sites yet.</p>
             )}
           </div>
         )}

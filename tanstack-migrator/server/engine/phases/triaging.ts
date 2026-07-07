@@ -27,7 +27,7 @@ export async function triaging(
   if (site.issues_open > 0) {
     await updateSite(site.id, {
       status: "fixing",
-      phase_detail: `backlog já tem ${site.issues_open} issues abertas`,
+      phase_detail: `backlog already has ${site.issues_open} open issues`,
       last_progress_at: new Date().toISOString(),
     });
     return;
@@ -39,7 +39,7 @@ export async function triaging(
 
   const run = await createRun({ siteId: site.id, kind: "triage" });
   await markSessionStart(site.id, "triage");
-  await addEvent(site.id, "Sessão de triagem iniciada (somente análise)");
+  await addEvent(site.id, "Triage session started (analysis only)");
 
   deps.inflight.start(site.id, "triage", async () => {
     try {
@@ -60,7 +60,7 @@ export async function triaging(
         // history never shows a phantom "running" entry
         await finishRun(run.id, {
           status: "failed",
-          logsTail: `[abandonada: site saiu de triaging durante a sessão]`,
+          logsTail: `[abandoned: site left triaging during the session]`,
           meta: result.meta,
         });
         return;
@@ -74,9 +74,9 @@ export async function triaging(
         });
         await failOrAutoRetry(
           current,
-          result.error ?? "triagem falhou",
+          result.error ?? "triage failed",
           "triaging",
-          "Triagem falhou",
+          "Triage failed",
         );
         return;
       }
@@ -94,7 +94,7 @@ export async function triaging(
           issues_total: drafts.length,
           issues_open: drafts.length,
           issues_closed: 0,
-          phase_detail: `[simulação] triagem: ${drafts.length} issues`,
+          phase_detail: `[simulation] triage: ${drafts.length} issues`,
           sandbox_session_id: null,
           phase_thread_id: null,
           no_improve_count: 0,
@@ -103,7 +103,7 @@ export async function triaging(
         });
         await addEvent(
           site.id,
-          `[simulação] Triagem: ${drafts.length} issues no backlog`,
+          `[simulation] Triage: ${drafts.length} issues in the backlog`,
         );
         return;
       }
@@ -126,8 +126,8 @@ export async function triaging(
         status: counts.open > 0 ? "fixing" : "paritying",
         phase_detail:
           counts.open > 0
-            ? `triagem: ${counts.open} issues abertas, iniciando fixes`
-            : "triagem limpa — medindo paridade",
+            ? `triage: ${counts.open} open issues, starting fixes`
+            : "clean triage — measuring parity",
         sandbox_session_id: null,
         phase_thread_id: null,
         no_improve_count: 0,
@@ -136,14 +136,14 @@ export async function triaging(
       });
       await addEvent(
         site.id,
-        `Triagem concluída: ${sync.created.length} issues novas, ${sync.refreshed.length} atualizadas — backlog aberto: ${counts.open}`,
+        `Triage finished: ${sync.created.length} new issues, ${sync.refreshed.length} updated — open backlog: ${counts.open}`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await finishRun(run.id, { status: "failed", logsTail: message });
       const current = await getSite(site.id);
       if (current) {
-        await failOrAutoRetry(current, message, "triaging", "Triagem falhou");
+        await failOrAutoRetry(current, message, "triaging", "Triage failed");
       }
     }
   });

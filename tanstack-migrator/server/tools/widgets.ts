@@ -21,7 +21,7 @@ function requireConnectionId(env: Env): string {
   const connectionId = env.MESH_REQUEST_CONTEXT?.connectionId;
   if (!connectionId) {
     throw new Error(
-      "Sem contexto de conexão do mesh (connectionId ausente). Chame este MCP através de uma conexão do studio.",
+      "No mesh connection context (connectionId missing). Call this MCP through a studio connection.",
     );
   }
   return connectionId;

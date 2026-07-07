@@ -28,7 +28,7 @@ export const manualDriver: SandboxDriver = {
     await sleep(SIMULATION_STEP_MS);
     return {
       handle: `manual:${site.id}`,
-      previewUrl: `https://sandbox-simulado.local/${site.name}`,
+      previewUrl: `https://sandbox-simulated.local/${site.name}`,
     };
   },
 
@@ -47,17 +47,17 @@ export const manualDriver: SandboxDriver = {
     if (task.kind === "triage") {
       const issues = [
         {
-          title: "[sim] build: imports preact não migrados",
+          title: "[sim] build: preact imports not migrated",
           severity: "critical",
           category: "build",
         },
         {
-          title: "[sim] runtime: rota / responde 500",
+          title: "[sim] runtime: route / responds 500",
           severity: "high",
           category: "runtime",
         },
         {
-          title: "[sim] visual: hero divergente no mobile",
+          title: "[sim] visual: hero diverges on mobile",
           severity: "medium",
           category: "visual",
         },

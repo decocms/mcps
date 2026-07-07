@@ -26,7 +26,7 @@ export async function awaitingMerge(
   ctx: WorkerCtx,
 ): Promise<void> {
   if (isSimulation(ctx)) {
-    await finishAsDone(site, "[simulação] PR mergeado — migração concluída");
+    await finishAsDone(site, "[simulation] PR merged — migration done");
     return;
   }
 
@@ -35,12 +35,12 @@ export async function awaitingMerge(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: "awaiting_merge",
-      needs_human_reason: `Paridade atingida mas nenhum PR está registrado para ${site.target_repo ?? site.name}. Confirme o estado da branch ${site.work_branch} no GitHub e finalize com SITE_MARK_DONE (ou Retry após abrir o PR manualmente).`,
+      needs_human_reason: `Parity reached but no PR is registered for ${site.target_repo ?? site.name}. Confirm the state of branch ${site.work_branch} on GitHub and finish with SITE_MARK_DONE (or Retry after opening the PR manually).`,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      "awaiting_merge sem PR registrado — precisa de humano",
+      "awaiting_merge without a registered PR — needs human",
       "warn",
     );
     return;
@@ -54,7 +54,7 @@ export async function awaitingMerge(
     const message = err instanceof Error ? err.message : String(err);
     await addEvent(
       site.id,
-      `Poll do PR #${site.pr_number} falhou (${message.slice(0, 120)}) — tentando no próximo tick`,
+      `Poll of PR #${site.pr_number} failed (${message.slice(0, 120)}) — retrying on the next tick`,
       "warn",
     );
     return;
@@ -63,17 +63,21 @@ export async function awaitingMerge(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: "awaiting_merge",
-      needs_human_reason: `PR #${site.pr_number} não encontrado em ${site.target_repo}. Verifique ${site.pr_url ?? "o repo"} e use Retry.`,
+      needs_human_reason: `PR #${site.pr_number} not found in ${site.target_repo}. Check ${site.pr_url ?? "the repo"} and use Retry.`,
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(site.id, `PR #${site.pr_number} sumiu do repo`, "warn");
+    await addEvent(
+      site.id,
+      `PR #${site.pr_number} disappeared from the repo`,
+      "warn",
+    );
     return;
   }
 
   if (pr.merged) {
     await finishAsDone(
       site,
-      `PR #${site.pr_number} mergeado — site 100% TanStack`,
+      `PR #${site.pr_number} merged — site 100% TanStack`,
     );
     return;
   }
@@ -81,12 +85,12 @@ export async function awaitingMerge(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: "awaiting_merge",
-      needs_human_reason: `PR #${site.pr_number} foi FECHADO sem merge. Reabra e mergeie (${site.pr_url ?? ""}) ou finalize manualmente com SITE_MARK_DONE.`,
+      needs_human_reason: `PR #${site.pr_number} was CLOSED without merging. Reopen and merge it (${site.pr_url ?? ""}) or finish manually with SITE_MARK_DONE.`,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `PR #${site.pr_number} fechado sem merge — precisa de humano`,
+      `PR #${site.pr_number} closed without merging — needs human`,
       "warn",
     );
     return;
@@ -94,7 +98,7 @@ export async function awaitingMerge(
 
   // still open — keep the timestamp honest so the drawer shows fresh state
   await updateSite(site.id, {
-    phase_detail: `aguardando merge do PR #${site.pr_number} (deploy CF acontece no merge)`,
+    phase_detail: `awaiting merge of PR #${site.pr_number} (CF deploy happens on merge)`,
     last_progress_at: new Date().toISOString(),
   });
 }

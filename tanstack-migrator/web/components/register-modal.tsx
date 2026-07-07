@@ -435,7 +435,7 @@ export function RegisterModal({
 
   const submit = async () => {
     if (!sourceRepo || !prodUrl.trim()) {
-      setError("Preencha o repo e a URL de produção");
+      setError("Fill in the repo and the production URL");
       return;
     }
     setSubmitting(true);
@@ -457,7 +457,7 @@ export function RegisterModal({
       onRegistered();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Falha ao cadastrar");
+      setError(err instanceof Error ? err.message : "Failed to register");
     } finally {
       setSubmitting(false);
     }
@@ -467,7 +467,9 @@ export function RegisterModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-lg border border-border bg-card p-5 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold">Cadastrar site pra migrar</h2>
+          <h2 className="text-base font-semibold">
+            Register a site to migrate
+          </h2>
           <button
             type="button"
             onClick={onClose}
@@ -480,7 +482,7 @@ export function RegisterModal({
         <div className="flex flex-col gap-3">
           {/* repo */}
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Repo de origem (Fresh/Deno)</span>
+            <span className="font-medium">Source repo (Fresh/Deno)</span>
             <div className="relative" ref={repoDropdownRef}>
               <div className="flex items-stretch overflow-hidden rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring">
                 <span className="flex items-center bg-muted px-2.5 text-xs text-muted-foreground select-none">
@@ -523,7 +525,8 @@ export function RegisterModal({
                   >
                     {repoRateLimited ? (
                       <li className="px-3 py-2 text-[11px] text-amber-600 dark:text-amber-400">
-                        GitHub rate limit — use o nome exato no campo acima
+                        GitHub rate limit — type the exact name in the field
+                        above
                       </li>
                     ) : (
                       repoResults.map((r, idx) => (
@@ -566,7 +569,7 @@ export function RegisterModal({
 
           {/* prod URL */}
           <label className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">URL de produção</span>
+            <span className="font-medium">Production URL</span>
             <input
               value={prodUrl}
               onChange={(e) => setProdUrl(e.target.value)}
@@ -577,7 +580,7 @@ export function RegisterModal({
 
           {/* assignee */}
           <div className="flex flex-col gap-1 text-sm">
-            <span className="font-medium">Responsável (opcional)</span>
+            <span className="font-medium">Assignee (optional)</span>
             {assigneeLogin ? (
               <div className="flex items-center gap-2 rounded-md border border-input bg-background px-3 py-2">
                 {assigneeAvatarUrl ? (
@@ -594,7 +597,7 @@ export function RegisterModal({
                   type="button"
                   onClick={clearAssignee}
                   className="text-muted-foreground hover:text-foreground"
-                  title="Remover"
+                  title="Remove"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -615,7 +618,7 @@ export function RegisterModal({
                       if (assigneeQuery.trim()) setShowUserDropdown(true);
                     }}
                     onKeyDown={handleUserKeyDown}
-                    placeholder="Buscar por login ou nome…"
+                    placeholder="Search by login or name…"
                     aria-autocomplete="list"
                     aria-expanded={showUserDropdown && userResults.length > 0}
                     aria-activedescendant={
@@ -640,8 +643,7 @@ export function RegisterModal({
                     {userRateLimited ? (
                       <>
                         <li className="px-3 py-2 text-[11px] text-amber-600 dark:text-amber-400">
-                          GitHub rate limit — pressione Enter para usar como
-                          está
+                          GitHub rate limit — press Enter to use as is
                         </li>
                         <li>
                           <button
@@ -678,7 +680,7 @@ export function RegisterModal({
                             @{assigneeQuery.trim()}
                           </span>
                           <span className="ml-auto text-[10px] text-muted-foreground">
-                            usar assim
+                            use as is
                           </span>
                         </button>
                       </li>
@@ -731,7 +733,7 @@ export function RegisterModal({
               className="h-4 w-4 rounded border-input"
             />
             <span>
-              Migração já concluída (entra direto na lista 100% TanStack)
+              Migration already done (goes straight to the 100% TanStack list)
             </span>
           </label>
 
@@ -743,7 +745,7 @@ export function RegisterModal({
                 onChange={(e) => setStartNow(e.target.checked)}
                 className="h-4 w-4 rounded border-input"
               />
-              <span>Iniciar migração agora (entra na fila imediatamente)</span>
+              <span>Start migrating now (enters the queue immediately)</span>
             </label>
           )}
 
@@ -757,10 +759,10 @@ export function RegisterModal({
           >
             {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
             {alreadyDone
-              ? "Cadastrar como concluído"
+              ? "Register as done"
               : startNow
-                ? "Entrar na fila agora"
-                : "Adicionar ao backlog"}
+                ? "Queue now"
+                : "Add to backlog"}
           </button>
         </div>
       </div>

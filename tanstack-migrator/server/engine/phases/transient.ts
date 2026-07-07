@@ -40,8 +40,8 @@ export async function failOrAutoRetry(
 
   if (transient) {
     const reason = turnLimit
-      ? "sessão atingiu o limite de turnos — continuando a mesma thread"
-      : "sessão caiu em réplica desatualizada — tentando de novo";
+      ? "session hit the turn limit — continuing the same thread"
+      : "session landed on a stale replica — trying again";
     await updateSite(site.id, {
       status: retryStatus,
       transient_retries: site.transient_retries + 1,
@@ -51,7 +51,7 @@ export async function failOrAutoRetry(
     });
     await addEvent(
       site.id,
-      `${reason} — retry automático ${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES}`,
+      `${reason} — automatic retry ${site.transient_retries + 1}/${MAX_TRANSIENT_RETRIES}`,
       "warn",
     );
     return;

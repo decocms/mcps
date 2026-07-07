@@ -4,39 +4,39 @@ export const STATUS_META: Record<
   string,
   { label: string; className: string; active?: boolean }
 > = {
-  queued: { label: "Na fila", className: "bg-muted text-muted-foreground" },
+  queued: { label: "Queued", className: "bg-muted text-muted-foreground" },
   creating_repo: {
-    label: "Criando repo",
+    label: "Creating repo",
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
   provisioning_sandbox: {
-    label: "Subindo sandbox",
+    label: "Provisioning sandbox",
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
   migrating_script: {
-    label: "Rodando script",
+    label: "Running script",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
   opening_pr: {
-    label: "Abrindo PR",
+    label: "Opening PR",
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
   triaging: {
-    label: "Triando issues",
+    label: "Triaging issues",
     className: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",
     active: true,
   },
   fixing: {
-    label: "Corrigindo issues",
+    label: "Fixing issues",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
   paritying: {
-    label: "Medindo paridade",
+    label: "Measuring parity",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     active: true,
   },
@@ -51,43 +51,43 @@ export const STATUS_META: Record<
     active: true,
   },
   awaiting_merge: {
-    label: "Aguardando merge",
+    label: "Awaiting merge",
     className: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
     active: true,
   },
   // legacy (≤ v0.4.x) — shown until the worker sweep translates them
   migrating: {
-    label: "Migrando",
+    label: "Migrating",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
   migrating2: {
-    label: "Migrando",
+    label: "Migrating",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
   migrating3: {
-    label: "Migrando",
+    label: "Migrating",
     className: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
     active: true,
   },
   installing_sync: {
-    label: "Instalando sync",
+    label: "Installing sync",
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
   validating: {
-    label: "Validando paridade",
+    label: "Validating parity",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     active: true,
   },
   validating2: {
-    label: "Validando paridade",
+    label: "Validating parity",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     active: true,
   },
   validating3: {
-    label: "Validando paridade",
+    label: "Validating parity",
     className: "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
     active: true,
   },
@@ -96,15 +96,15 @@ export const STATUS_META: Record<
     className: "bg-primary/20 text-emerald-700 dark:text-emerald-300",
   },
   needs_human: {
-    label: "Precisa de humano",
+    label: "Needs human",
     className: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   },
-  paused: { label: "Pausado", className: "bg-muted text-muted-foreground" },
+  paused: { label: "Paused", className: "bg-muted text-muted-foreground" },
   failed: {
-    label: "Falhou",
+    label: "Failed",
     className: "bg-red-500/15 text-red-600 dark:text-red-400",
   },
-  archived: { label: "Arquivado", className: "bg-muted text-muted-foreground" },
+  archived: { label: "Archived", className: "bg-muted text-muted-foreground" },
 };
 
 export function StatusBadge({ status }: { status: string }) {

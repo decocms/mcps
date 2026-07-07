@@ -25,10 +25,10 @@ export const PIPELINE_PHASES = [
   { key: "baseline", label: "Baseline", icon: Activity },
   { key: "script", label: "Script", icon: Play },
   { key: "pr", label: "PR", icon: GitPullRequest },
-  { key: "triage", label: "Triagem", icon: ListChecks },
+  { key: "triage", label: "Triage", icon: ListChecks },
   { key: "fix", label: "Fixes", icon: Wrench },
   { key: "deploy", label: "Deploy", icon: Rocket },
-  { key: "parity", label: "Paridade", icon: Gauge },
+  { key: "parity", label: "Parity", icon: Gauge },
   { key: "merge", label: "Merge", icon: GitMerge },
 ] as const;
 
@@ -185,10 +185,10 @@ export function PipelineStepper({
       {compact && (
         <span className="text-center text-[10px] font-medium text-muted-foreground">
           {isDone
-            ? "concluído"
+            ? "done"
             : currentPhase
               ? `${currentPhase.label} · ${Math.min(currentIdx + 1, PIPELINE_PHASES.length)}/${PIPELINE_PHASES.length}`
-              : "na fila"}
+              : "queued"}
         </span>
       )}
     </div>

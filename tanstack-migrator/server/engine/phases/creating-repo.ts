@@ -30,10 +30,10 @@ export async function creatingRepo(
     await updateSite(site.id, {
       target_repo: targetRepo,
       status: "provisioning_sandbox",
-      phase_detail: `[simulação] repo ${targetRepo} criado`,
+      phase_detail: `[simulation] repo ${targetRepo} created`,
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(site.id, `[simulação] repo ${targetRepo} criado`);
+    await addEvent(site.id, `[simulation] repo ${targetRepo} created`);
     return;
   }
 
@@ -45,19 +45,19 @@ export async function creatingRepo(
         target_repo: targetRepo,
         status: "needs_human",
         resume_status: "creating_repo",
-        needs_human_reason: `${err.message}. Crie o repo manualmente (gh repo create ${targetRepo} --private) OU dê à GitHub App da deco a permissão de Administration (write) na org, e use Retry.`,
+        needs_human_reason: `${err.message}. Create the repo manually (gh repo create ${targetRepo} --private) OR grant deco's GitHub App the Administration (write) permission on the org, and use Retry.`,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        "GitHub App sem permissão de criar repo — precisa de humano",
+        "GitHub App lacks permission to create repo — needs human",
         "warn",
       );
       return;
     }
     throw err;
   }
-  await addEvent(site.id, `Repo ${targetRepo} garantido no GitHub`);
+  await addEvent(site.id, `Repo ${targetRepo} ensured on GitHub`);
 
   // main must exist (repos are created empty) — it's the PR base — and the
   // work branch must exist BEFORE SANDBOX_START: sandbox clone + decopilot
@@ -70,12 +70,12 @@ export async function creatingRepo(
       content: `# ${ref.repo}\n\nTanStack Start migration of \`${site.source_repo}\` — managed by tanstack-migrator.\n`,
       message: "chore: init (tanstack-migrator)",
     });
-    await addEvent(site.id, "Branch main inicializada (README)");
+    await addEvent(site.id, "Branch main initialized (README)");
   }
   await ensureBranch(ctx, ref, site.work_branch);
   await addEvent(
     site.id,
-    `Branch de trabalho ${site.work_branch} garantida (base do PR: main)`,
+    `Work branch ${site.work_branch} ensured (PR base: main)`,
   );
 
   // The push grant is optional: the mesh sandbox gets git credentials synced
@@ -90,14 +90,11 @@ export async function creatingRepo(
         gh_token_endpoint: grant.tokenEndpoint ?? null,
         gh_client_id: grant.clientId ?? null,
       };
-      await addEvent(
-        site.id,
-        "Grant de push do GitHub mintado (MINT_REPO_TOKEN)",
-      );
+      await addEvent(site.id, "GitHub push grant minted (MINT_REPO_TOKEN)");
     } catch (err) {
       await addEvent(
         site.id,
-        `Sem grant de push (${err instanceof Error ? err.message : err}) — o sandbox usará as credenciais git sincronizadas pelo mesh`,
+        `No push grant (${err instanceof Error ? err.message : err}) — the sandbox will use the git credentials synced by the mesh`,
         "warn",
       );
     }
@@ -107,7 +104,7 @@ export async function creatingRepo(
     ...grantPatch,
     target_repo: targetRepo,
     status: "provisioning_sandbox",
-    phase_detail: "repo criado, provisionando sandbox",
+    phase_detail: "repo created, provisioning sandbox",
     last_progress_at: new Date().toISOString(),
   });
 }

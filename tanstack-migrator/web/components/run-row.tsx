@@ -41,14 +41,14 @@ export function RunRow({ run }: { run: RunView }) {
 
   const takenIssues = run.meta?.issues?.taken;
   const kindLabel: Record<string, string> = {
-    migrate: "script de migração",
-    triage: "triagem",
+    migrate: "migration script",
+    triage: "triage",
     fix: takenIssues?.length
       ? `fix ${takenIssues.map((n) => `#${n}`).join(" ")}`
       : `fix ${run.iteration}`,
     parity: `parity ${run.iteration}`,
-    fix_iteration: `iteração ${run.iteration}`,
-    install_sync: "instalação do sync",
+    fix_iteration: `iteration ${run.iteration}`,
+    install_sync: "sync install",
     deploy_cf: "deploy CF",
   };
   const usage = run.meta?.usage;
@@ -108,7 +108,7 @@ export function RunRow({ run }: { run: RunView }) {
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
               className="inline-flex max-w-28 items-center gap-1 truncate rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
-              title={`Abrir thread da sessão no studio: ${run.threadId}`}
+              title={`Open the session thread in studio: ${run.threadId}`}
             >
               {run.threadId}
             </a>
@@ -133,7 +133,7 @@ export function RunRow({ run }: { run: RunView }) {
                 }
               }}
               className="inline-flex items-center gap-1 rounded border border-border px-1.5 py-0.5 hover:bg-muted"
-              title="Abrir report HTML completo"
+              title="Open full HTML report"
             >
               {loadingReport ? (
                 <Loader2 className="h-3 w-3 animate-spin" />
@@ -155,9 +155,9 @@ export function RunRow({ run }: { run: RunView }) {
             !hasIssueMoves &&
             !hasUsage && (
               <p className="text-muted-foreground">
-                Sem logs desta sessão
+                No logs for this session
                 {run.threadId ? ` — thread ${run.threadId}` : ""}
-                {run.status === "running" ? " (ainda em execução)" : ""}.
+                {run.status === "running" ? " (still running)" : ""}.
               </p>
             )}
           {(hasIssueMoves || hasUsage) && (
@@ -169,22 +169,21 @@ export function RunRow({ run }: { run: RunView }) {
               )}
               {issueMoves?.resolved && issueMoves.resolved.length > 0 && (
                 <span className="text-emerald-600 dark:text-emerald-400">
-                  resolvidas:{" "}
-                  {issueMoves.resolved.map((n) => `#${n}`).join(", ")}
+                  resolved: {issueMoves.resolved.map((n) => `#${n}`).join(", ")}
                 </span>
               )}
               {issueMoves?.blocked && issueMoves.blocked.length > 0 && (
                 <span className="text-amber-600 dark:text-amber-400">
-                  bloqueadas:{" "}
+                  blocked:{" "}
                   {issueMoves.blocked.map((b) => `#${b.number}`).join(", ")}
                 </span>
               )}
               {issueMoves?.created !== undefined && issueMoves.created > 0 && (
-                <span>criadas no GitHub: {issueMoves.created}</span>
+                <span>created on GitHub: {issueMoves.created}</span>
               )}
               {usage?.costUsd !== undefined && (
                 <span className="tabular-nums">
-                  custo ${usage.costUsd.toFixed(2)}
+                  cost ${usage.costUsd.toFixed(2)}
                 </span>
               )}
               {usage?.totalTokens !== undefined && (
@@ -197,7 +196,7 @@ export function RunRow({ run }: { run: RunView }) {
           {run.meta?.commands && run.meta.commands.length > 0 && (
             <details className="mb-2">
               <summary className="cursor-pointer text-muted-foreground select-none">
-                {run.meta.commands.length} comandos da sessão
+                {run.meta.commands.length} session commands
               </summary>
               <ul className="mt-1 flex max-h-40 flex-col gap-0.5 overflow-auto font-mono text-[10px] leading-snug">
                 {run.meta.commands.map((c, i) => (

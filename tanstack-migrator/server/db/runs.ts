@@ -124,7 +124,7 @@ export async function closeStaleRuns(olderThanMinutes: number): Promise<void> {
     .from("sitemig_runs")
     .update({
       status: "failed",
-      logs_tail: "[órfã: leitor morreu com restart do pod]",
+      logs_tail: "[orphaned: reader died on pod restart]",
       finished_at: new Date().toISOString(),
     })
     .eq("status", "running")

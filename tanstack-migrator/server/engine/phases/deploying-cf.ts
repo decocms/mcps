@@ -30,12 +30,13 @@ async function advanceToParity(
   await updateSite(site.id, {
     ...patch,
     status: "paritying",
-    phase_detail: "deploy ok — iniciando medição de paridade contra a URL real",
+    phase_detail:
+      "deploy ok — starting parity measurement against the real URL",
     last_progress_at: new Date().toISOString(),
   });
   await addEvent(
     site.id,
-    `Deploy CF ok em ${patch.cf_deploy_url ?? "?"} — avançando para paridade`,
+    `CF deploy ok at ${patch.cf_deploy_url ?? "?"} — advancing to parity`,
   );
 }
 
@@ -58,7 +59,7 @@ export async function deployingCf(
   if (!cfToken) {
     // No token: show one-time dashboard instructions and park.
     const prNote = site.pr_number
-      ? ` Depois de conectar, o PR #${site.pr_number} ganha um preview deploy; o merge em main faz o go-live.`
+      ? ` Once connected, PR #${site.pr_number} gets a preview deploy; merging into main triggers the go-live.`
       : "";
     await updateSite(site.id, {
       status: "needs_human",
@@ -68,12 +69,12 @@ export async function deployingCf(
       needs_human_reason:
         manualCfInstructions({ workerName, repoFull: site.target_repo }) +
         prNote +
-        " Alternativa: configure CLOUDFLARE_API_TOKEN no MCP para o deploy automático.",
+        " Alternative: set CLOUDFLARE_API_TOKEN in the MCP for automatic deploy.",
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      `Deploy CF: sem CLOUDFLARE_API_TOKEN — configure o token para deploy automático ou siga as instruções de dashboard.`,
+      `CF deploy: no CLOUDFLARE_API_TOKEN — set the token for automatic deploy or follow the dashboard instructions.`,
       "warn",
     );
     try {
@@ -85,12 +86,9 @@ export async function deployingCf(
   }
 
   // Automated path: run `npm run build && wrangler deploy` inside the sandbox.
-  await addEvent(
-    site.id,
-    "Iniciando deploy automático no Cloudflare Workers...",
-  );
+  await addEvent(site.id, "Starting automatic deploy to Cloudflare Workers...");
   await updateSite(site.id, {
-    phase_detail: "buildando e deployando no Cloudflare Workers...",
+    phase_detail: "building and deploying to Cloudflare Workers...",
     last_progress_at: new Date().toISOString(),
   });
 
@@ -108,7 +106,7 @@ export async function deployingCf(
     if (!current || current.status !== "deploying") {
       await finishRun(run.id, {
         status: "failed",
-        logsTail: `[abandonado: site saiu de deploying durante a sessão]`,
+        logsTail: `[abandoned: site left deploying during the session]`,
         meta: result.meta,
       });
       return;
@@ -134,12 +132,12 @@ export async function deployingCf(
       if (rendersReal) {
         await addEvent(
           site.id,
-          `Deploy CF ok + HTML real confirmado em ${deployUrl}`,
+          `CF deploy ok + real HTML confirmed at ${deployUrl}`,
         );
       } else {
         await addEvent(
           site.id,
-          `Deploy CF ok mas ${deployUrl} ainda não serve HTML real (pode estar aquecendo — tente em 1 min)`,
+          `CF deploy ok but ${deployUrl} does not serve real HTML yet (may be warming up — try again in 1 min)`,
           "warn",
         );
       }
@@ -157,14 +155,10 @@ export async function deployingCf(
       await updateSite(current.id, {
         status: "needs_human",
         resume_status: "deploying",
-        needs_human_reason: `wrangler deploy falhou: ${result.error ?? result.output.slice(-300)}`,
+        needs_human_reason: `wrangler deploy failed: ${result.error ?? result.output.slice(-300)}`,
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(
-        current.id,
-        `Deploy CF falhou — verifique os logs`,
-        "error",
-      );
+      await addEvent(current.id, `CF deploy failed — check the logs`, "error");
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
@@ -174,10 +168,10 @@ export async function deployingCf(
       await updateSite(current.id, {
         status: "needs_human",
         resume_status: "deploying",
-        needs_human_reason: `Erro no deploy CF: ${message}`,
+        needs_human_reason: `Error in CF deploy: ${message}`,
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(current.id, `Erro no deploy CF: ${message}`, "error");
+      await addEvent(current.id, `Error in CF deploy: ${message}`, "error");
     }
   }
 }

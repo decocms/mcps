@@ -58,7 +58,7 @@ function IssuesBar({ site }: { site: SiteView }) {
       rel="noreferrer"
       onClick={(e) => e.stopPropagation()}
       className="w-full hover:opacity-80"
-      title="Abrir issues label:tanstack-migrator no GitHub"
+      title="Open issues label:tanstack-migrator on GitHub"
     >
       {bar}
     </a>
@@ -125,15 +125,15 @@ export function SiteCard({
           <span className="truncate text-sm font-semibold">{site.name}</span>
           {simulation && !isDone && (
             <span className="shrink-0 rounded-full border border-dashed border-amber-500/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
-              simulação
+              simulation
             </span>
           )}
           {stalled && (
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-              title={`Sem atualização há ${timeAgo(site.updatedAt)} — pode estar travado`}
+              title={`No update in ${timeAgo(site.updatedAt)} — may be stuck`}
             >
-              parado?
+              stalled?
             </span>
           )}
         </span>
@@ -170,7 +170,7 @@ export function SiteCard({
           />
         )}
         <div className="flex items-center gap-3">
-          <RepoLink repo={site.prodUrl} label="produção" icon={Globe} />
+          <RepoLink repo={site.prodUrl} label="production" icon={Globe} />
           {site.previewUrl && site.previewReady && (
             <RepoLink
               repo={site.previewUrl}
@@ -181,10 +181,10 @@ export function SiteCard({
           {site.previewUrl && !site.previewReady && (
             <span
               className="inline-flex items-center gap-1 text-xs text-muted-foreground/60"
-              title="Sandbox criado — o link aparece quando o dev server responder"
+              title="Sandbox created — the link appears once the dev server responds"
             >
               <ExternalLink className="h-3 w-3" />
-              sandbox criado
+              sandbox created
             </span>
           )}
           {site.cfDeployUrl && (
@@ -200,12 +200,12 @@ export function SiteCard({
       <div className="flex items-center justify-between text-[11px] text-muted-foreground">
         <span>
           {site.status === "fixing"
-            ? `sessões ${site.fixSessionsDone}/${site.maxFixSessions}`
+            ? `sessions ${site.fixSessionsDone}/${site.maxFixSessions}`
             : site.status === "paritying" ||
                 site.status.startsWith("validating") ||
                 isDone
-              ? `rodada ${site.iterationsDone}/${site.maxIterations}`
-              : `cadastrado ${timeAgo(site.createdAt)}`}
+              ? `round ${site.iterationsDone}/${site.maxIterations}`
+              : `registered ${timeAgo(site.createdAt)}`}
         </span>
         <span className="flex items-center gap-1.5">
           {site.assigneeLogin && (
@@ -228,8 +228,8 @@ export function SiteCard({
             </span>
           )}
           {isDone
-            ? `durou ${duration(site.startedAt, site.finishedAt)}`
-            : `atualizado ${timeAgo(site.updatedAt)}`}
+            ? `took ${duration(site.startedAt, site.finishedAt)}`
+            : `updated ${timeAgo(site.updatedAt)}`}
         </span>
       </div>
     </button>

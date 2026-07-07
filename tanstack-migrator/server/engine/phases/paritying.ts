@@ -36,16 +36,16 @@ import { failOrAutoRetry } from "./transient.ts";
 // The synthetic issue filed when the pipeline reaches parity with a candidate
 // that doesn't render — deduped by title across rounds so it never spams.
 const PREVIEW_BROKEN_DRAFT: IssueDraft = {
-  title: "[runtime] preview não renderiza HTML real em /",
+  title: "[runtime] preview does not render real HTML at /",
   body: [
-    "## Contexto",
-    "O backlog de issues drenou mas o preview do sandbox NÃO renderiza HTML de verdade — a paridade não pode medir contra um placeholder/shell vazio.",
-    "## Erro",
-    'Um GET em `/` devolve o placeholder "No web page at this URL" ou um shell vazio (`<div id="root"></div>` sem conteúdo renderizado).',
-    "## Como reproduzir",
-    "Garanta o dev de pé (bloco Setup) e `curl -sL http://localhost:$DEV_PORT/ | head -120`.",
-    "## Dica de fix",
-    'SSR quebrado. Causas comuns: (1) section loader estoura por `ctx` undefined → torne `ctx?: AppContext` opcional + optional-chaining em todo acesso; (2) global client-only no render do server (`window`/`document`/`globalThis.location`) → guardar com `typeof window !== "undefined"`; (3) generates faltando → `bun run predev`. Leia `tail -80 /tmp/dev.log` pelo stack e corrija o arquivo:linha.',
+    "## Context",
+    "The issue backlog drained but the sandbox preview does NOT render real HTML — parity cannot measure against a placeholder/empty shell.",
+    "## Error",
+    'A GET on `/` returns the "No web page at this URL" placeholder or an empty shell (`<div id="root"></div>` with no rendered content).',
+    "## How to reproduce",
+    "Make sure the dev server is up (Setup block) and `curl -sL http://localhost:$DEV_PORT/ | head -120`.",
+    "## Fix hint",
+    'Broken SSR. Common causes: (1) section loader throws on undefined `ctx` → make `ctx?: AppContext` optional + optional-chaining on every access; (2) client-only global in the server render (`window`/`document`/`globalThis.location`) → guard with `typeof window !== "undefined"`; (3) missing generates → `bun run predev`. Read `tail -80 /tmp/dev.log` for the stack and fix the file:line.',
   ].join("\n"),
   severity: "high",
   category: "runtime",
@@ -75,12 +75,12 @@ async function previewGate(site: SiteRow, ctx: WorkerCtx): Promise<boolean> {
   await updateSite(site.id, {
     status: "needs_human",
     resume_status: "deploying",
-    needs_human_reason: `A URL do CF worker não renderiza HTML real (deploy pode estar quebrado): ${cfUrl}. Re-faça o deploy (SITE_RETRY fromStatus=deploying) e tente novamente.`,
+    needs_human_reason: `The CF worker URL does not render real HTML (deploy may be broken): ${cfUrl}. Re-run the deploy (SITE_RETRY fromStatus=deploying) and try again.`,
     last_progress_at: new Date().toISOString(),
   });
   await addEvent(
     site.id,
-    `CF worker ${cfUrl} não renderiza HTML — precisa de re-deploy`,
+    `CF worker ${cfUrl} does not render HTML — needs a re-deploy`,
     "error",
   );
   return false;
@@ -98,7 +98,7 @@ function simulatedSummary(score: number): ParitySummary {
               severity: "high",
               category: "visual",
               page: "/",
-              summary: "[simulação] Hero banner divergente no mobile",
+              summary: "[simulation] Hero banner mismatch on mobile",
             },
           ],
     perPage: [
@@ -123,16 +123,16 @@ export async function paritying(
     await updateSite(site.id, {
       status: hasPr ? "awaiting_merge" : "done",
       phase_detail: hasPr
-        ? `paridade ${site.parity_score}% ✓ — aguardando merge do PR #${site.pr_number}`
-        : `paridade ${site.parity_score}% ✓ — migração concluída`,
+        ? `parity ${site.parity_score}% ✓ — awaiting merge of PR #${site.pr_number}`
+        : `parity ${site.parity_score}% ✓ — migration done`,
       finished_at: hasPr ? undefined : new Date().toISOString(),
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
       hasPr
-        ? `Paridade ${site.parity_score}% — falta o merge do PR #${site.pr_number}`
-        : `Paridade ${site.parity_score}% — migração concluída 🎉`,
+        ? `Parity ${site.parity_score}% — only the merge of PR #${site.pr_number} is left`
+        : `Parity ${site.parity_score}% — migration done 🎉`,
     );
     return;
   }
@@ -140,12 +140,12 @@ export async function paritying(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: "paritying",
-      needs_human_reason: `Loop de paridade esgotou ${site.max_iterations} rodadas (melhor score: ${site.best_score ?? "n/a"}). Issues abertas: https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
+      needs_human_reason: `Parity loop exhausted ${site.max_iterations} rounds (best score: ${site.best_score ?? "n/a"}). Open issues: https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      "Máximo de rodadas de paridade atingido — precisa de humano",
+      "Maximum parity rounds reached — needs human",
       "warn",
     );
     return;
@@ -154,10 +154,10 @@ export async function paritying(
     await updateSite(site.id, {
       status: "needs_human",
       resume_status: "paritying",
-      needs_human_reason: `${site.no_improve_count} rodadas sem melhora de score (melhor: ${site.best_score ?? "n/a"}).`,
+      needs_human_reason: `${site.no_improve_count} rounds without score improvement (best: ${site.best_score ?? "n/a"}).`,
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(site.id, "Score estagnou — precisa de humano", "warn");
+    await addEvent(site.id, "Score stagnated — needs human", "warn");
     return;
   }
 
@@ -175,7 +175,7 @@ export async function paritying(
   await markSessionStart(site.id, `parity-${iteration}`);
   await addEvent(
     site.id,
-    `Rodada de paridade ${iteration} iniciada (somente medição)`,
+    `Parity round ${iteration} started (measurement only)`,
   );
 
   deps.inflight.start(site.id, `parity-${iteration}`, async () => {
@@ -220,7 +220,7 @@ export async function paritying(
         // history never shows a phantom "running" entry
         await finishRun(run.id, {
           status: "failed",
-          logsTail: `[abandonada: site saiu de paritying durante a sessão]`,
+          logsTail: `[abandoned: site left paritying during the session]`,
           meta: result.meta,
         });
         return;
@@ -234,9 +234,9 @@ export async function paritying(
         });
         await failOrAutoRetry(
           current,
-          result.error ?? "medição de paridade falhou",
+          result.error ?? "parity measurement failed",
           "paritying",
-          "Medição de paridade falhou",
+          "Parity measurement failed",
         );
         return;
       }
@@ -281,13 +281,13 @@ export async function paritying(
         phase_thread_id: null,
         transient_retries: 0,
         status: hitTarget ? (hasPr ? "awaiting_merge" : "done") : "fixing",
-        phase_detail: `rodada ${iteration}: score ${score ?? "?"}${hitTarget ? " — meta atingida!" : ` (${createdCount} issues novas)`}`,
+        phase_detail: `round ${iteration}: score ${score ?? "?"}${hitTarget ? " — target reached!" : ` (${createdCount} new issues)`}`,
         finished_at: hitTarget && !hasPr ? new Date().toISOString() : undefined,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        `Rodada de paridade ${iteration} — score ${score ?? "desconhecido"}%${createdCount > 0 ? ` · ${createdCount} issues novas` : ""}`,
+        `Parity round ${iteration} — score ${score ?? "unknown"}%${createdCount > 0 ? ` · ${createdCount} new issues` : ""}`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -298,7 +298,7 @@ export async function paritying(
           current,
           message,
           "paritying",
-          "Medição de paridade falhou",
+          "Parity measurement failed",
         );
       }
     }

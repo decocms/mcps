@@ -85,7 +85,7 @@ function PreviewPanel({ site }: { site: SiteView }) {
     return (
       <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
         <Monitor className="h-3.5 w-3.5 shrink-0" />
-        Sandbox criado — o preview aparece quando o dev server responder.
+        Sandbox created — the preview appears once the dev server responds.
       </div>
     );
   }
@@ -104,7 +104,7 @@ function PreviewPanel({ site }: { site: SiteView }) {
             <ChevronRight className="h-3.5 w-3.5" />
           )}
           <Monitor className="h-3.5 w-3.5 text-emerald-500" />
-          Preview ao vivo
+          Live preview
         </button>
         <a
           href={site.previewUrl}
@@ -112,7 +112,7 @@ function PreviewPanel({ site }: { site: SiteView }) {
           rel="noreferrer"
           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground hover:underline"
         >
-          abrir <ExternalLink className="h-3 w-3" />
+          open <ExternalLink className="h-3 w-3" />
         </a>
       </div>
       {open && (
@@ -192,7 +192,7 @@ function AssigneePicker({
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-md border border-border px-2 py-1 text-xs hover:bg-muted"
         title={
-          site.assigneeLogin ? `@${site.assigneeLogin}` : "Atribuir responsável"
+          site.assigneeLogin ? `@${site.assigneeLogin}` : "Assign assignee"
         }
       >
         {site.assigneeAvatarUrl ? (
@@ -205,7 +205,7 @@ function AssigneePicker({
           <UserCircle2 className="h-4 w-4 text-muted-foreground" />
         )}
         <span className="text-muted-foreground">
-          {site.assigneeLogin ? `@${site.assigneeLogin}` : "Atribuir"}
+          {site.assigneeLogin ? `@${site.assigneeLogin}` : "Assign"}
         </span>
       </button>
 
@@ -220,7 +220,7 @@ function AssigneePicker({
               }}
               className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:bg-muted"
             >
-              <X className="h-3 w-3" /> Remover atribuição
+              <X className="h-3 w-3" /> Remove assignee
             </button>
           )}
           {loading ? (
@@ -229,7 +229,7 @@ function AssigneePicker({
             </div>
           ) : list.length === 0 ? (
             <p className="px-3 py-2 text-xs text-muted-foreground">
-              Sem contribuidores públicos
+              No public contributors
             </p>
           ) : (
             list.map((c) => (
@@ -305,7 +305,7 @@ export function SiteDetailPanel({
       refresh();
       onChanged();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ação falhou");
+      setError(err instanceof Error ? err.message : "Action failed");
     } finally {
       setBusy(null);
     }
@@ -324,7 +324,7 @@ export function SiteDetailPanel({
       onChanged();
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Exclusão falhou");
+      setError(err instanceof Error ? err.message : "Delete failed");
       setBusy(null);
     }
   };
@@ -370,10 +370,10 @@ export function SiteDetailPanel({
               {site && isStalled(site) && (
                 <span
                   className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400"
-                  title={`Sem atualização há ${timeAgo(site.updatedAt)} — pode estar travado`}
+                  title={`No update in ${timeAgo(site.updatedAt)} — may be stuck`}
                 >
                   <CircleDot className="h-2.5 w-2.5" />
-                  parado?
+                  stalled?
                 </span>
               )}
             </div>
@@ -397,14 +397,14 @@ export function SiteDetailPanel({
                 />
                 <div className="flex shrink-0 items-center gap-2.5 text-[11px] text-muted-foreground tabular-nums">
                   {site.issuesTotal > 0 && (
-                    <span title="issues fechadas/total">
+                    <span title="issues closed/total">
                       {site.issuesClosed}/{site.issuesTotal} issues
                     </span>
                   )}
                   {site.costTotal > 0 && (
                     <span
                       className="inline-flex items-center"
-                      title="custo acumulado"
+                      title="cumulative cost"
                     >
                       <DollarSign className="h-3 w-3" />
                       {site.costTotal.toFixed(2)}
@@ -452,10 +452,10 @@ export function SiteDetailPanel({
             >
               {(
                 [
-                  ["overview", "Visão geral"],
+                  ["overview", "Overview"],
                   ["runs", `Runs ${runs.length}`],
                   ["terminal", "Terminal"],
-                  ["activity", `Atividade ${events.length}`],
+                  ["activity", `Activity ${events.length}`],
                 ] as [Tab, string][]
               ).map(([id, label]) => (
                 <button
@@ -486,14 +486,14 @@ export function SiteDetailPanel({
         {loadError && /not found/i.test(loadError) ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-3 p-6 text-center">
             <p className="text-sm text-muted-foreground">
-              Este site foi excluído — os dados não existem mais.
+              This site was deleted — the data no longer exists.
             </p>
             <button
               type="button"
               onClick={onClose}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted"
             >
-              Fechar
+              Close
             </button>
           </div>
         ) : !site ? (
@@ -506,9 +506,9 @@ export function SiteDetailPanel({
               <>
                 {simulation && site.status !== "done" && (
                   <div className="rounded-md border border-dashed border-amber-500/50 bg-amber-500/10 p-2.5 text-xs text-amber-700 dark:text-amber-300">
-                    Modo simulação (SANDBOX_PROVIDER=manual): nenhum efeito
-                    externo — repos, sandbox e deploy são fictícios. Troque para{" "}
-                    <code>decopilot</code> no state pra migrar de verdade.
+                    Simulation mode (SANDBOX_PROVIDER=manual): no external
+                    effects — repos, sandbox and deploy are fake. Switch to{" "}
+                    <code>decopilot</code> in the state to migrate for real.
                   </div>
                 )}
 
@@ -535,11 +535,11 @@ export function SiteDetailPanel({
                 {site.baselineScore !== null && (
                   <div className="rounded-md border border-border bg-card p-3">
                     <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      Antes / Depois
+                      Before / After
                     </p>
                     <div className="flex items-center gap-3 text-xs tabular-nums">
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-muted-foreground">antes</span>
+                        <span className="text-muted-foreground">before</span>
                         <span className="text-sm font-bold">
                           {Math.round(site.baselineScore)}%
                         </span>
@@ -552,7 +552,7 @@ export function SiteDetailPanel({
                         />
                       </div>
                       <div className="flex flex-col items-center gap-0.5">
-                        <span className="text-muted-foreground">agora</span>
+                        <span className="text-muted-foreground">now</span>
                         <span className="text-sm font-bold">
                           {site.parityScore !== null
                             ? `${Math.round(site.parityScore)}%`
@@ -564,21 +564,21 @@ export function SiteDetailPanel({
                       site.parityScore > site.baselineScore && (
                         <p className="mt-1.5 text-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                           +{Math.round(site.parityScore - site.baselineScore)}{" "}
-                          pp de melhoria
+                          pp improvement
                         </p>
                       )}
                     {site.costTotal > 0 && (
                       <p className="mt-1 text-center text-[10px] text-muted-foreground">
-                        custo da migração: ${site.costTotal.toFixed(2)}
+                        migration cost: ${site.costTotal.toFixed(2)}
                       </p>
                     )}
                     {site.costBeforeUsd != null && (
                       <p className="mt-1 text-center text-[10px] text-muted-foreground">
-                        custo infra: antes ≈$
+                        infra cost: before ≈$
                         {Math.round(
                           (site.costBeforeUsd * 30) / 7,
                         ).toLocaleString()}
-                        /mês · depois <span className="italic">em breve</span>
+                        /mo · after <span className="italic">coming soon</span>
                       </p>
                     )}
                   </div>
@@ -591,9 +591,9 @@ export function SiteDetailPanel({
                   totalTokens > 0) && (
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
                     <span>
-                      iteração {site.iterationsDone}/{site.maxIterations}
+                      iteration {site.iterationsDone}/{site.maxIterations}
                       {site.bestScore !== null &&
-                        ` · melhor ${Math.round(site.bestScore)}%`}
+                        ` · best ${Math.round(site.bestScore)}%`}
                     </span>
                     {site.issuesTotal > 0 &&
                       (issuesFilterUrl(site.targetRepo) ? (
@@ -602,24 +602,24 @@ export function SiteDetailPanel({
                           target="_blank"
                           rel="noreferrer"
                           className="tabular-nums hover:underline"
-                          title="Issues label:tanstack-migrator no GitHub"
+                          title="Issues label:tanstack-migrator on GitHub"
                         >
-                          issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                          issues closed {site.issuesClosed}/{site.issuesTotal}
                         </a>
                       ) : (
                         <span className="tabular-nums">
-                          issues fechadas {site.issuesClosed}/{site.issuesTotal}
+                          issues closed {site.issuesClosed}/{site.issuesTotal}
                         </span>
                       ))}
                     {site.fixSessionsDone > 0 && (
                       <span className="tabular-nums">
-                        sessões de fix {site.fixSessionsDone}/
+                        fix sessions {site.fixSessionsDone}/
                         {site.maxFixSessions}
                       </span>
                     )}
                     {site.costTotal > 0 && (
                       <span className="tabular-nums">
-                        custo ${site.costTotal.toFixed(2)}
+                        cost ${site.costTotal.toFixed(2)}
                       </span>
                     )}
                     {totalTokens > 0 && (
@@ -642,7 +642,7 @@ export function SiteDetailPanel({
                     ].includes(site.status)) && (
                     <ActionButton
                       icon={Pause}
-                      label="Pausar"
+                      label="Pause"
                       busy={busy === "SITE_PAUSE"}
                       onClick={() => action("SITE_PAUSE")}
                     />
@@ -650,7 +650,7 @@ export function SiteDetailPanel({
                   {site.status === "paused" && (
                     <ActionButton
                       icon={Play}
-                      label="Retomar"
+                      label="Resume"
                       busy={busy === "SITE_RESUME"}
                       onClick={() => action("SITE_RESUME")}
                     />
@@ -667,7 +667,7 @@ export function SiteDetailPanel({
                   {site.status !== "done" && site.status !== "archived" && (
                     <ActionButton
                       icon={CheckCircle2}
-                      label="Marcar concluído"
+                      label="Mark done"
                       busy={busy === "SITE_MARK_DONE"}
                       onClick={() => action("SITE_MARK_DONE")}
                     />
@@ -681,7 +681,7 @@ export function SiteDetailPanel({
                   ].includes(site.status) && (
                     <ActionButton
                       icon={Archive}
-                      label="Arquivar"
+                      label="Archive"
                       busy={busy === "SITE_ARCHIVE"}
                       onClick={() => action("SITE_ARCHIVE")}
                     />
@@ -696,7 +696,7 @@ export function SiteDetailPanel({
                   ].includes(site.status) && (
                     <ActionButton
                       icon={Trash2}
-                      label={confirmDelete ? "Confirmar exclusão?" : "Excluir"}
+                      label={confirmDelete ? "Confirm delete?" : "Delete"}
                       busy={busy === "SITE_DELETE"}
                       danger
                       onClick={removeSite}
@@ -713,7 +713,7 @@ export function SiteDetailPanel({
                 {/* assignee */}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
-                    Responsável
+                    Assignee
                   </span>
                   <AssigneePicker
                     site={site}
@@ -751,7 +751,7 @@ export function SiteDetailPanel({
                           site.prUrl,
                         ]
                       : null,
-                    ["Produção", site.prodUrl, site.prodUrl],
+                    ["Production", site.prodUrl, site.prodUrl],
                     site.previewUrl && site.previewReady
                       ? ["Preview", site.previewUrl, site.previewUrl]
                       : null,
@@ -808,11 +808,11 @@ export function SiteDetailPanel({
                 >
                   {(
                     [
-                      ["all", "Todos"],
+                      ["all", "All"],
                       ["migrate", "Script"],
-                      ["triage", "Triagem"],
+                      ["triage", "Triage"],
                       ["fix", "Fixes"],
-                      ["parity", "Paridade"],
+                      ["parity", "Parity"],
                     ] as [RunFilter, string][]
                   ).map(([id, label]) => (
                     <button
@@ -836,8 +836,7 @@ export function SiteDetailPanel({
                 <div className="flex flex-col gap-1.5">
                   {filteredRuns.length === 0 && (
                     <p className="text-xs text-muted-foreground">
-                      Nenhum run{runFilter !== "all" ? " deste tipo" : " ainda"}
-                      .
+                      No runs{runFilter !== "all" ? " of this type" : " yet"}.
                     </p>
                   )}
                   {filteredRuns.map((run) => (
@@ -858,7 +857,7 @@ export function SiteDetailPanel({
               <ul className="flex flex-col gap-1">
                 {events.length === 0 && (
                   <p className="text-xs text-muted-foreground">
-                    Nenhuma atividade ainda.
+                    No activity yet.
                   </p>
                 )}
                 {events.map((event) => (

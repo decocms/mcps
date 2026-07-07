@@ -32,14 +32,14 @@ import {
 
 function prBody(site: SiteRow): string {
   return [
-    `Migração automática de \`${site.source_repo}\` (Fresh/Deno) para TanStack Start, orquestrada pelo **tanstack-migrator**.`,
+    `Automatic migration of \`${site.source_repo}\` (Fresh/Deno) to TanStack Start, orchestrated by **tanstack-migrator**.`,
     "",
-    `- Branch de trabalho: \`${site.work_branch}\` — sessões curtas commitam aqui`,
-    `- Backlog: issues com a label \`tanstack-migrator\` (fechadas conforme os fixes são pushados)`,
-    `- Meta de paridade: **${site.parity_target}%** vs ${site.prod_url}`,
-    `- O workflow de sync do \`.deco\` está neste diff e ativa após o merge (cron roda só na branch default)`,
+    `- Work branch: \`${site.work_branch}\` — short sessions commit here`,
+    `- Backlog: issues with the \`tanstack-migrator\` label (closed as fixes are pushed)`,
+    `- Parity target: **${site.parity_target}%** vs ${site.prod_url}`,
+    `- The \`.deco\` sync workflow is in this diff and activates after the merge (cron only runs on the default branch)`,
     "",
-    "**Merge = go-live**: o projeto Cloudflare observa a main e deploya no merge.",
+    "**Merge = go-live**: the Cloudflare project watches main and deploys on merge.",
   ].join("\n");
 }
 
@@ -51,11 +51,11 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
       pr_url:
         site.pr_url ??
         `https://github.com/${site.target_repo ?? "sim/sim"}/pull/1`,
-      phase_detail: "[simulação] PR aberto, triando issues",
+      phase_detail: "[simulation] PR opened, triaging issues",
       phase_thread_id: null,
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(site.id, "[simulação] PR aberto (work branch → main)");
+    await addEvent(site.id, "[simulation] PR opened (work branch → main)");
     return;
   }
 
@@ -91,7 +91,7 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
       } catch {
         await addEvent(
           site.id,
-          "package.json não parseável — script sync:decofile não adicionado",
+          "package.json not parseable — sync:decofile script not added",
           "warn",
         );
       }
@@ -104,13 +104,13 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     });
     await addEvent(
       site.id,
-      "Sync do .deco adicionado à branch (ativa após o merge)",
+      ".deco sync added to the branch (activates after the merge)",
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await addEvent(
       site.id,
-      `Sync do .deco não instalado (${message.slice(0, 160)}) — instale ${SYNC_WORKFLOW_PATH} manualmente após o merge`,
+      `.deco sync not installed (${message.slice(0, 160)}) — install ${SYNC_WORKFLOW_PATH} manually after the merge`,
       "warn",
     );
   }
@@ -130,7 +130,7 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
       };
       await addEvent(
         site.id,
-        `PR #${existing.number} já existia para ${branch} — reutilizando`,
+        `PR #${existing.number} already existed for ${branch} — reusing it`,
       );
     } else {
       try {
@@ -148,7 +148,7 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
         };
         await addEvent(
           site.id,
-          `PR #${pr.number} aberto (${branch} → main): ${prPatch.pr_url}`,
+          `PR #${pr.number} opened (${branch} → main): ${prPatch.pr_url}`,
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -156,7 +156,7 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
         // a PR exists but findOpenPullRequest missed it — fail retryably
         // instead of continuing without a number (that would skip the merge gate)
         throw new Error(
-          `PR para ${branch} já existe mas não foi localizado (${message.slice(0, 120)}) — retry vai reencontrá-lo`,
+          `PR for ${branch} already exists but was not located (${message.slice(0, 120)}) — retry will find it again`,
         );
       }
     }
@@ -183,13 +183,13 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
     };
     await addEvent(
       site.id,
-      "Sandbox recriado — daemon clona branch com package.json, instala deps e sobe dev server",
+      "Sandbox recreated — daemon clones the branch with package.json, installs deps and starts the dev server",
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     await addEvent(
       site.id,
-      `Recriação do sandbox falhou (${message.slice(0, 160)}) — keepalive tenta no próximo tick`,
+      `Sandbox recreation failed (${message.slice(0, 160)}) — keepalive retries on the next tick`,
       "warn",
     );
   }
@@ -197,7 +197,7 @@ export async function openingPr(site: SiteRow, ctx: WorkerCtx): Promise<void> {
   await updateSite(site.id, {
     ...prPatch,
     status: "triaging",
-    phase_detail: "PR aberto, triando issues",
+    phase_detail: "PR opened, triaging issues",
     phase_thread_id: null,
     last_progress_at: new Date().toISOString(),
   });

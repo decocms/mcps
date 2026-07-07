@@ -246,7 +246,7 @@ async function runDecopilotSession(
     const message = err instanceof Error ? err.message : String(err);
     await addEvent(
       site.id,
-      `Thread ${threadId} recusou a mensagem (${message.slice(0, 120)}) — abrindo thread nova`,
+      `Thread ${threadId} rejected the message (${message.slice(0, 120)}) — opening a new thread`,
       "warn",
     );
     reused = false;
@@ -256,12 +256,12 @@ async function runDecopilotSession(
 
   await addEvent(
     site.id,
-    `Sessão despachada (202) — thread ${threadId}${reused ? " (continuação)" : ""} · harness ${ctx.config.sessionHarness} · branch ${branch}`,
+    `Session dispatched (202) — thread ${threadId}${reused ? " (continuation)" : ""} · harness ${ctx.config.sessionHarness} · branch ${branch}`,
   );
   if (runId) await attachThreadToRun(runId, threadId).catch(() => {});
   await updateSite(site.id, {
     phase_thread_id: threadId,
-    phase_detail: `sessão ${threadId} na fila do decopilot`,
+    phase_detail: `session ${threadId} queued in decopilot`,
     last_progress_at: new Date().toISOString(),
   }).catch(() => {});
 
@@ -305,7 +305,7 @@ async function runDecopilotSession(
         output = await rescueFinalText(ctx, threadId, output);
         await addEvent(
           site.id,
-          `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
+          `Thread ${threadId} finished (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON captured" : "NO RESULT_JSON (incomplete session)"}`,
           parseResultJson(output) ? "info" : "warn",
         );
         return { output, threadId };
@@ -316,7 +316,7 @@ async function runDecopilotSession(
         lastHeartbeat = Date.now();
         const minutes = Math.round((Date.now() - startedAt) / 60_000);
         await updateSite(site.id, {
-          phase_detail: `sessão ${threadId}: ${status ?? "streamando"} há ${minutes}min`,
+          phase_detail: `session ${threadId}: ${status ?? "streaming"} for ${minutes}min`,
           last_progress_at: new Date().toISOString(),
         }).catch(() => {});
       }
@@ -332,7 +332,7 @@ async function runDecopilotSession(
         output = await rescueFinalText(ctx, threadId, output);
         await addEvent(
           site.id,
-          `Thread ${threadId} terminou (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON capturado" : "SEM RESULT_JSON (sessão incompleta)"}`,
+          `Thread ${threadId} finished (status: ${status}) — ${parseResultJson(output) ? "RESULT_JSON captured" : "NO RESULT_JSON (incomplete session)"}`,
           parseResultJson(output) ? "info" : "warn",
         );
         return { output, threadId };
@@ -343,7 +343,7 @@ async function runDecopilotSession(
         lastHeartbeat = Date.now();
         const minutes = Math.round((Date.now() - startedAt) / 60_000);
         await updateSite(site.id, {
-          phase_detail: `sessão ${threadId}: ${status ?? "trabalhando"} há ${minutes}min`,
+          phase_detail: `session ${threadId}: ${status ?? "working"} for ${minutes}min`,
           last_progress_at: new Date().toISOString(),
         }).catch(() => {});
       }
@@ -354,7 +354,7 @@ async function runDecopilotSession(
 
   await addEvent(
     site.id,
-    `Sessão ${threadId} atingiu o timeout de ${Math.round(timeoutMs / 60_000)}min sem RESULT_JSON`,
+    `Session ${threadId} hit the ${Math.round(timeoutMs / 60_000)}min timeout without RESULT_JSON`,
     "warn",
   );
   return { output, threadId };

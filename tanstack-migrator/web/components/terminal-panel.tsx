@@ -66,7 +66,7 @@ export function TerminalPanel({
       <div className="flex items-center gap-2 border-b border-zinc-800 bg-zinc-900/60 px-3 py-2">
         <SquareTerminal className="h-3.5 w-3.5 text-emerald-400" />
         <span className="text-xs font-medium text-zinc-300">
-          Terminal do agente
+          Agent terminal
         </span>
         {data?.live ? (
           <span className="flex items-center gap-1 text-[10px] font-medium text-emerald-400">
@@ -74,17 +74,17 @@ export function TerminalPanel({
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
             </span>
-            ao vivo
+            live
           </span>
         ) : (
           data?.threadId && (
-            <span className="text-[10px] text-zinc-500">última sessão</span>
+            <span className="text-[10px] text-zinc-500">last session</span>
           )
         )}
         <div className="ml-auto flex items-center gap-2">
           {count > 0 && (
             <span className="text-[10px] text-zinc-500 tabular-nums">
-              {count} linhas
+              {count} lines
             </span>
           )}
           {threadUrl && (
@@ -109,16 +109,16 @@ export function TerminalPanel({
       >
         {loading && !data && (
           <div className="flex items-center gap-2 text-zinc-500">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> conectando à
-            sessão…
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> connecting to the
+            session…
           </div>
         )}
         {error && !data && <div className="text-red-400">{error}</div>}
         {data && count === 0 && (
           <div className="text-zinc-500">
             {data.threadId
-              ? "Sessão despachada — aguardando os primeiros comandos…"
-              : "Nenhuma sessão iniciada ainda para este site."}
+              ? "Session dispatched — waiting for the first commands…"
+              : "No session started yet for this site."}
           </div>
         )}
 

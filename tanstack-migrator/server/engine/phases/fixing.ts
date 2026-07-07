@@ -29,14 +29,10 @@ async function budgetExhausted(site: SiteRow): Promise<void> {
   await updateSite(site.id, {
     status: "needs_human",
     resume_status: "fixing",
-    needs_human_reason: `Orçamento de ${site.max_fix_sessions} sessões de fix esgotado com ${site.issues_open} issues abertas. Veja https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
+    needs_human_reason: `Budget of ${site.max_fix_sessions} fix sessions exhausted with ${site.issues_open} open issues. See https://github.com/${site.target_repo}/issues?q=is%3Aissue+is%3Aopen+label%3Atanstack-migrator`,
     last_progress_at: new Date().toISOString(),
   });
-  await addEvent(
-    site.id,
-    "Orçamento de sessões de fix esgotado — precisa de humano",
-    "warn",
-  );
+  await addEvent(site.id, "Fix session budget exhausted — needs human", "warn");
 }
 
 export async function fixing(
@@ -48,13 +44,10 @@ export async function fixing(
   if (site.parity_score !== null && site.parity_score >= site.parity_target) {
     await updateSite(site.id, {
       status: "deploying",
-      phase_detail: `paridade ${site.parity_score} >= ${site.parity_target}, indo pro deploy`,
+      phase_detail: `parity ${site.parity_score} >= ${site.parity_target}, going to deploy`,
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(
-      site.id,
-      `Paridade atingiu ${site.parity_score}% — deploy CF`,
-    );
+    await addEvent(site.id, `Parity reached ${site.parity_score}% — CF deploy`);
     return;
   }
   if (deps.inflight.has(site.id)) return;
@@ -69,7 +62,7 @@ export async function fixing(
     if (site.issues_open <= 0) {
       await updateSite(site.id, {
         status: "paritying",
-        phase_detail: "[simulação] backlog drenado, medindo paridade",
+        phase_detail: "[simulation] backlog drained, measuring parity",
         last_progress_at: new Date().toISOString(),
       });
       return;
@@ -83,10 +76,10 @@ export async function fixing(
     if (counts.open === 0) {
       await updateSite(site.id, {
         status: "paritying",
-        phase_detail: "backlog drenado, medindo paridade",
+        phase_detail: "backlog drained, measuring parity",
         last_progress_at: new Date().toISOString(),
       });
-      await addEvent(site.id, "Backlog de issues drenado — rodada de paridade");
+      await addEvent(site.id, "Issue backlog drained — parity round");
       return;
     }
     if (site.fix_sessions_done >= site.max_fix_sessions) {
@@ -101,12 +94,12 @@ export async function fixing(
       // everything open is blocked — measuring parity may unblock/reprioritize
       await updateSite(site.id, {
         status: "paritying",
-        phase_detail: `${counts.open} issues abertas mas todas bloqueadas — medindo paridade`,
+        phase_detail: `${counts.open} open issues but all blocked — measuring parity`,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        "Todas as issues abertas estão bloqueadas — rodada de paridade",
+        "All open issues are blocked — parity round",
         "warn",
       );
       return;
@@ -127,7 +120,7 @@ export async function fixing(
   await markSessionStart(site.id, `fix-${sessionNumber}`);
   await addEvent(
     site.id,
-    `Sessão de fix ${sessionNumber}/${site.max_fix_sessions} iniciada${batch.length > 0 ? ` — issues ${batch.map((b) => `#${b.number}`).join(", ")}` : ""}`,
+    `Fix session ${sessionNumber}/${site.max_fix_sessions} started${batch.length > 0 ? ` — issues ${batch.map((b) => `#${b.number}`).join(", ")}` : ""}`,
   );
 
   deps.inflight.start(site.id, `fix-${sessionNumber}`, async () => {
@@ -161,7 +154,7 @@ export async function fixing(
         // history never shows a phantom "running" entry
         await finishRun(run.id, {
           status: "failed",
-          logsTail: `[abandonada: site saiu de fixing durante a sessão]`,
+          logsTail: `[abandoned: site left fixing during the session]`,
           meta: result.meta,
         });
         return;
@@ -175,9 +168,9 @@ export async function fixing(
         });
         await failOrAutoRetry(
           current,
-          result.error ?? "sessão de fix falhou",
+          result.error ?? "fix session failed",
           "fixing",
-          "Sessão de fix falhou",
+          "Fix session failed",
         );
         return;
       }
@@ -199,12 +192,12 @@ export async function fixing(
           sandbox_session_id: null,
           phase_thread_id: null,
           transient_retries: 0,
-          phase_detail: `[simulação] fix ${sessionNumber}: ${resolvedCount} issues fechadas`,
+          phase_detail: `[simulation] fix ${sessionNumber}: ${resolvedCount} issues closed`,
           last_progress_at: new Date().toISOString(),
         });
         await addEvent(
           site.id,
-          `[simulação] Sessão de fix ${sessionNumber}: ${resolvedCount} issues fechadas`,
+          `[simulation] Fix session ${sessionNumber}: ${resolvedCount} issues closed`,
         );
         return;
       }
@@ -237,12 +230,12 @@ export async function fixing(
         sandbox_session_id: null,
         phase_thread_id: null, // each batch is a fresh, narrow conversation
         transient_retries: 0,
-        phase_detail: `fix ${sessionNumber}: ${resolved.length}/${batch.length} resolvidas, backlog ${openIssues.open}`,
+        phase_detail: `fix ${sessionNumber}: ${resolved.length}/${batch.length} resolved, backlog ${openIssues.open}`,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        `Sessão de fix ${sessionNumber}: resolvidas ${resolved.length > 0 ? resolved.map((n) => `#${n}`).join(", ") : "nenhuma"}${blocked.length > 0 ? ` · bloqueadas ${blocked.map((b) => `#${b.number}`).join(", ")}` : ""} — backlog ${openIssues.open}`,
+        `Fix session ${sessionNumber}: resolved ${resolved.length > 0 ? resolved.map((n) => `#${n}`).join(", ") : "none"}${blocked.length > 0 ? ` · blocked ${blocked.map((b) => `#${b.number}`).join(", ")}` : ""} — backlog ${openIssues.open}`,
       );
       // next tick re-enters: backlog empty → paritying; budget out → needs_human
     } catch (err) {
@@ -250,12 +243,7 @@ export async function fixing(
       await finishRun(run.id, { status: "failed", logsTail: message });
       const current = await getSite(site.id);
       if (current) {
-        await failOrAutoRetry(
-          current,
-          message,
-          "fixing",
-          "Sessão de fix falhou",
-        );
+        await failOrAutoRetry(current, message, "fixing", "Fix session failed");
       }
     }
   });

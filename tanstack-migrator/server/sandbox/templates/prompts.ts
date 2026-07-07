@@ -48,7 +48,7 @@ interface MemorySpec {
 }
 
 /**
- * Render the shared "# Memória entre migrações" section for a phase prompt from
+ * Render the shared "# Cross-migration memory" section for a phase prompt from
  * a list of file specs. Keeps every phase's memory instructions consistent
  * (same dir, same one-line-append discipline, same dedupe rule).
  */
@@ -56,17 +56,17 @@ function memorySection(site: SiteRow, specs: MemorySpec[]): string {
   const blocks = specs.map((s) => {
     const lines = [
       `- **${s.path}** — ${s.holds}`,
-      `  LEIA no início (\`cat ${s.path} 2>/dev/null\`): ${s.read}`,
+      `  READ at the start (\`cat ${s.path} 2>/dev/null\`): ${s.read}`,
     ];
     if (s.writeWhen) {
       lines.push(
-        `  APENDE quando ${s.writeWhen}: \`mkdir -p ${MEMORY_DIR} && echo "$(date -u +%FT%TZ) | ${site.name} | ${s.entry}" >> ${s.path}\``,
+        `  APPEND when ${s.writeWhen}: \`mkdir -p ${MEMORY_DIR} && echo "$(date -u +%FT%TZ) | ${site.name} | ${s.entry}" >> ${s.path}\``,
       );
     }
     return lines.join("\n");
   });
-  return `# Memória entre migrações (org-fs do Studio — persiste entre sandboxes)
-Arquivos compartilhados da org já montados no sandbox. Regra: entradas de UMA linha; NÃO duplique uma linha que já exista equivalente.
+  return `# Cross-migration memory (Studio org-fs — persists across sandboxes)
+Shared org files already mounted in the sandbox. Rule: ONE-line entries; do NOT duplicate a line that already has an equivalent.
 ${blocks.join("\n")}`;
 }
 
@@ -74,28 +74,27 @@ ${blocks.join("\n")}`;
 const FRAMEWORK_NOTES_SPEC: MemorySpec = {
   path: FRAMEWORK_NOTES_PATH,
   holds:
-    "erros SUSPEITOS de bug do framework (@decocms/start / @decocms/apps) vistos em migrações anteriores",
-  read: 'se algum bater com o que você achou, cite no corpo da issue ("já visto em N sites — provável bug de framework")',
+    "SUSPECTED framework-bug errors (@decocms/start / @decocms/apps) seen in previous migrations",
+  read: 'if any matches what you found, cite it in the issue body ("already seen in N sites — likely a framework bug")',
   writeWhen:
-    "achar um erro NOVO com cara de framework (stack dentro de node_modules de @decocms/*, ou padrão não-corrigível no código do site)",
-  entry: "<assinatura curta do erro> | <arquivo:linha ou pacote>",
+    "you find a NEW error that looks like a framework bug (stack inside node_modules of @decocms/*, or a pattern not fixable in the site code)",
+  entry: "<short error signature> | <file:line or package>",
 };
 const FIXES_SPEC: MemorySpec = {
   path: FIXES_PATH,
-  holds:
-    "receitas de correção que JÁ FUNCIONARAM em outros sites (erro → solução)",
-  read: "se um erro seu casa com uma receita, APLIQUE-A antes de investigar do zero",
+  holds: "fix recipes that ALREADY WORKED on other sites (error → solution)",
+  read: "if one of your errors matches a recipe, APPLY IT before investigating from scratch",
 };
 const CONVENTIONS_SPEC: MemorySpec = {
   path: CONVENTIONS_PATH,
   holds:
-    "convenções/gotchas de setup da migração (predev, symlink `org`, porta do dev, não tem rsync, etc.)",
-  read: "confira se alguma se aplica a este repo antes de começar",
+    "migration setup conventions/gotchas (predev, `org` symlink, dev port, no rsync available, etc.)",
+  read: "check whether any applies to this repo before starting",
 };
 const PARITY_GOTCHAS_SPEC: MemorySpec = {
   path: PARITY_GOTCHAS_PATH,
-  holds: "mismatches VISUAIS recorrentes e como foram resolvidos",
-  read: "útil pras issues de visual/content e pra chegar em paridade mais rápido",
+  holds: "recurring VISUAL mismatches and how they were resolved",
+  read: "useful for visual/content issues and to reach parity faster",
 };
 
 export interface ParityArtifactUrls {
@@ -211,7 +210,7 @@ export function parseResultJson(output: string): SessionResult | null {
 }
 
 const progressInstruction = (site: SiteRow) =>
-  `Se a tool MIGRATION_REPORT_PROGRESS (MCP tanstack-migrator) estiver disponível, chame-a ao concluir passos relevantes com {"siteId": "${site.id}", "detail": "<o que acabou de fazer>"} (e "parityScore" quando tiver score novo). Se ela NÃO estiver no seu conjunto de tools, siga sem reportar — NUNCA tente chamá-la às cegas. O mais importante: a linha RESULT_JSON no fim da sua última mensagem é OBRIGATÓRIA em qualquer cenário — emita-a antes de qualquer passo opcional.`;
+  `If the MIGRATION_REPORT_PROGRESS tool (tanstack-migrator MCP) is available, call it after completing relevant steps with {"siteId": "${site.id}", "detail": "<what you just did>"} (and "parityScore" when you have a new score). If it is NOT in your tool set, proceed without reporting — NEVER try to call it blindly. Most important: the RESULT_JSON line at the end of your last message is MANDATORY in every scenario — emit it before any optional step.`;
 
 function repoUrl(full: string | null, ghToken?: string): string {
   if (!full) throw new Error("repo not set");
@@ -223,47 +222,48 @@ function repoUrl(full: string | null, ghToken?: string): string {
 const gitAuthNote = (ghToken?: string) =>
   ghToken
     ? ""
-    : "\nObs: o git do sandbox já está autenticado (credenciais sincronizadas pelo mesh) — clone e push funcionam com as URLs https normais.";
+    : "\nNote: the sandbox git is already authenticated (credentials synced by the mesh) — clone and push work with the normal https URLs.";
 
-// A porta do dev server é determinada pelo script do projeto (wrangler usa 5173
-// por padrão quando @cloudflare/vite-plugin está configurado). NUNCA matar o
-// processo existente gerenciado pelo daemon — apenas detectar a porta real.
-const DEV_PORT = 5173; // fallback; sempre confirmar com DEV_LOG
+// The dev server port is determined by the project's script (wrangler uses 5173
+// by default when @cloudflare/vite-plugin is configured). NEVER kill the
+// existing process managed by the daemon — just detect the real port.
+const DEV_PORT = 5173; // fallback; always confirm with DEV_LOG
 
 /**
- * "Script de start" idempotente que TODA sessão de sessão (triage/fix/parity)
- * roda como passo 0. O sandbox pode chegar em qualquer estado — clone fresco
- * pós-recreate, sandbox reapado+recriado, ou generates defasados — então antes
- * de qualquer trabalho o agente traz o projeto a um estado bom conhecido:
- *   0. /app/source (clone do original deco.cx) — SOME no recreate do sandbox
- *      (o clone só rodava no migrate); sem ele o fix não tem de onde portar
- *   1. branch certa + pull do último push
- *   2. deps limpas (node_modules NUNCA vem da branch — é gitignored)
- *   3. generates gitignored (routeTree.gen.ts, *.gen.* do cms/admin) — sem eles
- *      o router não tem rotas e o dev serve o placeholder "No web page"
- *   4. dev server de pé servindo HTML real (sobe só se não estiver servindo)
- * Isso torna cada fase self-healing: não depende do sandbox ter sido recriado
- * corretamente na fase anterior.
+ * Idempotent "start script" that EVERY session (triage/fix/parity) runs as
+ * step 0. The sandbox can arrive in any state — fresh clone post-recreate,
+ * sandbox reaped+recreated, or stale generates — so before any work the agent
+ * brings the project to a known-good state:
+ *   0. /app/source (clone of the original deco.cx) — DISAPPEARS on sandbox
+ *      recreate (the clone only ran during migrate); without it fix has
+ *      nothing to port from
+ *   1. correct branch + pull of the latest push
+ *   2. clean deps (node_modules NEVER comes from the branch — it is gitignored)
+ *   3. gitignored generates (routeTree.gen.ts, *.gen.* of cms/admin) — without
+ *      them the router has no routes and dev serves the "No web page" placeholder
+ *   4. dev server up and serving real HTML (starts only if not already serving)
+ * This makes each phase self-healing: it does not depend on the sandbox having
+ * been recreated correctly in the previous phase.
  */
 function ensureReadyPreamble(site: SiteRow, ghToken?: string): string {
   const branch = site.work_branch;
   const sourceUrl = repoUrl(site.source_repo, ghToken);
-  return `# Setup (rode ISTO PRIMEIRO, sempre — deixa o projeto de pé antes de qualquer coisa)
-Este bloco é idempotente e self-healing: rode-o inteiro antes de analisar/corrigir/medir. Não pule.
+  return `# Setup (run THIS FIRST, always — brings the project up before anything else)
+This block is idempotent and self-healing: run it in full before analyzing/fixing/measuring. Do not skip.
 \`\`\`bash
-# /app/source = clone pristino do site deco.cx original (p/ portar componentes/comparar). SOME no recreate
-# do sandbox — reclona idempotente. NUNCA modifique nem rode o migrate nele.
+# /app/source = pristine clone of the original deco.cx site (to port components/compare). DISAPPEARS on
+# sandbox recreate — re-clones idempotently. NEVER modify it or run migrate on it.
 [ -d /app/source/.git ] || git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source 2>/dev/null || true
 cd /app/repo && git checkout ${branch} && git pull origin ${branch} 2>/dev/null || true
-rm -f org 2>/dev/null || true                          # symlink de montagem do sandbox
-[ -d node_modules ] || bun install || npm install       # deps limpas (node_modules é gitignored — nunca vem da branch)
-# generates gitignored: sem routeTree.gen.ts o router fica sem rotas → placeholder "No web page"
+rm -f org 2>/dev/null || true                          # sandbox mount symlink
+[ -d node_modules ] || bun install || npm install       # clean deps (node_modules is gitignored — never comes from the branch)
+# gitignored generates: without routeTree.gen.ts the router has no routes → "No web page" placeholder
 if [ ! -f src/routeTree.gen.ts ]; then bun run predev 2>/dev/null || npm run predev 2>/dev/null || bun run build 2>/dev/null || npm run build 2>/dev/null || true; fi
-# dev server: sobe só se ainda não estiver servindo (o daemon do sandbox pode já ter subido)
+# dev server: start only if not already serving (the sandbox daemon may have already started it)
 DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log 2>/dev/null | tail -1 | cut -d: -f2 || echo ${DEV_PORT})
 curl -sf "http://localhost:$DEV_PORT/" >/dev/null 2>&1 || { nohup bun run dev > /tmp/dev.log 2>&1 & sleep 20; DEV_PORT=$(grep -oE "localhost:[0-9]+" /tmp/dev.log | tail -1 | cut -d: -f2 || echo ${DEV_PORT}); }
 \`\`\`
-NÃO mate o processo do dev gerenciado pelo daemon nem force \`--port\`. Se depois desse bloco \`curl http://localhost:$DEV_PORT/\` AINDA devolver o placeholder "No web page at this URL" ou um shell vazio, aí sim o SSR está quebrado de verdade — investigue \`tail -80 /tmp/dev.log\`.`;
+Do NOT kill the dev process managed by the daemon nor force \`--port\`. If after this block \`curl http://localhost:$DEV_PORT/\` STILL returns the "No web page at this URL" placeholder or an empty shell, then the SSR is genuinely broken — investigate \`tail -80 /tmp/dev.log\`.`;
 }
 
 /**
@@ -282,26 +282,26 @@ export function migrateScriptPrompt(input: {
   const branch = site.work_branch;
   const workerName = (site.target_repo ?? "").split("/").pop() || "site";
 
-  return `Você é o agente de migração Fresh→TanStack da deco. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Seja objetivo e não peça confirmação — execute até o fim.
+  return `You are deco's Fresh→TanStack migration agent. Work inside the sandbox using the vm tools (bash, read, write). Be direct and do not ask for confirmation — run to completion.
 
-# Objetivo (ESCOPO FECHADO)
-Rodar o script de migração de ${site.source_repo} (Fresh/Deno) para TanStack Start e dar push do resultado BRUTO na branch ${branch} de ${site.target_repo}. NÃO corrija erros de build/typecheck nesta sessão — os problemas serão catalogados como issues e resolvidos em sessões seguintes.
+# Goal (CLOSED SCOPE)
+Run the migration script from ${site.source_repo} (Fresh/Deno) to TanStack Start and push the RAW result to branch ${branch} of ${site.target_repo}. Do NOT fix build/typecheck errors in this session — the problems will be catalogued as issues and resolved in later sessions.
 
-# Regra de ouro
-Nunca fique mais de 10 minutos sem \`git commit\` + \`git push\` — todo progresso precisa sobreviver à queda da sessão.
+# Golden rule
+Never go more than 10 minutes without \`git commit\` + \`git push\` — all progress must survive a session crash.
 
-# Passos
-1. Se /app/source ainda não existe: \`git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source\` (cópia pristina do site original — NUNCA modifique nem rode o script de migração nela).
-2. O repo alvo JÁ está clonado pelo sandbox em /app/repo (origin = ${targetUrl}). Entre nele e SINCRONIZE com o remoto ANTES de qualquer coisa (o clone do sandbox pode estar defasado — fixes podem ter sido pushados por fora; num re-run isso evita sobrescrever trabalho): \`cd /app/repo && rm -f org && git fetch origin ${branch} 2>/dev/null && git checkout -B ${branch} FETCH_HEAD 2>/dev/null || git checkout -B ${branch}\` (o symlink \`org -> ../org\` é montagem do sandbox — sempre remova). IDEMPOTÊNCIA: só copie o original se for migração NOVA (sem MIGRATION_REPORT.md) — num re-run copiar por cima sobrescreve o resultado migrado. E NUNCA copie \`node_modules\`/artefatos de build (vendorar deps de versão errada na branch quebra o dev no sandbox — o daemon faz install limpo). Copie SEM rsync (não existe na imagem): \`if [ ! -f MIGRATION_REPORT.md ]; then shopt -s dotglob && for f in /app/source/*; do b=$(basename "$f"); case "$b" in .git|node_modules|dist|.wrangler|.vite|.tanstack|.cache) continue;; esac; cp -r "$f" .; done; fi\`.
-3. Em /app/repo: \`npm install @decocms/start tsx\` e rode o script de migração IN PLACE (o script TRANSFORMA o diretório passado em --source): \`npx tsx node_modules/@decocms/start/scripts/migrate.ts --source /app/repo\`. Ele roda 7 fases (analyze, scaffold, transform, cleanup, report, verify, bootstrap). Se /app/repo já tiver MIGRATION_REPORT.md de uma execução anterior, pule esta etapa.
-4. CRÍTICO p/ o preview do sandbox renderizar (config PROVADA nos sites que rodam no agentic CMS, ex: granadobr-tanstack): o daemon do sandbox roda \`bun run dev\` = \`vite dev\` DIRETO e \`src/setup.ts\` importa \`./server/cms/blocks.gen\` de forma ESTÁTICA. Se qualquer gen do deco faltar no clone, o SSR estoura e \`/\` responde não-HTML → o proxy serve "No web page". No \`vite dev\` só o **routeTree** é regenerado de forma confiável (plugin tanstackStart). Portanto:
-   a. \`package.json\`: \`"dev": "vite dev"\` (SEM \`predev\` — se existir um script \`predev\`, o \`bun run dev\` do daemon dispara o lifecycle e diverge do que funciona; REMOVA o \`predev\`). Mantenha \`build\` com a chain completa de generates + \`vite build\`, e os scripts \`generate:*\`.
-   b. Rode os generates uma vez: \`npm install @decocms/start tsx && npm run build\` (ou a chain de generates sem o \`vite build\`).
-   c. \`.gitignore\`: ignore **apenas** \`src/routeTree.gen.ts\` e \`.tanstack/\` (o tanstackStart regenera o routeTree). REMOVA qualquer linha que ignore \`src/server/cms/*.gen.*\`, \`blocks.gen.*\` ou \`src/server/admin/*.gen.*\`.
-   d. COMITE todos os gens (menos o routeTree), com \`git add -f\` se necessário: \`src/server/cms/blocks.gen.json\`, \`src/server/cms/blocks.gen.ts\`, \`src/server/cms/sections.gen.ts\`, \`src/server/cms/loaders.gen.ts\`, \`src/server/admin/meta.gen.json\`, \`src/server/invoke.gen.ts\` e \`src/*/manifest.gen.ts\`.
-   e. \`wrangler.jsonc\` deploy-ready (o Workers Builds da CF usa isto): \`"name": "${workerName}"\` (NÃO deixe "repo"), \`"account_id": "c95fc4cec7fc52453228d9db170c372c"\` (deco-cx), \`"main": "./src/worker-entry.ts"\`, \`"compatibility_flags": ["nodejs_compat", "no_handle_cross_request_promise_resolution"]\`, \`"workers_dev": true\` e \`"preview_urls": true\` (habilita URL de preview por PR). Igual ao granadobr-tanstack que funciona.
-5. Checkpoint final. ANTES do commit, garanta que \`node_modules\`/artefatos NUNCA vão pra branch (node_modules commitado carrega deps de versão errada — ex: vite diferente do package.json — e quebra o dev no sandbox): \`grep -qxF 'node_modules/' .gitignore 2>/dev/null || printf '\\nnode_modules/\\ndist/\\n.wrangler/\\n.vite/\\n' >> .gitignore; git rm -r --cached --quiet node_modules dist .wrangler .vite 2>/dev/null || true\` (NÃO remova os \`*.gen.*\` do deco nem o \`.tanstack\` já tratado no passo 4). Depois comite TAMBÉM os gens do passo 4d e: \`git add -A && git add -f src/server/cms/*.gen.* src/server/admin/*.gen.* src/server/invoke.gen.ts && git commit -m "feat: tanstack migration (script output + committed gens)" && git push -u -f origin ${branch}\` (a branch é gerenciada pela migração — o force é seguro).
-6. PARE AQUI. Não corrija erros de build — isso é das próximas fases.
+# Steps
+1. If /app/source does not exist yet: \`git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source\` (pristine copy of the original site — NEVER modify it or run the migration script on it).
+2. The target repo is ALREADY cloned by the sandbox at /app/repo (origin = ${targetUrl}). Enter it and SYNC with the remote BEFORE anything else (the sandbox clone may be stale — fixes may have been pushed externally; on a re-run this avoids overwriting work): \`cd /app/repo && rm -f org && git fetch origin ${branch} 2>/dev/null && git checkout -B ${branch} FETCH_HEAD 2>/dev/null || git checkout -B ${branch}\` (the \`org -> ../org\` symlink is a sandbox mount — always remove it). IDEMPOTENCY: only copy the original if this is a NEW migration (no MIGRATION_REPORT.md) — on a re-run, copying over it overwrites the migrated result. And NEVER copy \`node_modules\`/build artifacts (vendoring wrong-version deps into the branch breaks dev in the sandbox — the daemon does a clean install). Copy WITHOUT rsync (not present in the image): \`if [ ! -f MIGRATION_REPORT.md ]; then shopt -s dotglob && for f in /app/source/*; do b=$(basename "$f"); case "$b" in .git|node_modules|dist|.wrangler|.vite|.tanstack|.cache) continue;; esac; cp -r "$f" .; done; fi\`.
+3. In /app/repo: \`npm install @decocms/start tsx\` and run the migration script IN PLACE (the script TRANSFORMS the directory passed as --source): \`npx tsx node_modules/@decocms/start/scripts/migrate.ts --source /app/repo\`. It runs 7 phases (analyze, scaffold, transform, cleanup, report, verify, bootstrap). If /app/repo already has a MIGRATION_REPORT.md from a previous run, skip this step.
+4. CRITICAL for the sandbox preview to render (config PROVEN on sites running in the agentic CMS, e.g. granadobr-tanstack): the sandbox daemon runs \`bun run dev\` = \`vite dev\` DIRECTLY and \`src/setup.ts\` imports \`./server/cms/blocks.gen\` STATICALLY. If any deco gen is missing from the clone, the SSR blows up and \`/\` responds non-HTML → the proxy serves "No web page". Under \`vite dev\` only the **routeTree** is regenerated reliably (tanstackStart plugin). Therefore:
+   a. \`package.json\`: \`"dev": "vite dev"\` (WITHOUT \`predev\` — if a \`predev\` script exists, the daemon's \`bun run dev\` triggers the lifecycle and diverges from what works; REMOVE the \`predev\`). Keep \`build\` with the full generates chain + \`vite build\`, and the \`generate:*\` scripts.
+   b. Run the generates once: \`npm install @decocms/start tsx && npm run build\` (or the generates chain without the \`vite build\`).
+   c. \`.gitignore\`: ignore **only** \`src/routeTree.gen.ts\` and \`.tanstack/\` (tanstackStart regenerates the routeTree). REMOVE any line that ignores \`src/server/cms/*.gen.*\`, \`blocks.gen.*\` or \`src/server/admin/*.gen.*\`.
+   d. COMMIT all gens (except the routeTree), with \`git add -f\` if needed: \`src/server/cms/blocks.gen.json\`, \`src/server/cms/blocks.gen.ts\`, \`src/server/cms/sections.gen.ts\`, \`src/server/cms/loaders.gen.ts\`, \`src/server/admin/meta.gen.json\`, \`src/server/invoke.gen.ts\` and \`src/*/manifest.gen.ts\`.
+   e. \`wrangler.jsonc\` deploy-ready (CF's Workers Builds uses this): \`"name": "${workerName}"\` (do NOT leave "repo"), \`"account_id": "c95fc4cec7fc52453228d9db170c372c"\` (deco-cx), \`"main": "./src/worker-entry.ts"\`, \`"compatibility_flags": ["nodejs_compat", "no_handle_cross_request_promise_resolution"]\`, \`"workers_dev": true\` and \`"preview_urls": true\` (enables a per-PR preview URL). Same as the working granadobr-tanstack.
+5. Final checkpoint. BEFORE the commit, make sure \`node_modules\`/artifacts NEVER go to the branch (a committed node_modules carries wrong-version deps — e.g. a vite different from package.json — and breaks dev in the sandbox): \`grep -qxF 'node_modules/' .gitignore 2>/dev/null || printf '\\nnode_modules/\\ndist/\\n.wrangler/\\n.vite/\\n' >> .gitignore; git rm -r --cached --quiet node_modules dist .wrangler .vite 2>/dev/null || true\` (do NOT remove the deco \`*.gen.*\` nor the \`.tanstack\` already handled in step 4). Then ALSO commit the gens from step 4d and: \`git add -A && git add -f src/server/cms/*.gen.* src/server/admin/*.gen.* src/server/invoke.gen.ts && git commit -m "feat: tanstack migration (script output + committed gens)" && git push -u -f origin ${branch}\` (the branch is managed by the migration — the force is safe).
+6. STOP HERE. Do not fix build errors — that is for the next phases.
 ${gitAuthNote(ghToken)}
 ${progressInstruction(site)}
 
@@ -309,25 +309,25 @@ ${memorySection(site, [
   {
     ...CONVENTIONS_SPEC,
     writeWhen:
-      "descobrir um passo de setup NOVO que não está nos Passos acima (ex: script extra necessário pro dev subir, dependência faltando)",
-    entry: "<convenção/gotcha de setup em uma linha>",
+      "you discover a NEW setup step not in the Steps above (e.g. an extra script needed to bring dev up, a missing dependency)",
+    entry: "<setup convention/gotcha in one line>",
   },
 ])}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
-RESULT_JSON: {"ok": true, "detail": "script rodou, checkpoint pushado na branch ${branch}"}
-(ok=false com detail explicando o bloqueio se não conseguir terminar)`;
+# Result
+End your LAST message with a single line in exactly this format:
+RESULT_JSON: {"ok": true, "detail": "script ran, checkpoint pushed to branch ${branch}"}
+(ok=false with detail explaining the blocker if you cannot finish)`;
 }
 
-const ISSUE_BODY_TEMPLATE = `## Contexto
-<arquivo(s)/página(s) afetados e o que deveria acontecer>
-## Erro
-<mensagem de erro ou comportamento observado (trecho literal)>
-## Como reproduzir
-<comando ou URL>
-## Dica de fix
-<direção: qual componente portar de /app/source, qual import trocar, etc.>`;
+const ISSUE_BODY_TEMPLATE = `## Context
+<affected file(s)/page(s) and what should happen>
+## Error
+<error message or observed behavior (literal snippet)>
+## How to reproduce
+<command or URL>
+## Fix hint
+<direction: which component to port from /app/source, which import to swap, etc.>`;
 
 /**
  * Phase triaging: analyze-only survey of the migrated code. Its issues[]
@@ -340,30 +340,30 @@ export function triagePrompt(input: {
 }): string {
   const { site, maxIssues } = input;
 
-  return `Você é o agente de triagem da migração ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+  return `You are the triage agent for the migration ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation.
 
-# Objetivo (SOMENTE ANÁLISE — NÃO CORRIJA NADA)
-Levantar os problemas REAIS do código migrado em /app/repo e reportá-los como issues no RESULT_JSON. Cada issue precisa ser resolvível SEM contexto além do próprio texto.
+# Goal (ANALYSIS ONLY — DO NOT FIX ANYTHING)
+Survey the REAL problems in the migrated code at /app/repo and report them as issues in RESULT_JSON. Each issue must be resolvable WITHOUT any context beyond its own text.
 
-# O que "pronto" significa (LEIA ANTES)
-O critério de sucesso desta migração é: **\`npm run build\` passa** (exit 0) + o site responde HTML + paridade visual bate. NÃO é \`tsc --noEmit\` zerado. O \`npm run build\` roda o codegen (generate:blocks/sections/loaders/schema/invoke) e o Vite/esbuild — que NÃO faz type-check estrito. Erros de \`tsc\` que NÃO quebram o \`npm run build\` são **dívida de tipo**, não bloqueadores: reporte-os como severity "low", nunca critical/high.
+# What "done" means (READ FIRST)
+The success criterion for this migration is: **\`npm run build\` passes** (exit 0) + the site responds with HTML + visual parity matches. It is NOT a zeroed \`tsc --noEmit\`. \`npm run build\` runs the codegen (generate:blocks/sections/loaders/schema/invoke) and Vite/esbuild — which does NOT do strict type-checking. \`tsc\` errors that do NOT break \`npm run build\` are **type debt**, not blockers: report them as severity "low", never critical/high.
 
 ${ensureReadyPreamble(site)}
 
-# Levantamento (nesta ordem de prioridade)
-1. **Build (gate crítico)**: \`npm run build 2>&1 | tail -60\`. Se FALHAR (exit≠0), o(s) erro(s) que quebram o build são as issues critical/high — foque nelas.
-2. **Runtime — o site TEM que renderizar HTML (pré-requisito da paridade)**: com o dev já de pé pelo Setup, \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
-   a. Se retornar **"No web page at this URL"** (placeholder do sandbox) OU um shell quase vazio (só \`<div id="root"></div>\` sem conteúdo) → o **SSR está quebrado**: o dev sobe mas \`/\` não devolve HTML renderizado (severity **high**, category **runtime**). Causa comum #1: **node_modules com versão errada** (se foi commitado na branch, ex: vite ≠ package.json) — a correção é \`rm -rf node_modules && npm install\` e nunca commitar node_modules. Investigue também \`tail -80 /tmp/dev.log\` pelo stack do SSR (\`is not a function\`, módulo faltando) e abra o arquivo:linha.
-   a2. Se \`/\` DEVOLVE HTML (200, milhares de bytes) mas contém \`Switched to client rendering because the server rendering errored\` → o SSR **degradou pra client-render**: a página renderiza, mas com um bug de SSR real (severity **medium**, runtime). Grep o stack: \`curl -sL http://localhost:$DEV_PORT/ | grep -o "server rendering errored[^<]*"\` e \`tail -80 /tmp/dev.log\`. Causa MAIS comum: **globais client-only usados no render do server** (\`globalThis.location\`, \`window\`, \`document\`) → dá \`Cannot read properties of undefined (reading 'href')\`. Fix: guardar com \`typeof window !== "undefined"\` (ou mover pra useEffect). Reporte com o arquivo:linha.
-   b. Se \`/\` renderiza mas os blocos estão vazios: \`ls .deco/blocks/ 2>/dev/null | head -20\` — confira se os \`__resolveType\` batem com os exports de \`src/sections/\` e \`src/apps/\`.
-   c. Teste rotas: home, categoria, produto (URLs em /app/source/routes/).
-3. Typecheck SECUNDÁRIO: \`npx tsc --noEmit 2>&1 | head -60\` — SÓ se o build passou. Agrupe por causa raiz; entram como severity "low" (dívida de tipo), pois não bloqueiam deploy nem paridade.
-4. Compare com /app/source: seções/componentes que existem lá e não foram portados (esses SÃO relevantes — visual/content).
+# Survey (in this order of priority)
+1. **Build (critical gate)**: \`npm run build 2>&1 | tail -60\`. If it FAILS (exit≠0), the error(s) breaking the build are the critical/high issues — focus on them.
+2. **Runtime — the site MUST render HTML (prerequisite for parity)**: with dev already up from Setup, \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
+   a. If it returns **"No web page at this URL"** (sandbox placeholder) OR a nearly empty shell (just \`<div id="root"></div>\` with no content) → the **SSR is broken**: dev comes up but \`/\` does not return rendered HTML (severity **high**, category **runtime**). Common cause #1: **node_modules with the wrong version** (if it was committed to the branch, e.g. vite ≠ package.json) — the fix is \`rm -rf node_modules && npm install\` and never committing node_modules. Also investigate \`tail -80 /tmp/dev.log\` for the SSR stack (\`is not a function\`, missing module) and open the file:line.
+   a2. If \`/\` RETURNS HTML (200, thousands of bytes) but contains \`Switched to client rendering because the server rendering errored\` → the SSR **degraded to client-render**: the page renders, but with a real SSR bug (severity **medium**, runtime). Grep the stack: \`curl -sL http://localhost:$DEV_PORT/ | grep -o "server rendering errored[^<]*"\` and \`tail -80 /tmp/dev.log\`. MOST common cause: **client-only globals used in the server render** (\`globalThis.location\`, \`window\`, \`document\`) → yields \`Cannot read properties of undefined (reading 'href')\`. Fix: guard with \`typeof window !== "undefined"\` (or move to useEffect). Report with the file:line.
+   b. If \`/\` renders but the blocks are empty: \`ls .deco/blocks/ 2>/dev/null | head -20\` — check that the \`__resolveType\` values match the exports of \`src/sections/\` and \`src/apps/\`.
+   c. Test routes: home, category, product (URLs in /app/source/routes/).
+3. SECONDARY typecheck: \`npx tsc --noEmit 2>&1 | head -60\` — ONLY if the build passed. Group by root cause; these go in as severity "low" (type debt), since they block neither deploy nor parity.
+4. Compare with /app/source: sections/components that exist there and were not ported (those ARE relevant — visual/content).
 
-# REGRAS IMPORTANTES
-- **NUNCA reporte issue para editar arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen, etc.) — são REGENERADOS pelo \`npm run build\`. Se um import de \`*.gen\` está quebrado, a issue é "rodar npm run build/generate", não "editar o arquivo".
-- **Suspeita de bug do framework**: se um erro parece vir de \`@decocms/start\` ou \`@decocms/apps\` (stack aponta pra dentro de node_modules desses pacotes, ou é um padrão que não dá pra corrigir no código do site), prefixe o título com \`[framework?]\` e use category **infra** — o MCP cataloga esses para detectar bugs recorrentes do framework entre sites.
-- Se o \`npm run build\` já passa E o site renderiza HTML real em \`/\`, a maior parte do trabalho está feita — reporte poucas issues (só o que afeta paridade/visual).
+# IMPORTANT RULES
+- **NEVER report an issue to edit \`*.gen.ts\` files** (manifest.gen, invoke.gen, meta.gen, etc.) — they are REGENERATED by \`npm run build\`. If a \`*.gen\` import is broken, the issue is "run npm run build/generate", not "edit the file".
+- **Suspected framework bug**: if an error seems to come from \`@decocms/start\` or \`@decocms/apps\` (the stack points inside node_modules of those packages, or it is a pattern that cannot be fixed in the site code), prefix the title with \`[framework?]\` and use category **infra** — the MCP catalogs these to detect recurring framework bugs across sites.
+- If \`npm run build\` already passes AND the site renders real HTML at \`/\`, most of the work is done — report few issues (only what affects parity/visual).
 
 ${memorySection(site, [
   FRAMEWORK_NOTES_SPEC,
@@ -372,19 +372,19 @@ ${memorySection(site, [
   PARITY_GOTCHAS_SPEC,
 ])}
 
-# Formato das issues
-- No máximo ${maxIssues} issues, ordenadas da mais grave para a menos grave.
-- severity: "critical" (npm run build falha) | "high" (rota 500/página não renderiza) | "medium" (seção faltando, hydration, visual quebrado) | "low" (dívida de tipo do tsc, warning, estilo).
+# Issue format
+- At most ${maxIssues} issues, ordered from most to least severe.
+- severity: "critical" (npm run build fails) | "high" (route 500/page does not render) | "medium" (missing section, hydration, broken visual) | "low" (tsc type debt, warning, style).
 - category: "build" | "runtime" | "visual" | "content" | "infra".
-- body ≤ 1200 caracteres, seguindo o template:
+- body ≤ 1200 characters, following the template:
 ${ISSUE_BODY_TEMPLATE}
 
 ${progressInstruction(site)}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato (JSON válido, uma linha):
-RESULT_JSON: {"ok": true, "detail": "<resumo: N issues, estado geral>", "issues": [{"title": "...", "body": "...", "severity": "critical", "category": "build", "page": "/"}]}
-(ok=false apenas se nem conseguiu analisar o repo)`;
+# Result
+End your LAST message with a single line in exactly this format (valid JSON, one line):
+RESULT_JSON: {"ok": true, "detail": "<summary: N issues, overall state>", "issues": [{"title": "...", "body": "...", "severity": "critical", "category": "build", "page": "/"}]}
+(ok=false only if you could not even analyze the repo)`;
 }
 
 /**
@@ -401,63 +401,62 @@ export function fixIssuesPrompt(input: {
   const list = issues
     .map(
       (i) =>
-        `## Issue #${i.number}: ${i.title}\n${(i.body ?? "(sem corpo)").slice(0, 1500)}`,
+        `## Issue #${i.number}: ${i.title}\n${(i.body ?? "(no body)").slice(0, 1500)}`,
     )
     .join("\n\n");
 
-  return `Você é o agente de correção da migração ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+  return `You are the fix agent for the migration ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation.
 
-# Objetivo (ESCOPO FECHADO)
-Resolver SOMENTE as issues listadas abaixo. Não refatore nada fora delas, não "aproveite pra melhorar" outras coisas.
+# Goal (CLOSED SCOPE)
+Resolve ONLY the issues listed below. Do not refactor anything outside them, do not "take the opportunity to improve" other things.
 
 ${ensureReadyPreamble(site, ghToken)}
 
-# Regras
-- Remote da branch: ${targetUrl} (o Setup acima já fez checkout + pull).
-- Regra de ouro: NUNCA reescreva componentes — porte o original de /app/source com mudanças mecânicas (imports preact→react, class→className, signals→estado react). Consulte /app/source sempre que precisar do comportamento original.
-- **NUNCA edite arquivos \`*.gen.ts\`** (manifest.gen, invoke.gen, meta.gen…) — são regenerados pelo \`npm run build\`. Se uma issue aponta erro num \`.gen\`, a correção é rodar \`npm run build\` (que roda o codegen) e verificar se sumiu — NÃO editar o arquivo à mão (seria sobrescrito).
-- UM commit POR issue resolvida, mensagem \`fix(#<número>): <o que fez>\` e push ao final de cada uma: \`git push origin ${site.work_branch}\`. Nunca fique >10min sem commit+push.
-- **Critério de validação = \`npm run build\` (exit 0)**, não \`tsc --noEmit\`. O build roda o codegen + Vite/esbuild (que não faz type-check estrito). Erros de \`tsc\` que não quebram o build são dívida de tipo aceitável — resolva o que a issue pede sem se prender a zerar o tsc. Para issues de runtime/visual, confirme a rota afetada respondendo (o dev já está de pé pelo Setup).
-- **O preview TEM que renderizar (pré-requisito da paridade)**: para issues de runtime/SSR, a correção só está pronta quando \`curl -sL http://localhost:$DEV_PORT/\` devolve HTML renderizado de verdade — NÃO o placeholder "No web page at this URL" nem um shell vazio (\`<div id="root"></div>\` sem conteúdo). Se ainda vier placeholder/shell, o SSR continua quebrado: leia \`tail -80 /tmp/dev.log\`, ache o stack e o arquivo:linha, e corrija de verdade antes de marcar como resolved.
-- **Antes de investigar do zero, consulte a "Memória entre migrações" abaixo** — uma receita conhecida pode resolver na hora, e o que você aprender aqui alimenta os próximos sites. Se concluir que um erro vem do framework, marque a issue como blocked com motivo \`[framework?]\` além de registrar na memória.
-- Se uma issue for impossível, já estiver resolvida (ex: o build já passa e o erro sumiu após o codegen), ou depender de outra, marque como blocked/resolved com o motivo e siga.
+# Rules
+- Branch remote: ${targetUrl} (the Setup above already did checkout + pull).
+- Golden rule: NEVER rewrite components — port the original from /app/source with mechanical changes (preact→react imports, class→className, signals→react state). Consult /app/source whenever you need the original behavior.
+- **NEVER edit \`*.gen.ts\` files** (manifest.gen, invoke.gen, meta.gen…) — they are regenerated by \`npm run build\`. If an issue points to an error in a \`.gen\`, the fix is to run \`npm run build\` (which runs the codegen) and verify it is gone — do NOT edit the file by hand (it would be overwritten).
+- ONE commit PER resolved issue, message \`fix(#<number>): <what you did>\` and push at the end of each one: \`git push origin ${site.work_branch}\`. Never go >10min without commit+push.
+- **Validation criterion = \`npm run build\` (exit 0)**, not \`tsc --noEmit\`. The build runs the codegen + Vite/esbuild (which does not do strict type-checking). \`tsc\` errors that do not break the build are acceptable type debt — resolve what the issue asks without fixating on zeroing tsc. For runtime/visual issues, confirm the affected route responds (dev is already up from Setup).
+- **The preview MUST render (prerequisite for parity)**: for runtime/SSR issues, the fix is only done when \`curl -sL http://localhost:$DEV_PORT/\` returns genuinely rendered HTML — NOT the "No web page at this URL" placeholder nor an empty shell (\`<div id="root"></div>\` with no content). If a placeholder/shell still shows up, the SSR is still broken: read \`tail -80 /tmp/dev.log\`, find the stack and the file:line, and fix it for real before marking as resolved.
+- **Before investigating from scratch, consult the "Cross-migration memory" below** — a known recipe may resolve it instantly, and what you learn here feeds the next sites. If you conclude that an error comes from the framework, mark the issue as blocked with reason \`[framework?]\` in addition to recording it in memory.
+- If an issue is impossible, is already resolved (e.g. the build now passes and the error is gone after the codegen), or depends on another, mark it as blocked/resolved with the reason and move on.
 
 ${memorySection(site, [
   FRAMEWORK_NOTES_SPEC,
   {
     ...FIXES_SPEC,
     writeWhen:
-      "resolver um erro de runtime/build e CONFIRMAR que sumiu (build passa / rota responde)",
-    entry:
-      "<assinatura do erro> → <o que resolveu: arquivo/import/patch curto>",
+      "you resolve a runtime/build error and CONFIRM it is gone (build passes / route responds)",
+    entry: "<error signature> → <what fixed it: file/import/short patch>",
   },
   {
     ...CONVENTIONS_SPEC,
-    writeWhen: "descobrir um gotcha de setup novo durante o fix",
-    entry: "<convenção/gotcha em uma linha>",
+    writeWhen: "you discover a new setup gotcha during the fix",
+    entry: "<convention/gotcha in one line>",
   },
   {
     ...PARITY_GOTCHAS_SPEC,
-    writeWhen: "resolver um mismatch visual/de conteúdo",
-    entry: "<mismatch visual> → <como resolveu>",
+    writeWhen: "you resolve a visual/content mismatch",
+    entry: "<visual mismatch> → <how you resolved it>",
   },
 ])}
 
-# Receitas conhecidas (padrões que JÁ funcionaram em migrações deco.cx→TanStack)
-Se o erro bater com um destes, aplique direto — não reinvente nem gaste sessão investigando loader por loader:
-- **Section loader usa \`ctx.algo\` e estoura \`Cannot read properties of undefined\`** (ex: \`ctx.device\`, \`ctx.invoke\`, \`ctx.salesforce\`, \`ctx.features\`): o \`@decocms/start\` invoca o loader como \`(props, req)\` — o 3º arg \`ctx\` quase sempre vem \`undefined\` (o start só compõe device/search params; salesforce/features/invoke NEM sempre são injetados). Fix comprovado: torne \`ctx\` OPCIONAL (\`ctx?: AppContext\`) e use optional-chaining em TODO acesso, com fallback: \`ctx?.device\`, \`ctx?.salesforce?.x\`, \`ctx?.features?.y ?? false\`. Para device no componente, use o hook \`useDevice()\` de \`@decocms/start/sdk/useDevice\` (não \`ctx.device\`). E NÃO faça fetch pesado via \`ctx.invoke\` dentro do section loader — o loader deve só derivar props baratas. (Isso destrava a home inteira: cada loader que estoura deixa a seção vazia → página em branco.)
-- **\`defaultLoader\`/\`DefaultProps\` não definidos** (seções de SEO tipo SeoPDP/SeoPLP): são convenções do deco.cx Fresh que não existem no start. Fix comprovado: importe \`renderTemplateString\`, \`type SEOSection\`, \`type Props as SeoProps\` de \`@decocms/apps/website/components/Seo\` e faça a normalização de title/description/canonical INLINE (assinatura \`(props, req): SeoProps\`, sem \`ctx\` nem \`defaultLoader\`).
-Ambos têm causa raiz no migrate transform do \`@decocms/start\` (não converte a API \`ctx.*\`/\`defaultLoader\` do deco.cx) — registre no \`framework-notes.md\` com prefixo \`[framework?]\`.
+# Known recipes (patterns that ALREADY worked on deco.cx→TanStack migrations)
+If the error matches one of these, apply it directly — do not reinvent nor spend the session investigating loader by loader:
+- **Section loader uses \`ctx.something\` and throws \`Cannot read properties of undefined\`** (e.g. \`ctx.device\`, \`ctx.invoke\`, \`ctx.salesforce\`, \`ctx.features\`): \`@decocms/start\` invokes the loader as \`(props, req)\` — the 3rd arg \`ctx\` is almost always \`undefined\` (start only composes device/search params; salesforce/features/invoke are NOT always injected). Proven fix: make \`ctx\` OPTIONAL (\`ctx?: AppContext\`) and use optional-chaining on EVERY access, with a fallback: \`ctx?.device\`, \`ctx?.salesforce?.x\`, \`ctx?.features?.y ?? false\`. For device in the component, use the \`useDevice()\` hook from \`@decocms/start/sdk/useDevice\` (not \`ctx.device\`). And do NOT do heavy fetching via \`ctx.invoke\` inside the section loader — the loader should only derive cheap props. (This unblocks the whole home: each loader that throws leaves its section empty → blank page.)
+- **\`defaultLoader\`/\`DefaultProps\` not defined** (SEO sections like SeoPDP/SeoPLP): these are deco.cx Fresh conventions that do not exist in start. Proven fix: import \`renderTemplateString\`, \`type SEOSection\`, \`type Props as SeoProps\` from \`@decocms/apps/website/components/Seo\` and do the title/description/canonical normalization INLINE (signature \`(props, req): SeoProps\`, without \`ctx\` or \`defaultLoader\`).
+Both have their root cause in the \`@decocms/start\` migrate transform (it does not convert deco.cx's \`ctx.*\`/\`defaultLoader\` API) — record it in \`framework-notes.md\` with the \`[framework?]\` prefix.
 
-# Issues a resolver
+# Issues to resolve
 ${list}
 
 ${progressInstruction(site)}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato (JSON válido, uma linha):
-RESULT_JSON: {"ok": true, "detail": "<resumo>", "resolved": [${issues[0]?.number ?? 12}], "blocked": [{"number": 34, "reason": "..."}]}
-(resolved = issues com fix COMMITADO E PUSHADO; ok=false apenas se não conseguiu trabalhar)`;
+# Result
+End your LAST message with a single line in exactly this format (valid JSON, one line):
+RESULT_JSON: {"ok": true, "detail": "<summary>", "resolved": [${issues[0]?.number ?? 12}], "blocked": [{"number": 34, "reason": "..."}]}
+(resolved = issues with the fix COMMITTED AND PUSHED; ok=false only if you could not work)`;
 }
 
 /**
@@ -504,27 +503,27 @@ export function parityOnlyPrompt(input: {
     site.cf_deploy_url ??
     `https://${(site.target_repo ?? "").split("/").pop()}.deco-cx.workers.dev`;
 
-  return `Você é o agente de medição de paridade da migração ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+  return `You are the parity-measurement agent for the migration ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}). Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation.
 
-# Objetivo (SOMENTE MEDIÇÃO — NÃO CORRIJA NADA)
-Rodar a parity CLI comparando produção vs candidato (URL real do Cloudflare Workers), subir os artefatos e reportar o score. Os problemas viram issues no GitHub e serão corrigidos em outras sessões.
+# Goal (MEASUREMENT ONLY — DO NOT FIX ANYTHING)
+Run the parity CLI comparing production vs candidate (the real Cloudflare Workers URL), upload the artifacts and report the score. The problems become GitHub issues and will be fixed in other sessions.
 
-# Candidato (URL real — NÃO localhost)
-O candidato é a URL do CF worker já deployado: **${candUrl}**
-O dev server em localhost fica de pé para debug de console.log, mas a MEDIÇÃO é sempre contra a URL real.
+# Candidate (real URL — NOT localhost)
+The candidate is the URL of the already-deployed CF worker: **${candUrl}**
+The dev server on localhost stays up for console.log debugging, but the MEASUREMENT is always against the real URL.
 
-# Passos
-1. Rode a parity CLI (use sempre @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "${candUrl}" --preset ci\`
-2. Localize o diretório do run: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` e leia $RUN_DIR/report.json.
-${uploadSteps.length > 0 ? `3. Faça upload dos artefatos:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "3. (sem upload de artefatos configurado)"}
-4. Extraia verdict.score do report.json e PARE — nenhuma correção nesta sessão.
+# Steps
+1. Run the parity CLI (always use @latest): \`cd /app/repo && ${parityEnv} npx -y @decocms/parity@latest run --prod ${site.prod_url} --cand "${candUrl}" --preset ci\`
+2. Locate the run directory: \`RUN_DIR=$(ls -td parity-output/runs/*/ | head -1)\` and read $RUN_DIR/report.json.
+${uploadSteps.length > 0 ? `3. Upload the artifacts:\n${uploadSteps.map((s) => `   ${s}`).join("\n")}` : "3. (no artifact upload configured)"}
+4. Extract verdict.score from report.json and STOP — no fixes in this session.
 
 ${progressInstruction(site)}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
-RESULT_JSON: {"ok": true, "parityScore": <verdict.score do report.json>, "detail": "<resumo do report>"}
-(ok=false apenas se a parity CLI nem conseguiu rodar)`;
+# Result
+End your LAST message with a single line in exactly this format:
+RESULT_JSON: {"ok": true, "parityScore": <verdict.score from report.json>, "detail": "<summary of the report>"}
+(ok=false only if the parity CLI could not even run)`;
 }
 
 /**
@@ -542,47 +541,47 @@ export function baselinePrompt(input: {
   const { site, putUrls } = input;
   const reportJsonPut = putUrls.reportJson
     ? `curl -s -X PUT -H "Content-Type: application/json" --data-binary @"$RUN_DIR/report.json" "${putUrls.reportJson}"`
-    : "# (sem OBJECT_STORAGE configurado — artefato não será salvo)";
+    : "# (no OBJECT_STORAGE configured — artifact will not be saved)";
   const reportHtmlPut = putUrls.reportHtml
     ? `curl -s -X PUT -H "Content-Type: text/html" --data-binary @"$RUN_DIR/report.html" "${putUrls.reportHtml}"`
     : "";
 
-  return `Você é o agente de baseline da migração ${site.source_repo}. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+  return `You are the baseline agent for the migration ${site.source_repo}. Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation.
 
-# Objetivo (SOMENTE MEDIÇÃO — NÃO CORRIJA NADA)
-Capturar um snapshot Lighthouse/SEO do site de produção ANTES de qualquer alteração, usando a parity CLI com --prod == --cand (mesma URL). O score visual será ~100 %; o que importa é o report.json com as métricas por página.
+# Goal (MEASUREMENT ONLY — DO NOT FIX ANYTHING)
+Capture a Lighthouse/SEO snapshot of the production site BEFORE any change, using the parity CLI with --prod == --cand (same URL). The visual score will be ~100 %; what matters is the report.json with the per-page metrics.
 
-# Passos
+# Steps
 \`\`\`bash
 cd /app/repo
 [ -d node_modules ] || bun install || npm install
 
-# 1. Roda a parity CLI com prod == cand (baseline do site original)
+# 1. Run the parity CLI with prod == cand (baseline of the original site)
 npx @decocms/parity@latest run \\
   --prod "${site.prod_url}" \\
   --cand "${site.prod_url}" \\
   --preset ci 2>&1 | tee /tmp/baseline-parity.log
 
-# 2. Localiza o diretório do run mais recente
+# 2. Locate the most recent run directory
 RUN_DIR=$(ls -td parity-output/runs/*/ 2>/dev/null | head -1)
 echo "RUN_DIR=$RUN_DIR"
 
-# 3. Faz upload dos artefatos (se OBJECT_STORAGE configurado)
+# 3. Upload the artifacts (if OBJECT_STORAGE is configured)
 if [ -f "$RUN_DIR/report.json" ]; then
   ${reportJsonPut}
 fi
 ${reportHtmlPut ? `if [ -f "$RUN_DIR/report.html" ]; then\n  ${reportHtmlPut}\nfi` : ""}
 
-# 4. Extrai verdict.score
+# 4. Extract verdict.score
 cat "$RUN_DIR/report.json" | head -100
 \`\`\`
 
 ${progressInstruction(site)}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
-RESULT_JSON: {"ok": true, "parityScore": <verdict.score do report.json, tipicamente 100>, "detail": "<resumo das métricas capturadas>"}
-(ok=false apenas se a parity CLI nem conseguiu rodar — não falhe por métricas ruins)`;
+# Result
+End your LAST message with a single line in exactly this format:
+RESULT_JSON: {"ok": true, "parityScore": <verdict.score from report.json, typically 100>, "detail": "<summary of the captured metrics>"}
+(ok=false only if the parity CLI could not even run — do not fail because of bad metrics)`;
 }
 
 /**
@@ -598,29 +597,29 @@ export function deployPrompt(input: {
   const { site, cfApiToken } = input;
   const workerName = (site.target_repo ?? "").split("/").pop() || "site";
 
-  return `Você é o agente de deploy Cloudflare da migração ${site.source_repo} → ${site.target_repo}. Trabalhe dentro do sandbox usando as tools de vm (bash, read, write). Não peça confirmação.
+  return `You are the Cloudflare deploy agent for the migration ${site.source_repo} → ${site.target_repo}. Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation.
 
-# Objetivo
-Buildar o site TanStack Start e deployar no Cloudflare Workers via \`wrangler deploy\` (upload direto — sem dashboard, sem git integration). O token CF já está na variável de ambiente.
+# Goal
+Build the TanStack Start site and deploy it to Cloudflare Workers via \`wrangler deploy\` (direct upload — no dashboard, no git integration). The CF token is already in the environment variable.
 
-# Passos
+# Steps
 \`\`\`bash
 cd /app/repo
 git checkout ${site.work_branch} && git pull origin ${site.work_branch} 2>/dev/null || true
 [ -d node_modules ] || bun install || npm install
 # build: generate all gens + vite build
 npm run build
-# deploy: wrangler lê wrangler.jsonc — name + account_id já estão configurados
+# deploy: wrangler reads wrangler.jsonc — name + account_id are already configured
 export CLOUDFLARE_API_TOKEN=${cfApiToken}
 npx wrangler deploy 2>&1 | tee /tmp/wrangler-deploy.log
 \`\`\`
 
-Após o deploy, leia /tmp/wrangler-deploy.log e extraia a URL do worker (linha com "Deployed" ou "https://${workerName}.*.workers.dev"). Se o deploy falhar, reporte ok=false com o erro.
+After the deploy, read /tmp/wrangler-deploy.log and extract the worker URL (the line with "Deployed" or "https://${workerName}.*.workers.dev"). If the deploy fails, report ok=false with the error.
 
 ${progressInstruction(site)}
 
-# Resultado
-Termine sua ÚLTIMA mensagem com uma linha exatamente neste formato:
+# Result
+End your LAST message with a single line in exactly this format:
 RESULT_JSON: {"ok": true, "deployUrl": "https://${workerName}.deco-cx.workers.dev", "detail": "deploy ok"}
-(ok=false com detail explicando o erro se o wrangler deploy falhar)`;
+(ok=false with detail explaining the error if wrangler deploy fails)`;
 }

@@ -11,7 +11,7 @@ const WIDE_PX = 520;
 
 /** Grafana stores the raw 7-day COGS; show it extrapolated to ~monthly (×30/7). */
 function estMonthly(cogs7d: number): string {
-  return `≈$${Math.round((cogs7d * 30) / 7).toLocaleString()}/mês`;
+  return `≈$${Math.round((cogs7d * 30) / 7).toLocaleString()}/mo`;
 }
 
 /** True when the observed element is at least `px` wide (tile ≠ viewport → ResizeObserver). */
@@ -118,11 +118,11 @@ function QueueContent({
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold">Fila de migração</span>
+        <span className="text-sm font-semibold">Migration queue</span>
         {q && (
           <span className="text-[11px] text-muted-foreground">
             {q.active}/{q.maxConcurrent} slots
-            {q.provider === "manual" ? " · simulação" : ""}
+            {q.provider === "manual" ? " · simulation" : ""}
           </span>
         )}
       </div>
@@ -130,7 +130,7 @@ function QueueContent({
       {active.length > 0 && (
         <section>
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Em andamento
+            In progress
           </p>
           <div className="flex flex-col gap-2">
             {active.map((s) => (
@@ -169,7 +169,7 @@ function QueueContent({
       {next.length > 0 && (
         <section>
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Próximos
+            Up next
           </p>
           <div className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border">
             {next.map((s, idx) => (
@@ -186,17 +186,17 @@ function QueueContent({
 
       {active.length === 0 && next.length === 0 && (
         <p className="py-3 text-center text-xs text-muted-foreground">
-          Nenhuma migração em andamento ou na fila.
+          No migrations in progress or queued.
         </p>
       )}
 
       {q && (
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border pt-1.5 text-[11px] text-muted-foreground tabular-nums">
-          <span>{q.active} migrando</span>
-          <span>{q.queued} na fila</span>
+          <span>{q.active} migrating</span>
+          <span>{q.queued} queued</span>
           {q.needsHuman > 0 && (
             <span className="text-amber-600 dark:text-amber-400">
-              {q.needsHuman} precisam de humano
+              {q.needsHuman} need human
             </span>
           )}
         </div>
@@ -250,9 +250,9 @@ function SuggestionsContent({
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-1.5">
         <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-sm font-semibold">Sugestões</span>
+        <span className="text-sm font-semibold">Suggestions</span>
         <span className="text-[10px] text-muted-foreground">
-          custo/mês (est.)
+          cost/mo (est.)
         </span>
       </div>
 
@@ -274,11 +274,11 @@ function SuggestionsContent({
         </div>
       ) : !data?.configured ? (
         <p className="py-3 text-center text-[11px] text-muted-foreground">
-          Conecte o Grafana (COGS) para ver sugestões de próximos sites.
+          Connect Grafana (COGS) to see suggested next sites.
         </p>
       ) : (
         <p className="py-3 text-center text-[11px] text-muted-foreground">
-          Nenhuma sugestão — tudo caro já está na fila. 🎉
+          No suggestions — everything expensive is already queued. 🎉
         </p>
       )}
     </div>
@@ -406,7 +406,7 @@ function SuggestionRow({
         type="button"
         onClick={onAdd}
         disabled={busy || !s.prodUrl}
-        title={s.prodUrl ? "Adicionar ao backlog" : "Sem URL de produção"}
+        title={s.prodUrl ? "Add to backlog" : "No production URL"}
         className="inline-flex shrink-0 items-center gap-0.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-40"
       >
         {busy ? (
@@ -449,11 +449,11 @@ function NextRow({
         <button
           type="button"
           onClick={onEnqueue}
-          title="Iniciar migração"
+          title="Start migration"
           className="inline-flex shrink-0 items-center gap-0.5 rounded bg-primary px-1.5 py-0.5 text-[10px] font-semibold text-primary-foreground hover:opacity-90"
         >
           <Play className="h-2.5 w-2.5" />
-          Iniciar
+          Start
         </button>
       ) : (
         <span
@@ -462,7 +462,7 @@ function NextRow({
             "bg-indigo-500/15 text-indigo-600 dark:text-indigo-400",
           )}
         >
-          fila
+          queued
         </span>
       )}
     </div>

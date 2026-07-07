@@ -16,11 +16,11 @@ export function manualCfInstructions(input: {
   repoFull: string;
 }): string {
   return (
-    `Deploy Cloudflare (1x, no dashboard — o Workers Builds não tem API pra conectar repo): ` +
+    `Cloudflare deploy (one-time, in the dashboard — Workers Builds has no API to connect a repo): ` +
     `Cloudflare → Workers & Pages → Create → Import a repository → ${input.repoFull}. ` +
     `Worker name: ${input.workerName}; production branch: main; build command: "npm run build"; ` +
-    `deploy command: "npx wrangler deploy"; root directory: "/"; habilite Preview URLs / builds de ` +
-    `branches non-prod. Depois de conectar, cada PR ganha um preview deploy e o merge em main vai pra ` +
-    `prod. Marque a fase como concluída com SITE_MARK_DONE (ou SITE_RETRY) após conectar.`
+    `deploy command: "npx wrangler deploy"; root directory: "/"; enable Preview URLs / builds for ` +
+    `non-prod branches. After connecting, each PR gets a preview deploy and merging to main goes to ` +
+    `prod. Mark the phase as done with SITE_MARK_DONE (or SITE_RETRY) after connecting.`
   );
 }

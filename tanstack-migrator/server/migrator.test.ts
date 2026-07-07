@@ -126,8 +126,8 @@ describe("prompts", () => {
     expect(prompt).toContain("git checkout -B migration/tanstack");
     expect(prompt).toContain("migrate.ts --source /app/repo");
     expect(prompt).toContain("push -u -f origin migration/tanstack");
-    expect(prompt).toContain("NÃO corrija erros de build");
-    expect(prompt).toContain("PARE AQUI");
+    expect(prompt).toContain("Do NOT fix build/typecheck errors");
+    expect(prompt).toContain("STOP HERE");
     expect(prompt).toContain("RESULT_JSON");
   });
 
@@ -144,13 +144,13 @@ describe("prompts", () => {
     const prompt = migrateScriptPrompt({ site });
     expect(prompt).toContain("https://github.com/deco-sites/granadobr.git");
     expect(prompt).not.toContain("x-access-token");
-    expect(prompt).toContain("credenciais sincronizadas pelo mesh");
+    expect(prompt).toContain("credentials synced by the mesh");
   });
 
   test("triagePrompt: analyze-only with capped issue list contract", () => {
     const prompt = triagePrompt({ site, maxIssues: 15 });
-    expect(prompt).toContain("SOMENTE ANÁLISE");
-    expect(prompt).toContain("No máximo 15 issues");
+    expect(prompt).toContain("ANALYSIS ONLY");
+    expect(prompt).toContain("At most 15 issues");
     expect(prompt).toContain("tsc --noEmit");
     expect(prompt).toContain('"issues": [');
     expect(prompt).toContain("git checkout migration/tanstack");
@@ -167,8 +167,8 @@ describe("prompts", () => {
     });
     expect(prompt).toContain("Issue #12: build: imports preact");
     expect(prompt).toContain("Issue #14: rota / 500");
-    expect(prompt).toContain("fix(#<número>)");
-    expect(prompt).toContain("SOMENTE as issues listadas");
+    expect(prompt).toContain("fix(#<number>)");
+    expect(prompt).toContain("ONLY the issues listed");
     expect(prompt).toContain('"resolved": [12]');
   });
 
@@ -189,7 +189,7 @@ describe("prompts", () => {
     // ...with append instructions (fix is where solutions get recorded)
     expect(fix).toContain(`>> ${FIXES_PATH}`);
     expect(fix).toContain(`>> ${PARITY_GOTCHAS_PATH}`);
-    expect(fix).toContain("org-fs do Studio");
+    expect(fix).toContain("Studio org-fs");
 
     // triage reads the playbook (but doesn't write fixes — analysis only)
     const triage = triagePrompt({ site, maxIssues: 15 });
@@ -228,9 +228,9 @@ describe("prompts", () => {
       "@decocms/parity@latest run --prod https://www.granado.com.br",
     );
     expect(prompt).toContain("ANTHROPIC_API_KEY=sk-ant-xxx");
-    expect(prompt).toContain("SOMENTE MEDIÇÃO");
+    expect(prompt).toContain("MEASUREMENT ONLY");
     expect(prompt).toContain("https://storage/put-h0");
-    expect(prompt).toContain("nenhuma correção nesta sessão");
+    expect(prompt).toContain("no fixes in this session");
   });
 });
 
