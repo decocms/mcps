@@ -30,6 +30,8 @@ const SITE_STATUSES = [
   "provisioning_sandbox",
   "migrating_script",
   "opening_pr",
+  "reviewing",
+  "merging",
   "triaging",
   "fixing",
   "paritying",

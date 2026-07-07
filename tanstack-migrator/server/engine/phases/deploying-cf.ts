@@ -22,21 +22,29 @@ import { previewRendersRealHtml } from "../../lib/preview.ts";
 import { getDriver, isSimulation } from "../../sandbox/client.ts";
 import { deployPrompt } from "../../sandbox/templates/prompts.ts";
 
-/** After a successful deploy, advance to parity (measured against the CF URL). */
-async function advanceToParity(
+/**
+ * After a successful deploy, route on whether this was the FIRST deploy:
+ *   - initial migration (no cf_deploy_url yet) → triaging (build the backlog)
+ *   - every fix round (cf_deploy_url already set) → paritying (measure vs URL)
+ * Robust even when triage found zero issues (doesn't depend on issues_total).
+ */
+async function advanceAfterDeploy(
   site: SiteRow,
   patch: Partial<SiteRow>,
 ): Promise<void> {
+  const firstDeploy = !site.cf_deploy_url;
+  const next = firstDeploy ? "triaging" : "paritying";
   await updateSite(site.id, {
     ...patch,
-    status: "paritying",
-    phase_detail:
-      "deploy ok — starting parity measurement against the real URL",
+    status: next,
+    phase_detail: firstDeploy
+      ? "deploy ok — triaging the migrated site"
+      : "deploy ok — measuring parity against the real URL",
     last_progress_at: new Date().toISOString(),
   });
   await addEvent(
     site.id,
-    `CF deploy ok at ${patch.cf_deploy_url ?? "?"} — advancing to parity`,
+    `CF deploy ok at ${patch.cf_deploy_url ?? site.cf_deploy_url ?? "?"} — ${firstDeploy ? "triaging" : "advancing to parity"}`,
   );
 }
 
@@ -48,7 +56,7 @@ export async function deployingCf(
   const workerName = parseRepo(site.target_repo).repo;
 
   if (isSimulation(ctx)) {
-    await advanceToParity(site, {
+    await advanceAfterDeploy(site, {
       cf_project_name: workerName,
       cf_deploy_url: `https://${workerName}.deco-cx.workers.dev`,
     });
@@ -142,7 +150,7 @@ export async function deployingCf(
         );
       }
 
-      await advanceToParity(current, {
+      await advanceAfterDeploy(current, {
         cf_project_name: workerName,
         cf_deploy_url: deployUrl,
       });

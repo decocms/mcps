@@ -116,7 +116,9 @@ export interface SessionResult {
   ok: boolean;
   parityScore?: number;
   detail?: string;
-  /** triage: problems to persist as GitHub issues. */
+  /** review: whether the code-review agent approved the PR for merge. */
+  approved?: boolean;
+  /** triage/review: problems to persist as GitHub issues. */
   issues?: IssueDraft[];
   /** fix: GitHub issue numbers the session claims to have resolved (pushed). */
   resolved?: number[];
@@ -200,6 +202,8 @@ export function parseResultJson(output: string): SessionResult | null {
       parityScore:
         typeof parsed.parityScore === "number" ? parsed.parityScore : undefined,
       detail: typeof parsed.detail === "string" ? parsed.detail : undefined,
+      approved:
+        typeof parsed.approved === "boolean" ? parsed.approved : undefined,
       issues,
       resolved,
       blocked,
@@ -254,7 +258,8 @@ This block is idempotent and self-healing: run it in full before analyzing/fixin
 # /app/source = pristine clone of the original deco.cx site (to port components/compare). DISAPPEARS on
 # sandbox recreate — re-clones idempotently. NEVER modify it or run migrate on it.
 [ -d /app/source/.git ] || git clone --depth 1 -b ${site.source_branch} ${sourceUrl} /app/source 2>/dev/null || true
-cd /app/repo && git checkout ${branch} && git pull origin ${branch} 2>/dev/null || true
+# sync to the round branch (fresh fix branches are cut off main server-side; fall back to main)
+cd /app/repo && git fetch origin ${branch} main 2>/dev/null; git checkout -B ${branch} origin/${branch} 2>/dev/null || git checkout -B ${branch} origin/main 2>/dev/null || git checkout ${branch} 2>/dev/null || true
 rm -f org 2>/dev/null || true                          # sandbox mount symlink
 [ -d node_modules ] || bun install || npm install       # clean deps (node_modules is gitignored — never comes from the branch)
 # gitignored generates: without routeTree.gen.ts the router has no routes → "No web page" placeholder
@@ -350,20 +355,51 @@ The success criterion for this migration is: **\`npm run build\` passes** (exit 
 
 ${ensureReadyPreamble(site)}
 
-# Survey (in this order of priority)
+# Survey (be EXHAUSTIVE — there is no cap on issues; run every check below before writing RESULT_JSON)
 1. **Build (critical gate)**: \`npm run build 2>&1 | tail -60\`. If it FAILS (exit≠0), the error(s) breaking the build are the critical/high issues — focus on them.
 2. **Runtime — the site MUST render HTML (prerequisite for parity)**: with dev already up from Setup, \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -120\`:
    a. If it returns **"No web page at this URL"** (sandbox placeholder) OR a nearly empty shell (just \`<div id="root"></div>\` with no content) → the **SSR is broken**: dev comes up but \`/\` does not return rendered HTML (severity **high**, category **runtime**). Common cause #1: **node_modules with the wrong version** (if it was committed to the branch, e.g. vite ≠ package.json) — the fix is \`rm -rf node_modules && npm install\` and never committing node_modules. Also investigate \`tail -80 /tmp/dev.log\` for the SSR stack (\`is not a function\`, missing module) and open the file:line.
    a2. If \`/\` RETURNS HTML (200, thousands of bytes) but contains \`Switched to client rendering because the server rendering errored\` → the SSR **degraded to client-render**: the page renders, but with a real SSR bug (severity **medium**, runtime). Grep the stack: \`curl -sL http://localhost:$DEV_PORT/ | grep -o "server rendering errored[^<]*"\` and \`tail -80 /tmp/dev.log\`. MOST common cause: **client-only globals used in the server render** (\`globalThis.location\`, \`window\`, \`document\`) → yields \`Cannot read properties of undefined (reading 'href')\`. Fix: guard with \`typeof window !== "undefined"\` (or move to useEffect). Report with the file:line.
    b. If \`/\` renders but the blocks are empty: \`ls .deco/blocks/ 2>/dev/null | head -20\` — check that the \`__resolveType\` values match the exports of \`src/sections/\` and \`src/apps/\`.
    c. Test routes: home, category, product (URLs in /app/source/routes/).
-3. SECONDARY typecheck: \`npx tsc --noEmit 2>&1 | head -60\` — ONLY if the build passed. Group by root cause; these go in as severity "low" (type debt), since they block neither deploy nor parity.
-4. Compare with /app/source: sections/components that exist there and were not ported (those ARE relevant — visual/content).
+3. **Terminal/dev.log errors**: \`tail -120 /tmp/dev.log\` and grep it for real problems — \`grep -iE "error|warn|fail|is not a function|cannot read|hydrat|unhandled|ECONN|EADDR|Module not found" /tmp/dev.log | tail -60\`. Every recurring stack in the dev log is a runtime issue (open the file:line it points to).
+4. **Browser console errors (headless, REAL browser)**: curl cannot see client-side \`console.error\`/hydration warnings — a real browser can. Install Playwright's chromium in a scratch dir (the same engine \`@decocms/parity\` uses) and visit the key routes, collecting console errors + uncaught page errors:
+\`\`\`bash
+cd /tmp && npm init -y >/dev/null 2>&1 && npm i playwright >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1 || npx playwright install chromium >/dev/null 2>&1
+cat > /tmp/console-check.mjs <<'PW_EOF'
+import { chromium } from "playwright";
+const PORT = process.env.DEV_PORT || "5173";
+const base = "http://localhost:" + PORT;
+const routes = (process.env.ROUTES || "/").split(",");
+const browser = await chromium.launch();
+const found = [];
+for (const route of routes) {
+  const page = await browser.newPage();
+  page.on("console", (m) => { if (m.type() === "error") found.push(route + " [console.error] " + m.text()); });
+  page.on("pageerror", (e) => { found.push(route + " [pageerror] " + (e && e.message ? e.message : String(e))); });
+  try { await page.goto(base + route, { waitUntil: "networkidle", timeout: 30000 }); }
+  catch (e) { found.push(route + " [navigation] " + (e && e.message ? e.message : String(e))); }
+  await page.waitForTimeout(1500);
+  await page.close();
+}
+await browser.close();
+console.log(found.length ? found.join("\\n") : "no console/page errors");
+PW_EOF
+DEV_PORT=$DEV_PORT ROUTES="/,$(cat /tmp/routes.txt 2>/dev/null || echo /)" node /tmp/console-check.mjs
+\`\`\`
+   Pick real routes for ROUTES (home + a category + a product from /app/source/routes/, comma-separated). A \`Hydration failed\`, \`Text content does not match\`, \`Prop \\\`...\\\` did not match\`, or any \`console.error\` → a **medium** runtime/visual issue (hydration mismatch). If chromium cannot be installed, say so in the detail and fall back to the curl checks — do NOT block.
+5. **Deep migration sweep (grep — leftovers from Fresh/Preact that survived the codemod)**: run these in /app/repo/src and report each real hit (medium unless it breaks the build):
+   - Fresh/Preact leftovers: \`grep -rnE 'from "preact|@preact/signals|useSignal|@deco/deco|\\$fresh/|from "apps/|~/islands/' src/ | head -40\` — these should be zero after migration; each is a port/rewrite issue.
+   - Hydration risk (client-only globals in modules that render on the server): \`grep -rnE '\\b(window|document|globalThis)\\.' src/ | grep -viE 'useEffect|typeof window|typeof document' | head -40\`.
+   - Edge-cache contamination (per-user data baked into SSR HTML): \`grep -rnE 'dangerouslySetInnerHTML|inlineScript' src/ | head -40\` cross-referenced with loaders reading cookies \`grep -rnE 'getCookies|parseCookie|headers.*cookie' src/ | head -40\` — an inlineScript/dangerouslySetInnerHTML that embeds cookie-derived data (CEP, cart, user) is a **high** cache-contamination bug.
+   - Image optimization: \`grep -rnE 'height=\\{undefined\\}|width=\\{undefined\\}' src/ | head -20\` and raw S3 URLs in blocks \`grep -rn 's3\\..*amazonaws\\.com' .deco/blocks/ 2>/dev/null | head -20\`.
+6. SECONDARY typecheck: \`npx tsc --noEmit 2>&1 | head -80\` — ONLY informative if the build passed. Group by root cause; these go in as severity "low" (type debt), since they block neither deploy nor parity.
+7. Compare with /app/source: sections/components that exist there and were not ported (those ARE relevant — visual/content).
 
 # IMPORTANT RULES
 - **NEVER report an issue to edit \`*.gen.ts\` files** (manifest.gen, invoke.gen, meta.gen, etc.) — they are REGENERATED by \`npm run build\`. If a \`*.gen\` import is broken, the issue is "run npm run build/generate", not "edit the file".
 - **Suspected framework bug**: if an error seems to come from \`@decocms/start\` or \`@decocms/apps\` (the stack points inside node_modules of those packages, or it is a pattern that cannot be fixed in the site code), prefix the title with \`[framework?]\` and use category **infra** — the MCP catalogs these to detect recurring framework bugs across sites.
-- If \`npm run build\` already passes AND the site renders real HTML at \`/\`, most of the work is done — report few issues (only what affects parity/visual).
+- Even if \`npm run build\` passes AND \`/\` renders real HTML, STILL run the full sweep (steps 3–7): console errors, hydration mismatches, leftover Fresh/Preact imports and cache-contamination all count as real issues. Do not invent problems, but do not stop early either — report every real one you find.
 
 ${memorySection(site, [
   FRAMEWORK_NOTES_SPEC,
@@ -373,8 +409,8 @@ ${memorySection(site, [
 ])}
 
 # Issue format
-- At most ${maxIssues} issues, ordered from most to least severe.
-- severity: "critical" (npm run build fails) | "high" (route 500/page does not render) | "medium" (missing section, hydration, broken visual) | "low" (tsc type debt, warning, style).
+- Report EVERY real problem you found — no cap. Order from most to least severe. (Only the top ${maxIssues} are persisted, so severity order matters; never drop a real critical/high to stay under a number.)
+- severity: "critical" (npm run build fails) | "high" (route 500/page does not render, cache contamination) | "medium" (missing section, hydration mismatch, console error, broken visual) | "low" (tsc type debt, warning, style).
 - category: "build" | "runtime" | "visual" | "content" | "infra".
 - body ≤ 1200 characters, following the template:
 ${ISSUE_BODY_TEMPLATE}
@@ -385,6 +421,58 @@ ${progressInstruction(site)}
 End your LAST message with a single line in exactly this format (valid JSON, one line):
 RESULT_JSON: {"ok": true, "detail": "<summary: N issues, overall state>", "issues": [{"title": "...", "body": "...", "severity": "critical", "category": "build", "page": "/"}]}
 (ok=false only if you could not even analyze the repo)`;
+}
+
+/**
+ * Phase reviewing: a code-review agent gates the auto-merge. It reviews the
+ * diff of the current PR branch vs main and returns approved:true/false. This
+ * is the safety check before the MCP squash-merges into main (which the CF
+ * project deploys). Analysis only — it never edits or merges.
+ */
+export function reviewPrompt(input: {
+  site: SiteRow;
+  prNumber: number;
+  ghToken?: string;
+}): string {
+  const { site, prNumber } = input;
+  return `You are the code-review agent for the migration ${site.source_repo} → ${site.target_repo} (branch ${site.work_branch}, PR #${prNumber}). Work inside the sandbox using the vm tools (bash, read, write). Do not ask for confirmation. REVIEW ONLY — never edit files, never merge.
+
+# Goal
+Decide whether the diff of this branch vs main is SAFE to squash-merge into main (Cloudflare deploys main to *.workers.dev). Approve unless there is a real, blocking problem introduced by THIS diff.
+
+${ensureReadyPreamble(site)}
+
+# Review steps
+1. Get the diff: \`cd /app/repo && git fetch origin main 2>/dev/null && git diff origin/main...HEAD --stat && git diff origin/main...HEAD | head -800\`.
+2. **Build gate (the hard bar)**: \`npm run build 2>&1 | tail -40\`. If the build FAILS, this is a blocking problem — NOT approved.
+3. **Runtime**: with dev up from Setup, \`curl -sL http://localhost:$DEV_PORT/ 2>&1 | head -40\` — if \`/\` no longer renders real HTML (empty shell / "No web page" / a new SSR error in \`tail -60 /tmp/dev.log\`) that this diff introduced, NOT approved.
+4. Scan the diff for real regressions introduced HERE: broken imports, a section removed by mistake, a client-only global (\`window\`/\`document\`) newly used in server render, an edited \`*.gen.ts\` (must be regenerated, not hand-edited), secrets/tokens committed.
+
+# What to IGNORE (do NOT block on these)
+- Pre-existing problems not caused by this diff.
+- tsc/type-only errors that don't break \`npm run build\` (type debt), lint/format nits, style.
+- Missing-but-unrelated features, TODOs.
+
+${memorySection(site, [
+  {
+    ...FRAMEWORK_NOTES_SPEC,
+    read: "if the diff reproduces a signature listed here, it is a KNOWN framework bug — do not block the merge on it (it is not fixable in the site code); note it in the detail instead",
+  },
+  {
+    ...FIXES_SPEC,
+    read: "if the diff applies one of these proven recipes, that is a GOOD sign — approve; if it works AROUND a recipe in a fragile way, call it out",
+  },
+])}
+
+${progressInstruction(site)}
+
+# Result
+End your LAST message with a single line, valid JSON:
+- If safe to merge:
+RESULT_JSON: {"ok": true, "approved": true, "detail": "<one-line summary of what the diff does + why it's safe>"}
+- If a blocking problem exists (list each as a self-contained issue so it can be fixed without more context):
+RESULT_JSON: {"ok": true, "approved": false, "detail": "<why blocked>", "issues": [{"title": "...", "body": "...", "severity": "critical", "category": "build", "page": "/"}]}
+(ok=false only if you could not review at all. When unsure but nothing is clearly broken, approve.)`;
 }
 
 /**
@@ -605,7 +693,8 @@ Build the TanStack Start site and deploy it to Cloudflare Workers via \`wrangler
 # Steps
 \`\`\`bash
 cd /app/repo
-git checkout ${site.work_branch} && git pull origin ${site.work_branch} 2>/dev/null || true
+# deploy runs on main post-merge (the round branch was merged + deleted)
+git fetch origin main 2>/dev/null; git checkout -B main origin/main 2>/dev/null || git checkout main
 [ -d node_modules ] || bun install || npm install
 # build: generate all gens + vite build
 npm run build

@@ -75,6 +75,17 @@ export const manualDriver: SandboxDriver = {
         parsed: { ok: true, resolved: [], detail: "[simulation] fixes pushed" },
       };
     }
+    if (task.kind === "review") {
+      return {
+        ok: true,
+        output: "[simulation] code review approved",
+        parsed: {
+          ok: true,
+          approved: true,
+          detail: "[simulation] review approved",
+        },
+      };
+    }
     const iteration = task.iteration ?? site.iterations_done;
     const score = simulatedParityScore(iteration + 1);
     return {

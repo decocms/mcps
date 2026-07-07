@@ -25,6 +25,16 @@ export const STATUS_META: Record<
     className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
     active: true,
   },
+  reviewing: {
+    label: "Reviewing PR",
+    className: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+    active: true,
+  },
+  merging: {
+    label: "Merging PR",
+    className: "bg-sky-500/15 text-sky-600 dark:text-sky-400",
+    active: true,
+  },
   triaging: {
     label: "Triaging issues",
     className: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400",

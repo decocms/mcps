@@ -8,10 +8,12 @@ import { baselining } from "./phases/baselining.ts";
 import { creatingRepo } from "./phases/creating-repo.ts";
 import { deployingCf } from "./phases/deploying-cf.ts";
 import { fixing } from "./phases/fixing.ts";
+import { merging } from "./phases/merging.ts";
 import { migratingScript } from "./phases/migrating-script.ts";
 import { openingPr } from "./phases/opening-pr.ts";
 import { paritying } from "./phases/paritying.ts";
 import { provisioningSandbox } from "./phases/provisioning-sandbox.ts";
+import { reviewing } from "./phases/reviewing.ts";
 import { triaging } from "./phases/triaging.ts";
 
 export interface EngineDeps {
@@ -35,6 +37,8 @@ export const PHASE_HANDLERS: Partial<Record<SiteStatus, PhaseHandler>> = {
   baselining,
   migrating_script: migratingScript,
   opening_pr: openingPr,
+  reviewing,
+  merging,
   triaging,
   fixing,
   paritying,

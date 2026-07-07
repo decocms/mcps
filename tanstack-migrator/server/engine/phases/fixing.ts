@@ -11,7 +11,7 @@ import { addEvent } from "../../db/events.ts";
 import { createRun, finishRun } from "../../db/runs.ts";
 import { getSite, incrementCost, updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
-import { ghsTokenForSite } from "../../lib/github.ts";
+import { ensureBranch, ghsTokenForSite, parseRepo } from "../../lib/github.ts";
 import {
   closeResolvedIssues,
   markBlockedIssues,
@@ -40,14 +40,24 @@ export async function fixing(
   ctx: WorkerCtx,
   deps: EngineDeps,
 ): Promise<void> {
-  // Terminal checks first (idempotent re-entry)
-  if (site.parity_score !== null && site.parity_score >= site.parity_target) {
+  // Terminal check (idempotent re-entry): parity target met AND backlog empty
+  // means we're done — no more rounds. (Parity is measured post-merge in
+  // paritying; deploy happens per-round via opening_pr → … → deploying.)
+  if (
+    site.parity_score !== null &&
+    site.parity_score >= site.parity_target &&
+    site.issues_open === 0
+  ) {
     await updateSite(site.id, {
-      status: "deploying",
-      phase_detail: `parity ${site.parity_score} >= ${site.parity_target}, going to deploy`,
+      status: "done",
+      phase_detail: `parity ${site.parity_score}% with empty backlog — done`,
+      finished_at: new Date().toISOString(),
       last_progress_at: new Date().toISOString(),
     });
-    await addEvent(site.id, `Parity reached ${site.parity_score}% — CF deploy`);
+    await addEvent(
+      site.id,
+      `Parity ${site.parity_score}% and backlog empty — done`,
+    );
     return;
   }
   if (deps.inflight.has(site.id)) return;
@@ -109,6 +119,36 @@ export async function fixing(
       title: i.title,
       body: i.body,
     }));
+  }
+
+  // New round: cut a fresh branch off main so this batch gets its own PR that
+  // is reviewed + merged independently. Only when starting a fresh round
+  // (pr_number null); a review-reject keeps pr_number set → same branch.
+  if (!isSimulation(ctx) && !site.pr_number) {
+    if (!site.target_repo) throw new Error("target_repo not set");
+    const ref = parseRepo(site.target_repo);
+    const round = site.fix_sessions_done + 1;
+    const roundBranch = `migration/fix-${round}`;
+    if (site.work_branch !== roundBranch) {
+      await ensureBranch(ctx, ref, roundBranch, "main");
+      await updateSite(site.id, {
+        work_branch: roundBranch,
+        pr_number: null,
+        pr_url: null,
+        preview_ready: false,
+      });
+      site = {
+        ...site,
+        work_branch: roundBranch,
+        pr_number: null,
+        pr_url: null,
+        preview_ready: false,
+      };
+      await addEvent(
+        site.id,
+        `New fix round on branch ${roundBranch} (off main)`,
+      );
+    }
   }
 
   const sessionNumber = site.fix_sessions_done + 1;
@@ -186,6 +226,7 @@ export async function fixing(
           meta: { issues: { resolved: [] } },
         });
         await updateSite(site.id, {
+          status: "opening_pr",
           fix_sessions_done: sessionNumber,
           issues_open: current.issues_open - resolvedCount,
           issues_closed: current.issues_closed + resolvedCount,
@@ -226,18 +267,19 @@ export async function fixing(
         },
       });
       await updateSite(site.id, {
+        status: "opening_pr",
         fix_sessions_done: sessionNumber,
         sandbox_session_id: null,
         phase_thread_id: null, // each batch is a fresh, narrow conversation
         transient_retries: 0,
-        phase_detail: `fix ${sessionNumber}: ${resolved.length}/${batch.length} resolved, backlog ${openIssues.open}`,
+        phase_detail: `fix ${sessionNumber}: ${resolved.length}/${batch.length} resolved, backlog ${openIssues.open} — opening PR`,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        `Fix session ${sessionNumber}: resolved ${resolved.length > 0 ? resolved.map((n) => `#${n}`).join(", ") : "none"}${blocked.length > 0 ? ` · blocked ${blocked.map((b) => `#${b.number}`).join(", ")}` : ""} — backlog ${openIssues.open}`,
+        `Fix session ${sessionNumber}: resolved ${resolved.length > 0 ? resolved.map((n) => `#${n}`).join(", ") : "none"}${blocked.length > 0 ? ` · blocked ${blocked.map((b) => `#${b.number}`).join(", ")}` : ""} — backlog ${openIssues.open}, opening PR`,
       );
-      // next tick re-enters: backlog empty → paritying; budget out → needs_human
+      // advance: opening_pr → reviewing → merging → deploying → paritying
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await finishRun(run.id, { status: "failed", logsTail: message });

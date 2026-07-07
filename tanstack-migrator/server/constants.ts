@@ -17,7 +17,10 @@ export const LIVENESS_STALL_MS = 4 * 60_000;
 /** Session timeouts per task kind (the reader gives up past these). */
 export const SESSION_TIMEOUT_MS: Record<string, number> = {
   migrate: 30 * 60_000,
-  triage: 20 * 60_000,
+  // triage is intentionally exhaustive (build + SSR + headless-browser console
+  // capture + skill grep sweep) — give it room.
+  triage: 40 * 60_000,
+  review: 20 * 60_000,
   fix: 25 * 60_000,
   parity: 20 * 60_000,
 };
@@ -34,7 +37,11 @@ export const DEFAULT_NO_IMPROVE_LIMIT = 3;
 export const DEFAULT_MAX_CONCURRENT = 1;
 export const DEFAULT_MAX_FIX_SESSIONS = 20;
 export const DEFAULT_FIX_BATCH_SIZE = 3;
-export const DEFAULT_MAX_ISSUES_PER_TRIAGE = 15;
+/**
+ * Effectively uncapped: triage should report EVERY real problem it finds. The
+ * high bound is only a runaway safety rail (dedupe + labeling stay bounded).
+ */
+export const DEFAULT_MAX_ISSUES_PER_TRIAGE = 100;
 export const DEFAULT_WORK_BRANCH = "migration/tanstack";
 
 /** Object-storage key prefix for parity artifacts. */

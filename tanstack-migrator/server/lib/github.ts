@@ -438,6 +438,9 @@ export interface PullRequestInfo {
   url?: string;
   state: string;
   merged: boolean;
+  /** From the single-PR get only (absent on list endpoints). */
+  mergeable?: boolean | null;
+  mergeableState?: string; // "clean" | "dirty" | "blocked" | "unknown"
 }
 
 function toPullRequest(raw: Record<string, unknown>): PullRequestInfo | null {
@@ -461,7 +464,15 @@ function toPullRequest(raw: Record<string, unknown>): PullRequestInfo | null {
     typeof raw.merged_at === "string" ||
     typeof raw.mergedAt === "string" ||
     state === "merged";
-  return { number, url, state, merged };
+  const mergeable =
+    typeof raw.mergeable === "boolean" ? raw.mergeable : undefined;
+  const mergeableState =
+    typeof raw.mergeable_state === "string"
+      ? raw.mergeable_state
+      : typeof raw.mergeableState === "string"
+        ? raw.mergeableState
+        : undefined;
+  return { number, url, state, merged, mergeable, mergeableState };
 }
 
 export async function createPullRequest(
@@ -601,6 +612,126 @@ export async function getPullRequest(
   throw lastError instanceof Error
     ? lastError
     : new Error(`getPullRequest failed: ${message}`);
+}
+
+/** Thrown when the PR cannot be merged because of conflicts (not a transient). */
+export class MergeConflictError extends Error {}
+
+/**
+ * Squash-merge a PR. Idempotent: an already-merged PR resolves as success.
+ * Tolerates the proxy's arg-shape variants (consolidated pull_request_write vs
+ * discrete merge_pull_request; pullNumber vs pull_number).
+ */
+export async function mergePullRequest(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  prNumber: number,
+  opts: { method?: "squash" | "merge" | "rebase"; title?: string } = {},
+): Promise<{ merged: boolean; alreadyMerged: boolean }> {
+  const method = opts.method ?? "squash";
+  const attempts: Array<{ tool: string; args: Record<string, unknown> }> = [
+    {
+      tool: "pull_request_write",
+      args: {
+        method: "merge",
+        owner: ref.owner,
+        repo: ref.repo,
+        pullNumber: prNumber,
+        merge_method: method,
+        ...(opts.title ? { commit_title: opts.title } : {}),
+      },
+    },
+    {
+      tool: "merge_pull_request",
+      args: {
+        owner: ref.owner,
+        repo: ref.repo,
+        pull_number: prNumber,
+        merge_method: method,
+        ...(opts.title ? { commit_title: opts.title } : {}),
+      },
+    },
+    {
+      tool: "merge_pull_request",
+      args: {
+        owner: ref.owner,
+        repo: ref.repo,
+        pullNumber: prNumber,
+        merge_method: method,
+      },
+    },
+  ];
+  let lastError: unknown = null;
+  for (const attempt of attempts) {
+    try {
+      await callBindingTool(ctx, "GITHUB", attempt.tool, attempt.args);
+      return { merged: true, alreadyMerged: false };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      // already merged — the state we wanted
+      if (
+        /already merged|pull request is not mergeable.*merged|already been merged/i.test(
+          message,
+        )
+      ) {
+        return { merged: true, alreadyMerged: true };
+      }
+      // genuine conflict — not retryable with a different arg shape
+      if (
+        /not mergeable|merge conflict|conflict|405/i.test(message) &&
+        !isUnknownToolError(message)
+      ) {
+        throw new MergeConflictError(message.slice(0, 200));
+      }
+      lastError = err;
+      // otherwise try the next shape
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`mergePullRequest failed: ${String(lastError ?? "")}`);
+}
+
+/** Delete a branch. Best-effort: an already-gone branch resolves as success. */
+export async function deleteBranch(
+  ctx: WorkerCtx,
+  ref: RepoRef,
+  branch: string,
+): Promise<void> {
+  const attempts: Array<{ tool: string; args: Record<string, unknown> }> = [
+    {
+      tool: "delete_branch",
+      args: { owner: ref.owner, repo: ref.repo, branch },
+    },
+    {
+      tool: "git",
+      args: {
+        method: "delete_ref",
+        owner: ref.owner,
+        repo: ref.repo,
+        ref: `heads/${branch}`,
+      },
+    },
+    {
+      tool: "delete_ref",
+      args: { owner: ref.owner, repo: ref.repo, ref: `heads/${branch}` },
+    },
+  ];
+  let lastError: unknown = null;
+  for (const attempt of attempts) {
+    try {
+      await callBindingTool(ctx, "GITHUB", attempt.tool, attempt.args);
+      return;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (/not found|404|reference does not exist|no such/i.test(message))
+        return;
+      lastError = err;
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(`deleteBranch failed: ${String(lastError ?? "")}`);
 }
 
 interface FileContents {

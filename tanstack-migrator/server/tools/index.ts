@@ -26,6 +26,7 @@ import {
   createSiteRetryTool,
   createSiteTerminalTool,
 } from "./sites.ts";
+import { createSyncDecofileInstallTool } from "./sync.ts";
 
 export const tools = [
   createDashboardTool,
@@ -47,6 +48,7 @@ export const tools = [
   createSiteCatalogSearchTool,
   createSiteSuggestionsTool,
   createSiteDeleteTool,
+  createSyncDecofileInstallTool,
   createParityReportUrlsTool,
   createReportProgressTool,
   createAdvanceQueueTool,
