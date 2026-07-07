@@ -16,6 +16,7 @@ import { createRun, finishRun } from "../../db/runs.ts";
 import { getSite, updateSite } from "../../db/sites.ts";
 import type { SiteRow } from "../../db/types.ts";
 import { manualCfInstructions } from "../../lib/cloudflare.ts";
+import { setSitePlatform } from "../../db/catalog.ts";
 import { parseRepo } from "../../lib/github.ts";
 import type { WorkerCtx } from "../../lib/mesh.ts";
 import { previewRendersRealHtml } from "../../lib/preview.ts";
@@ -146,6 +147,27 @@ export async function deployingCf(
         await addEvent(
           site.id,
           `CF deploy ok but ${deployUrl} does not serve real HTML yet (may be warming up — try again in 1 min)`,
+          "warn",
+        );
+      }
+
+      // Now that the repo is pushed + indexed, flag it as CF Workers Builds so
+      // the Fresh/Deno k8s deployer stops watching it (best-effort, never blocks).
+      const plat = await setSitePlatform(current.target_repo!);
+      if (plat.ok && plat.reason === "updated") {
+        await addEvent(
+          site.id,
+          `Catalog: ${current.target_repo} marked cfworkers-builds — Fresh/Deno bot will ignore it`,
+        );
+      } else if (
+        !plat.ok &&
+        !["catalog not configured", "repo not in catalog yet"].includes(
+          plat.reason,
+        )
+      ) {
+        await addEvent(
+          site.id,
+          `Catalog platform flag not set (${plat.reason.slice(0, 120)})`,
           "warn",
         );
       }
