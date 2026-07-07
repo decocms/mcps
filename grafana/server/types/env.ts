@@ -15,11 +15,6 @@ export const StateSchema = z.object({
     .describe(
       "Base URL of your Grafana instance, e.g. https://grafana.example.com (trailing slash optional).",
     ),
-  GRAFANA_API_TOKEN: z
-    .string()
-    .describe(
-      "Grafana service-account token (Administration → Service accounts → Add token). Sent as a Bearer token. Viewer role is enough for querying.",
-    ),
   GRAFANA_DATASOURCE_UID: z
     .string()
     .optional()
@@ -28,31 +23,37 @@ export const StateSchema = z.object({
     ),
 });
 
-export type Env = DefaultEnv<typeof StateSchema>;
+// The Grafana service-account token is NOT a state field — it's entered in the
+// studio's hidden "Token" field (app.json `auth.type: token`) and arrives as a
+// Bearer token in MESH_REQUEST_CONTEXT.authorization, so it stays a secret.
+export type Env = DefaultEnv<typeof StateSchema> & {
+  MESH_REQUEST_CONTEXT?: { authorization?: string };
+};
 
-/** Read the Grafana connection config from the mesh request state (falls back to process.env for stdio). */
+/** Read the Grafana connection config: URL from state, token from the Bearer auth header. */
 export function grafanaConfig(env: Env): {
   url: string;
   token: string;
   defaultDatasourceUid?: string;
 } {
   const state = env.MESH_REQUEST_CONTEXT?.state as
-    | {
-        GRAFANA_URL?: string;
-        GRAFANA_API_TOKEN?: string;
-        GRAFANA_DATASOURCE_UID?: string;
-      }
+    | { GRAFANA_URL?: string; GRAFANA_DATASOURCE_UID?: string }
     | undefined;
   const url = (state?.GRAFANA_URL ?? process.env.GRAFANA_URL ?? "").replace(
     /\/$/,
     "",
   );
-  const token = state?.GRAFANA_API_TOKEN ?? process.env.GRAFANA_API_TOKEN ?? "";
+  const authorization = env.MESH_REQUEST_CONTEXT?.authorization;
+  const token = authorization
+    ? authorization.startsWith("Bearer ")
+      ? authorization.slice(7)
+      : authorization
+    : (process.env.GRAFANA_API_TOKEN ?? "");
   const defaultDatasourceUid =
     state?.GRAFANA_DATASOURCE_UID ?? process.env.GRAFANA_DATASOURCE_UID;
   if (!url || !token) {
     throw new Error(
-      "Grafana not configured: set GRAFANA_URL and GRAFANA_API_TOKEN in the connection settings.",
+      "Grafana not configured: set GRAFANA_URL in the connection settings and paste your service-account token in the Token field.",
     );
   }
   return { url, token, defaultDatasourceUid };
