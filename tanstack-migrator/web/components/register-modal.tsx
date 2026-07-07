@@ -119,6 +119,10 @@ function useRepoSearch(query: string, enabled: boolean) {
   return { results, searching, rateLimited };
 }
 
+// Cache GitHub user-search results per query across the modal's lifetime so
+// re-typing the same prefix never re-hits the (10/min unauthenticated) API.
+const userSearchCache = new Map<string, GhUser[]>();
+
 function useUserSearch(query: string, enabled: boolean) {
   const [results, setResults] = useState<GhUser[]>([]);
   const [searching, setSearching] = useState(false);
@@ -127,18 +131,33 @@ function useUserSearch(query: string, enabled: boolean) {
 
   useEffect(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
-    if (!query.trim() || !enabled) {
+    const q = query.trim();
+    // need ≥2 chars — 1-char queries burn the tiny search quota for nothing
+    if (q.length < 2 || !enabled) {
       setResults([]);
       setRateLimited(false);
       return;
     }
+    const cached = userSearchCache.get(q.toLowerCase());
+    if (cached) {
+      setResults(cached);
+      setRateLimited(false);
+      setSearching(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    // hard timeout so a hung request never leaves the dropdown stuck on "searching"
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
     timerRef.current = setTimeout(async () => {
       setSearching(true);
       setRateLimited(false);
       try {
-        const url = `https://api.github.com/search/users?q=${encodeURIComponent(query)}&per_page=8`;
+        const url = `https://api.github.com/search/users?q=${encodeURIComponent(q)}&per_page=8`;
         const res = await fetch(url, {
           headers: { Accept: "application/vnd.github+json" },
+          signal: controller.signal,
         });
         if (res.status === 403 || res.status === 429) {
           setRateLimited(true);
@@ -146,21 +165,24 @@ function useUserSearch(query: string, enabled: boolean) {
         }
         if (!res.ok) return;
         const json = (await res.json()) as { items?: GhUser[] };
-        setResults(
-          (json.items ?? []).map((u: GhUser) => ({
-            login: u.login,
-            avatar_url: u.avatar_url,
-          })),
-        );
+        const mapped = (json.items ?? []).map((u: GhUser) => ({
+          login: u.login,
+          avatar_url: u.avatar_url,
+        }));
+        userSearchCache.set(q.toLowerCase(), mapped);
+        setResults(mapped);
       } catch {
-        // ignore network errors
+        // aborted / network error — leave prior results, fallback handles it
       } finally {
+        clearTimeout(timeout);
         setSearching(false);
       }
-    }, 300);
+    }, 400);
 
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      clearTimeout(timeout);
+      controller.abort();
     };
   }, [query, enabled]);
 
@@ -264,12 +286,13 @@ export function RegisterModal({
     [team, q],
   );
 
-  // Only hit GitHub when the cached team has no match — reusing teammates costs 0 calls
+  // Always search GitHub for ≥2 chars (cached + debounced) so new people always
+  // show up; the cached team just gets merged in first.
   const {
     results: githubResults,
     searching: userSearching,
     rateLimited: userRateLimited,
-  } = useUserSearch(assigneeQuery, localMatches.length === 0);
+  } = useUserSearch(assigneeQuery, true);
 
   // merged suggestions: cached team first, then GitHub results (deduped by login)
   const userResults = useMemo(() => {
