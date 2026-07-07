@@ -4,6 +4,8 @@ export const ACTIVE_STATUSES_SET = new Set([
   "baselining",
   "migrating_script",
   "opening_pr",
+  "reviewing",
+  "merging",
   "triaging",
   "fixing",
   "paritying",

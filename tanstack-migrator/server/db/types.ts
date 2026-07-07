@@ -9,6 +9,8 @@ export type SiteStatus =
   | "baselining"
   | "migrating_script"
   | "opening_pr"
+  | "reviewing"
+  | "merging"
   | "triaging"
   | "fixing"
   | "paritying"
@@ -47,6 +49,8 @@ export const ACTIVE_STATUSES: SiteStatus[] = [
   "baselining",
   "migrating_script",
   "opening_pr",
+  "reviewing",
+  "merging",
   "triaging",
   "fixing",
   "paritying",
@@ -109,6 +113,7 @@ export function isSessionStatus(status: string): boolean {
     status === "baselining" ||
     status === "migrating_script" ||
     status === "triaging" ||
+    status === "reviewing" ||
     status === "fixing" ||
     status === "paritying" ||
     isLegacyStatus(status)
@@ -131,6 +136,7 @@ export function isActiveStatus(status: string): boolean {
 export type RunKind =
   | "migrate"
   | "triage"
+  | "review"
   | "fix"
   | "parity"
   | "fix_iteration" // legacy (≤ v0.4.x)

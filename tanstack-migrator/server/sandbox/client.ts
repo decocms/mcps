@@ -28,6 +28,7 @@ export interface SandboxInfo {
 export type SandboxTaskKind =
   | "migrate"
   | "triage"
+  | "review"
   | "fix"
   | "parity"
   | "deploy"

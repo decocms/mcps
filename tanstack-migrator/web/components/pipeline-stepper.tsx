@@ -2,6 +2,7 @@ import {
   Activity,
   Box,
   Check,
+  ClipboardCheck,
   GitBranch,
   GitMerge,
   GitPullRequest,
@@ -25,11 +26,12 @@ export const PIPELINE_PHASES = [
   { key: "baseline", label: "Baseline", icon: Activity },
   { key: "script", label: "Script", icon: Play },
   { key: "pr", label: "PR", icon: GitPullRequest },
+  { key: "review", label: "Review", icon: ClipboardCheck },
+  { key: "merge", label: "Merge", icon: GitMerge },
+  { key: "deploy", label: "Deploy", icon: Rocket },
   { key: "triage", label: "Triage", icon: ListChecks },
   { key: "fix", label: "Fixes", icon: Wrench },
-  { key: "deploy", label: "Deploy", icon: Rocket },
   { key: "parity", label: "Parity", icon: Gauge },
-  { key: "merge", label: "Merge", icon: GitMerge },
 ] as const;
 
 type PhaseKey = (typeof PIPELINE_PHASES)[number]["key"];
@@ -46,6 +48,8 @@ const STATUS_TO_PHASE: Record<string, PhaseKey> = {
   migrating3: "script",
   opening_pr: "pr",
   installing_sync: "pr", // legacy
+  reviewing: "review",
+  merging: "merge",
   triaging: "triage",
   fixing: "fix",
   paritying: "parity",

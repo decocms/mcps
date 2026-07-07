@@ -23,10 +23,7 @@ import {
   parseResultJson,
   triagePrompt,
 } from "./sandbox/templates/prompts.ts";
-import {
-  syncPackageScriptCommand,
-  syncWorkflowYaml,
-} from "./sandbox/templates/sync-files.ts";
+import { syncWorkflowYaml } from "./sandbox/templates/sync-files.ts";
 import { looksLikeRealSite } from "./lib/preview.ts";
 import type { SiteRow } from "./db/types.ts";
 
@@ -147,10 +144,17 @@ describe("prompts", () => {
     expect(prompt).toContain("credentials synced by the mesh");
   });
 
-  test("triagePrompt: analyze-only with capped issue list contract", () => {
+  test("triagePrompt: analyze-only, exhaustive (no cap), with browser + sweep checks", () => {
     const prompt = triagePrompt({ site, maxIssues: 15 });
     expect(prompt).toContain("ANALYSIS ONLY");
-    expect(prompt).toContain("At most 15 issues");
+    // uncapped: report every real problem, only the top N persist
+    expect(prompt).toContain("no cap");
+    expect(prompt).toContain("Only the top 15 are persisted");
+    // deep investigation: headless browser console + grep sweep
+    expect(prompt).toContain("playwright");
+    expect(prompt).toContain("pageerror");
+    expect(prompt).toContain("@preact/signals");
+    expect(prompt).toContain("dangerouslySetInnerHTML");
     expect(prompt).toContain("tsc --noEmit");
     expect(prompt).toContain('"issues": [');
     expect(prompt).toContain("git checkout migration/tanstack");
@@ -471,16 +475,32 @@ describe("looksLikeRealSite (preview readiness)", () => {
 });
 
 describe("sync templates", () => {
-  test("workflow yaml references the prod host and the package script", () => {
-    const yaml = syncWorkflowYaml({ prodUrl: "https://www.granado.com.br" });
-    expect(yaml).toContain('cron: "*/30 * * * *"');
-    expect(yaml).toContain("bun run sync:decofile");
-    expect(yaml).toContain("sync: .deco/blocks from www.granado.com.br");
+  test("workflow yaml is the push-mirror (client repo → target repo)", () => {
+    const yaml = syncWorkflowYaml({
+      sourceRepo: "deco-sites/miess-01",
+      targetRepo: "deco-sites/miess-01-tanstack",
+    });
+    // event-driven on CMS commits, not a cron/URL poll
+    expect(yaml).toContain("push:");
+    expect(yaml).toContain("paths: ['.deco/**']");
+    // mirrors blocks into the target repo using the token secret
+    expect(yaml).toContain("repository: deco-sites/miess-01-tanstack");
+    expect(yaml).toContain("${{ secrets.STOREFRONT_SYNC_TOKEN }}");
+    expect(yaml).toContain("rsync -av --delete");
+    expect(yaml).toContain("source/.deco/blocks/ target/.deco/blocks/");
+    expect(yaml).toContain("sync: .deco content from miess-01");
+    expect(yaml).toContain('user.name "deco-sync-bot"');
+    // it is ONLY a workflow — no cron, no URL fetch, no helper script
+    expect(yaml).not.toContain("cron:");
+    expect(yaml).not.toContain("/.decofile");
   });
 
-  test("package script points the shim at the prod url", () => {
-    expect(syncPackageScriptCommand("https://www.granado.com.br")).toBe(
-      "bun scripts/sync-decofile.ts --url https://www.granado.com.br",
-    );
+  test("token secret name is overridable", () => {
+    const yaml = syncWorkflowYaml({
+      sourceRepo: "deco-sites/acme",
+      targetRepo: "deco-sites/acme-tanstack",
+      tokenSecret: "CUSTOM_TOKEN",
+    });
+    expect(yaml).toContain("${{ secrets.CUSTOM_TOKEN }}");
   });
 });

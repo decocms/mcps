@@ -116,23 +116,27 @@ export async function paritying(
   ctx: WorkerCtx,
   deps: EngineDeps,
 ): Promise<void> {
-  // Terminal checks first (idempotent re-entry)
+  // Terminal checks first (idempotent re-entry). Parity is measured AFTER the
+  // per-round merge+deploy, so a PR is never open here. Target met:
+  //   - backlog empty → done
+  //   - backlog non-empty → keep draining in fixing (no wasted parity session,
+  //     which also avoids a false no_improve strike while the score holds)
   const target = site.parity_target;
   if (site.parity_score !== null && site.parity_score >= target) {
-    const hasPr = Boolean(site.pr_number);
+    const done = site.issues_open === 0;
     await updateSite(site.id, {
-      status: hasPr ? "awaiting_merge" : "done",
-      phase_detail: hasPr
-        ? `parity ${site.parity_score}% ✓ — awaiting merge of PR #${site.pr_number}`
-        : `parity ${site.parity_score}% ✓ — migration done`,
-      finished_at: hasPr ? undefined : new Date().toISOString(),
+      status: done ? "done" : "fixing",
+      phase_detail: done
+        ? `parity ${site.parity_score}% ✓ — migration done`
+        : `parity ${site.parity_score}% ✓ — draining ${site.issues_open} open issues`,
+      finished_at: done ? new Date().toISOString() : undefined,
       last_progress_at: new Date().toISOString(),
     });
     await addEvent(
       site.id,
-      hasPr
-        ? `Parity ${site.parity_score}% — only the merge of PR #${site.pr_number} is left`
-        : `Parity ${site.parity_score}% — migration done 🎉`,
+      done
+        ? `Parity ${site.parity_score}% — migration done 🎉`
+        : `Parity ${site.parity_score}% reached — draining ${site.issues_open} remaining issues`,
     );
     return;
   }
@@ -258,7 +262,6 @@ export async function paritying(
           ctx.config.maxIssuesPerTriage,
         );
         createdCount = sync.created.length;
-        await refreshIssueCounts(ctx, current);
       }
 
       await finishRun(run.id, {
@@ -271,7 +274,19 @@ export async function paritying(
       });
 
       const hitTarget = score !== null && score >= target;
-      const hasPr = Boolean(current.pr_number);
+      // latest backlog drives the loop-back decision
+      const openNow = isSimulation(ctx)
+        ? current.issues_open
+        : (await refreshIssueCounts(ctx, current)).open;
+
+      // done (target + empty backlog) | fixing (more issues to drain) |
+      // re-triage (target missed but backlog empty → find more work)
+      const nextStatus: SiteRow["status"] =
+        hitTarget && openNow === 0
+          ? "done"
+          : !hitTarget && openNow === 0
+            ? "triaging"
+            : "fixing";
       await updateSite(site.id, {
         parity_score: score,
         best_score: improved ? score : current.best_score,
@@ -280,14 +295,15 @@ export async function paritying(
         sandbox_session_id: null,
         phase_thread_id: null,
         transient_retries: 0,
-        status: hitTarget ? (hasPr ? "awaiting_merge" : "done") : "fixing",
-        phase_detail: `round ${iteration}: score ${score ?? "?"}${hitTarget ? " — target reached!" : ` (${createdCount} new issues)`}`,
-        finished_at: hitTarget && !hasPr ? new Date().toISOString() : undefined,
+        status: nextStatus,
+        phase_detail: `round ${iteration}: score ${score ?? "?"}${hitTarget && openNow === 0 ? " — target reached!" : ` (${createdCount} new issues, backlog ${openNow})`}`,
+        finished_at:
+          nextStatus === "done" ? new Date().toISOString() : undefined,
         last_progress_at: new Date().toISOString(),
       });
       await addEvent(
         site.id,
-        `Parity round ${iteration} — score ${score ?? "unknown"}%${createdCount > 0 ? ` · ${createdCount} new issues` : ""}`,
+        `Parity round ${iteration} — score ${score ?? "unknown"}%${createdCount > 0 ? ` · ${createdCount} new issues` : ""} → ${nextStatus}`,
       );
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
