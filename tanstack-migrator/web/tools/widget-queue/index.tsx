@@ -213,15 +213,7 @@ function SuggestionsColumn({ onAdded }: { onAdded: () => void }) {
         <div className="flex min-h-[6rem] items-center justify-center">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
-      ) : !data?.configured ? (
-        <p className="py-3 text-center text-[11px] text-muted-foreground">
-          Conecte o Grafana (COGS) para ver sugestões de próximos sites.
-        </p>
-      ) : suggestions.length === 0 ? (
-        <p className="py-3 text-center text-[11px] text-muted-foreground">
-          Nenhuma sugestão — tudo caro já está na fila. 🎉
-        </p>
-      ) : (
+      ) : suggestions.length > 0 ? (
         <div className="flex flex-col divide-y divide-border overflow-hidden rounded-md border border-border">
           {suggestions.map((s) => (
             <SuggestionRow
@@ -232,6 +224,14 @@ function SuggestionsColumn({ onAdded }: { onAdded: () => void }) {
             />
           ))}
         </div>
+      ) : !data?.configured ? (
+        <p className="py-3 text-center text-[11px] text-muted-foreground">
+          Conecte o Grafana (COGS) para ver sugestões de próximos sites.
+        </p>
+      ) : (
+        <p className="py-3 text-center text-[11px] text-muted-foreground">
+          Nenhuma sugestão — tudo caro já está na fila. 🎉
+        </p>
       )}
     </div>
   );
