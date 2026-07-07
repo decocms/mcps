@@ -106,6 +106,9 @@ export default function WidgetQueuePage() {
           <QueueContent active={active} next={next} q={q} onEnqueue={enqueue} />
         </div>
       )}
+
+      {/* totals pinned to the bottom — content scrolls behind it */}
+      {q && !(loading && !data) && !(error && !data) && <QueueTotals q={q} />}
     </div>
   );
 }
@@ -195,17 +198,20 @@ function QueueContent({
           No migrations in progress or queued.
         </p>
       )}
+    </div>
+  );
+}
 
-      {q && (
-        <div className="flex flex-wrap gap-x-3 gap-y-0.5 border-t border-border pt-1.5 text-[11px] text-muted-foreground tabular-nums">
-          <span>{q.active} migrating</span>
-          <span>{q.queued} queued</span>
-          {q.needsHuman > 0 && (
-            <span className="text-amber-600 dark:text-amber-400">
-              {q.needsHuman} need human
-            </span>
-          )}
-        </div>
+/** Totals bar pinned to the bottom of the widget — the lists scroll behind it. */
+function QueueTotals({ q }: { q: DashboardData["queue"] }) {
+  return (
+    <div className="z-10 mt-2 flex shrink-0 flex-wrap gap-x-3 gap-y-0.5 border-t border-border bg-background pt-1.5 text-[11px] text-muted-foreground tabular-nums">
+      <span>{q.active} migrating</span>
+      <span>{q.queued} queued</span>
+      {q.needsHuman > 0 && (
+        <span className="text-amber-600 dark:text-amber-400">
+          {q.needsHuman} need human
+        </span>
       )}
     </div>
   );
