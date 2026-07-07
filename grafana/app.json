@@ -4,7 +4,7 @@
   "friendlyName": "Grafana",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-grafana.decocache.com/mcp"
+    "url": "https://sites-grafana.deco.site/mcp"
   },
   "description": "Query self-hosted Grafana: list datasources, search/read dashboards, and run raw datasource or PromQL queries via /api/ds/query.",
   "icon": "https://grafana.com/static/assets/img/fav32.png",
