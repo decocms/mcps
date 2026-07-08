@@ -16,9 +16,9 @@ tiles and how to make a widget that looks right at **every** size and state.
   adapt when resized.
 - You need to register a new widget resource.
 
-Reference implementation: `tanstack-migrator/web/tools/widget-queue/index.tsx`
-(responsive 2-column queue + suggestions with internal scroll) and
-`tanstack-migrator/web/tools/widget-active/index.tsx` (compact single card).
+Reference implementation: any MCP's `web/tools/widget-*/index.tsx` — a widget
+`index.tsx` renders the tile, e.g. a responsive multi-column list with internal
+scroll, or a compact single card.
 
 ## How the tile works (READ THIS FIRST)
 
@@ -85,7 +85,7 @@ Two consequences that drive every rule below:
 
 ## Registering a widget (decocms/mcps pattern)
 
-Five wiring points (see `tanstack-migrator/` for a live example):
+Five wiring points:
 
 1. **Constants** — a resource URI in `server/constants.ts`:
    `export const WIDGET_QUEUE_RESOURCE_URI = "ui://<mcp>/widget-queue";`
