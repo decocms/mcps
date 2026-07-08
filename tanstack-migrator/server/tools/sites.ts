@@ -4,8 +4,10 @@ import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import {
   catalogByNames,
+  CFWORKERS_BUILDS_PLATFORM,
   isCatalogConfigured,
   searchSiteCatalog,
+  setSitePlatform,
 } from "../db/catalog.ts";
 import { loadConnection, saveConnection } from "../db/connections.ts";
 import { getCostSnapshot, refreshCostSnapshotIfStale } from "../db/cost.ts";
@@ -435,6 +437,58 @@ export const createSiteResetTool = (env: Env) =>
         `Reset to ${nextStatus} (kept repo/branch${site.pr_number ? `/PR #${site.pr_number}` : ""}${site.cf_deploy_url ? "/deploy" : ""}; loop restarted)`,
       );
       return { site: toSiteView(updated) };
+    },
+  });
+
+export const createSiteSetPlatformTool = (env: Env) =>
+  createTool({
+    id: "SITE_SET_PLATFORM",
+    description:
+      "Flag the migrated -tanstack repo in the decocms catalog with metadata.platform (default 'cfworkers-builds') so the deco Fresh/Deno k8s deployer stops watching it (it keeps trying to deploy the -tanstack repo and leaves a broken deployment). Use it on existing -tanstack sites that the bot is fighting. New migrations set this automatically at repo creation + deploy. Pass a siteId (uses its -tanstack repo) or repo (owner/name) directly.",
+    inputSchema: z.object({
+      siteId: z
+        .string()
+        .optional()
+        .describe("Migration site id (uses its -tanstack repo)."),
+      repo: z
+        .string()
+        .optional()
+        .describe('Target -tanstack repo "owner/name" (overrides the site).'),
+      platform: z
+        .string()
+        .optional()
+        .describe(`Platform value (default ${CFWORKERS_BUILDS_PLATFORM}).`),
+    }),
+    outputSchema: z.object({
+      ok: z.boolean(),
+      repo: z.string(),
+      platform: z.string(),
+      reason: z.string(),
+    }),
+    execute: async ({ context }) => {
+      requireConnectionId(env);
+      if (!isCatalogConfigured()) {
+        throw new Error(
+          "Catalog not configured (DECOCMS_SUPABASE_URL/KEY missing) — cannot set the platform flag.",
+        );
+      }
+      const site = context.siteId ? await getSite(context.siteId) : null;
+      if (context.siteId && !site) throw new Error("Site not found");
+      const repo = (context.repo ?? site?.target_repo ?? "")
+        .trim()
+        .replace(/^https?:\/\/github\.com\//, "")
+        .replace(/\.git$/, "");
+      if (!repo) {
+        throw new Error(
+          "No target repo — pass repo, or a siteId whose migration has a -tanstack repo.",
+        );
+      }
+      const platform = context.platform ?? CFWORKERS_BUILDS_PLATFORM;
+      const result = await setSitePlatform(repo, platform);
+      if (site && result.ok && result.reason === "updated") {
+        await addEvent(site.id, `Catalog: ${repo} marked ${platform}`);
+      }
+      return { ok: result.ok, repo, platform, reason: result.reason };
     },
   });
 

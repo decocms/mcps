@@ -3,6 +3,7 @@
  * durable GitHub grant used by the sandbox for pushes.
  */
 
+import { setSitePlatform } from "../../db/catalog.ts";
 import { addEvent } from "../../db/events.ts";
 import type { SiteRow } from "../../db/types.ts";
 import { updateSite } from "../../db/sites.ts";
@@ -58,6 +59,14 @@ export async function creatingRepo(
     throw err;
   }
   await addEvent(site.id, `Repo ${targetRepo} ensured on GitHub`);
+
+  // Flag it as a CF Workers Builds site so the Fresh/Deno k8s deployer ignores
+  // it. Best-effort + early — the catalog row often isn't indexed yet at this
+  // point (the deploy phase re-asserts it once it is).
+  const plat = await setSitePlatform(targetRepo);
+  if (plat.ok && plat.reason === "updated") {
+    await addEvent(site.id, `Catalog: ${targetRepo} marked cfworkers-builds`);
+  }
 
   // main must exist (repos are created empty) — it's the PR base — and the
   // work branch must exist BEFORE SANDBOX_START: sandbox clone + decopilot

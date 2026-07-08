@@ -1,11 +1,13 @@
 /**
- * Read-only client for the decocms platform `sites` catalog (a DIFFERENT
- * Supabase project than the MCP's own sitemig_* DB).
+ * Client for the decocms platform `sites` catalog (a DIFFERENT Supabase project
+ * than the MCP's own sitemig_* DB).
  *
- * Powers the register modal's repo autocomplete: search by site name and
- * pre-fill both the GitHub repo and the production URL — no GitHub API calls,
- * so no rate limit. Opt-in: only active when DECOCMS_SUPABASE_URL +
- * DECOCMS_SUPABASE_KEY are set. This module ONLY ever runs SELECTs.
+ * Mostly reads (register-modal repo autocomplete: search by site name to
+ * pre-fill the GitHub repo + production URL, no GitHub API calls / no rate
+ * limit). The ONE write is setSitePlatform — it flags the migrated -tanstack
+ * repo as a Cloudflare Workers Builds site so the Fresh/Deno k8s deployer stops
+ * watching it. Opt-in: active only when DECOCMS_SUPABASE_URL +
+ * DECOCMS_SUPABASE_KEY (a service-role key) are set.
  */
 
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
@@ -149,4 +151,59 @@ export async function catalogByNames(
     if (r.full_name) map.set(r.full_name.toLowerCase(), site);
   }
   return map;
+}
+
+export const CFWORKERS_BUILDS_PLATFORM = "cfworkers-builds";
+
+/**
+ * Flag a repo's catalog row with `metadata.platform` (default
+ * "cfworkers-builds") so the deco Fresh/Deno k8s deployer stops watching the
+ * migrated -tanstack repo (it keeps trying to deploy it and leaves a mess).
+ *
+ * Read-merge-write on the single row matched by github_repo_url — never clobbers
+ * other metadata keys. Fully guarded + best-effort: returns {ok:false, reason}
+ * instead of throwing (catalog not configured / row not indexed yet / RLS), so
+ * it can never block a migration. Idempotent.
+ */
+export async function setSitePlatform(
+  repoFull: string,
+  platform: string = CFWORKERS_BUILDS_PLATFORM,
+): Promise<{ ok: boolean; reason: string }> {
+  const client = getCatalogClient();
+  if (!client) return { ok: false, reason: "catalog not configured" };
+  const repo = repoFull.trim().replace(/\.git$/, "");
+  if (!repo.includes("/"))
+    return { ok: false, reason: `invalid repo ${repoFull}` };
+
+  try {
+    const { data, error } = await client
+      .from("sites")
+      .select("github_repo_url, metadata")
+      .ilike("github_repo_url", `%${repo}%`)
+      .limit(5);
+    if (error) return { ok: false, reason: error.message };
+    const rows = (data ?? []) as Array<{
+      github_repo_url: string | null;
+      metadata: Record<string, unknown> | null;
+    }>;
+    // exact owner/repo match (ilike is fuzzy — avoid touching a similarly-named repo)
+    const row = rows.find((r) => toOwnerRepo(r.github_repo_url) === repo);
+    if (!row) return { ok: false, reason: "repo not in catalog yet" };
+
+    const meta =
+      row.metadata && typeof row.metadata === "object" ? row.metadata : {};
+    if (meta.platform === platform) return { ok: true, reason: "already set" };
+
+    const { error: upErr } = await client
+      .from("sites")
+      .update({ metadata: { ...meta, platform } })
+      .eq("github_repo_url", row.github_repo_url);
+    if (upErr) return { ok: false, reason: upErr.message };
+    return { ok: true, reason: "updated" };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
 }

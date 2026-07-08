@@ -25,6 +25,7 @@ import {
   createSiteResumeTool,
   createSiteResetTool,
   createSiteRetryTool,
+  createSiteSetPlatformTool,
   createSiteTerminalTool,
 } from "./sites.ts";
 import { createSyncDecofileInstallTool } from "./sync.ts";
@@ -41,6 +42,7 @@ export const tools = [
   createSiteResumeTool,
   createSiteRetryTool,
   createSiteResetTool,
+  createSiteSetPlatformTool,
   createSiteEnqueueTool,
   createSiteReorderTool,
   createSiteMarkDoneTool,
