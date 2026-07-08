@@ -476,15 +476,6 @@
       "shared/**"
     ]
   },
-  "tanstack-migrator": {
-    "site": "tanstack-migrator",
-    "entrypoint": "./dist/server/main.js",
-    "platformName": "kubernetes-bun",
-    "watch": [
-      "tanstack-migrator/**",
-      "shared/**"
-    ]
-  },
   "grafana": {
     "site": "grafana",
     "entrypoint": "./dist/server/main.js",
