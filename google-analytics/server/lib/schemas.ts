@@ -30,7 +30,6 @@ export const PropertySummarySchema = z.object({
   propertyType: z.string().optional(),
   /** Parent resource name, e.g. "accounts/123456". */
   parent: z.string().optional(),
-  canEdit: z.boolean().optional(),
 });
 
 export const AccountSummarySchema = z.object({
@@ -42,8 +41,10 @@ export const AccountSummarySchema = z.object({
   propertySummaries: z.array(PropertySummarySchema).optional(),
 });
 
-export const AccountSummariesOutputSchema = z.object({
-  accountSummaries: z.array(AccountSummarySchema).optional(),
+export const AccountSummariesResponseSchema = z.object({
+  response: z.object({
+    accountSummaries: z.array(AccountSummarySchema).optional(),
+  }),
 });
 
 // ── Admin API — Property ─────────────────────────────────────────────────────
@@ -66,6 +67,10 @@ export const PropertySchema = z.object({
   account: z.string().optional(),
   deleteTime: Timestamp.optional(),
   expireTime: Timestamp.optional(),
+});
+
+export const PropertyResponseSchema = z.object({
+  response: PropertySchema,
 });
 
 // ── Admin API — Custom Dimensions & Metrics ──────────────────────────────────
@@ -96,9 +101,19 @@ export const CustomMetricSchema = z.object({
   restrictedMetricType: z.array(z.string()).optional(),
 });
 
-export const CustomDimensionsAndMetricsOutputSchema = z.object({
+export const CustomDimensionsListSchema = z.object({
   customDimensions: z.array(CustomDimensionSchema).optional(),
+});
+
+export const CustomMetricsListSchema = z.object({
   customMetrics: z.array(CustomMetricSchema).optional(),
+});
+
+export const CustomDimensionsAndMetricsResponseSchema = z.object({
+  /** Result of listCustomDimensions — `{ customDimensions: [...] }` */
+  dimensions: CustomDimensionsListSchema,
+  /** Result of listCustomMetrics — `{ customMetrics: [...] }` */
+  metrics: CustomMetricsListSchema,
 });
 
 // ── Admin API — Google Ads Links ─────────────────────────────────────────────
@@ -115,8 +130,10 @@ export const GoogleAdsLinkSchema = z.object({
   updateTime: Timestamp.optional(),
 });
 
-export const GoogleAdsLinksOutputSchema = z.object({
-  googleAdsLinks: z.array(GoogleAdsLinkSchema).optional(),
+export const GoogleAdsLinksResponseSchema = z.object({
+  response: z.object({
+    googleAdsLinks: z.array(GoogleAdsLinkSchema).optional(),
+  }),
 });
 
 // ── Admin API — Property Annotations ─────────────────────────────────────────
@@ -125,12 +142,6 @@ export const ReportingDataAnnotationSchema = z.object({
   /** Resource name. */
   name: z.string().optional(),
   annotationDate: DateSchema.optional(),
-  annotationDateRange: z
-    .object({
-      startDate: DateSchema.optional(),
-      endDate: DateSchema.optional(),
-    })
-    .optional(),
   title: z.string().optional(),
   description: z.string().optional(),
   systemGenerated: z.boolean().optional(),
@@ -138,8 +149,10 @@ export const ReportingDataAnnotationSchema = z.object({
   color: z.string().optional(),
 });
 
-export const PropertyAnnotationsOutputSchema = z.object({
-  reportingDataAnnotations: z.array(ReportingDataAnnotationSchema).optional(),
+export const PropertyAnnotationsResponseSchema = z.object({
+  response: z.object({
+    reportingDataAnnotations: z.array(ReportingDataAnnotationSchema).optional(),
+  }),
 });
 
 // ── Data API — shared building blocks ────────────────────────────────────────
@@ -168,11 +181,9 @@ export const RowSchema = z.object({
 });
 
 export const ResponseMetaDataSchema = z.object({
-  dataLossFromOtherRow: z.boolean().optional(),
-  schemaRestrictionResponse: z.unknown().optional(),
   currencyCode: z.string().optional(),
   timeZone: z.string().optional(),
-  emptyReason: z.string().optional(),
+  schemaRestrictionResponse: z.unknown().optional(),
   subjectToThresholding: z.boolean().optional(),
   samplingMetadatas: z.array(z.unknown()).optional(),
 });
@@ -195,7 +206,7 @@ export const PropertyQuotaSchema = z
     potentiallyThresholdedRequestsPerHour: z
       .object({ consumed: z.number(), remaining: z.number() })
       .optional(),
-    tokensPerProjectPerHour: z
+    tokensPerProjectPerDay: z
       .object({ consumed: z.number(), remaining: z.number() })
       .optional(),
   })
@@ -203,7 +214,7 @@ export const PropertyQuotaSchema = z
 
 // ── Data API — runReport ──────────────────────────────────────────────────────
 
-export const RunReportOutputSchema = z.object({
+export const RunReportResponseSchema = z.object({
   dimensionHeaders: z.array(DimensionHeaderSchema).optional(),
   metricHeaders: z.array(MetricHeaderSchema).optional(),
   rows: z.array(RowSchema).optional(),
@@ -217,9 +228,13 @@ export const RunReportOutputSchema = z.object({
   kind: z.string().optional(),
 });
 
+export const RunReportOutputSchema = z.object({
+  response: RunReportResponseSchema,
+});
+
 // ── Data API — runRealtimeReport ─────────────────────────────────────────────
 
-export const RunRealtimeReportOutputSchema = z.object({
+export const RunRealtimeReportResponseSchema = z.object({
   dimensionHeaders: z.array(DimensionHeaderSchema).optional(),
   metricHeaders: z.array(MetricHeaderSchema).optional(),
   rows: z.array(RowSchema).optional(),
@@ -232,9 +247,13 @@ export const RunRealtimeReportOutputSchema = z.object({
   kind: z.string().optional(),
 });
 
+export const RunRealtimeReportOutputSchema = z.object({
+  response: RunRealtimeReportResponseSchema,
+});
+
 // ── Data API — runFunnelReport ────────────────────────────────────────────────
 
-const FunnelResponseMetaDataSchema = z.object({
+export const FunnelResponseMetaDataSchema = z.object({
   samplingMetadatas: z.array(z.unknown()).optional(),
   schemaRestrictionResponse: z.unknown().optional(),
 });
@@ -243,7 +262,7 @@ const FunnelResponseMetaDataSchema = z.object({
  * Funnel response rows share the same Row structure (dimensionValues +
  * metricValues), grouped in funnelTable and funnelVisualization sub-objects.
  */
-const FunnelSubReportSchema = z.object({
+export const FunnelSubReportSchema = z.object({
   dimensionHeaders: z.array(DimensionHeaderSchema).optional(),
   metricHeaders: z.array(MetricHeaderSchema).optional(),
   rows: z.array(RowSchema).optional(),
@@ -254,10 +273,14 @@ const FunnelSubReportSchema = z.object({
   metadata: FunnelResponseMetaDataSchema.optional(),
 });
 
-export const RunFunnelReportOutputSchema = z.object({
+export const RunFunnelReportResponseSchema = z.object({
   funnelTable: FunnelSubReportSchema.optional(),
   funnelVisualization: FunnelSubReportSchema.optional(),
   propertyQuota: PropertyQuotaSchema.optional(),
   /** Always "analyticsData#runFunnelReport". */
   kind: z.string().optional(),
+});
+
+export const RunFunnelReportOutputSchema = z.object({
+  response: RunFunnelReportResponseSchema,
 });
