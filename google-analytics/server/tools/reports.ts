@@ -11,6 +11,9 @@ import {
 
 // Some MCP clients serialize arrays/objects as JSON strings instead of native
 // types. This preprocessor parses the string before Zod validates it.
+// `.optional()` must be applied to the schema passed in here (not chained
+// after fromJson(...)) so that a `null` value — which the preprocessor
+// coerces to `undefined` — is actually accepted by the resulting schema.
 const fromJson = <T extends z.ZodTypeAny>(schema: T) =>
   z.preprocess((val) => {
     if (val === null) return undefined;
@@ -67,44 +70,36 @@ export const runReportTool = (env: Env) =>
       dateRanges: fromJson(z.array(DateRangeSchema).min(1)).describe(
         "One or more date ranges to include in the report.",
       ),
-      dimensions: fromJson(z.array(DimensionSchema))
-        .optional()
-        .describe(
-          "Dimensions to group results by, e.g. [{ name: 'sessionSource' }].",
-        ),
+      dimensions: fromJson(z.array(DimensionSchema).optional()).describe(
+        "Dimensions to group results by, e.g. [{ name: 'sessionSource' }].",
+      ),
       metrics: fromJson(z.array(MetricSchema).min(1)).describe(
         "Metrics to aggregate, e.g. [{ name: 'activeUsers' }].",
       ),
-      dimensionFilter: fromJson(FilterExpressionSchema)
-        .optional()
-        .describe("Optional filter to restrict dimension values."),
-      metricFilter: fromJson(FilterExpressionSchema)
-        .optional()
-        .describe("Optional filter to restrict metric values."),
-      orderBys: fromJson(z.array(OrderBySchema))
-        .optional()
-        .describe("Optional ordering for returned rows."),
-      limit: fromJson(z.number().int().positive())
-        .optional()
-        .describe(
-          "Maximum number of rows to return. Defaults to 10,000; max 250,000.",
-        ),
-      offset: fromJson(z.number().int().nonnegative())
-        .optional()
-        .describe(
-          "Row offset for pagination (0-based). Use with limit to page through results.",
-        ),
+      dimensionFilter: fromJson(FilterExpressionSchema.optional()).describe(
+        "Optional filter to restrict dimension values.",
+      ),
+      metricFilter: fromJson(FilterExpressionSchema.optional()).describe(
+        "Optional filter to restrict metric values.",
+      ),
+      orderBys: fromJson(z.array(OrderBySchema).optional()).describe(
+        "Optional ordering for returned rows.",
+      ),
+      limit: fromJson(z.number().int().positive().optional()).describe(
+        "Maximum number of rows to return. Defaults to 10,000; max 250,000.",
+      ),
+      offset: fromJson(z.number().int().nonnegative().optional()).describe(
+        "Row offset for pagination (0-based). Use with limit to page through results.",
+      ),
       currencyCode: z
         .string()
         .optional()
         .describe(
           "Optional ISO 4217 currency code for revenue metrics, e.g. 'USD'.",
         ),
-      returnPropertyQuota: fromJson(z.boolean())
-        .optional()
-        .describe(
-          "If true, includes the current GA4 property quota state in the response.",
-        ),
+      returnPropertyQuota: fromJson(z.boolean().optional()).describe(
+        "If true, includes the current GA4 property quota state in the response.",
+      ),
     }),
     outputSchema: RunReportOutputSchema,
     execute: async ({ context: args }) => {
@@ -146,11 +141,9 @@ const FunnelStepSchema = z.object({
   filterExpression: fromJson(z.record(z.string(), z.unknown())).describe(
     "Required. Condition that qualifies users for this step. See https://developers.google.com/analytics/devguides/reporting/data/v1/rest/v1beta/FunnelStep#FunnelFilterExpression",
   ),
-  isDirectlyFollowedBy: fromJson(z.boolean())
-    .optional()
-    .describe(
-      "If true, this step must immediately follow the previous step (no intervening events). Defaults to false.",
-    ),
+  isDirectlyFollowedBy: fromJson(z.boolean().optional()).describe(
+    "If true, this step must immediately follow the previous step (no intervening events). Defaults to false.",
+  ),
   withinDurationFromPriorStep: z
     .string()
     .optional()
@@ -177,25 +170,25 @@ export const runFunnelReportTool = (env: Env) =>
       dateRanges: fromJson(z.array(DateRangeSchema).min(1)).describe(
         "One or more date ranges to include in the report.",
       ),
-      funnelBreakdown: fromJson(z.record(z.string(), z.unknown()))
-        .optional()
-        .describe(
-          "Optional FunnelBreakdown — adds a sub-dimension to the funnel table rows.",
-        ),
-      funnelNextAction: fromJson(z.record(z.string(), z.unknown()))
-        .optional()
-        .describe(
-          "Optional FunnelNextAction — adds a next-action dimension showing what users do after abandoning a step.",
-        ),
-      limit: fromJson(z.number().int().positive())
-        .optional()
-        .describe("Maximum number of rows to return."),
-      offset: fromJson(z.number().int().nonnegative())
-        .optional()
-        .describe("Row offset for pagination."),
-      returnPropertyQuota: fromJson(z.boolean())
-        .optional()
-        .describe("If true, includes current GA4 property quota in response."),
+      funnelBreakdown: fromJson(
+        z.record(z.string(), z.unknown()).optional(),
+      ).describe(
+        "Optional FunnelBreakdown — adds a sub-dimension to the funnel table rows.",
+      ),
+      funnelNextAction: fromJson(
+        z.record(z.string(), z.unknown()).optional(),
+      ).describe(
+        "Optional FunnelNextAction — adds a next-action dimension showing what users do after abandoning a step.",
+      ),
+      limit: fromJson(z.number().int().positive().optional()).describe(
+        "Maximum number of rows to return.",
+      ),
+      offset: fromJson(z.number().int().nonnegative().optional()).describe(
+        "Row offset for pagination.",
+      ),
+      returnPropertyQuota: fromJson(z.boolean().optional()).describe(
+        "If true, includes current GA4 property quota in response.",
+      ),
     }),
     outputSchema: RunFunnelReportOutputSchema,
     execute: async ({ context: args }) => {
@@ -238,30 +231,30 @@ export const runRealtimeReportTool = (env: Env) =>
         .describe(
           "GA4 Property identifier — 'properties/1234567' or just '1234567'. Falls back to the default propertyId configured for this integration when omitted.",
         ),
-      dimensions: fromJson(z.array(DimensionSchema))
-        .optional()
-        .describe("Dimensions to group results by."),
+      dimensions: fromJson(z.array(DimensionSchema).optional()).describe(
+        "Dimensions to group results by.",
+      ),
       metrics: fromJson(z.array(MetricSchema).min(1)).describe(
         "Metrics to aggregate.",
       ),
-      dimensionFilter: fromJson(FilterExpressionSchema)
-        .optional()
-        .describe("Optional filter to restrict dimension values."),
-      metricFilter: fromJson(FilterExpressionSchema)
-        .optional()
-        .describe("Optional filter to restrict metric values."),
-      orderBys: fromJson(z.array(OrderBySchema))
-        .optional()
-        .describe("Optional ordering for returned rows."),
-      limit: fromJson(z.number().int().positive())
-        .optional()
-        .describe("Maximum number of rows to return."),
-      offset: fromJson(z.number().int().nonnegative())
-        .optional()
-        .describe("Row offset for pagination."),
-      returnPropertyQuota: fromJson(z.boolean())
-        .optional()
-        .describe("If true, includes quota state in the response."),
+      dimensionFilter: fromJson(FilterExpressionSchema.optional()).describe(
+        "Optional filter to restrict dimension values.",
+      ),
+      metricFilter: fromJson(FilterExpressionSchema.optional()).describe(
+        "Optional filter to restrict metric values.",
+      ),
+      orderBys: fromJson(z.array(OrderBySchema).optional()).describe(
+        "Optional ordering for returned rows.",
+      ),
+      limit: fromJson(z.number().int().positive().optional()).describe(
+        "Maximum number of rows to return.",
+      ),
+      offset: fromJson(z.number().int().nonnegative().optional()).describe(
+        "Row offset for pagination.",
+      ),
+      returnPropertyQuota: fromJson(z.boolean().optional()).describe(
+        "If true, includes quota state in the response.",
+      ),
     }),
     outputSchema: RunRealtimeReportOutputSchema,
     execute: async ({ context: args }) => {

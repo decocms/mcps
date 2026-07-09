@@ -25,6 +25,7 @@ export const PropertySummarySchema = z.object({
   displayName: z.string(),
   propertyType: z.string().optional(),
   parent: z.string().optional(),
+  canEdit: z.boolean().optional(),
 });
 
 export const AccountSummarySchema = z.object({
@@ -103,6 +104,12 @@ export const GoogleAdsLinksOutputSchema = z.object({
 export const ReportingDataAnnotationSchema = z.object({
   name: z.string().optional(),
   annotationDate: DateSchema.optional(),
+  annotationDateRange: z
+    .object({
+      startDate: DateSchema.optional(),
+      endDate: DateSchema.optional(),
+    })
+    .optional(),
   title: z.string().optional(),
   description: z.string().optional(),
   systemGenerated: z.boolean().optional(),
@@ -138,9 +145,11 @@ export const RowSchema = z.object({
 });
 
 export const ResponseMetaDataSchema = z.object({
+  dataLossFromOtherRow: z.boolean().optional(),
+  schemaRestrictionResponse: z.unknown().optional(),
   currencyCode: z.string().optional(),
   timeZone: z.string().optional(),
-  schemaRestrictionResponse: z.unknown().optional(),
+  emptyReason: z.string().optional(),
   subjectToThresholding: z.boolean().optional(),
   samplingMetadatas: z.array(z.unknown()).optional(),
 });
@@ -162,7 +171,7 @@ export const PropertyQuotaSchema = z
     potentiallyThresholdedRequestsPerHour: z
       .object({ consumed: z.number(), remaining: z.number() })
       .optional(),
-    tokensPerProjectPerDay: z
+    tokensPerProjectPerHour: z
       .object({ consumed: z.number(), remaining: z.number() })
       .optional(),
   })
