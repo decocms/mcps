@@ -10,8 +10,10 @@ import { z } from "zod";
 
 // ── Shared primitives ────────────────────────────────────────────────────────
 
+/** ISO-8601 timestamp string (e.g. "2024-01-15T10:30:00Z"). */
 const Timestamp = z.string();
 
+/** Represents a date used in annotation. */
 const DateSchema = z.object({
   year: z.number().int().optional(),
   month: z.number().int().optional(),
@@ -21,15 +23,20 @@ const DateSchema = z.object({
 // ── Admin API — Account Summaries ────────────────────────────────────────────
 
 export const PropertySummarySchema = z.object({
+  /** Resource name, e.g. "properties/123456". */
   property: z.string(),
   displayName: z.string(),
+  /** e.g. "PROPERTY_TYPE_ORDINARY" | "PROPERTY_TYPE_ROLLUP" | "PROPERTY_TYPE_SUBPROPERTY" */
   propertyType: z.string().optional(),
+  /** Parent resource name, e.g. "accounts/123456". */
   parent: z.string().optional(),
   canEdit: z.boolean().optional(),
 });
 
 export const AccountSummarySchema = z.object({
+  /** Resource name, e.g. "accountSummaries/123456". */
   name: z.string(),
+  /** Account resource name, e.g. "accounts/123456". */
   account: z.string().optional(),
   displayName: z.string().optional(),
   propertySummaries: z.array(PropertySummarySchema).optional(),
@@ -42,7 +49,9 @@ export const AccountSummariesOutputSchema = z.object({
 // ── Admin API — Property ─────────────────────────────────────────────────────
 
 export const PropertySchema = z.object({
+  /** Resource name, e.g. "properties/123456". */
   name: z.string().optional(),
+  /** Parent resource, e.g. "accounts/123456" or "properties/123" for sub-properties. */
   parent: z.string().optional(),
   createTime: Timestamp.optional(),
   updateTime: Timestamp.optional(),
@@ -50,7 +59,9 @@ export const PropertySchema = z.object({
   industryCategory: z.string().optional(),
   timeZone: z.string().optional(),
   currencyCode: z.string().optional(),
+  /** e.g. "GOOGLE_ANALYTICS_STANDARD" | "GOOGLE_ANALYTICS_360" */
   serviceLevel: z.string().optional(),
+  /** e.g. "PROPERTY_TYPE_ORDINARY" | "PROPERTY_TYPE_ROLLUP" | "PROPERTY_TYPE_SUBPROPERTY" */
   propertyType: z.string().optional(),
   account: z.string().optional(),
   deleteTime: Timestamp.optional(),
@@ -60,21 +71,28 @@ export const PropertySchema = z.object({
 // ── Admin API — Custom Dimensions & Metrics ──────────────────────────────────
 
 export const CustomDimensionSchema = z.object({
+  /** Resource name, e.g. "properties/123/customDimensions/456". */
   name: z.string().optional(),
+  /** The parameter name used in events / user properties. */
   parameterName: z.string(),
   displayName: z.string().optional(),
   description: z.string().optional(),
+  /** "EVENT" | "USER" | "ITEM" */
   scope: z.string().optional(),
   disallowAdsPersonalization: z.boolean().optional(),
 });
 
 export const CustomMetricSchema = z.object({
+  /** Resource name. */
   name: z.string().optional(),
   parameterName: z.string(),
   displayName: z.string().optional(),
   description: z.string().optional(),
+  /** e.g. "STANDARD" | "CURRENCY" | "FEET" | "METERS" | "KILOMETERS" | "MILES" | "MILLISECONDS" | "SECONDS" | "MINUTES" | "HOURS" */
   measurementUnit: z.string().optional(),
+  /** "EVENT" | "ITEM" */
   scope: z.string().optional(),
+  /** e.g. ["COST_DATA", "REVENUE_DATA"] */
   restrictedMetricType: z.array(z.string()).optional(),
 });
 
@@ -86,7 +104,9 @@ export const CustomDimensionsAndMetricsOutputSchema = z.object({
 // ── Admin API — Google Ads Links ─────────────────────────────────────────────
 
 export const GoogleAdsLinkSchema = z.object({
+  /** Resource name. */
   name: z.string().optional(),
+  /** Google Ads Customer ID (without hyphens). */
   customerId: z.string().optional(),
   canManageClients: z.boolean().optional(),
   adsPersonalizationEnabled: z.boolean().optional(),
@@ -102,6 +122,7 @@ export const GoogleAdsLinksOutputSchema = z.object({
 // ── Admin API — Property Annotations ─────────────────────────────────────────
 
 export const ReportingDataAnnotationSchema = z.object({
+  /** Resource name. */
   name: z.string().optional(),
   annotationDate: DateSchema.optional(),
   annotationDateRange: z
@@ -113,6 +134,7 @@ export const ReportingDataAnnotationSchema = z.object({
   title: z.string().optional(),
   description: z.string().optional(),
   systemGenerated: z.boolean().optional(),
+  /** "RED" | "ORANGE" | "YELLOW" | "GREEN" | "BLUE" | "PURPLE" | "PINK" */
   color: z.string().optional(),
 });
 
@@ -128,6 +150,7 @@ export const DimensionHeaderSchema = z.object({
 
 export const MetricHeaderSchema = z.object({
   name: z.string(),
+  /** e.g. "TYPE_INTEGER" | "TYPE_FLOAT" | "TYPE_SECONDS" | "TYPE_MILLISECONDS" | "TYPE_MINUTES" | "TYPE_HOURS" | "TYPE_STANDARD" | "TYPE_CURRENCY" | "TYPE_FEET" | "TYPE_MILES" | "TYPE_METERS" | "TYPE_KILOMETERS" */
   type: z.string().optional(),
 });
 
@@ -154,6 +177,7 @@ export const ResponseMetaDataSchema = z.object({
   samplingMetadatas: z.array(z.unknown()).optional(),
 });
 
+/** Quota state returned when `returnPropertyQuota: true`. */
 export const PropertyQuotaSchema = z
   .object({
     tokensPerDay: z
@@ -189,6 +213,7 @@ export const RunReportOutputSchema = z.object({
   rowCount: z.number().optional(),
   metadata: ResponseMetaDataSchema.optional(),
   propertyQuota: PropertyQuotaSchema.optional(),
+  /** Always "analyticsData#runReport". */
   kind: z.string().optional(),
 });
 
@@ -203,6 +228,7 @@ export const RunRealtimeReportOutputSchema = z.object({
   minimums: z.array(RowSchema).optional(),
   rowCount: z.number().optional(),
   propertyQuota: PropertyQuotaSchema.optional(),
+  /** Always "analyticsData#runRealtimeReport". */
   kind: z.string().optional(),
 });
 
@@ -213,6 +239,10 @@ const FunnelResponseMetaDataSchema = z.object({
   schemaRestrictionResponse: z.unknown().optional(),
 });
 
+/**
+ * Funnel response rows share the same Row structure (dimensionValues +
+ * metricValues), grouped in funnelTable and funnelVisualization sub-objects.
+ */
 const FunnelSubReportSchema = z.object({
   dimensionHeaders: z.array(DimensionHeaderSchema).optional(),
   metricHeaders: z.array(MetricHeaderSchema).optional(),
@@ -228,5 +258,6 @@ export const RunFunnelReportOutputSchema = z.object({
   funnelTable: FunnelSubReportSchema.optional(),
   funnelVisualization: FunnelSubReportSchema.optional(),
   propertyQuota: PropertyQuotaSchema.optional(),
+  /** Always "analyticsData#runFunnelReport". */
   kind: z.string().optional(),
 });
