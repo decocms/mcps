@@ -36,9 +36,18 @@ function pickSource(
   return { value: "", source: "missing" };
 }
 
+// Structural subset of RequestContext from @decocms/runtime — token is the
+// raw bearer value (no "Bearer " prefix) exposed by the runtime.
 export interface MeshRequestContext {
-  authorization?: string;
-  state?: Partial<MagentoCredentials>;
+  token?: string;
+  state?: {
+    baseUrl?: string;
+    storeCode?: string;
+    currencyCode?: string;
+    timezone?: string;
+    originHeader?: string;
+    extraHeaders?: Record<string, string>;
+  };
 }
 
 export function resolveCredentials(
@@ -48,12 +57,9 @@ export function resolveCredentials(
 
   const baseUrl = pickSource(safeState.baseUrl, process.env.MAGENTO_BASE_URL);
 
-  const rawAuth = ctx?.authorization;
-  const tokenFromAuth = rawAuth
-    ? rawAuth.replace(/^Bearer\s+/i, "")
-    : undefined;
-  const apiToken: { value: string; source: CredentialSource } = tokenFromAuth
-    ? { value: tokenFromAuth, source: "authorization" }
+  // ctx.token is already the raw bearer value (no "Bearer " prefix)
+  const apiToken: { value: string; source: CredentialSource } = ctx?.token
+    ? { value: ctx.token, source: "authorization" }
     : pickSource(undefined, process.env.MAGENTO_API_TOKEN);
 
   const storeCode = pickSource(
