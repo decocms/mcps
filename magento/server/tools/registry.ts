@@ -71,7 +71,7 @@ function createSearchTool(config: {
       annotations: { readOnlyHint: true },
       execute: async ({ context, runtimeContext }) => {
         const env = runtimeContext.env as Env;
-        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
+        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT);
         assertValidCredentials(creds, config.id);
 
         const params = buildSearchCriteriaParams({
@@ -115,7 +115,7 @@ function createGetTool<TSchema extends z.ZodObject<z.ZodRawShape>>(config: {
       annotations: { readOnlyHint: true },
       execute: async ({ context, runtimeContext }) => {
         const env = runtimeContext.env as Env;
-        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
+        const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT);
         assertValidCredentials(creds, config.id);
 
         const input = context as z.infer<TSchema>;

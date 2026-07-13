@@ -10,11 +10,6 @@ export const StateSchema = z.object({
     .describe(
       "Magento store base URL, e.g. https://loja.granado.com.br (no trailing slash, no /rest)",
     ),
-  apiToken: z
-    .string()
-    .describe(
-      "Magento integration access token, sent as Authorization: Bearer",
-    ),
   storeCode: z
     .string()
     .optional()
