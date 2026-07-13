@@ -13,12 +13,6 @@
           "title": "Base URL",
           "description": "Magento store base URL, e.g. https://loja.granado.com.br (no trailing slash, no /rest)"
         },
-        "apiToken": {
-          "type": "string",
-          "title": "API Token",
-          "description": "Magento integration access token (sent as Authorization: Bearer)",
-          "format": "password"
-        },
         "storeCode": {
           "type": "string",
           "title": "Store Code",
@@ -49,7 +43,7 @@
           }
         }
       },
-      "required": ["baseUrl", "apiToken"]
+      "required": ["baseUrl"]
     }
   },
   "description": "MCP for Magento 2 REST APIs — live sales dashboard widgets (orders per hour, sales cards, cancellation rate, top products, status breakdown) plus curated tools for orders, catalog, customers, inventory and CMS.",

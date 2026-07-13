@@ -48,7 +48,7 @@ export const statusBreakdown = (_env: Env) =>
     annotations: { readOnlyHint: true },
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;
-      const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
+      const creds = resolveCredentials(env.MESH_REQUEST_CONTEXT);
       assertValidCredentials(creds, TOOL_ID);
 
       const timezone = creds.timezone ?? DEFAULT_STORE_TIMEZONE;

@@ -14,7 +14,7 @@ const INITIAL_RETRY_DELAY_MS = 500;
 export const DEFAULT_STORE_CODE = "all";
 export const DEFAULT_CURRENCY = "BRL";
 
-type CredentialSource = "state" | "env" | "missing";
+type CredentialSource = "authorization" | "state" | "env" | "missing";
 
 export interface ResolvedCredentials extends MagentoCredentials {
   /** Where each credential value came from — useful for diagnosing missing config. */
@@ -35,15 +35,26 @@ function pickSource(
   return { value: "", source: "missing" };
 }
 
+export interface MeshRequestContext {
+  authorization?: string;
+  state?: Partial<MagentoCredentials>;
+}
+
 export function resolveCredentials(
-  state: Partial<MagentoCredentials> | undefined,
+  ctx: MeshRequestContext | undefined,
 ): ResolvedCredentials {
-  const safeState = state ?? {};
+  const safeState = ctx?.state ?? {};
+
   const baseUrl = pickSource(safeState.baseUrl, process.env.MAGENTO_BASE_URL);
-  const apiToken = pickSource(
-    safeState.apiToken,
-    process.env.MAGENTO_API_TOKEN,
-  );
+
+  const rawAuth = ctx?.authorization;
+  const tokenFromAuth = rawAuth
+    ? rawAuth.replace(/^Bearer\s+/i, "")
+    : undefined;
+  const apiToken: { value: string; source: CredentialSource } = tokenFromAuth
+    ? { value: tokenFromAuth, source: "authorization" }
+    : pickSource(undefined, process.env.MAGENTO_API_TOKEN);
+
   const storeCode = pickSource(
     safeState.storeCode,
     process.env.MAGENTO_STORE_CODE,
@@ -54,11 +65,10 @@ export function resolveCredentials(
   );
 
   if (baseUrl.source === "missing") {
-    const stateKeys = state ? Object.keys(state) : [];
+    const stateKeys = safeState ? Object.keys(safeState) : [];
     console.warn(
       "[Magento] resolveCredentials: baseUrl is missing — neither MESH_REQUEST_CONTEXT.state.baseUrl nor process.env.MAGENTO_BASE_URL is set.",
       JSON.stringify({
-        receivedStateType: state === undefined ? "undefined" : typeof state,
         receivedStateKeys: stateKeys,
         envMagentoBaseUrlSet: Boolean(process.env.MAGENTO_BASE_URL),
       }),
@@ -94,7 +104,7 @@ export function assertValidCredentials(
   }
   if (!creds.apiToken) {
     throw new Error(
-      `Magento apiToken is missing${where} — set MESH_REQUEST_CONTEXT.state.apiToken or the MAGENTO_API_TOKEN env var (integration access token).`,
+      `Magento apiToken is missing${where} — set the Token field in the MCP connection (Authorization: Bearer) or the MAGENTO_API_TOKEN env var (integration access token).`,
     );
   }
 }
