@@ -4,6 +4,7 @@
  * the withRetry logic from vtex/server/lib/tool-adapter.ts.
  */
 import type { MagentoCredentials } from "../types/env.ts";
+import { getOrFetch } from "./cache.ts";
 
 export type { MagentoCredentials };
 
@@ -153,18 +154,14 @@ export interface MagentoFetchOptions {
  * some stores (e.g. Granado) sit behind a Cloudflare rule that requires the
  * x-origin-header secret.
  */
-export async function magentoFetch<T = unknown>(
+async function doFetch<T>(
   creds: MagentoCredentials,
+  url: string,
   path: string,
-  options: MagentoFetchOptions = {},
+  options: MagentoFetchOptions,
 ): Promise<T> {
-  const url = buildRestUrl(creds, path, options.params);
   const headers = buildMagentoHeaders(creds);
   const method = options.method ?? "GET";
-
-  if (process.env.DEBUG) {
-    console.log("[Magento]", method, url);
-  }
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -214,4 +211,24 @@ export async function magentoFetch<T = unknown>(
   }
 
   throw lastError ?? new Error("Magento request failed");
+}
+
+export async function magentoFetch<T = unknown>(
+  creds: MagentoCredentials,
+  path: string,
+  options: MagentoFetchOptions = {},
+): Promise<T> {
+  const method = options.method ?? "GET";
+  const url = buildRestUrl(creds, path, options.params);
+
+  if (process.env.DEBUG) {
+    console.log("[Magento]", method, url);
+  }
+
+  if (method !== "GET") {
+    return doFetch<T>(creds, url, path, options);
+  }
+
+  const cacheKey = `${creds.baseUrl}|${creds.storeCode ?? "all"}|${url}`;
+  return getOrFetch(cacheKey, () => doFetch<T>(creds, url, path, options));
 }
