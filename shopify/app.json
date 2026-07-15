@@ -1,0 +1,40 @@
+{
+  "scopeName": "deco",
+  "name": "shopify",
+  "friendlyName": "Shopify",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-shopify.deco.site/mcp",
+    "configSchema": {
+      "type": "object",
+      "properties": {
+        "storeDomain": {
+          "type": "string",
+          "title": "Store Domain",
+          "description": "Shopify store domain, e.g. my-store.myshopify.com (the token goes in the connection's Authorization field)"
+        },
+        "apiVersion": {
+          "type": "string",
+          "title": "API Version",
+          "description": "Admin GraphQL API version (default 2026-07)"
+        }
+      },
+      "required": ["storeDomain"]
+    }
+  },
+  "description": "Read-only MCP for the Shopify Admin GraphQL API — products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics.",
+  "icon": "https://github.com/shopify.png",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": ["E-commerce"],
+    "official": false,
+    "tags": ["shopify", "ecommerce", "orders", "products", "customers", "inventory", "analytics", "api"],
+    "short_description": "Read-only access to Shopify stores: catalog, orders, customers, inventory and analytics.",
+    "mesh_description": "The Shopify MCP gives AI agents read-only access to a Shopify store through the Admin GraphQL API. It can browse and search products, variants and collections, inspect orders (including draft orders, abandoned checkouts, returns, refund previews and fulfillment status), look up customers and segments, check inventory levels per location, review discounts and marketing activities, read online store content (pages, blogs, articles, menus, redirects and theme files), and pull financial data from Shopify Payments (payouts, balance, disputes). It also supports ShopifyQL analytics queries where available. Because every tool is a GraphQL query — never a mutation — the MCP can never modify store data. Connect with a custom-app Admin API access token (Authorization field) and the store's myshopify.com domain."
+  }
+}

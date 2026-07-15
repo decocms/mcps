@@ -1,0 +1,27 @@
+{
+  "name": "shopify",
+  "version": "1.0.0",
+  "description": "Read-only MCP for the Shopify Admin GraphQL API - products, orders, customers, inventory, fulfillment, discounts, content and analytics",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun run --hot server/main.ts",
+    "check": "tsc --noEmit",
+    "test": "bun test",
+    "validate:queries": "bun run scripts/validate-queries.ts",
+    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build": "bun run build:server"
+  },
+  "dependencies": {
+    "@decocms/runtime": "^1.6.2",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@decocms/mcps-shared": "1.0.0",
+    "@types/bun": "^1.2.14",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

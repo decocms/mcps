@@ -502,5 +502,14 @@
       "youtube-search/**",
       "shared/**"
     ]
+  },
+  "shopify": {
+    "site": "shopify",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "shopify/**",
+      "shared/**"
+    ]
   }
 }
