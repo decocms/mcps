@@ -9,6 +9,7 @@ import {
   type SearchFilter,
 } from "../../lib/search-criteria.ts";
 import {
+  floorToMinutes,
   getHourIndex,
   parseMagentoUtc,
   toMagentoUtc,
@@ -79,6 +80,10 @@ export async function searchOrders(
     toolId,
   } = options;
 
+  // Bucket endUtc to the nearest 30-min boundary so all calls within the same
+  // slot produce an identical URL → stable cache key → actual cache hits.
+  const bucketedEnd = floorToMinutes(window.endUtc, 30);
+
   const filters: SearchFilter[] = [
     {
       field: "created_at",
@@ -87,7 +92,7 @@ export async function searchOrders(
     },
     {
       field: "created_at",
-      value: toMagentoUtc(window.endUtc),
+      value: toMagentoUtc(bucketedEnd),
       conditionType: "lteq",
     },
     ...extraFilters,

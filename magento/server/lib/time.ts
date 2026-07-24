@@ -124,6 +124,12 @@ export function getRangeForPeriod(
   };
 }
 
+/** Floor a date to the nearest multiple of `minutes` (UTC). */
+export function floorToMinutes(date: Date, minutes: number): Date {
+  const ms = minutes * 60 * 1000;
+  return new Date(date.getTime() - (date.getTime() % ms));
+}
+
 /** Local hour bucket (0-23) of a UTC instant relative to the local day start. */
 export function getHourIndex(createdAtMs: number, dayStartMs: number): number {
   const index = Math.floor((createdAtMs - dayStartMs) / HOUR_MS);
