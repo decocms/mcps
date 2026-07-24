@@ -8,15 +8,8 @@
  */
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import {
-  assertValidCredentials,
-  magentoFetch,
-  resolveCredentials,
-} from "../lib/client.ts";
-import {
-  buildSearchCriteriaParams,
-  filtersSchema,
-} from "../lib/search-criteria.ts";
+import { assertValidCredentials, magentoFetch, resolveCredentials } from "../lib/client.ts";
+import { buildSearchCriteriaParams, filtersSchema } from "../lib/search-criteria.ts";
 import type { Env } from "../types/env.ts";
 
 /** Normalize API payloads so tool results are always objects. */
@@ -38,13 +31,17 @@ const searchInputSchema = z.object({
     .min(1)
     .max(100)
     .optional()
-    .describe("Results per page (default 20, max 100). Use pagination via currentPage to fetch more."),
+    .describe(
+      "Results per page (default 20, max 100). Use pagination via currentPage to fetch more.",
+    ),
   currentPage: z
     .number()
     .int()
     .min(1)
     .optional()
-    .describe("Page number, 1-based. Increment to fetch subsequent pages when total_count > pageSize."),
+    .describe(
+      "Page number, 1-based. Increment to fetch subsequent pages when total_count > pageSize.",
+    ),
   sortField: z
     .string()
     .optional()
@@ -58,11 +55,7 @@ const searchInputSchema = z.object({
     ),
 });
 
-function createSearchTool(config: {
-  id: string;
-  description: string;
-  path: string;
-}) {
+function createSearchTool(config: { id: string; description: string; path: string }) {
   return (_env: Env) =>
     createTool({
       id: config.id,
@@ -142,10 +135,7 @@ export const getOrder = createGetTool({
   description:
     "Get a single order by its numeric entity_id (/V1/orders/{id}), including items, payment, addresses and status history. For the customer-facing order number use MAGENTO_GET_ORDER_BY_INCREMENT_ID.",
   inputSchema: z.object({
-    entityId: z
-      .number()
-      .int()
-      .describe("Order entity_id (internal numeric id)"),
+    entityId: z.number().int().describe("Order entity_id (internal numeric id)"),
   }),
   buildPath: (input) => `/orders/${input.entityId}`,
 });
