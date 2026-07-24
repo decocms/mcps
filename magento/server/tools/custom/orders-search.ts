@@ -9,6 +9,7 @@ import {
   type SearchFilter,
 } from "../../lib/search-criteria.ts";
 import {
+  floorToMinutes,
   getHourIndex,
   parseMagentoUtc,
   toMagentoUtc,
@@ -38,15 +39,15 @@ export interface OrdersSearchPage {
   total_count?: number;
 }
 
-/** Response trimming — keeps each order at ~80 bytes. */
+/** Response trimming — keeps each order at ~100 bytes. */
 export const ORDER_SUMMARY_FIELDS =
-  "total_count,items[increment_id,status,state,grand_total,created_at]";
+  "total_count,items[increment_id,status,state,grand_total,created_at,updated_at]";
 
 /** Summary + line items, for product-level aggregation. */
 export const ORDER_WITH_LINES_FIELDS =
-  "total_count,items[increment_id,status,state,grand_total,created_at,items[sku,name,qty_ordered,row_total,parent_item_id,product_type]]";
+  "total_count,items[increment_id,status,state,grand_total,created_at,updated_at,items[sku,name,qty_ordered,row_total,parent_item_id,product_type]]";
 
-const DEFAULT_PAGE_SIZE = 500;
+const DEFAULT_PAGE_SIZE = 100;
 const DEFAULT_MAX_PAGES = 20;
 
 export interface SearchOrdersResult {
@@ -79,6 +80,10 @@ export async function searchOrders(
     toolId,
   } = options;
 
+  // Bucket endUtc to the nearest 30-min boundary so all calls within the same
+  // slot produce an identical URL → stable cache key → actual cache hits.
+  const bucketedEnd = floorToMinutes(window.endUtc, 30);
+
   const filters: SearchFilter[] = [
     {
       field: "created_at",
@@ -87,7 +92,7 @@ export async function searchOrders(
     },
     {
       field: "created_at",
-      value: toMagentoUtc(window.endUtc),
+      value: toMagentoUtc(bucketedEnd),
       conditionType: "lteq",
     },
     ...extraFilters,

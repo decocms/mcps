@@ -4,6 +4,7 @@
  * the withRetry logic from vtex/server/lib/tool-adapter.ts.
  */
 import type { MagentoCredentials } from "../types/env.ts";
+import { getOrFetch } from "./cache.ts";
 
 export type { MagentoCredentials };
 
@@ -35,9 +36,18 @@ function pickSource(
   return { value: "", source: "missing" };
 }
 
+// Structural subset of RequestContext from @decocms/runtime — token is the
+// raw bearer value (no "Bearer " prefix) exposed by the runtime.
 export interface MeshRequestContext {
-  authorization?: string;
-  state?: Partial<MagentoCredentials>;
+  token?: string;
+  state?: {
+    baseUrl?: string;
+    storeCode?: string;
+    currencyCode?: string;
+    timezone?: string;
+    originHeader?: string;
+    extraHeaders?: Record<string, string>;
+  };
 }
 
 export function resolveCredentials(
@@ -47,12 +57,9 @@ export function resolveCredentials(
 
   const baseUrl = pickSource(safeState.baseUrl, process.env.MAGENTO_BASE_URL);
 
-  const rawAuth = ctx?.authorization;
-  const tokenFromAuth = rawAuth
-    ? rawAuth.replace(/^Bearer\s+/i, "")
-    : undefined;
-  const apiToken: { value: string; source: CredentialSource } = tokenFromAuth
-    ? { value: tokenFromAuth, source: "authorization" }
+  // ctx.token is already the raw bearer value (no "Bearer " prefix)
+  const apiToken: { value: string; source: CredentialSource } = ctx?.token
+    ? { value: ctx.token, source: "authorization" }
     : pickSource(undefined, process.env.MAGENTO_API_TOKEN);
 
   const storeCode = pickSource(
@@ -114,6 +121,7 @@ export function buildMagentoHeaders(
 ): Record<string, string> {
   return {
     Authorization: `Bearer ${creds.apiToken}`,
+    "User-Agent": "Deco-MCP-Magento/1.0 (+mailto:support@deco.cx)",
     Accept: "application/json",
     "Content-Type": "application/json",
     ...(creds.originHeader ? { "x-origin-header": creds.originHeader } : {}),
@@ -153,18 +161,14 @@ export interface MagentoFetchOptions {
  * some stores (e.g. Granado) sit behind a Cloudflare rule that requires the
  * x-origin-header secret.
  */
-export async function magentoFetch<T = unknown>(
+async function doFetch<T>(
   creds: MagentoCredentials,
+  url: string,
   path: string,
-  options: MagentoFetchOptions = {},
+  options: MagentoFetchOptions,
 ): Promise<T> {
-  const url = buildRestUrl(creds, path, options.params);
   const headers = buildMagentoHeaders(creds);
   const method = options.method ?? "GET";
-
-  if (process.env.DEBUG) {
-    console.log("[Magento]", method, url);
-  }
 
   let lastError: Error | null = null;
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -214,4 +218,24 @@ export async function magentoFetch<T = unknown>(
   }
 
   throw lastError ?? new Error("Magento request failed");
+}
+
+export async function magentoFetch<T = unknown>(
+  creds: MagentoCredentials,
+  path: string,
+  options: MagentoFetchOptions = {},
+): Promise<T> {
+  const method = options.method ?? "GET";
+  const url = buildRestUrl(creds, path, options.params);
+
+  if (process.env.DEBUG) {
+    console.log("[Magento]", method, url);
+  }
+
+  if (method !== "GET") {
+    return doFetch<T>(creds, url, path, options);
+  }
+
+  const cacheKey = `${creds.baseUrl}|${creds.storeCode ?? "all"}|${url}`;
+  return getOrFetch(cacheKey, () => doFetch<T>(creds, url, path, options));
 }

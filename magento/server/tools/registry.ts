@@ -8,15 +8,8 @@
  */
 import { createTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import {
-  assertValidCredentials,
-  magentoFetch,
-  resolveCredentials,
-} from "../lib/client.ts";
-import {
-  buildSearchCriteriaParams,
-  filtersSchema,
-} from "../lib/search-criteria.ts";
+import { assertValidCredentials, magentoFetch, resolveCredentials } from "../lib/client.ts";
+import { buildSearchCriteriaParams, filtersSchema } from "../lib/search-criteria.ts";
 import type { Env } from "../types/env.ts";
 
 /** Normalize API payloads so tool results are always objects. */
@@ -36,33 +29,33 @@ const searchInputSchema = z.object({
     .number()
     .int()
     .min(1)
-    .max(500)
+    .max(100)
     .optional()
-    .describe("Results per page (default 20)"),
+    .describe(
+      "Results per page (default 20, max 100). Use pagination via currentPage to fetch more.",
+    ),
   currentPage: z
     .number()
     .int()
     .min(1)
     .optional()
-    .describe("Page number, 1-based"),
+    .describe(
+      "Page number, 1-based. Increment to fetch subsequent pages when total_count > pageSize.",
+    ),
   sortField: z
     .string()
     .optional()
-    .describe('Attribute to sort by, e.g. "created_at"'),
+    .describe('Attribute to sort by, e.g. "updated_at" or "created_at"'),
   sortDirection: z.enum(["ASC", "DESC"]).optional(),
   fields: z
     .string()
     .optional()
     .describe(
-      'Magento response trimming, e.g. "total_count,items[increment_id,status,grand_total]"',
+      'Magento response field trimming — always set this to avoid heavy payloads. E.g. "total_count,items[entity_id,increment_id,status,state,updated_at]"',
     ),
 });
 
-function createSearchTool(config: {
-  id: string;
-  description: string;
-  path: string;
-}) {
+function createSearchTool(config: { id: string; description: string; path: string }) {
   return (_env: Env) =>
     createTool({
       id: config.id,
@@ -133,7 +126,7 @@ function createGetTool<TSchema extends z.ZodObject<z.ZodRawShape>>(config: {
 export const listOrders = createSearchTool({
   id: "MAGENTO_LIST_ORDERS",
   description:
-    'Search orders (/V1/orders) with filters, sorting and pagination. Useful filters: created_at (gteq/lteq, UTC "YYYY-MM-DD HH:MM:SS"), status (eq/in), customer_email (eq), grand_total (gt/lt). Use fields to trim large payloads.',
+    'Search orders (/V1/orders) with filters, sorting and pagination. IMPORTANT: always set fields to avoid N+1 DB queries — e.g. "total_count,items[entity_id,increment_id,status,state,updated_at]". Prefer updated_at over created_at for time-range filters (updated_at catches status changes and is lighter on the DB). Use pageSize ≤ 100 and paginate via currentPage. Useful filters: updated_at (gteq/lteq, UTC "YYYY-MM-DD HH:MM:SS"), status (eq/in), customer_email (eq), grand_total (gt/lt).',
   path: "/orders",
 });
 
@@ -142,10 +135,7 @@ export const getOrder = createGetTool({
   description:
     "Get a single order by its numeric entity_id (/V1/orders/{id}), including items, payment, addresses and status history. For the customer-facing order number use MAGENTO_GET_ORDER_BY_INCREMENT_ID.",
   inputSchema: z.object({
-    entityId: z
-      .number()
-      .int()
-      .describe("Order entity_id (internal numeric id)"),
+    entityId: z.number().int().describe("Order entity_id (internal numeric id)"),
   }),
   buildPath: (input) => `/orders/${input.entityId}`,
 });

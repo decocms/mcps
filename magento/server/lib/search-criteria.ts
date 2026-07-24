@@ -27,7 +27,7 @@ export const filterSchema = z.object({
   field: z
     .string()
     .describe(
-      'Order/entity attribute to filter on, e.g. "created_at", "status", "sku"',
+      'Order/entity attribute to filter on. Prefer "updated_at" over "created_at" for time-range queries on orders — it is lighter on the database and catches status changes. Other common fields: "status", "sku", "customer_email".',
     ),
   value: z
     .string()
