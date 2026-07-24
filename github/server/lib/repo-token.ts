@@ -48,15 +48,20 @@ export class RepoTokenError extends Error {
 
 /**
  * Positive allowlist of permissions we are willing to mint — strictly
- * repo-content / PR / issue level. Anything outside this list is hard-rejected,
- * which by construction also rejects every escalation vector the spec bans
- * (administration, members, organization_*, secrets, actions, ...).
+ * repo-content / PR / issue / CI-checks level. Anything outside this list is
+ * hard-rejected, which by construction also rejects every escalation vector the
+ * spec bans (administration, members, organization_*, secrets, actions, ...).
+ *
+ * `checks` is needed so the PR panel can read CI check runs
+ * (`GET /commits/{sha}/check-runs`); without it the minted installation token
+ * gets `403 Resource not accessible by integration`.
  */
 export const ALLOWED_PERMISSIONS = new Set([
   "contents",
   "metadata",
   "pull_requests",
   "issues",
+  "checks",
 ]);
 
 /** GitHub permission levels we allow. `admin` is never granted. */
