@@ -330,9 +330,12 @@ describe("refreshRepoGrant — minting", () => {
       if (/\/app\/installations\/42\/access_tokens/.test(url)) {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
         expect(body.repository_ids).toEqual([999]);
+        // Refresh widens a pre-checks grant to include checks:read so the PR
+        // panel can read CI check runs — no re-install needed.
         expect(body.permissions).toEqual({
           contents: "write",
           metadata: "read",
+          checks: "read",
         });
         return json(
           {
@@ -368,6 +371,59 @@ describe("refreshRepoGrant — minting", () => {
     // TTL slid forward 90 days from `now`.
     const stored = await store.get(meta.grantId);
     expect(stored?.expiresAt).toBe("2026-09-08T00:00:00.000Z");
+  });
+
+  test("checks upgrade unavailable (422) falls back to the grant's permissions without revoking", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store); // no checks in the grant
+    let calls = 0;
+    setFetch(async (input, init) => {
+      const url = urlOf(input);
+      if (/\/app\/installations\/42\/access_tokens/.test(url)) {
+        const body = JSON.parse((init as { body?: string }).body ?? "{}");
+        calls++;
+        if (calls === 1) {
+          // Widened attempt asks for checks the installation hasn't granted.
+          expect(body.permissions).toEqual({
+            contents: "write",
+            metadata: "read",
+            checks: "read",
+          });
+          return json({ message: "permissions exceed grant" }, 422);
+        }
+        // Fallback attempt uses exactly what the grant was issued with.
+        expect(body.permissions).toEqual({
+          contents: "write",
+          metadata: "read",
+        });
+        return json(
+          {
+            token: "ghs_fallback",
+            expires_at: "2026-06-10T01:00:00.000Z",
+            permissions: body.permissions,
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.success.access_token).toBe("ghs_fallback");
+    expect(calls).toBe(2);
+    // The still-valid grant must survive the failed checks upgrade.
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
   });
 
   test("omitted client_id is allowed (public-client model)", async () => {

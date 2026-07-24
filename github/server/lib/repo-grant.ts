@@ -29,7 +29,7 @@ import {
   type RepoGrantStore,
   verifySecret,
 } from "./repo-grant-store.ts";
-import { mintRepoScopedToken } from "./repo-token.ts";
+import { capPermissions, mintRepoScopedToken } from "./repo-token.ts";
 import type { Env } from "../types/env.ts";
 
 export interface IssuedRepoGrant {
@@ -291,14 +291,26 @@ export async function refreshRepoGrant(opts: {
     );
   }
 
-  let minted;
-  try {
-    minted = await mintInstallationAccessToken(
+  // Ensure the standard repo-scoped grant carries checks:read so the PR panel
+  // can read CI check runs (GET /commits/{sha}/check-runs). Grants issued
+  // before checks joined the allowlist are upgraded here on their next refresh
+  // — no re-install, riding the ~1h token cycle. If the installation hasn't
+  // granted checks yet, GitHub 422s; we fall back to the grant's stored
+  // permissions and never revoke a grant that is still valid for its own scope.
+  const upgradedPermissions = capPermissions({
+    ...grant.permissions,
+    checks: "read",
+  });
+  const addedChecks = !!upgradedPermissions.checks && !grant.permissions.checks;
+
+  const mintWith = (permissions: Record<string, string>) =>
+    mintInstallationAccessToken(
       grant.installationId,
-      { repository_ids: [grant.repositoryId], permissions: grant.permissions },
+      { repository_ids: [grant.repositoryId], permissions },
       jwt,
     );
-  } catch (err) {
+
+  const handleMintFailure = async (err: unknown): Promise<RefreshResult> => {
     const mapped = mapRefreshMintError(err);
     // On a permanent (grant-invalidating) error, best-effort delete the grant.
     if (
@@ -313,6 +325,24 @@ export async function refreshRepoGrant(opts: {
       }
     }
     return mapped;
+  };
+
+  let minted;
+  try {
+    minted = await mintWith(upgradedPermissions);
+  } catch (err) {
+    // A 422 from the checks widening means the installation hasn't granted
+    // checks — retry with exactly the grant's stored permissions so the
+    // connection keeps working, and only then treat a failure as terminal.
+    if (addedChecks && err instanceof GitHubAppApiError && err.status === 422) {
+      try {
+        minted = await mintWith(grant.permissions);
+      } catch (retryErr) {
+        return handleMintFailure(retryErr);
+      }
+    } else {
+      return handleMintFailure(err);
+    }
   }
 
   // --- slide TTL and respond ---
