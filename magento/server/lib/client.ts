@@ -121,6 +121,7 @@ export function buildMagentoHeaders(
 ): Record<string, string> {
   return {
     Authorization: `Bearer ${creds.apiToken}`,
+    "User-Agent": "Deco-MCP-Magento/1.0 (+mailto:support@deco.cx)",
     Accept: "application/json",
     "Content-Type": "application/json",
     ...(creds.originHeader ? { "x-origin-header": creds.originHeader } : {}),
