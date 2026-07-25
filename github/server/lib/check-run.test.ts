@@ -91,6 +91,64 @@ describe("getCheckRun", () => {
     expect(r.conclusion).toBeNull();
   });
 
+  test("falls back when id/status are absent (echoes id, status 'unknown')", async () => {
+    setFetch(async () => json({ name: "build" }));
+    const r = await getCheckRun({
+      token: "t",
+      owner: "a",
+      repo: "b",
+      checkRunId: 77,
+    });
+    expect(r.id).toBe(77);
+    expect(r.status).toBe("unknown");
+  });
+
+  test("percent-encodes owner/repo path segments", async () => {
+    setFetch(async (input) => {
+      // Valid dotted names must be encoded, not concatenated raw.
+      expect(urlOf(input)).toBe(
+        "https://api.github.com/repos/deco-cx/my.repo/check-runs/9",
+      );
+      return json({ id: 9, name: "x", status: "completed" });
+    });
+    await getCheckRun({
+      token: "t",
+      owner: "deco-cx",
+      repo: "my.repo",
+      checkRunId: 9,
+    });
+  });
+
+  test("rejects owner/repo with path-injection characters before fetching", async () => {
+    setFetch(async () => {
+      throw new Error("should not fetch");
+    });
+    for (const bad of ["..", "a/b", "x?y", "../../user"]) {
+      await expectRejectCode(
+        () => getCheckRun({ token: "t", owner: bad, repo: "b", checkRunId: 1 }),
+        "invalid_input",
+      );
+      await expectRejectCode(
+        () => getCheckRun({ token: "t", owner: "a", repo: bad, checkRunId: 1 }),
+        "invalid_input",
+      );
+    }
+  });
+
+  test("a 200 with an unreadable body → upstream_error", async () => {
+    setFetch(
+      async () =>
+        new Response("<html>not json</html>", {
+          status: 200,
+          headers: { "Content-Type": "text/html" },
+        }),
+    );
+    await expectRejectCode(
+      () => getCheckRun({ token: "t", owner: "a", repo: "b", checkRunId: 1 }),
+      "upstream_error",
+    );
+  });
+
   test("403 → unauthorized (token may lack checks:read)", async () => {
     setFetch(async () => json({ message: "Resource not accessible" }, 403));
     await expectRejectCode(

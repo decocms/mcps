@@ -56,6 +56,24 @@ function githubHeaders(token: string): Record<string, string> {
 }
 
 /**
+ * GitHub owner/repo path segments: alphanumerics plus `.`, `_`, `-`. Rejecting
+ * anything else (and the bare `.`/`..`) closes path/endpoint injection — an
+ * unvalidated `/` or `..` would let the caller re-target a different
+ * api.github.com endpoint once the URL parser normalizes the path. Segments are
+ * also `encodeURIComponent`-d at the call site as defense in depth.
+ */
+const SEGMENT_RE = /^[A-Za-z0-9._-]+$/;
+
+function assertValidSegment(kind: "owner" | "repo", value: string): void {
+  if (!SEGMENT_RE.test(value) || value === "." || value === "..") {
+    throw new CheckRunError(
+      "invalid_input",
+      `"${kind}" contains invalid characters.`,
+    );
+  }
+}
+
+/**
  * Fetch a single check run by numeric id, including its `output`. Throws a
  * {@link CheckRunError} on missing auth, bad input, or a non-OK GitHub response.
  */
@@ -79,6 +97,8 @@ export async function getCheckRun(params: {
       `"owner" and "repo" are required.`,
     );
   }
+  assertValidSegment("owner", owner);
+  assertValidSegment("repo", repo);
   if (!Number.isInteger(checkRunId) || checkRunId <= 0) {
     throw new CheckRunError(
       "invalid_input",
@@ -89,7 +109,9 @@ export async function getCheckRun(params: {
   let res: Response;
   try {
     res = await fetch(
-      `${GITHUB_API}/repos/${owner}/${repo}/check-runs/${checkRunId}`,
+      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(
+        repo,
+      )}/check-runs/${checkRunId}`,
       { headers: githubHeaders(token) },
     );
   } catch {
@@ -119,7 +141,7 @@ export async function getCheckRun(params: {
     );
   }
 
-  const data = (await res.json()) as {
+  let data: {
     id?: number;
     name?: string;
     status?: string;
@@ -132,11 +154,21 @@ export async function getCheckRun(params: {
       text?: string | null;
     };
   };
+  try {
+    data = await res.json();
+  } catch {
+    throw new CheckRunError(
+      "upstream_error",
+      "GitHub returned an unreadable response.",
+    );
+  }
 
   return {
     id: data.id ?? checkRunId,
     name: data.name ?? "",
-    status: data.status ?? "completed",
+    // Don't assert a terminal state on a malformed payload — "unknown" keeps a
+    // missing status from rendering as a finished check.
+    status: data.status ?? "unknown",
     conclusion: data.conclusion ?? null,
     htmlUrl: data.html_url ?? null,
     detailsUrl: data.details_url ?? null,
