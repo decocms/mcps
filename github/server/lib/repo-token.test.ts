@@ -61,6 +61,15 @@ describe("capPermissions", () => {
     });
   });
 
+  test("allows checks:read so the PR panel can read CI check runs", () => {
+    // Without checks in the allowlist, minting a token that requests it fails
+    // with permission_denied, and GET /commits/{sha}/check-runs 403s.
+    expect(capPermissions({ checks: "read" })).toEqual({
+      checks: "read",
+      metadata: "read",
+    });
+  });
+
   test("forces metadata to read even if write is requested", () => {
     expect(capPermissions({ metadata: "write" })).toEqual({ metadata: "read" });
   });
