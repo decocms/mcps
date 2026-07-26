@@ -17,6 +17,6 @@
     "official": false,
     "tags": ["youtube", "channel", "upload", "comments", "analytics", "thumbnails", "creator"],
     "short_description": "Manage your YouTube channel: uploads, metadata, comments and analytics.",
-    "mesh_description": "The YouTube Channel Admin MCP connects to your Google account (OAuth) and manages your channel end-to-end: resumable video uploads (from a URL or from the org's object storage), custom thumbnails, title/description/tags/privacy edits, caption listing and transcript export, comment listing/reply/moderation, and YouTube Analytics queries. Ships a channel dashboard plus home widgets showing top videos, 28-day performance and alerts for videos with upload/processing problems or comments held for review."
+    "mesh_description": "The YouTube  Channel Admin MCP connects to your Google account (OAuth) and manages your channel end-to-end: resumable video uploads (from a URL or from the org's object storage), custom thumbnails, title/description/tags/privacy edits, caption listing and transcript export, comment listing/reply/moderation, and YouTube Analytics queries. Ships a channel dashboard plus home widgets showing top videos, 28-day performance and alerts for videos with upload/processing problems or comments held for review."
   }
 }
