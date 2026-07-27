@@ -7,18 +7,38 @@ import * as z from 'zod';
  */
 export const zAutocompleteSearchSuggestions = z.object({
     searches: z.optional(z.array(z.object({
-        term: z.optional(z.string()),
-        count: z.optional(z.number()),
+        term: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term.'
+        })),
+        count: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Number of times the term was searched.'
+        })),
         attributes: z.optional(z.union([
             z.array(z.object({
-                key: z.optional(z.string()),
-                value: z.optional(z.string()),
-                labelKey: z.optional(z.string()),
-                labelValue: z.optional(z.string())
+                key: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Facet key.'
+                })),
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Facet value.'
+                })),
+                labelKey: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Human-readable format of the facet key.'
+                })),
+                labelValue: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Human-readable format of the facet value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Facet information.'
             })),
             z.null()
         ]))
-    })))
+    }).register(z.globalRegistry, {
+        description: 'Suggested facet or term.'
+    })).register(z.globalRegistry, {
+        description: 'List of suggested facets and terms.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
@@ -26,9 +46,19 @@ export const zAutocompleteSearchSuggestions = z.object({
  */
 export const zTopSearches = z.object({
     searches: z.optional(z.array(z.object({
-        term: z.optional(z.string()),
-        count: z.optional(z.number())
-    })))
+        term: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term.'
+        })),
+        count: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Number of times the term was searched.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Term information.'
+    })).register(z.globalRegistry, {
+        description: 'List of the most searched terms in the past 14 days.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
@@ -36,11 +66,23 @@ export const zTopSearches = z.object({
  */
 export const zCorrection = z.object({
     correction: z.optional(z.object({
-        misspelled: z.optional(z.boolean()),
-        correction: z.optional(z.boolean()),
-        text: z.optional(z.string()),
-        highlighted: z.optional(z.string())
+        misspelled: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the term was misspelled (`true`) or not (`false`).'
+        })),
+        correction: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the API was able to suggest a correction (`true`) or not (`false`).'
+        })),
+        text: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The corrected term. Empty string when there is no correction.'
+        })),
+        highlighted: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The corrected term with the corrected word highlighted using `<em>` tags. Empty string when there is no correction.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Object that indicates if the term was misspelled and suggests a possible correction.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
@@ -48,11 +90,25 @@ export const zCorrection = z.object({
  */
 export const zBanners = z.object({
     banners: z.optional(z.array(z.object({
-        id: z.optional(z.string()),
-        name: z.optional(z.string()),
-        area: z.optional(z.string()),
-        html: z.optional(z.string())
-    })))
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Banner ID.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Banner name.'
+        })),
+        area: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Banner area, which can be a number between 1 and 4, to be used in the store\'s [Banner](https://developers.vtex.com/docs/guides/vtex-search-banner) block.'
+        })),
+        html: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Banner HTML, which can be an image or text.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Banner information.'
+    })).register(z.globalRegistry, {
+        description: 'List of banners.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
@@ -60,166 +116,416 @@ export const zBanners = z.object({
  */
 export const zSearchSuggestions = z.object({
     searches: z.optional(z.array(z.object({
-        term: z.optional(z.string()),
-        count: z.optional(z.number())
-    })))
+        term: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term.'
+        })),
+        count: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Number of times the term was searched.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Suggested term.'
+    })).register(z.globalRegistry, {
+        description: 'List of suggested terms.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
  * Product information.
  */
 export const zProduct = z.object({
-    cacheId: z.optional(z.string()),
-    productId: z.optional(z.string()),
-    description: z.optional(z.string()),
-    productName: z.optional(z.string()),
-    productReference: z.optional(z.string()),
-    linkText: z.optional(z.string()),
-    brand: z.optional(z.string()),
-    brandId: z.optional(z.number()),
-    link: z.optional(z.string()),
-    categories: z.optional(z.array(z.string())),
-    categoryId: z.optional(z.string()),
-    categoriesIds: z.optional(z.array(z.string())),
+    cacheId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Cache ID.'
+    })),
+    productId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product unique identifier.'
+    })),
+    description: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product description.'
+    })),
+    productName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product name.'
+    })),
+    productReference: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product reference code.'
+    })),
+    linkText: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product slug (link text).'
+    })),
+    brand: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Brand name.'
+    })),
+    brandId: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Brand unique identifier.'
+    })),
+    link: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product URL path in the store.'
+    })),
+    categories: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Category path.'
+    })).register(z.globalRegistry, {
+        description: 'Category paths.'
+    })),
+    categoryId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Category unique identifier.'
+    })),
+    categoriesIds: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Category ID.'
+    })).register(z.globalRegistry, {
+        description: 'List of category IDs in the corresponding category path.'
+    })),
     priceRange: z.optional(z.object({
         sellingPrice: z.optional(z.object({
-            highPrice: z.optional(z.number()),
-            lowPrice: z.optional(z.number())
+            highPrice: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Highest selling price.'
+            })),
+            lowPrice: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Lowest selling price.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Selling price range.'
         })),
         listPrice: z.optional(z.object({
-            highPrice: z.optional(z.number()),
-            lowPrice: z.optional(z.number())
+            highPrice: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Highest list price.'
+            })),
+            lowPrice: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Lowest list price.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'List price range.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Price range information.'
     })),
     specificationGroups: z.optional(z.array(z.object({
-        originalName: z.optional(z.string()),
-        name: z.optional(z.string()),
+        originalName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Specification group original name.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Specification group name.'
+        })),
         specifications: z.optional(z.array(z.object({
-            originalName: z.optional(z.string()),
-            name: z.optional(z.string()),
-            values: z.optional(z.array(z.string()))
-        })))
-    }))),
+            originalName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Specification original name.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Specification name.'
+            })),
+            values: z.optional(z.array(z.string()).register(z.globalRegistry, {
+                description: 'Specification values.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Specification information.'
+        })).register(z.globalRegistry, {
+            description: 'List of specifications.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Specification group information.'
+    })).register(z.globalRegistry, {
+        description: 'Specification groups information.'
+    })),
     skuSpecifications: z.optional(z.array(z.object({
         field: z.optional(z.object({
-            name: z.optional(z.string()),
-            originalName: z.optional(z.string())
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'SKU specification field name.'
+            })),
+            originalName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'SKU specification field original name.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'SKU specification field.'
         })),
         values: z.optional(z.array(z.object({
-            name: z.optional(z.string()),
-            originalName: z.optional(z.string())
-        })))
-    }))),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'SKU specification value name.'
+            })),
+            originalName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'SKU specification value original name.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'SKU specification field values.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'SKU specification information.'
+    })).register(z.globalRegistry, {
+        description: 'SKU specifications.'
+    })),
     productClusters: z.optional(z.array(z.object({
-        id: z.optional(z.string()),
-        name: z.optional(z.string())
-    }))),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster unique identifier.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster name.'
+        }))
+    })).register(z.globalRegistry, {
+        description: 'Product clusters (collections) the product belongs to.'
+    })),
     clusterHighlights: z.optional(z.array(z.object({
-        id: z.optional(z.string()),
-        name: z.optional(z.string())
-    }))),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster unique identifier.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster name.'
+        }))
+    })).register(z.globalRegistry, {
+        description: 'Cluster highlights information.'
+    })),
     properties: z.optional(z.array(z.object({
-        name: z.optional(z.string()),
-        originalName: z.optional(z.string()),
-        values: z.optional(z.array(z.string()))
-    }))),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Property name.'
+        })),
+        originalName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Property original name.'
+        })),
+        values: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Property value.'
+        })))
+    })).register(z.globalRegistry, {
+        description: 'Product properties.'
+    })),
     items: z.optional(z.array(z.object({
         sellers: z.optional(z.array(z.object({
-            sellerId: z.optional(z.string()),
-            sellerName: z.optional(z.string()),
-            addToCartLink: z.optional(z.string()),
-            sellerDefault: z.optional(z.boolean()),
+            sellerId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Seller unique identifier.'
+            })),
+            sellerName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Seller name.'
+            })),
+            addToCartLink: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Add to cart link.'
+            })),
+            sellerDefault: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Whether this is the default seller.'
+            })),
             commertialOffer: z.optional(z.object({
-                DeliverySlaSamplesPerRegion: z.optional(z.record(z.string(), z.unknown())),
-                DeliverySlaSamples: z.optional(z.array(z.record(z.string(), z.unknown()))),
-                AvailableQuantity: z.optional(z.number()),
+                DeliverySlaSamplesPerRegion: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+                    description: 'Delivery SLA samples per region.'
+                })),
+                DeliverySlaSamples: z.optional(z.array(z.record(z.string(), z.unknown())).register(z.globalRegistry, {
+                    description: 'Delivery SLA samples.'
+                })),
+                AvailableQuantity: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Indicates availability. `10000` means available; `0` means unavailable.'
+                })),
                 discountHighlights: z.optional(z.array(z.object({
-                    name: z.optional(z.string())
-                }))),
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Discount highlight name.'
+                    }))
+                })).register(z.globalRegistry, {
+                    description: 'Discount highlights.'
+                })),
                 Installments: z.optional(z.array(z.object({
-                    PaymentSystemName: z.optional(z.string()),
-                    Value: z.optional(z.number()),
-                    InterestRate: z.optional(z.number()),
-                    TotalValuePlusInterestRate: z.optional(z.number()),
-                    NumberOfInstallments: z.optional(z.number()),
-                    Name: z.optional(z.string()),
-                    PaymentSystemGroupName: z.optional(z.string())
-                }))),
-                Price: z.optional(z.number()),
-                ListPrice: z.optional(z.number()),
-                spotPrice: z.optional(z.number()),
-                taxPercentage: z.optional(z.number()),
-                PriceWithoutDiscount: z.optional(z.number()),
-                Tax: z.optional(z.number()),
-                GiftSkuIds: z.optional(z.array(z.string())),
-                BuyTogether: z.optional(z.array(z.string())),
-                RewardValue: z.optional(z.number()),
-                PriceValidUntil: z.optional(z.string()),
+                    PaymentSystemName: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Payment system name.'
+                    })),
+                    Value: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Installment value.'
+                    })),
+                    InterestRate: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Interest rate.'
+                    })),
+                    TotalValuePlusInterestRate: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Total value plus interest rate.'
+                    })),
+                    NumberOfInstallments: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Number of installments.'
+                    })),
+                    Name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Payment condition name.'
+                    })),
+                    PaymentSystemGroupName: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Payment system group.'
+                    }))
+                })).register(z.globalRegistry, {
+                    description: 'Installments information.'
+                })),
+                Price: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Price of the item.'
+                })),
+                ListPrice: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'List price of the item.'
+                })),
+                spotPrice: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Special promotional price available under specific conditions, such as a discount for a specific payment method. May differ from `Price`.'
+                })),
+                taxPercentage: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Tax percentage.'
+                })),
+                PriceWithoutDiscount: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Price without discount.'
+                })),
+                Tax: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Tax value.'
+                })),
+                GiftSkuIds: z.optional(z.array(z.string()).register(z.globalRegistry, {
+                    description: 'List of gift SKU IDs.'
+                })),
+                BuyTogether: z.optional(z.array(z.string()).register(z.globalRegistry, {
+                    description: 'IDs of items that can be bought together with this item.'
+                })),
+                RewardValue: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Credit the customer receives when finalizing an order that includes this SKU.'
+                })),
+                PriceValidUntil: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Date until the price is valid, in ISO 8601 format.'
+                })),
                 GetInfoErrorMessage: z.optional(z.union([
                     z.string(),
                     z.null()
                 ])),
-                CacheVersionUsedToCallCheckout: z.optional(z.string()),
+                CacheVersionUsedToCallCheckout: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Cache version used to call Checkout.'
+                })),
                 teasers: z.optional(z.array(z.object({
-                    name: z.optional(z.string()),
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Promotion name.'
+                    })),
                     conditions: z.optional(z.object({
-                        minimumQuantity: z.optional(z.number()),
+                        minimumQuantity: z.optional(z.number().register(z.globalRegistry, {
+                            description: 'Minimum quantity of the item.'
+                        })),
                         parameters: z.optional(z.array(z.object({
                             name: z.optional(z.string()),
                             value: z.optional(z.string())
                         })))
+                    }).register(z.globalRegistry, {
+                        description: 'Conditions for the promotion to be valid.'
                     })),
                     effects: z.optional(z.object({
                         parameters: z.optional(z.array(z.object({
                             name: z.optional(z.string()),
                             value: z.optional(z.string())
                         })))
+                    }).register(z.globalRegistry, {
+                        description: 'Promotion effects.'
                     }))
-                })))
+                })).register(z.globalRegistry, {
+                    description: 'Promotion teasers.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Commercial offer information.'
             }))
-        }))),
+        }).register(z.globalRegistry, {
+            description: 'Seller information.'
+        })).register(z.globalRegistry, {
+            description: 'List of sellers.'
+        })),
         images: z.optional(z.array(z.object({
-            imageId: z.optional(z.string()),
-            cacheId: z.optional(z.string()),
-            imageTag: z.optional(z.string()),
-            imageLabel: z.optional(z.string()),
-            imageText: z.optional(z.string()),
-            imageUrl: z.optional(z.string())
-        }))),
-        itemId: z.optional(z.string()),
-        name: z.optional(z.string()),
-        nameComplete: z.optional(z.string()),
-        complementName: z.optional(z.string()),
+            imageId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Image unique identifier.'
+            })),
+            cacheId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Cache ID.'
+            })),
+            imageTag: z.optional(z.string().register(z.globalRegistry, {
+                description: 'HTML tag for the selected image.'
+            })),
+            imageLabel: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Image label.'
+            })),
+            imageText: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Image text (alt text).'
+            })),
+            imageUrl: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Image URL.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'SKU images.'
+        })),
+        itemId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU unique identifier.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU name.'
+        })),
+        nameComplete: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Combination of the product name and the SKU name.'
+        })),
+        complementName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Complement name.'
+        })),
         referenceId: z.optional(z.array(z.object({
-            Key: z.optional(z.string()),
-            Value: z.optional(z.string())
-        }))),
-        measurementUnit: z.optional(z.string()),
-        unitMultiplier: z.optional(z.number()),
+            Key: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Alternate ID key.'
+            })),
+            Value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Alternate ID value.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'SKU alternate IDs.'
+        })),
+        measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Measurement unit.'
+        })),
+        unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Unit multiplier. If the multiplier is 5.0000, the product can be added in multiples of 5.'
+        })),
         variations: z.optional(z.array(z.object({
-            name: z.optional(z.string()),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Variation name.'
+            })),
             values: z.optional(z.array(z.string()))
-        }))),
-        ean: z.optional(z.string()),
-        modalType: z.optional(z.string()),
-        videos: z.optional(z.array(z.string())),
+        })).register(z.globalRegistry, {
+            description: 'Variations.'
+        })),
+        ean: z.optional(z.string().register(z.globalRegistry, {
+            description: 'EAN value.'
+        })),
+        modalType: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Links an unusual type of SKU to a carrier specialized in delivering it (e.g. `"Refrigerated products"`). See [How the modal works](https://help.vtex.com/en/tutorial/how-does-the-modal-work--tutorials_125).'
+        })),
+        videos: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Video URL.'
+        })).register(z.globalRegistry, {
+            description: 'SKU videos.'
+        })),
         attachments: z.optional(z.array(z.object({
-            id: z.optional(z.number()),
-            name: z.optional(z.string()),
-            schema: z.optional(z.record(z.string(), z.unknown())),
+            id: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Attachment unique identifier.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Attachment name.'
+            })),
+            schema: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+                description: 'Free-form JSON schema describing the attachment.'
+            })),
             fields: z.optional(z.array(z.object({
-                field_name: z.optional(z.string()),
-                max_characters: z.optional(z.string()),
-                domain_values: z.optional(z.string())
-            }))),
-            isActive: z.optional(z.boolean()),
-            isRequired: z.optional(z.boolean())
-        }))),
-        isKit: z.optional(z.boolean()),
+                field_name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Field name.'
+                })),
+                max_characters: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Maximum number of characters allowed for the field.'
+                })),
+                domain_values: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Allowed values for the field.'
+                }))
+            })).register(z.globalRegistry, {
+                description: 'Attachment fields.'
+            })),
+            isActive: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Whether the attachment is active.'
+            })),
+            isRequired: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Whether the attachment is required.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Attachment information.'
+        })).register(z.globalRegistry, {
+            description: 'Attachments related to the SKU.'
+        })),
+        isKit: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the SKU is a kit (`true`) or not (`false`).'
+        })),
         kitItems: z.optional(z.union([
             z.array(z.object({
-                itemId: z.optional(z.string()),
-                amount: z.optional(z.number())
+                itemId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Component SKU ID.'
+                })),
+                amount: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Quantity of the component SKU per kit.'
+                }))
             })),
             z.null()
         ])),
@@ -227,58 +533,128 @@ export const zProduct = z.object({
             z.string(),
             z.null()
         ]))
-    }))),
-    releaseDate: z.optional(z.number()),
-    origin: z.optional(z.string())
+    }).register(z.globalRegistry, {
+        description: 'SKU information.'
+    })).register(z.globalRegistry, {
+        description: 'Information about the related SKUs.'
+    })),
+    releaseDate: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Release date.'
+    })),
+    origin: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Origin of the product in the trade policy.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Product information.'
 });
 
 /**
  * Response body object.
  */
 export const zProductSearch = z.object({
-    products: z.optional(z.array(zProduct)),
-    recordsFiltered: z.optional(z.number()),
-    correction: z.optional(z.object({
-        misspelled: z.optional(z.boolean())
+    products: z.optional(z.array(zProduct).register(z.globalRegistry, {
+        description: 'List of active products. Includes any sponsored products when requested.'
     })),
-    fuzzy: z.optional(z.string()),
-    operator: z.optional(z.enum(['and', 'or'])),
+    recordsFiltered: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Total number of matching products.'
+    })),
+    correction: z.optional(z.object({
+        misspelled: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the search term is misspelled (`true`) or not (`false`).'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Present when a spelling correction applies.'
+    })),
+    fuzzy: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Indicates how the search engine corrected the misspelled word by using fuzzy logic.'
+    })),
+    operator: z.optional(z.enum(['and', 'or']).register(z.globalRegistry, {
+        description: 'Indicates how the search engine dealt with the full-text query when there is more than one word.'
+    })),
     redirect: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    translated: z.optional(z.boolean()),
+    translated: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the list of products was translated by Intelligent Search (`true`) or not (`false`).'
+    })),
     pagination: z.optional(z.object({
-        count: z.optional(z.number()),
+        count: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Page count.'
+        })),
         current: z.optional(z.object({
-            index: z.optional(z.number())
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about the current page.'
         })),
         before: z.optional(z.array(z.object({
-            index: z.optional(z.number())
-        }))),
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'Information about the previous pages.'
+        })),
         after: z.optional(z.array(z.object({
-            index: z.optional(z.number())
-        }))),
-        perPage: z.optional(z.number()),
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'Information about the following pages.'
+        })),
+        perPage: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Amount of results per page.'
+        })),
         next: z.optional(z.object({
-            index: z.optional(z.number())
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about the next page.'
         })),
         previous: z.optional(z.object({
-            index: z.optional(z.number())
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about the previous page.'
         })),
         first: z.optional(z.object({
-            index: z.optional(z.number())
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about the first page.'
         })),
         last: z.optional(z.object({
-            index: z.optional(z.number())
+            index: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Page index.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about the last page.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Pagination information.'
     })),
     options: z.optional(z.object({
-        sorts: z.optional(z.array(z.record(z.string(), z.unknown()))),
-        counts: z.optional(z.array(z.record(z.string(), z.unknown()))),
-        deliveryPromisesEnabled: z.optional(z.boolean())
+        sorts: z.optional(z.array(z.record(z.string(), z.unknown())).register(z.globalRegistry, {
+            description: 'Available sort options.'
+        })),
+        counts: z.optional(z.array(z.record(z.string(), z.unknown())).register(z.globalRegistry, {
+            description: 'Available product count options.'
+        })),
+        deliveryPromisesEnabled: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Whether Delivery Promise features are enabled for this query.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Search options available for the query.'
     })),
-    searchId: z.optional(z.string())
+    searchId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier for the search session. Use this value when sending search analytics events.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
@@ -287,50 +663,116 @@ export const zProductSearch = z.object({
 export const zFacets = z.object({
     facets: z.optional(z.array(z.object({
         values: z.optional(z.array(z.object({
-            id: z.optional(z.string()),
-            quantity: z.optional(z.number()),
-            name: z.optional(z.string()),
-            key: z.optional(z.string()),
-            value: z.optional(z.string()),
-            selected: z.optional(z.boolean()),
-            href: z.optional(z.string())
-        }))),
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Value ID.'
+            })),
+            quantity: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Number of resulting products.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Human-readable format of the facet value.'
+            })),
+            key: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Facet key.'
+            })),
+            value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Facet value.'
+            })),
+            selected: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines whether the value is selected (`true`) or not (`false`).'
+            })),
+            href: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Query URL.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'Possible values.'
+        })),
         type: z.optional(z.enum([
             'TEXT',
             'PRICERANGE',
             'DELIVERY'
-        ])),
-        name: z.optional(z.string()),
-        hidden: z.optional(z.boolean()),
-        key: z.optional(z.string()),
-        quantity: z.optional(z.number())
-    }))),
-    sampling: z.optional(z.boolean()),
-    breadcrumb: z.optional(z.array(z.object({
-        name: z.optional(z.string()),
-        href: z.optional(z.string())
-    }))),
-    queryArgs: z.optional(z.object({
-        query: z.optional(z.string()),
-        selectedFacets: z.optional(z.array(z.object({
-            key: z.optional(z.string()),
-            value: z.optional(z.string())
-        })))
+        ]).register(z.globalRegistry, {
+            description: 'Facet type, which can be:\r\n\r\n- `TEXT`: The value is a simple text.\r\n- `PRICERANGE`: The value contains the property `range` representing the minimum and the maximum price for the query.\r\n- `DELIVERY`: The value represents a delivery option. Only appears in searches using [Delivery Promise](https://help.vtex.com/docs/tutorials/delivery-promise-beta).'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Human-readable format of the facet key.'
+        })),
+        hidden: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the client-side should hide the facet (`true`) or not (`false`).'
+        })),
+        key: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Facet key.'
+        })),
+        quantity: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Number of possible values.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Facet information.'
+    })).register(z.globalRegistry, {
+        description: 'List of facets.'
     })),
-    translated: z.optional(z.boolean())
+    sampling: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether there was sampling in the aggregation of facets. In search results with many products, only the first 30000 are aggregated to avoid performance issues.'
+    })),
+    breadcrumb: z.optional(z.array(z.object({
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Breadcrumb label.'
+        })),
+        href: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Breadcrumb link.'
+        }))
+    })).register(z.globalRegistry, {
+        description: 'Generated breadcrumb for the given query.'
+    })),
+    queryArgs: z.optional(z.object({
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term used in the query.'
+        })),
+        selectedFacets: z.optional(z.array(z.object({
+            key: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Facet key.'
+            })),
+            value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Facet value.'
+            }))
+        })).register(z.globalRegistry, {
+            description: 'Facets used in the query.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Term and facets used in the query.'
+    })),
+    translated: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the facets were translated by Intelligent Search (`true`) or not (`false`).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
  * Error response information.
  */
 export const zErrorResponse = z.object({
-    status: z.optional(z.int()),
-    code: z.optional(z.string()),
-    name: z.optional(z.string()),
-    level: z.optional(z.string()),
+    status: z.optional(z.int().register(z.globalRegistry, {
+        description: 'HTTP status code.'
+    })),
+    code: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Error code.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Error name.'
+    })),
+    level: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Error severity level.'
+    })),
     response: z.optional(z.object({
-        data: z.optional(z.string())
+        data: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Error response message.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Response details.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Error response information.'
 });
 
 /**
@@ -355,7 +797,9 @@ export const zErrorResponse = z.object({
  * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
  * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
  */
-export const zQuery = z.string();
+export const zQuery = z.string().register(z.globalRegistry, {
+    description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+});
 
 /**
  * ## Format
@@ -414,82 +858,114 @@ export const zSimulationBehavior = z.enum([
     'only1P',
     'only3P',
     'regionalize1p'
-]);
+]).register(z.globalRegistry, {
+    description: 'Defines the pricing and availability simulation behavior.\r\n\r\n- `default`: Calls the simulation for every single seller.\r\n- `skip`: Never calls the simulation. Use for the fastest response when live pricing is not required.\r\n- `only1P`: Only calls the simulation for first-party sellers.\r\n- `only3P`: Only calls the simulation for third-party sellers.\r\n- `regionalize1p`: Calls regionalized simulation for first-party sellers only.'
+});
 
 /**
  * Defines whether the result should hide unavailable items (`true`) or not (`false`). When set to `true`, only products with stock are returned.
  */
-export const zHideUnavailableItems = z.boolean().default(false);
+export const zHideUnavailableItems = z.boolean().register(z.globalRegistry, {
+    description: 'Defines whether the result should hide unavailable items (`true`) or not (`false`). When set to `true`, only products with stock are returned.'
+}).default(false);
 
 /**
  * Sales channel (trade policy) ID. Alternative to including `trade-policy/{id}` in the facets path. Intelligent Search API (Legacy) previously read this from `segment.channel`. In v1, pass the value directly as a query parameter.
  */
-export const zSc = z.string();
+export const zSc = z.string().register(z.globalRegistry, {
+    description: 'Sales channel (trade policy) ID. Alternative to including `trade-policy/{id}` in the facets path. Intelligent Search API (Legacy) previously read this from `segment.channel`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Region ID for regionalized results. Intelligent Search API (Legacy) previously read this from `segment.regionId`. In v1, pass the value directly as a query parameter.
  */
-export const zRegionId = z.string();
+export const zRegionId = z.string().register(z.globalRegistry, {
+    description: 'Region ID for regionalized results. Intelligent Search API (Legacy) previously read this from `segment.regionId`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Intelligent Search API (Legacy) previously read this from `segment.countryCode` or the `country` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zCountry = z.string();
+export const zCountry = z.string().register(z.globalRegistry, {
+    description: 'Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Intelligent Search API (Legacy) previously read this from `segment.countryCode` or the `country` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * ZIP or postal code. Intelligent Search API (Legacy) previously read this from the `zip-code` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zZipCode = z.string();
+export const zZipCode = z.string().register(z.globalRegistry, {
+    description: 'ZIP or postal code. Intelligent Search API (Legacy) previously read this from the `zip-code` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Geographic coordinates in the format `longitude,latitude`. Intelligent Search API (Legacy) previously read this from the `coordinates` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zCoordinates = z.string();
+export const zCoordinates = z.string().register(z.globalRegistry, {
+    description: 'Geographic coordinates in the format `longitude,latitude`. Intelligent Search API (Legacy) previously read this from the `coordinates` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Pickup point ID for pickup-in-point delivery context. Intelligent Search API (Legacy) previously read this from the `pickupPoint` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zPickupPoint = z.string();
+export const zPickupPoint = z.string().register(z.globalRegistry, {
+    description: 'Pickup point ID for pickup-in-point delivery context. Intelligent Search API (Legacy) previously read this from the `pickupPoint` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Pre-computed delivery zones hash for faster regionalization lookup. Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `deliveryZonesHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zDeliveryZonesHash = z.string();
+export const zDeliveryZonesHash = z.string().register(z.globalRegistry, {
+    description: 'Pre-computed delivery zones hash for faster regionalization lookup. Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `deliveryZonesHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Pre-computed pickup points hash for faster regionalization lookup. Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `pickupPointsHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.
  */
-export const zPickupPointsHash = z.string();
+export const zPickupPointsHash = z.string().register(z.globalRegistry, {
+    description: 'Pre-computed pickup points hash for faster regionalization lookup. Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `pickupPointsHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * UTM source value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_source`. In v1, pass the value directly as a query parameter.
  */
-export const zUtmSource = z.string();
+export const zUtmSource = z.string().register(z.globalRegistry, {
+    description: 'UTM source value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_source`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * UTM campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_campaign`. In v1, pass the value directly as a query parameter.
  */
-export const zUtmCampaign = z.string();
+export const zUtmCampaign = z.string().register(z.globalRegistry, {
+    description: 'UTM campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_campaign`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * UTMi campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utmi_campaign`. In v1, pass the value directly as a query parameter.
  */
-export const zUtmiCampaign = z.string();
+export const zUtmiCampaign = z.string().register(z.globalRegistry, {
+    description: 'UTMi campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utmi_campaign`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Campaign identifier, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.campaigns`. In v1, pass the value directly as a query parameter.
  */
-export const zCampaigns = z.string();
+export const zCampaigns = z.string().register(z.globalRegistry, {
+    description: 'Campaign identifier, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.campaigns`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Price table(s) to apply during simulation. Intelligent Search API (Legacy) previously read this from `segment.priceTables`. In v1, pass the value directly as a query parameter.
  */
-export const zPriceTables = z.string();
+export const zPriceTables = z.string().register(z.globalRegistry, {
+    description: 'Price table(s) to apply during simulation. Intelligent Search API (Legacy) previously read this from `segment.priceTables`. In v1, pass the value directly as a query parameter.'
+});
 
 /**
  * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
-export const zSponsoredCount = z.string();
+export const zSponsoredCount = z.string().register(z.globalRegistry, {
+    description: 'Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+});
 
 /**
  * Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
@@ -502,22 +978,30 @@ export const zAdvertisementPlacement = z.enum([
     'plp_shelf',
     'autocomplete',
     'homepage'
-]);
+]).register(z.globalRegistry, {
+    description: 'Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+});
 
 /**
  * When `true`, the same product can appear as both sponsored and organic. When `false`, sponsored products are removed from the organic list. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
-export const zRepeatSponsoredProducts = z.boolean();
+export const zRepeatSponsoredProducts = z.boolean().register(z.globalRegistry, {
+    description: 'When `true`, the same product can appear as both sponsored and organic. When `false`, sponsored products are removed from the organic list. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+});
 
 /**
  * Indicates how the search engine will correct misspelled words by using fuzzy logic. It can be a number representing the max number of misspelled letters, or the string `auto` suggesting that the search engine should set this value by itself.
  */
-export const zFuzzy = z.string();
+export const zFuzzy = z.string().register(z.globalRegistry, {
+    description: 'Indicates how the search engine will correct misspelled words by using fuzzy logic. It can be a number representing the max number of misspelled letters, or the string `auto` suggesting that the search engine should set this value by itself.'
+});
 
 /**
  * Indicates how the search engine will deal with the full-text query if there is more than one word. Set `and` if the returned products must have all the words in its metadata, or `or` otherwise.
  */
-export const zOperator = z.enum(['and', 'or']);
+export const zOperator = z.enum(['and', 'or']).register(z.globalRegistry, {
+    description: 'Indicates how the search engine will deal with the full-text query if there is more than one word. Set `and` if the returned products must have all the words in its metadata, or `or` otherwise.'
+});
 
 export const zGetTopSearchesData = z.object({
     body: z.optional(z.never()),
@@ -534,7 +1018,9 @@ export const zGetAutocompleteSuggestionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
@@ -546,7 +1032,9 @@ export const zGetSearchSuggestionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
@@ -558,7 +1046,9 @@ export const zGetCorrectionSearchData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
@@ -575,7 +1065,9 @@ export const zGetBannersByFacetsData = z.object({
         ]).default('/')
     }),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
@@ -592,7 +1084,9 @@ export const zGetProductSearchByFacetsData = z.object({
         ]).default('/')
     }),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         count: z.optional(z.union([
             z.number().default(24),
             z.null()
@@ -609,37 +1103,71 @@ export const zGetProductSearchByFacetsData = z.object({
             'name:asc',
             'release:desc',
             'discount:desc'
-        ]))),
+        ])).register(z.globalRegistry, {
+            description: 'Defines how results are sorted. Relevance is the **default** sorting type, applied when this parameter is omitted, null, or empty.\r\n\r\nAllowed values:\r\n- **Omitted, empty, or null** (default): Results are sorted by relevance.\r\n- `price:desc`: Results are sorted by price in descending order.\r\n- `price:asc`: Results are sorted by price in ascending order.\r\n- `orders:desc`: Results are sorted by the amount of orders in the past 90 days, in descending order.\r\n- `name:desc`: Results are sorted by name in descending alphabetical order.\r\n- `name:asc`: Results are sorted by name in ascending alphabetical order.\r\n- `release:desc`: Results are sorted by release date in descending order.\r\n- `discount:desc`: Results are sorted by discount percentage in descending order.'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        hideUnavailableItems: z.optional(z.boolean()).default(false),
+        hideUnavailableItems: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the result should hide unavailable items (`true`) or not (`false`). When set to `true`, only products with stock are returned.'
+        })).default(false),
         simulationBehavior: z.optional(z.enum([
             'default',
             'skip',
             'only1P',
             'only3P',
             'regionalize1p'
-        ])),
-        sc: z.optional(z.string()),
-        regionId: z.optional(z.string()),
-        country: z.optional(z.string()),
-        'zip-code': z.optional(z.string()),
-        coordinates: z.optional(z.string()),
-        pickupPoint: z.optional(z.string()),
-        deliveryZonesHash: z.optional(z.string()),
-        pickupPointsHash: z.optional(z.string()),
-        utmSource: z.optional(z.string()),
-        utmCampaign: z.optional(z.string()),
-        utmiCampaign: z.optional(z.string()),
-        campaigns: z.optional(z.string()),
-        priceTables: z.optional(z.string()),
+        ]).register(z.globalRegistry, {
+            description: 'Defines the pricing and availability simulation behavior.\r\n\r\n- `default`: Calls the simulation for every single seller.\r\n- `skip`: Never calls the simulation. Use for the fastest response when live pricing is not required.\r\n- `only1P`: Only calls the simulation for first-party sellers.\r\n- `only3P`: Only calls the simulation for third-party sellers.\r\n- `regionalize1p`: Calls regionalized simulation for first-party sellers only.'
+        })),
+        sc: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Sales channel (trade policy) ID. Alternative to including `trade-policy/{id}` in the facets path. Intelligent Search API (Legacy) previously read this from `segment.channel`. In v1, pass the value directly as a query parameter.'
+        })),
+        regionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Region ID for regionalized results. Intelligent Search API (Legacy) previously read this from `segment.regionId`. In v1, pass the value directly as a query parameter.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Intelligent Search API (Legacy) previously read this from `segment.countryCode` or the `country` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        'zip-code': z.optional(z.string().register(z.globalRegistry, {
+            description: 'ZIP or postal code. Intelligent Search API (Legacy) previously read this from the `zip-code` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        coordinates: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Geographic coordinates in the format `longitude,latitude`. Intelligent Search API (Legacy) previously read this from the `coordinates` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPoint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pickup point ID for pickup-in-point delivery context. Intelligent Search API (Legacy) previously read this from the `pickupPoint` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        deliveryZonesHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed delivery zones hash for faster regionalization lookup. Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `deliveryZonesHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPointsHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed pickup points hash for faster regionalization lookup. Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `pickupPointsHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmSource: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM source value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_source`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_campaign`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmiCampaign: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTMi campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utmi_campaign`. In v1, pass the value directly as a query parameter.'
+        })),
+        campaigns: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Campaign identifier, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.campaigns`. In v1, pass the value directly as a query parameter.'
+        })),
+        priceTables: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Price table(s) to apply during simulation. Intelligent Search API (Legacy) previously read this from `segment.priceTables`. In v1, pass the value directly as a query parameter.'
+        })),
         showSponsored: z.optional(z.union([
             z.boolean().default(false),
             z.null()
         ])).default(false),
-        sponsoredCount: z.optional(z.string()),
+        sponsoredCount: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+        })),
         advertisementPlacement: z.optional(z.enum([
             'top_search',
             'middle_search',
@@ -648,8 +1176,12 @@ export const zGetProductSearchByFacetsData = z.object({
             'plp_shelf',
             'autocomplete',
             'homepage'
-        ])),
-        repeatSponsoredProducts: z.optional(z.boolean())
+        ]).register(z.globalRegistry, {
+            description: 'Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+        })),
+        repeatSponsoredProducts: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'When `true`, the same product can appear as both sponsored and organic. When `false`, sponsored products are removed from the organic list. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).'
+        }))
     }))
 });
 
@@ -662,24 +1194,44 @@ export const zGetFacetsByFacetsData = z.object({
         ]).default('/')
     }),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        hideUnavailableItems: z.optional(z.boolean()).default(false),
+        hideUnavailableItems: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the result should hide unavailable items (`true`) or not (`false`). When set to `true`, only products with stock are returned.'
+        })).default(false),
         removeHiddenFacets: z.optional(z.union([
             z.boolean(),
             z.null()
         ])),
-        sc: z.optional(z.string()),
-        regionId: z.optional(z.string()),
-        country: z.optional(z.string()),
-        'zip-code': z.optional(z.string()),
-        coordinates: z.optional(z.string()),
-        pickupPoint: z.optional(z.string()),
-        deliveryZonesHash: z.optional(z.string()),
-        pickupPointsHash: z.optional(z.string())
+        sc: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Sales channel (trade policy) ID. Alternative to including `trade-policy/{id}` in the facets path. Intelligent Search API (Legacy) previously read this from `segment.channel`. In v1, pass the value directly as a query parameter.'
+        })),
+        regionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Region ID for regionalized results. Intelligent Search API (Legacy) previously read this from `segment.regionId`. In v1, pass the value directly as a query parameter.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Intelligent Search API (Legacy) previously read this from `segment.countryCode` or the `country` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        'zip-code': z.optional(z.string().register(z.globalRegistry, {
+            description: 'ZIP or postal code. Intelligent Search API (Legacy) previously read this from the `zip-code` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        coordinates: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Geographic coordinates in the format `longitude,latitude`. Intelligent Search API (Legacy) previously read this from the `coordinates` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPoint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pickup point ID for pickup-in-point delivery context. Intelligent Search API (Legacy) previously read this from the `pickupPoint` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        deliveryZonesHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed delivery zones hash for faster regionalization lookup. Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `deliveryZonesHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPointsHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed pickup points hash for faster regionalization lookup. Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `pickupPointsHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        }))
     }))
 });
 
@@ -687,15 +1239,21 @@ export const zGetProductsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        sc: z.string(),
-        value: z.string(),
+        sc: z.string().register(z.globalRegistry, {
+            description: 'Sales channel (trade policy) ID. Required for this endpoint to resolve pricing and availability. Intelligent Search API (Legacy) previously read this from `segment.channel`. In v1, pass the value directly as a query parameter.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'The identifier value to look up, interpreted according to the `field` parameter.'
+        }),
         field: z.optional(z.enum([
             'id',
             'slug',
             'ean',
             'sku',
             'reference'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Which identifier type `value` represents.\r\n\r\n- `id` (default): product ID. Fastest: skips the search pipeline entirely.\r\n- `slug`: product slug (link text).\r\n- `ean`: SKU EAN.\r\n- `sku`: SKU ID.\r\n- `reference`: SKU reference ID (not the product reference).'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
@@ -706,23 +1264,57 @@ export const zGetProductsData = z.object({
             'only1P',
             'only3P',
             'regionalize1p'
-        ])),
-        hideUnavailableItems: z.optional(z.boolean()).default(false),
-        productClusterId: z.optional(z.string()),
-        productOriginVtex: z.optional(z.boolean()),
-        'show-invisible-items': z.optional(z.boolean()),
-        regionId: z.optional(z.string()),
-        country: z.optional(z.string()),
-        'zip-code': z.optional(z.string()),
-        coordinates: z.optional(z.string()),
-        pickupPoint: z.optional(z.string()),
-        deliveryZonesHash: z.optional(z.string()),
-        pickupPointsHash: z.optional(z.string()),
-        utmSource: z.optional(z.string()),
-        utmCampaign: z.optional(z.string()),
-        utmiCampaign: z.optional(z.string()),
-        campaigns: z.optional(z.string()),
-        priceTables: z.optional(z.string())
+        ]).register(z.globalRegistry, {
+            description: 'Defines the pricing and availability simulation behavior.\r\n\r\n- `default`: Calls the simulation for every single seller.\r\n- `skip`: Never calls the simulation. Use for the fastest response when live pricing is not required.\r\n- `only1P`: Only calls the simulation for first-party sellers.\r\n- `only3P`: Only calls the simulation for third-party sellers.\r\n- `regionalize1p`: Calls regionalized simulation for first-party sellers only.'
+        })),
+        hideUnavailableItems: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the result should hide unavailable items (`true`) or not (`false`). When set to `true`, only products with stock are returned.'
+        })).default(false),
+        productClusterId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Restrict to a cluster. Returns `404` if the product is not in this cluster.'
+        })),
+        productOriginVtex: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'When `true`, returns the product in Catalog (portal) format instead of Intelligent Search format.'
+        })),
+        'show-invisible-items': z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'When `true`, skips the catalog visibility (`isVisible`) check. Useful for preview and admin flows.'
+        })),
+        regionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Region ID for regionalized results. Intelligent Search API (Legacy) previously read this from `segment.regionId`. In v1, pass the value directly as a query parameter.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Intelligent Search API (Legacy) previously read this from `segment.countryCode` or the `country` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        'zip-code': z.optional(z.string().register(z.globalRegistry, {
+            description: 'ZIP or postal code. Intelligent Search API (Legacy) previously read this from the `zip-code` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        coordinates: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Geographic coordinates in the format `longitude,latitude`. Intelligent Search API (Legacy) previously read this from the `coordinates` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPoint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pickup point ID for pickup-in-point delivery context. Intelligent Search API (Legacy) previously read this from the `pickupPoint` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        deliveryZonesHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed delivery zones hash for faster regionalization lookup. Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `deliveryZonesHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        pickupPointsHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed pickup points hash for faster regionalization lookup. Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API. Intelligent Search API (Legacy) previously read this from the `pickupPointsHash` key in `segment.facets`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmSource: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM source value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_source`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utm_campaign`. In v1, pass the value directly as a query parameter.'
+        })),
+        utmiCampaign: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTMi campaign value, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.utmi_campaign`. In v1, pass the value directly as a query parameter.'
+        })),
+        campaigns: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Campaign identifier, forwarded to the pricing and availability simulation. Intelligent Search API (Legacy) previously read this from `segment.campaigns`. In v1, pass the value directly as a query parameter.'
+        })),
+        priceTables: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Price table(s) to apply during simulation. Intelligent Search API (Legacy) previously read this from `segment.priceTables`. In v1, pass the value directly as a query parameter.'
+        }))
     })
 });
 
@@ -735,16 +1327,30 @@ export const zGetPickupPointAvailabilityByFacetsData = z.object({
         ]).default('/')
     }),
     query: z.optional(z.object({
-        query: z.optional(z.string()),
+        query: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search term. It can contain any character.\r\n\r\nThis parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.\r\n\r\nYou can search for products or SKUs using specific ID types by adding search parameters at the end of the store URL:\r\n\r\n- **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`\r\n- **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`\r\n\r\n>⚠️ All searched IDs should be of the same type.\r\n\r\n## Supported ID types\r\n\r\n| ID Type | Query format | Example |\r\n| - | - | - |\r\n| Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |\r\n| SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |\r\n| Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |\r\n| EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |\r\n| Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |'
+        })),
         locale: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        deliveryZonesHash: z.optional(z.string()),
-        pickupPointsHash: z.optional(z.string()),
-        country: z.optional(z.string()),
-        'zip-code': z.optional(z.string()),
-        coordinates: z.optional(z.string()),
-        pickupPoint: z.optional(z.string())
+        deliveryZonesHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed hash for delivery zones. Required when using the hashes approach (alternative to country and ZIP code).'
+        })),
+        pickupPointsHash: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pre-computed hash for pickup points. Required when using the hashes approach (alternative to country and ZIP code).'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Three-letter country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format. Required when using the country and ZIP code approach.'
+        })),
+        'zip-code': z.optional(z.string().register(z.globalRegistry, {
+            description: 'ZIP code or postal code. Required when using the country and ZIP code approach.'
+        })),
+        coordinates: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Geographic coordinates in the format `longitude,latitude`. Used to sort results by proximity. Optional: the server derives coordinates from `zip-code` and `country` when not provided.'
+        })),
+        pickupPoint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pickup point ID to filter results to a specific pickup point.'
+        }))
     }))
 });

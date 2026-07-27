@@ -5,61 +5,107 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 export const zGetNotesbyorderIdData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        'target.id': z.string(),
-        perPage: z.optional(z.int()),
-        page: z.optional(z.int()),
-        reason: z.optional(z.string())
+        'target.id': z.string().register(z.globalRegistry, {
+            description: 'Order ID.'
+        }),
+        perPage: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of notes per page. Maximum: 30.'
+        })),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of the page to be retrieved.'
+        })),
+        reason: z.optional(z.string().register(z.globalRegistry, {
+            description: 'This parameter is relevant only for accounts using [Data Protection Plus](https://developers.vtex.com/docs/guides/data-protection-plus). When sending requests to this endpoint, accounts with the [PII data architecture](https://developers.vtex.com/docs/guides/pii-data-architecture-specifications) can use this parameter to declare the reason for requesting unmasked data. Otherwise, this endpoint will return masked PII data.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zNewNoteData = z.object({
     body: z.optional(z.object({
         target: z.object({
-            id: z.optional(z.string()),
-            type: z.optional(z.string()),
-            url: z.optional(z.string())
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Target ID.'
+            })),
+            type: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Target type.'
+            })),
+            url: z.optional(z.string().register(z.globalRegistry, {
+                description: 'You can choose between using the complete target URL or only `/orders/{OrderID}`.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Target.'
         }),
-        domain: z.string(),
-        description: z.string(),
+        domain: z.string().register(z.globalRegistry, {
+            description: 'Domain identification.'
+        }),
+        description: z.string().register(z.globalRegistry, {
+            description: 'Note description. Maximum number of characters: 2000.'
+        }),
         createdBy: z.optional(z.object({
-            id: z.optional(z.string()),
-            name: z.optional(z.string())
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Identification code of the user that created the note.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Name of the user that created the note.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object with information about the user that created the note.'
         }))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetNoteData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        noteId: z.string()
+        noteId: z.string().register(z.globalRegistry, {
+            description: 'Note ID.'
+        })
     }),
     query: z.optional(z.object({
-        reason: z.optional(z.string())
+        reason: z.optional(z.string().register(z.globalRegistry, {
+            description: 'This parameter is relevant only for accounts using [Data Protection Plus](https://developers.vtex.com/docs/guides/data-protection-plus). When sending requests to this endpoint, accounts with the [PII data architecture](https://developers.vtex.com/docs/guides/pii-data-architecture-specifications) can use this parameter to declare the reason for requesting unmasked data. Otherwise, this endpoint will return masked PII data.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -67,36 +113,74 @@ export const zListtasksbyassigneeData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        'assignee.email': z.optional(z.string()),
-        'target.id': z.optional(z.string()),
-        context: z.optional(z.string()),
-        page: z.optional(z.string()),
-        perPage: z.optional(z.string()),
-        status: z.optional(z.string())
+        'assignee.email': z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by assignee, insert the desired assignee\'s email and status.'
+        })),
+        'target.id': z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by target, insert the desired `targetId` and `status`.'
+        })),
+        context: z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by context, insert the desired context, `page`, `perPage` and `status`.'
+        })),
+        page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by context, also insert the desired `page`.'
+        })),
+        perPage: z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by context, also insert the desired `perPage` value.'
+        })),
+        status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'If you wish to list tasks by context, also insert the desired `status`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zNewTaskData = z.object({
     body: z.optional(z.object({
         target: z.array(z.object({
-            id: z.string(),
-            type: z.string(),
-            url: z.string()
-        })),
-        domain: z.string(),
-        context: z.string(),
-        name: z.string(),
-        priority: z.string(),
+            id: z.string().register(z.globalRegistry, {
+                description: 'Order ID.'
+            }),
+            type: z.string().register(z.globalRegistry, {
+                description: 'Task type.'
+            }),
+            url: z.string().register(z.globalRegistry, {
+                description: 'Order ID link in VTEX Admin.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Target details.'
+        })).register(z.globalRegistry, {
+            description: 'Target information for creating the task.'
+        }),
+        domain: z.string().register(z.globalRegistry, {
+            description: 'Task domain in the VTEX environment.'
+        }),
+        context: z.string().register(z.globalRegistry, {
+            description: 'Task context.'
+        }),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Task name.'
+        }),
+        priority: z.string().register(z.globalRegistry, {
+            description: 'Task level of priority.'
+        }),
         surrogateKey: z.union([
             z.string(),
             z.null()
         ]),
-        description: z.optional(z.string()),
-        dueDate: z.string(),
+        description: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Additional task comment.'
+        })),
+        dueDate: z.string().register(z.globalRegistry, {
+            description: 'Task deadline in `hh:mm:ss` format.'
+        }),
         assignee: z.object({
             id: z.optional(z.union([
                 z.string(),
@@ -106,7 +190,11 @@ export const zNewTaskData = z.object({
                 z.string(),
                 z.null()
             ])),
-            email: z.string()
+            email: z.string().register(z.globalRegistry, {
+                description: 'Task assignee email.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Assignee to whom the task will be designated.'
         }),
         followers: z.array(z.object({
             id: z.optional(z.union([
@@ -117,8 +205,14 @@ export const zNewTaskData = z.object({
                 z.string(),
                 z.null()
             ])),
-            email: z.string()
-        })),
+            email: z.string().register(z.globalRegistry, {
+                description: 'Email of the user designated to be the task follower.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Person designated to be the task follower.'
+        })).register(z.globalRegistry, {
+            description: 'Task follower array.'
+        }),
         parentTaskId: z.optional(z.union([
             z.string(),
             z.null()
@@ -127,20 +221,30 @@ export const zNewTaskData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetTaskData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        taskId: z.string()
+        taskId: z.string().register(z.globalRegistry, {
+            description: 'Task ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -151,28 +255,48 @@ export const zEditTaskData = z.object({
             'Closed',
             'Suspended',
             'InProgress'
-        ])
+        ]).register(z.globalRegistry, {
+            description: 'Task status update.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Task status to be updated.'
     })),
     path: z.object({
-        taskId: z.string()
+        taskId: z.string().register(z.globalRegistry, {
+            description: 'Task ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zAddCommentData = z.object({
     body: z.optional(z.object({
-        text: z.string()
+        text: z.string().register(z.globalRegistry, {
+            description: 'Text you wish to add to the task.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Text to be added to the task.'
     })),
     path: z.object({
-        taskId: z.string()
+        taskId: z.string().register(z.globalRegistry, {
+            description: 'Task ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

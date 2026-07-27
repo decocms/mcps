@@ -5,27 +5,39 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.
  */
-export const zSellerId = z.string();
+export const zSellerId = z.string().register(z.globalRegistry, {
+    description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+});
 
 export const zGetbySkuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'SKU\'s unique identifier in the marketplace.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -33,148 +45,246 @@ export const zGetpagedadminData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        sellerId: z.optional(z.string()),
-        skuId: z.optional(z.string()),
-        sellerSkuId: z.optional(z.string()),
-        isActive: z.optional(z.boolean()),
-        size: z.optional(z.string())
+        sellerId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the Admin to get the correct ID.'
+        })),
+        skuId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU\'s unique identifier in the marketplace.'
+        })),
+        sellerSkuId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })),
+        isActive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the SKU binding is active.'
+        })),
+        size: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Amount of results.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetSkUsellerData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string(),
-        sellerSkuId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        sellerSkuId: z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zBindtoanotherskuData = z.object({
     body: z.optional(z.object({
-        StockKeepingUnitId: z.int()
+        StockKeepingUnitId: z.int().register(z.globalRegistry, {
+            description: 'SKU ID in the marketplace.'
+        })
     })),
     path: z.object({
-        sellerId: z.string(),
-        sellerSkuId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        sellerSkuId: z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetallbySellerIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetpagedbySellerIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        })
     }),
     query: z.object({
-        page: z.string(),
-        size: z.string()
+        page: z.string().register(z.globalRegistry, {
+            description: 'Page number.'
+        }),
+        size: z.string().register(z.globalRegistry, {
+            description: 'Amount of results per page.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zChangeNotificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'A string that identifies the SKU in the marketplace. This is the ID that the marketplace will use to look for the SKU whose change the seller wants to inform. If the marketplace finds this ID, it responds with status code `200`. Otherwise, it responds with status code `404`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string(),
-        sellerSkuId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        sellerSkuId: z.string().register(z.globalRegistry, {
+            description: 'ID of the binding of the seller with the SKU.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zInsertSkuBindingData = z.object({
     body: z.optional(z.object({
-        StockKeepingUnitId: z.int(),
-        IsActive: z.boolean(),
-        SellerId: z.string(),
-        SellerStockKeepingUnitId: z.string()
+        StockKeepingUnitId: z.int().register(z.globalRegistry, {
+            description: 'SKU ID in the marketplace.'
+        }),
+        IsActive: z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the SKU binding is active (`true`) or inactive (`false`).'
+        }),
+        SellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        SellerStockKeepingUnitId: z.string().register(z.globalRegistry, {
+            description: 'SKU seller ID.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zActivateSkuBindingData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string(),
-        skuSellerId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        skuSellerId: z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeactivateSkuBindingData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string(),
-        skuSellerId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        skuSellerId: z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteSkUsellerassociationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        sellerId: z.string(),
-        sellerSkuId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the seller in the marketplace. It can be the same as the seller name or a unique number. Check the **Sellers management** section in the VTEX Admin to get the correct ID.'
+        }),
+        sellerSkuId: z.string().register(z.globalRegistry, {
+            description: 'SKU ID in the seller\'s store.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

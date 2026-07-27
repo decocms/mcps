@@ -10,12 +10,24 @@ export const zLicenseItems = z.object({
         z.iso.datetime(),
         z.null()
     ])),
-    id: z.optional(z.number()),
-    isPurchased: z.optional(z.boolean()),
+    id: z.optional(z.number().register(z.globalRegistry, {
+        description: 'ID of the category of the license.'
+    })),
+    isPurchased: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the license is purchased (`true`) or not (`false`).'
+    })),
     products: z.optional(z.array(z.object({
-        id: z.optional(z.number()),
-        name: z.optional(z.string()),
-        domains: z.optional(z.array(z.string())),
+        id: z.optional(z.number().register(z.globalRegistry, {
+            description: 'ID of the product.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the product.'
+        })),
+        domains: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Domain of the product.'
+        })).register(z.globalRegistry, {
+            description: 'List of domains of the product.'
+        })),
         endpoints: z.optional(z.object({
             webApiUrl: z.optional(z.union([
                 z.string(),
@@ -25,18 +37,34 @@ export const zLicenseItems = z.object({
                 z.string(),
                 z.null()
             ]))
+        }).register(z.globalRegistry, {
+            description: 'Endpoints.'
         }))
-    }))),
-    name: z.optional(z.string())
+    }).register(z.globalRegistry, {
+        description: 'Object representing products of licenses.'
+    })).register(z.globalRegistry, {
+        description: 'Array of products.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the category of the license.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object representing licenses.'
 });
 
 /**
  * Object containing complete information from a store.
  */
 export const zSiteItems = z.object({
-    id: z.optional(z.number()),
-    name: z.optional(z.string()),
-    tradingName: z.optional(z.string()),
+    id: z.optional(z.number().register(z.globalRegistry, {
+        description: 'ID of the store.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Store name.'
+    })),
+    tradingName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Trading name of the store.'
+    })),
     LV: z.optional(z.union([
         z.string(),
         z.null()
@@ -45,44 +73,82 @@ export const zSiteItems = z.object({
         z.string(),
         z.null()
     ])),
-    monetaryUnitId: z.optional(z.number()),
+    monetaryUnitId: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Monetary unit ID.'
+    })),
     domains: z.optional(z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Domain.'
+        })),
         z.null()
     ])),
-    hosts: z.optional(z.array(z.string())),
-    aliases: z.optional(z.array(z.string()))
+    hosts: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Host address.'
+    })).register(z.globalRegistry, {
+        description: 'Hosts associated to the store.'
+    })),
+    aliases: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Alias.'
+    })).register(z.globalRegistry, {
+        description: 'Aliases.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object containing complete information from a store.'
 });
 
 /**
  * Object representing application keys.
  */
 export const zAppKeyItems = z.object({
-    id: z.optional(z.string()),
-    appKey: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the API key.'
+    })),
+    appKey: z.optional(z.string().register(z.globalRegistry, {
+        description: 'API key.'
+    })),
     appToken: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    label: z.optional(z.string()),
-    createdIn: z.optional(z.iso.datetime()),
-    isActive: z.optional(z.boolean()),
-    isBlocked: z.optional(z.boolean())
+    label: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Label of the API key.'
+    })),
+    createdIn: z.optional(z.iso.datetime().register(z.globalRegistry, {
+        description: 'Creation date of the API key.'
+    })),
+    isActive: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the API key is active (`true`) or not (`false`).'
+    })),
+    isBlocked: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the API key is blocked (`true`) or not (`false`).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object representing application keys.'
 });
 
 /**
  * Successful response for `/api/vlm/account`.
  */
 export const zAccountResponse = z.object({
-    isActive: z.optional(z.boolean()),
-    id: z.optional(z.string()),
-    name: z.optional(z.string()),
-    accountName: z.optional(z.string()),
+    isActive: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the account is active (`true`) or not (`false`).'
+    })),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the account.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Trading name.'
+    })),
+    accountName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Account name.'
+    })),
     lv: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    isOperating: z.optional(z.boolean()),
+    isOperating: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the account is in production (`true`) or not (`false`).'
+    })),
     defaultUrl: z.optional(z.union([
         z.string(),
         z.null()
@@ -99,12 +165,16 @@ export const zAccountResponse = z.object({
         z.string(),
         z.null()
     ])),
-    companyName: z.optional(z.string()),
+    companyName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Company name.'
+    })),
     cnpj: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    haveParentAccount: z.optional(z.boolean()),
+    haveParentAccount: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the account has a parent account (`true`) or not (`false`).'
+    })),
     parentAccountId: z.optional(z.union([
         z.string(),
         z.null()
@@ -125,7 +195,9 @@ export const zAccountResponse = z.object({
         z.string(),
         z.null()
     ])),
-    hasLogo: z.optional(z.boolean()),
+    hasLogo: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the store\'s logotype has been uploaded (`true`) or not (`false`).'
+    })),
     number: z.optional(z.union([
         z.string(),
         z.null()
@@ -138,18 +210,40 @@ export const zAccountResponse = z.object({
         z.string(),
         z.null()
     ])),
-    telephone: z.optional(z.string()),
-    tradingName: z.optional(z.string()),
-    licenses: z.optional(z.array(zLicenseItems)),
+    telephone: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Telephone number of the person assigned as main contact of the store.'
+    })),
+    tradingName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Trading name.'
+    })),
+    licenses: z.optional(z.array(zLicenseItems).register(z.globalRegistry, {
+        description: 'Licenses of the account.'
+    })),
     sponsor: z.optional(z.object({
-        name: z.optional(z.string()),
-        email: z.optional(z.string()),
-        phone: z.optional(z.string())
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the sponsor user.'
+        })),
+        email: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Email of the sponsor user.'
+        })),
+        phone: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Phone of the sponsor user.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Object with information about the sponsor user.'
     })),
     contact: z.optional(z.object({
-        name: z.optional(z.string()),
-        email: z.optional(z.string()),
-        phone: z.optional(z.string())
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the person assigned as main contact of the store.'
+        })),
+        email: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Email of the person assigned as main contact of the store.'
+        })),
+        phone: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Telephone number of the person assigned as main contact of the store.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Information about the person assigned as main contact of the store.'
     })),
     operationDate: z.optional(z.union([
         z.iso.datetime(),
@@ -159,9 +253,17 @@ export const zAccountResponse = z.object({
         z.iso.datetime(),
         z.null()
     ])),
-    creationDate: z.optional(z.iso.datetime()),
-    hosts: z.optional(z.array(z.string())),
-    sites: z.optional(z.array(zSiteItems)),
+    creationDate: z.optional(z.iso.datetime().register(z.globalRegistry, {
+        description: 'Date when the account was created.'
+    })),
+    hosts: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Host address.'
+    })).register(z.globalRegistry, {
+        description: 'Hosts of all stores.'
+    })),
+    sites: z.optional(z.array(zSiteItems).register(z.globalRegistry, {
+        description: 'Array of objects representing each store.'
+    })),
     appKey: z.optional(z.object({
         token: z.optional(z.union([
             z.string(),
@@ -171,88 +273,168 @@ export const zAccountResponse = z.object({
             z.string(),
             z.null()
         ]))
+    }).register(z.globalRegistry, {
+        description: 'Deprecated. Check the `appKeys` object for all API keys.'
     })),
-    appKeys: z.optional(z.array(zAppKeyItems))
+    appKeys: z.optional(z.array(zAppKeyItems).register(z.globalRegistry, {
+        description: 'Array of application keys.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Successful response for `/api/vlm/account`.'
 });
 
 /**
  * Request body for creating users.
  */
 export const zCreateUserRequest = z.object({
-    name: z.optional(z.string()),
-    email: z.string()
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the user.'
+    })),
+    email: z.string().register(z.globalRegistry, {
+        description: 'Email of the user.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for creating users.'
 });
 
 /**
  * Request body for creating new API key (/api/vlm/appkeys)
  */
 export const zCreatenewappkeyRequest = z.object({
-    label: z.string()
+    label: z.string().register(z.globalRegistry, {
+        description: 'Label of the API key.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for creating new API key (/api/vlm/appkeys)'
 });
 
 /**
  * Response body of sucessful call to /api/vlm/appkeys.
  */
 export const zCreatenewappkeyResponse = z.object({
-    id: z.string(),
-    appKey: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the API key.'
+    }),
+    appKey: z.string().register(z.globalRegistry, {
+        description: 'AppKey.'
+    }),
     appToken: z.union([
         z.string(),
         z.null()
     ]),
-    label: z.string(),
-    createdIn: z.iso.datetime(),
-    isActive: z.boolean()
+    label: z.string().register(z.globalRegistry, {
+        description: 'Label of the API key.'
+    }),
+    createdIn: z.iso.datetime().register(z.globalRegistry, {
+        description: 'Creation date of the API key.'
+    }),
+    isActive: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the API key is active (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body of sucessful call to /api/vlm/appkeys.'
 });
 
 /**
  * Request body for activating or deactivating application keys.
  */
 export const zUpdateappkeyRequest = z.object({
-    isActive: z.boolean()
+    isActive: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the API key is active (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for activating or deactivating application keys.'
 });
 
 /**
  * Response body for getting all application keys from the account.
  */
 export const zGetappkeysfromaccount = z.object({
-    id: z.string(),
-    appKey: z.string(),
-    label: z.string(),
-    createdIn: z.iso.datetime(),
-    isActive: z.boolean()
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the API key.'
+    }),
+    appKey: z.string().register(z.globalRegistry, {
+        description: 'API key.'
+    }),
+    label: z.string().register(z.globalRegistry, {
+        description: 'Label of the API key.'
+    }),
+    createdIn: z.iso.datetime().register(z.globalRegistry, {
+        description: 'Creation date of the API key.'
+    }),
+    isActive: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the API key is active (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body for getting all application keys from the account.'
 });
 
 /**
  * Paging object.
  */
 export const zPaging = z.object({
-    page: z.int(),
-    perPage: z.int(),
-    total: z.int(),
-    pages: z.int()
+    page: z.int().register(z.globalRegistry, {
+        description: 'Current page number.'
+    }),
+    perPage: z.int().register(z.globalRegistry, {
+        description: 'Items per page.'
+    }),
+    total: z.int().register(z.globalRegistry, {
+        description: 'Total of items.'
+    }),
+    pages: z.int().register(z.globalRegistry, {
+        description: 'Total of pages.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Paging object.'
 });
 
 /**
  * Object with information about an user.
  */
 export const zUserItems = z.object({
-    id: z.optional(z.string()),
-    email: z.optional(z.string()),
-    isAdmin: z.optional(z.boolean()),
-    isReliable: z.optional(z.boolean()),
-    isBlocked: z.optional(z.boolean()),
-    roles: z.optional(z.array(z.string())),
-    accountNames: z.optional(z.array(z.string())),
-    name: z.optional(z.string())
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the user.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Email of the user.'
+    })),
+    isAdmin: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the user has administrative access (`true`) or not (`false`).'
+    })),
+    isReliable: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'For internal use only.'
+    })),
+    isBlocked: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the user is blocked (`true`) or not (`false`).'
+    })),
+    roles: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Role ID.'
+    })).register(z.globalRegistry, {
+        description: 'Array of user roles. This field is deprecated and should always be empty.'
+    })),
+    accountNames: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Account names.'
+    })).register(z.globalRegistry, {
+        description: 'Array of account names.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the user.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object with information about an user.'
 });
 
 /**
  * Response body for listing all users.
  */
 export const zListUsersResponse = z.object({
-    items: z.optional(z.array(zUserItems)),
+    items: z.optional(z.array(zUserItems).register(z.globalRegistry, {
+        description: 'Array of user objects.'
+    })),
     paging: z.optional(zPaging)
+}).register(z.globalRegistry, {
+    description: 'Response body for listing all users.'
 });
 
 /**
@@ -295,17 +477,29 @@ export const zProductItems = z.object({
         z.string(),
         z.null()
     ])),
-    name: z.optional(z.string())
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the License Manager product.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object representing License Manager products.'
 });
 
 /**
  * Object with information about a role.
  */
 export const zRoleItems = z.object({
-    id: z.optional(z.int()),
-    isAdmin: z.optional(z.boolean()),
-    roleType: z.optional(z.int()),
-    products: z.optional(z.array(zProductItems)),
+    id: z.optional(z.int().register(z.globalRegistry, {
+        description: 'ID of the role.'
+    })),
+    isAdmin: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the role has administrative access (`true`) or not (`false`).'
+    })),
+    roleType: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Returns `1` for custom roles, and `0` for predefined roles.'
+    })),
+    products: z.optional(z.array(zProductItems).register(z.globalRegistry, {
+        description: 'Array of License Manager product objects.'
+    })),
     resources: z.optional(z.union([
         z.string(),
         z.null()
@@ -314,24 +508,42 @@ export const zRoleItems = z.object({
         z.string(),
         z.null()
     ])),
-    name: z.optional(z.string())
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the role.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object with information about a role.'
 });
 
 /**
  * Response body for listing all roles.
  */
 export const zListRolesResponse = z.object({
-    items: z.optional(z.array(zRoleItems)),
+    items: z.optional(z.array(zRoleItems).register(z.globalRegistry, {
+        description: 'Array of role objects.'
+    })),
     paging: z.optional(zPaging)
+}).register(z.globalRegistry, {
+    description: 'Response body for listing all roles.'
 });
 
 /**
  * Object containing summarized information from a store.
  */
 export const zStoreItems = z.object({
-    id: z.optional(z.number()),
-    name: z.optional(z.string()),
-    hosts: z.optional(z.array(z.string()))
+    id: z.optional(z.number().register(z.globalRegistry, {
+        description: 'ID of the store.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the store.'
+    })),
+    hosts: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Host address.'
+    })).register(z.globalRegistry, {
+        description: 'Array of hosts corresponding to the store.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object containing summarized information from a store.'
 });
 
 /**
@@ -342,42 +554,66 @@ export const zVlmError = z.object({
         z.string(),
         z.null()
     ])),
-    HttpStatusCode: z.optional(z.int()),
-    VLMErrorCode: z.optional(z.int()),
-    Message: z.optional(z.string())
+    HttpStatusCode: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Status code of HTTP response.'
+    })),
+    VLMErrorCode: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Error code for License Manager.'
+    })),
+    Message: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Error message.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object representing VLMError.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().default('application/json');
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+}).default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().default('application/json');
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+}).default('application/json');
 
 export const zDeleteApiLicenseManagerUsersByUserIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string()
+        userId: z.string().register(z.globalRegistry, {
+            description: 'ID from queried user.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetUserData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string()
+        userId: z.string().register(z.globalRegistry, {
+            description: 'ID from queried user.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -391,33 +627,57 @@ export const zGetListUsersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        numItems: z.optional(z.int()),
-        pageNumber: z.optional(z.int()),
-        sort: z.optional(z.string()),
-        sortType: z.optional(z.string())
+        numItems: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items in the returned page.'
+        })),
+        pageNumber: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Which page from the whole list will be returned.'
+        })),
+        sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Chooses the field that the list will be sorted by.'
+        })),
+        sortType: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines the sorting order. `ASC` is used for ascendant order. `DSC` is used for descendant order.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetRolesbyUserData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string()
+        userId: z.string().register(z.globalRegistry, {
+            description: 'ID of the user.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zPutRolesinUserData = z.object({
-    body: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+    body: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Role ID, which can be obtained from the [Get List of Roles](https://developers.vtex.com/docs/api-reference/license-manager-api#get-/api/license-manager/site/pvt/roles/list/paged) endpoint.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing role IDs.'
+    }),
     path: z.object({
-        userId: z.string()
+        userId: z.string().register(z.globalRegistry, {
+            description: 'ID of the user.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -425,13 +685,21 @@ export const zPutRolesinUserData = z.object({
 export const zRemoveRolefromUserData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        userId: z.string(),
-        roleId: z.string()
+        userId: z.string().register(z.globalRegistry, {
+            description: 'ID of the user.'
+        }),
+        roleId: z.string().register(z.globalRegistry, {
+            description: 'ID of the role which will be removed from the user.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -439,14 +707,26 @@ export const zGetListRolesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        numItems: z.optional(z.int()),
-        pageNumber: z.optional(z.int()),
-        sort: z.optional(z.string()),
-        sortType: z.optional(z.string())
+        numItems: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items in the returned page.'
+        })),
+        pageNumber: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Which page from the whole list will be returned.'
+        })),
+        sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Chooses the field that the list will be sorted by.'
+        })),
+        sortType: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines the sorting order. `ASC` is used for ascendant order. `DSC` is used for descendant order.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -455,7 +735,9 @@ export const zGetappkeysfromaccountData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -468,7 +750,9 @@ export const zCreatenewappkeyData = z.object({
 export const zUpdateappkeyData = z.object({
     body: zUpdateappkeyRequest,
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID from the API Key which will be updated'
+        })
     }),
     query: z.optional(z.never())
 });

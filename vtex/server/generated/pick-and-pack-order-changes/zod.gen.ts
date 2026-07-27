@@ -6,9 +6,17 @@ import * as z from 'zod';
  * Contains deadline information.
  */
 export const zUpdateDeadlineRequest = z.object({
-    description: z.string(),
-    max: z.string(),
-    min: z.string()
+    description: z.string().register(z.globalRegistry, {
+        description: 'Reason or purpose of the deadline change.'
+    }),
+    max: z.string().register(z.globalRegistry, {
+        description: 'Latest deadline date in ISO 8601 format.'
+    }),
+    min: z.string().register(z.globalRegistry, {
+        description: 'Earliest deadline date in ISO 8601 format.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Contains deadline information.'
 });
 
 /**
@@ -17,129 +25,225 @@ export const zUpdateDeadlineRequest = z.object({
 export const zUpdateDeadlineResponse = z.object({
     order: z.optional(z.object({
         currentDeadline: z.optional(z.object({
-            max: z.optional(z.string()),
-            min: z.optional(z.string())
+            max: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Latest deadline date in ISO 8601 format.'
+            })),
+            min: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Earliest deadline date in ISO 8601 format.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Current deadline information.'
         })),
         deadlineChanges: z.optional(z.array(z.object({
-            current: z.optional(z.boolean()),
-            description: z.optional(z.string()),
-            handled: z.optional(z.boolean()),
-            max: z.optional(z.string()),
-            min: z.optional(z.string()),
-            oldDates: z.optional(z.object({
-                max: z.optional(z.string()),
-                min: z.optional(z.string())
+            current: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'If the deadline changes were update.'
             })),
-            updatedAt: z.optional(z.string())
-        }))),
-        orderId: z.optional(z.string())
+            description: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Reason or purpose for the update.'
+            })),
+            handled: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'If the deadline changes were handled by the picker.'
+            })),
+            max: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Latest deadline date in ISO 8601 format.'
+            })),
+            min: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Earliest deadline date in ISO 8601 format.'
+            })),
+            oldDates: z.optional(z.object({
+                max: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Latest deadline date in ISO 8601 format.'
+                })),
+                min: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Earliest deadline date in ISO 8601 format.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object containg previous deadline information.'
+            })),
+            updatedAt: z.optional(z.string().register(z.globalRegistry, {
+                description: 'An explanation about the purpose of this instance.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Deadline change.'
+        })).register(z.globalRegistry, {
+            description: 'Object containg information of the deadline changes.'
+        })),
+        orderId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the order.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Object with current deadline information.'
     })),
-    success: z.optional(z.boolean())
+    success: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Condition if the request was successful.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Update deadline response.'
 });
 
 /**
  * Unique identifier of the order.
  */
-export const zOrderId = z.string();
+export const zOrderId = z.string().register(z.globalRegistry, {
+    description: 'Unique identifier of the order.'
+});
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 export const zPutOrdersByOrderIdDeadlineData = z.object({
     body: zUpdateDeadlineRequest,
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the order.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zDeleteBySkuIdWarehousesByWarehouseIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string(),
-        warehouseId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        }),
+        warehouseId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the warehouse.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zGetBySkuIdWarehousesByWarehouseIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string(),
-        warehouseId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        }),
+        warehouseId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the warehouse.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zPostBySkuIdWarehousesByWarehouseIdData = z.object({
     body: z.optional(z.object({
-        location: z.string()
+        location: z.string().register(z.globalRegistry, {
+            description: 'The bin location within the warehouse.'
+        })
     })),
     path: z.object({
-        skuId: z.string(),
-        warehouseId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        }),
+        warehouseId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the warehouse.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zPutBySkuIdWarehousesByWarehouseIdData = z.object({
     body: z.optional(z.object({
-        location: z.string()
+        location: z.string().register(z.globalRegistry, {
+            description: 'The bin location within the warehouse.'
+        })
     })),
     path: z.object({
-        skuId: z.string(),
-        warehouseId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        }),
+        warehouseId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the warehouse.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zDeleteBySkuIdWarehousesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zGetBySkuIdWarehousesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        skuId: z.string()
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });

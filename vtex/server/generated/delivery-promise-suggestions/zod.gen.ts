@@ -6,30 +6,60 @@ import * as z from 'zod';
  * Request body for delivery zones search queries.
  */
 export const zDeliveryZonesSearchRequest = z.object({
-    zipCode: z.string(),
-    geoCoordinates: z.optional(z.string()),
-    country: z.string()
+    zipCode: z.string().register(z.globalRegistry, {
+        description: 'Postal code of the location.'
+    }),
+    geoCoordinates: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Geographic coordinates in the format "longitude,latitude".'
+    })),
+    country: z.string().register(z.globalRegistry, {
+        description: 'Three-letter country code (ISO 3166-1 alpha-3).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for delivery zones search queries.'
 });
 
 /**
  * Request body for location-based search queries.
  */
 export const zPickupPointsSearchRequest = z.object({
-    zipCode: z.string(),
-    coordinate: z.object({
-        latitude: z.optional(z.number()),
-        longitude: z.optional(z.number())
+    zipCode: z.string().register(z.globalRegistry, {
+        description: 'Postal code of the location.'
     }),
-    country: z.string()
+    coordinate: z.object({
+        latitude: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Latitude of the location.'
+        })),
+        longitude: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Longitude of the location.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Geographic coordinates.'
+    }),
+    country: z.string().register(z.globalRegistry, {
+        description: 'Three-letter country code (ISO 3166-1 alpha-3).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for location-based search queries.'
 });
 
 /**
  * Response containing available delivery zones for the specified location.
  */
 export const zDeliveryZonesResponse = z.object({
-    deliveryZonesIds: z.optional(z.array(z.string())),
-    deliveryZonesHash: z.optional(z.string()),
-    countryCode: z.optional(z.string())
+    deliveryZonesIds: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the delivery zone.'
+    })).register(z.globalRegistry, {
+        description: 'Array of delivery zones available for the location.'
+    })),
+    deliveryZonesHash: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Hash representing the delivery zones context. This hash is required in the [Get delivery suggestions](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#get-/api/delivery-promise-suggestions) and the [Search delivery suggestions](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#post-/api/delivery-promise-suggestions/_search) endpoints.'
+    })),
+    countryCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Three-letter country code (ISO 3166-1 alpha-3).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response containing available delivery zones for the specified location.'
 });
 
 /**
@@ -37,17 +67,39 @@ export const zDeliveryZonesResponse = z.object({
  */
 export const zPickupPointsResponse = z.object({
     pickupPointDistances: z.optional(z.array(z.object({
-        pickupId: z.optional(z.string()),
-        pickupName: z.optional(z.string()),
-        distance: z.optional(z.number()),
-        isActive: z.optional(z.boolean()),
+        pickupId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the pickup point.'
+        })),
+        pickupName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Human-readable name of the pickup point.'
+        })),
+        distance: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Distance from the searched location in kilometers.'
+        })),
+        isActive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates if the pickup point is active.'
+        })),
         address: z.optional(z.object({
-            street: z.optional(z.string()),
-            number: z.optional(z.string()),
-            postalCode: z.optional(z.string()),
-            city: z.optional(z.string()),
-            state: z.optional(z.string()),
-            neighborhood: z.optional(z.string())
+            street: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Street name.'
+            })),
+            number: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Street number.'
+            })),
+            postalCode: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Postal code.'
+            })),
+            city: z.optional(z.string().register(z.globalRegistry, {
+                description: 'City name.'
+            })),
+            state: z.optional(z.string().register(z.globalRegistry, {
+                description: 'State or province code.'
+            })),
+            neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Neighborhood name.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Physical address of the pickup point.'
         })),
         businessHours: z.optional(z.array(z.object({
             dayOfWeek: z.optional(z.union([
@@ -58,12 +110,30 @@ export const zPickupPointsResponse = z.object({
                 z.literal(4),
                 z.literal(5),
                 z.literal(6)
-            ])),
-            openingTime: z.optional(z.string()),
-            closingTime: z.optional(z.string())
-        })))
-    }))),
-    pickupPointsHash: z.optional(z.string())
+            ]).register(z.globalRegistry, {
+                description: 'Day of the week identification, as in `0` = Sunday, `1` = Monday, `2` = Tuesday, `3` = Wednesday, `4` = Thursday, `5` = Friday, and `6` = Saturday.'
+            })),
+            openingTime: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Opening time of the pickup point in `HH:MM:SS` format.'
+            })),
+            closingTime: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Closing time of the pickup point in `HH:MM:SS` format.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Business hours of the pickup point in a specific day of the week.'
+        })).register(z.globalRegistry, {
+            description: 'Business hours of the pickup point from Monday to Friday.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Pickup point information.'
+    })).register(z.globalRegistry, {
+        description: 'Array of pickup points available near the location.'
+    })),
+    pickupPointsHash: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Hash representing the pickup points context. This hash is required and used in the `pickupsHash` field of the [Get delivery suggestions](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#get-/api/delivery-promise-suggestions) and the [Search delivery suggestions](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#post-/api/delivery-promise-suggestions/_search) endpoints.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response containing available pickup points for the specified location.'
 });
 
 /**
@@ -71,11 +141,25 @@ export const zPickupPointsResponse = z.object({
  */
 export const zDeliverySuggestionRequest = z.object({
     products: z.array(z.object({
-        productId: z.string(),
-        itemId: z.optional(z.string())
-    })).min(1).max(20),
-    deliveryZonesHash: z.string(),
-    pickupsHash: z.string()
+        productId: z.string().register(z.globalRegistry, {
+            description: 'The unique identifier of the product.'
+        }),
+        itemId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The specific SKU ID. If omitted, all SKUs for the product are evaluated.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Product information for suggestion request.'
+    })).min(1).max(20).register(z.globalRegistry, {
+        description: 'Array of products to get delivery suggestions for. Must contain between 1 and 20 products.'
+    }),
+    deliveryZonesHash: z.string().register(z.globalRegistry, {
+        description: 'Hash representing the user\'s delivery context, which is a part of the fulfillment context. This hash is generated by the [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint.'
+    }),
+    pickupsHash: z.string().register(z.globalRegistry, {
+        description: 'Hash representing the user\'s pickup context, which is a part of the fulfillment context. This hash is generated by the [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestionss-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body for delivery suggestion queries.'
 });
 
 /**
@@ -83,56 +167,118 @@ export const zDeliverySuggestionRequest = z.object({
  */
 export const zDeliverySuggestionResponse = z.object({
     suggestions: z.optional(z.array(z.object({
-        productId: z.string(),
+        productId: z.string().register(z.globalRegistry, {
+            description: 'The unique identifier of the product.'
+        }),
         suggestions: z.object({
             delivery: z.array(z.object({
-                id: z.optional(z.string()),
-                name: z.optional(z.string()),
-                slaTimeTarget: z.optional(z.object({
-                    from: z.optional(z.number()),
-                    to: z.optional(z.number()),
-                    unit: z.optional(z.enum(['h', 'd']))
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'The unique identifier for the specific delivery option (SLA).'
                 })),
-                conditions: z.optional(z.array(z.string()))
-            })),
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'A human-readable name for the delivery option (e.g., "Express Delivery").'
+                })),
+                slaTimeTarget: z.optional(z.object({
+                    from: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Minimum time for fulfillment.'
+                    })),
+                    to: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Maximum time for fulfillment.'
+                    })),
+                    unit: z.optional(z.enum(['h', 'd']).register(z.globalRegistry, {
+                        description: 'Time unit: `h` for hours or `d` for days.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object defining the time window for fulfillment.'
+                })),
+                conditions: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Condition tag (e.g., `fastest`, `nearest`).'
+                })).register(z.globalRegistry, {
+                    description: 'Tags indicating why the option was selected (e.g., `fastest`, `nearest`).'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Delivery option suggestion.'
+            })).register(z.globalRegistry, {
+                description: 'Array of delivery option suggestions. An empty array indicates no delivery options are available for the current context.'
+            }),
             pickup: z.array(z.object({
-                id: z.optional(z.string()),
-                name: z.optional(z.string()),
-                slaTimeTarget: z.optional(z.object({
-                    from: z.optional(z.number()),
-                    to: z.optional(z.number()),
-                    unit: z.optional(z.enum(['h', 'd']))
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'The unique identifier for the specific pickup option (Store).'
                 })),
-                conditions: z.optional(z.array(z.string()))
-            }))
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'A human-readable name for the pickup option (e.g., "Downtown Store").'
+                })),
+                slaTimeTarget: z.optional(z.object({
+                    from: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Minimum time for fulfillment.'
+                    })),
+                    to: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Maximum time for fulfillment.'
+                    })),
+                    unit: z.optional(z.enum(['h', 'd']).register(z.globalRegistry, {
+                        description: 'Time unit: `h` for hours or `d` for days.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object defining the time window for fulfillment.'
+                })),
+                conditions: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Condition tag (e.g., `fastest`, `nearest`).'
+                })).register(z.globalRegistry, {
+                    description: 'Tags indicating why the option was selected (e.g., `fastest`, `nearest`).'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Pickup option suggestion.'
+            })).register(z.globalRegistry, {
+                description: 'Array of pickup option suggestions. An empty array indicates no pickup options are available for the current context.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Object containing delivery and pickup options suggestions.'
         })
-    })).min(1).max(20))
+    }).register(z.globalRegistry, {
+        description: 'Delivery suggestion for a single product.'
+    })).min(1).max(20).register(z.globalRegistry, {
+        description: 'Array of delivery suggestions, with one entry corresponding to each product in the request.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response containing delivery suggestions for requested products.'
 });
 
 /**
  * Error response structure.
  */
 export const zErrorResponse = z.object({
-    message: z.string()
+    message: z.string().register(z.globalRegistry, {
+        description: 'Descriptive message of the error.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Error response structure.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().default('application/json');
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+}).default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().default('application/json');
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+}).default('application/json');
 
 export const zPostApiLogisticsShippingDeliveryZonesSearchV2Data = z.object({
     body: zDeliveryZonesSearchRequest,
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -140,11 +286,17 @@ export const zPostApiLogisticsShippingPickuppointsSearchData = z.object({
     body: zPickupPointsSearchRequest,
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        maxDistance: z.optional(z.number())
+        maxDistance: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Maximum distance in kilometers from the specified location to search for pickup points.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -153,8 +305,12 @@ export const zPostApiDeliveryPromiseSuggestionsSearchData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -162,13 +318,25 @@ export const zGetApiDeliveryPromiseSuggestionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        'products[0].productId': z.string(),
-        'products[0].itemId': z.optional(z.string()),
-        deliveryZonesHash: z.string(),
-        pickupsHash: z.string()
+        'products[0].productId': z.string().register(z.globalRegistry, {
+            description: 'The unique identifier of the first product. Use index notation for multiple products (e.g., `products[0].productId`, `products[1].productId`).'
+        }),
+        'products[0].itemId': z.optional(z.string().register(z.globalRegistry, {
+            description: 'The specific SKU ID for the first product. If omitted, all SKUs for the product are evaluated. Use index notation for multiple SKUs (e.g., `products[0].itemId`, `products[1].itemId`).'
+        })),
+        deliveryZonesHash: z.string().register(z.globalRegistry, {
+            description: 'Hash representing the user\'s delivery context, which is a part of the fulfillment context.'
+        }),
+        pickupsHash: z.string().register(z.globalRegistry, {
+            description: 'Hash representing the user\'s pickup context, which is a part of the fulfillment context.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });

@@ -5,199 +5,377 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Start date for metrics in `YYYY-MM-DD` format.
  */
-export const zStartDate = z.iso.date();
+export const zStartDate = z.iso.date().register(z.globalRegistry, {
+    description: 'Start date for metrics in `YYYY-MM-DD` format.'
+});
 
 /**
  * End date for metrics in `YYYY-MM-DD` format.
  */
-export const zEndDate = z.iso.date();
+export const zEndDate = z.iso.date().register(z.globalRegistry, {
+    description: 'End date for metrics in `YYYY-MM-DD` format.'
+});
 
 /**
  * Page number of the results.
  */
-export const zPage = z.int().default(1);
+export const zPage = z.int().register(z.globalRegistry, {
+    description: 'Page number of the results.'
+}).default(1);
 
 /**
  * Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.
  */
-export const zQuantity = z.int().default(100);
+export const zQuantity = z.int().register(z.globalRegistry, {
+    description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+}).default(100);
 
 /**
  * If `true`, returns the total number of available records.
  */
-export const zCount = z.boolean().default(false);
+export const zCount = z.boolean().register(z.globalRegistry, {
+    description: 'If `true`, returns the total number of available records.'
+}).default(false);
 
 /**
  * If `true`, includes detailed account information in the result.
  */
-export const zAccountInfo = z.boolean().default(false);
+export const zAccountInfo = z.boolean().register(z.globalRegistry, {
+    description: 'If `true`, includes detailed account information in the result.'
+}).default(false);
 
 /**
  * If `true`, returns an XLSX file buffer for download instead of JSON.
  */
-export const zDownload = z.boolean().default(false);
+export const zDownload = z.boolean().register(z.globalRegistry, {
+    description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+}).default(false);
 
 /**
  * Sort direction.
  */
-export const zOrderDirection = z.enum(['asc', 'desc']);
+export const zOrderDirection = z.enum(['asc', 'desc']).register(z.globalRegistry, {
+    description: 'Sort direction.'
+});
 
 export const zPostProductBulkProductsData = z.object({
     body: z.optional(z.array(z.object({
-        product_sku: z.string(),
-        parent_sku: z.optional(z.string()),
-        name: z.string(),
-        url: z.string(),
-        image_url: z.optional(z.string()),
-        categories: z.array(z.string()),
-        brand: z.optional(z.string()),
-        gtins: z.optional(z.array(z.string())),
-        metadata: z.optional(z.record(z.string(), z.unknown())),
-        tags: z.optional(z.array(z.string().max(64)).max(10)),
-        sellers: z.optional(z.array(z.string().max(64)))
+        product_sku: z.string().register(z.globalRegistry, {
+            description: 'Product ID to be inserted/updated.'
+        }),
+        parent_sku: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU of the parent product.'
+        })),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Product name.'
+        }),
+        url: z.string().register(z.globalRegistry, {
+            description: 'URL of the product page.'
+        }),
+        image_url: z.optional(z.string().register(z.globalRegistry, {
+            description: 'URL of the main product image.'
+        })),
+        categories: z.array(z.string().register(z.globalRegistry, {
+            description: 'Product category.'
+        })).register(z.globalRegistry, {
+            description: 'List of product categories.'
+        }),
+        brand: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product brand.'
+        })),
+        gtins: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Product GTIN.'
+        })).register(z.globalRegistry, {
+            description: 'Barcode. For Newtail Network, sending the GTIN is mandatory.'
+        })),
+        metadata: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Additional product information.'
+        })),
+        tags: z.optional(z.array(z.string().max(64).register(z.globalRegistry, {
+            description: 'Product tag.'
+        })).max(10).register(z.globalRegistry, {
+            description: 'List of product tags to be used later during ad queries (`POST` [Get ads](https://developers.vtex.com/docs/api-reference/vtex-ads-api#post-/v1/rma/-publisher_id-)) to better contextualize the search. Maximum of 10 tags per SKU, maximum of 64 characters per tag. Only works for Product campaigns.'
+        })),
+        sellers: z.optional(z.array(z.string().max(64).register(z.globalRegistry, {
+            description: 'Seller name.'
+        })).register(z.globalRegistry, {
+            description: 'List of sellers who sell that product. Maximum of 64 characters per seller.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Product object.'
     })).max(500)),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostProductBulkInventoriesData = z.object({
     body: z.optional(z.array(z.object({
-        product_sku: z.string(),
-        store_id: z.optional(z.string()),
-        price: z.number(),
-        promotional_price: z.number(),
-        is_available: z.boolean(),
-        metadata: z.optional(z.record(z.string(), z.unknown()))
+        product_sku: z.string().register(z.globalRegistry, {
+            description: 'Product ID to be inserted/updated.'
+        }),
+        store_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Store identifier. If store_id is not sent, it will be interpreted that this inventory information will be used for all stores.'
+        })),
+        price: z.number().register(z.globalRegistry, {
+            description: 'Product price.'
+        }),
+        promotional_price: z.number().register(z.globalRegistry, {
+            description: 'Promotional price of the product. Use 0 to remove the promotional price.'
+        }),
+        is_available: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates if the product is available for sale.'
+        }),
+        metadata: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Additional inventory information.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Inventory object.'
     })).max(500)),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostV1BeaconImpressionByAdIdData = z.object({
     body: z.optional(z.intersection(z.union([
-        z.record(z.string(), z.unknown()),
-        z.record(z.string(), z.unknown())
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when an identified user is sending the event. Provide `user_id`; `session_id` is optional but recommended.'
+        }),
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when no identified user is available yet. Provide `session_id`; `user_id` is optional.'
+        })
     ]), z.object({
-        user_id: z.optional(z.string()),
-        session_id: z.optional(z.string())
+        user_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier for the user within your platform. It must remain consistent across all user touchpoints and sales channels. Required when `session_id` is not provided.'
+        })),
+        session_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Persistent visitor identifier. Must remain stable for at least 14 days. For mobile apps, use the device ID (GAID on Android, IDFA on iOS). Required when `user_id` is not provided.'
+        }))
     }))),
     path: z.object({
-        ad_id: z.string()
+        ad_id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the ad.'
+        })
     }),
     query: z.optional(z.object({
-        pos: z.optional(z.string())
+        pos: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Position of the ad.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostV1BeaconClickByAdIdData = z.object({
     body: z.optional(z.intersection(z.union([
-        z.record(z.string(), z.unknown()),
-        z.record(z.string(), z.unknown())
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when an identified user is sending the event. Provide `user_id`; `session_id` is optional but recommended.'
+        }),
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when no identified user is available yet. Provide `session_id`; `user_id` is optional.'
+        })
     ]), z.object({
-        user_id: z.optional(z.string()),
-        session_id: z.optional(z.string())
+        user_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier for the user within your platform. It must remain consistent across all user touchpoints and sales channels. Required when `session_id` is not provided.'
+        })),
+        session_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Persistent visitor identifier. Must remain stable for at least 14 days. For mobile apps, use the device ID (GAID on Android, IDFA on iOS). Required when `user_id` is not provided.'
+        }))
     }))),
     path: z.object({
-        ad_id: z.string()
+        ad_id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the ad.'
+        })
     }),
     query: z.optional(z.object({
-        pos: z.optional(z.string())
+        pos: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Position of the ad.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostV1BeaconViewByAdIdData = z.object({
     body: z.optional(z.intersection(z.union([
-        z.record(z.string(), z.unknown()),
-        z.record(z.string(), z.unknown())
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when an identified user is sending the event. Provide `user_id`; `session_id` is optional but recommended.'
+        }),
+        z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Use this variant when no identified user is available yet. Provide `session_id`; `user_id` is optional.'
+        })
     ]), z.object({
-        user_id: z.optional(z.string()),
-        session_id: z.optional(z.string())
+        user_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier for the user within your platform. It must remain consistent across all user touchpoints and sales channels. Required when `session_id` is not provided.'
+        })),
+        session_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Persistent visitor identifier. Must remain stable for at least 14 days. For mobile apps, use the device ID (GAID on Android, IDFA on iOS). Required when `user_id` is not provided.'
+        }))
     }))),
     path: z.object({
-        ad_id: z.string()
+        ad_id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the ad.'
+        })
     }),
     query: z.optional(z.object({
-        pos: z.optional(z.string())
+        pos: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Position of the ad.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostV1BeaconConversionData = z.object({
     body: z.optional(z.object({
-        channel: z.string(),
-        brand: z.optional(z.string()),
-        publisher_id: z.string(),
-        user_id: z.string(),
-        session_id: z.string(),
-        order_id: z.string(),
-        email_hashed: z.string(),
+        channel: z.string().register(z.globalRegistry, {
+            description: 'Identifies the conversion channel (for example, `ecommerce`, `app`, or `physical_store`).'
+        }),
+        brand: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Brand or site where the sale occurred. Required when the publisher operates more than one site.'
+        })),
+        publisher_id: z.string().register(z.globalRegistry, {
+            description: 'Publisher identification.'
+        }),
+        user_id: z.string().register(z.globalRegistry, {
+            description: 'User identification.'
+        }),
+        session_id: z.string().register(z.globalRegistry, {
+            description: 'Identification of the session in which the purchase was made, to help attribute the sale to ads.'
+        }),
+        order_id: z.string().register(z.globalRegistry, {
+            description: 'Order identification.'
+        }),
+        email_hashed: z.string().register(z.globalRegistry, {
+            description: 'Hashed user email identification.'
+        }),
         items: z.array(z.object({
-            sku: z.string(),
-            quantity: z.number(),
-            price: z.number(),
-            promotional_price: z.number(),
+            sku: z.string().register(z.globalRegistry, {
+                description: 'Product SKU identification.'
+            }),
+            quantity: z.number().register(z.globalRegistry, {
+                description: 'Quantity of product purchased.'
+            }),
+            price: z.number().register(z.globalRegistry, {
+                description: 'Product \'from\' price. Not multiplied by quantity.'
+            }),
+            promotional_price: z.number().register(z.globalRegistry, {
+                description: 'Product \'for\' price (discounted price). Not multiplied by quantity.'
+            }),
             seller_id: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            product_id: z.optional(z.string())
-        })),
-        created_at: z.string(),
-        is_company: z.optional(z.boolean()).default(false),
+            product_id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Unique product identification that includes the SKU.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Order item information'
+        })).register(z.globalRegistry, {
+            description: 'List of items purchased in the order.'
+        }),
+        created_at: z.string().register(z.globalRegistry, {
+            description: 'Order creation date in ISO 8601 format in UTC (for example, `2026-01-01T09:20:00Z`).'
+        }),
+        is_company: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates if the sale was made to an individual or a company.'
+        })).default(false),
         gender: z.optional(z.nullable(z.enum([
             'F',
             'M',
             'O'
-        ]))),
-        uf: z.optional(z.string()),
-        city: z.optional(z.string()),
-        phone_hashed: z.optional(z.string()),
-        social_id_hashed: z.optional(z.string()),
-        first_name_hashed: z.optional(z.string()),
-        last_name_hashed: z.optional(z.string())
+        ])).register(z.globalRegistry, {
+            description: 'Indicates customer\'s gender. F: female, M: male, O: other.'
+        })),
+        uf: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Indicates the state where the order was made.'
+        })),
+        city: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Indicates the name of the city where the customer bought.'
+        })),
+        phone_hashed: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Hashed user phone number identification.'
+        })),
+        social_id_hashed: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Hashed user identification document, such as social ID, CPF, or CNPJ.'
+        })),
+        first_name_hashed: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Hashed user first name identification.'
+        })),
+        last_name_hashed: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Hashed user last name identification.'
+        }))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostV1RmaByPublisherIdData = z.object({
     body: z.optional(z.object({
-        session_id: z.string(),
-        user_id: z.optional(z.string()),
-        store_id: z.optional(z.string()),
+        session_id: z.string().register(z.globalRegistry, {
+            description: 'Persistent visitor identifier (at least 14 days). Must contain only alphanumeric characters.'
+        }),
+        user_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier for the user. Must contain only alphanumeric characters.'
+        })),
+        store_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads based on the store\'s inventory. If not provided, ads with any available inventory will be returned.'
+        })),
         context: z.enum([
             'home',
             'category',
@@ -205,40 +383,96 @@ export const zPostV1RmaByPublisherIdData = z.object({
             'product_page',
             'brand_page',
             'digital_signage'
-        ]),
-        term: z.optional(z.string()),
-        category_name: z.optional(z.string()),
-        product_sku: z.optional(z.string()),
-        brand_name: z.optional(z.string()),
+        ]).register(z.globalRegistry, {
+            description: 'Context where the ad will be displayed.'
+        }),
+        term: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Search terms used for product searches. Required only in search context.'
+        })),
+        category_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the category used for targeting. Always provide the full breadcrumb path of the current category. Required only in category context.'
+        })),
+        product_sku: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID used for targeting. Required only in product context.'
+        })),
+        brand_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the brand to filter products by. Required only in brand context.'
+        })),
         placements: z.record(z.string(), z.object({
-            quantity: z.int(),
-            size: z.optional(z.string()),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Number of ads to be returned.'
+            }),
+            size: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Expected ad size. Important when a region has a predefined size and requires a media asset fitting that size. For images: `desktop` or `mobile`. For videos: `1080p`, `720p`, `480p`, `360p`, or `320p`. Required only when types include `banner` or `sponsored_brand`.'
+            })),
             types: z.array(z.enum([
                 'product',
                 'banner',
                 'sponsored_brand',
                 'digital_signage'
-            ])),
-            assets_type: z.optional(z.array(z.enum(['image', 'video']))),
-            allow_sku_duplications: z.optional(z.boolean())
-        })),
+            ]).register(z.globalRegistry, {
+                description: 'Ad type.'
+            })).register(z.globalRegistry, {
+                description: 'Types of ads that can be returned in this request.'
+            }),
+            assets_type: z.optional(z.array(z.enum(['image', 'video']).register(z.globalRegistry, {
+                description: 'Media type.'
+            })).register(z.globalRegistry, {
+                description: 'Accepted media types. Only valid for `banner` and `sponsored_brand` types. Default: `["image"]`.'
+            })),
+            allow_sku_duplications: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Allows the same SKU ads to appear multiple times in the same placement. Default=false.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Placement configuration.'
+        })).register(z.globalRegistry, {
+            description: 'Placements are used to query multiple ads for different site regions with their own configurations.'
+        }),
         product_attributes: z.optional(z.object({
-            category_name: z.optional(z.string()),
-            brand_name: z.optional(z.string())
+            category_name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Product category.'
+            })),
+            brand_name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Product brand.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Additional product information. Used when catalog data is incomplete and these details need to be sent during ad queries.'
         })),
         channel: z.enum([
             'site',
             'msite',
             'app'
-        ]),
-        device_id: z.optional(z.string()),
-        store_name: z.optional(z.string()),
-        brand: z.optional(z.string()),
-        userAgent: z.optional(z.string()),
-        tags: z.optional(z.array(z.string().max(64)).max(10)),
-        skus: z.optional(z.array(z.string())),
-        dedup_campaign_ads: z.optional(z.boolean()),
-        dedup_ads: z.optional(z.boolean()),
+        ]).register(z.globalRegistry, {
+            description: 'Indicates the device type accessing the ad.'
+        }),
+        device_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique device ID (screen, totem). Required only in digital_signage context.'
+        })),
+        store_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the store where the device is located. Required only in digital_signage context.'
+        })),
+        brand: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Publisher\'s site name. Required when the publisher has multiple sites.'
+        })),
+        userAgent: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Client environment identification (body field, not the HTTP User-Agent header). Provides meta-information about the client environment accessing the ad.'
+        })),
+        tags: z.optional(z.array(z.string().max(64).register(z.globalRegistry, {
+            description: 'Tag name.'
+        })).max(10).register(z.globalRegistry, {
+            description: 'Tags to contextualize searches (primarily for search context). Filters ads that contain at least one of the requested tags. Max 10 per SKU, 64 chars per tag. Only works with product campaigns.'
+        })),
+        skus: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Product SKU.'
+        })).register(z.globalRegistry, {
+            description: 'SKU filter for querying sponsored products. Note: Only sponsored product campaigns respect this filter.'
+        })),
+        dedup_campaign_ads: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Specifies whether results should be deduplicated by campaign, so at most one ad per campaign is returned. Default=false.'
+        })),
+        dedup_ads: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Specifies whether results should deduplicate ads across multiple placements (use only when querying multiple placements simultaneously). Default=false.'
+        })),
         segmentation: z.optional(z.array(z.object({
             key: z.enum([
                 'AGE',
@@ -247,17 +481,33 @@ export const zPostV1RmaByPublisherIdData = z.object({
                 'CITY',
                 'AUDIENCES',
                 'NBO_CATEGORIES'
-            ]),
-            values: z.array(z.string()).min(1)
-        })))
+            ]).register(z.globalRegistry, {
+                description: 'Type of segmentation.'
+            }),
+            values: z.array(z.string().register(z.globalRegistry, {
+                description: 'Segmentation value.'
+            })).min(1).register(z.globalRegistry, {
+                description: 'One or more accepted values.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Segmentation rule.'
+        })).register(z.globalRegistry, {
+            description: 'Allows campaign segmentation based on user information.'
+        }))
     })),
     path: z.object({
-        publisher_id: z.string()
+        publisher_id: z.string().register(z.globalRegistry, {
+            description: 'Publisher identifier provided by your account manager'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -265,17 +515,35 @@ export const zGetReportV2AdvertisersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        account_info: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(false),
-        download: z.optional(z.boolean()).default(false)
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        account_info: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes detailed account information in the result.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns the total number of available records.'
+        })).default(false),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -283,13 +551,27 @@ export const zGetReportV2PublishersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        publisher_name: z.optional(z.string()),
-        account_info: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(false),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        publisher_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters results by publisher name.'
+        })),
+        account_info: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes detailed account information in the result.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns the total number of available records.'
+        })).default(false),
         order_by: z.optional(z.enum([
             'name',
             'balance',
@@ -303,13 +585,23 @@ export const zGetReportV2PublishersData = z.object({
             'conversion_rate',
             'income',
             'roas'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -317,13 +609,27 @@ export const zGetReportNetworkPublishersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        publisher_name: z.optional(z.string()),
-        account_info: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(false),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        publisher_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters results by publisher name.'
+        })),
+        account_info: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes detailed account information in the result.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns the total number of available records.'
+        })).default(false),
         order_by: z.optional(z.enum([
             'name',
             'impressions',
@@ -334,13 +640,23 @@ export const zGetReportNetworkPublishersData = z.object({
             'income',
             'roas',
             'requests'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -348,21 +664,41 @@ export const zGetCampaignV2Data = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        status: z.optional(z.string()),
-        advertiser_id: z.optional(z.string()),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by campaign status.'
+        })),
+        advertiser_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters campaigns by advertiser ID.'
+        })),
         ad_type: z.optional(z.enum([
             'banner',
             'product',
             'sponsored_brand',
             'digital_signage'
-        ])),
-        name: z.optional(z.string()),
-        account_info: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(false),
+        ]).register(z.globalRegistry, {
+            description: 'Filters by ad type.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Searches campaigns by name.'
+        })),
+        account_info: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes detailed account information in the result.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns the total number of available records.'
+        })).default(false),
         order_by: z.optional(z.enum([
             'name',
             'impressions',
@@ -378,28 +714,48 @@ export const zGetCampaignV2Data = z.object({
             'ad_type',
             'advertiser_name',
             'status'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetCampaignByCampaignIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        campaign_id: z.string()
+        campaign_id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the campaign to fetch.'
+        })
     }),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date()
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -407,18 +763,32 @@ export const zGetReportAdvertisersCampaignsDetailedData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        campaign_id: z.optional(z.string()),
-        campaign_status: z.optional(z.string()),
-        publisher_id: z.optional(z.string()),
-        publisher_name: z.optional(z.string()),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        campaign_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by campaign ID.'
+        })),
+        campaign_status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by campaign status.'
+        })),
+        publisher_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by publisher ID.'
+        })),
+        publisher_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by publisher name.'
+        })),
         ad_type: z.optional(z.enum([
             'banner',
             'product',
             'sponsored_brand',
             'digital_signage'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Filters by ad type.'
+        })),
         ad_status: z.optional(z.enum([
             'enabled',
             'paused',
@@ -426,15 +796,33 @@ export const zGetReportAdvertisersCampaignsDetailedData = z.object({
             'pending_review',
             'stock_out',
             'invalid_cost'
-        ])),
-        seller_id: z.optional(z.string()),
-        tag_id: z.optional(z.string()),
-        targeting_type: z.optional(z.string()),
-        sub_publisher_id: z.optional(z.string()),
-        sub_publisher_name: z.optional(z.string()),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(true),
+        ]).register(z.globalRegistry, {
+            description: 'Filters by ad status.'
+        })),
+        seller_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by seller ID.'
+        })),
+        tag_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by advertiser tag ID.'
+        })),
+        targeting_type: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by targeting type.'
+        })),
+        sub_publisher_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters network rows by subpublisher ID.'
+        })),
+        sub_publisher_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters network rows by subpublisher name.'
+        })),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns pagination metadata.'
+        })).default(true),
         order_by: z.optional(z.enum([
             'advertiser_name',
             'name',
@@ -453,13 +841,23 @@ export const zGetReportAdvertisersCampaignsDetailedData = z.object({
             'roas',
             'created_at',
             'start_at'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -467,13 +865,27 @@ export const zGetReportAdvertisersAdsDetailedData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        campaign_name: z.optional(z.string()),
-        campaign_id: z.optional(z.string()),
-        publisher_id: z.optional(z.string()),
-        advertiser_id: z.optional(z.string()),
-        product_sku: z.optional(z.string()),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        campaign_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by campaign name.'
+        })),
+        campaign_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by campaign ID.'
+        })),
+        publisher_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by publisher ID.'
+        })),
+        advertiser_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by advertiser ID. In the BFF flow, this value is derived from the authenticated advertiser context.'
+        })),
+        product_sku: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by product SKU.'
+        })),
         ad_status: z.optional(z.enum([
             'enabled',
             'paused',
@@ -481,22 +893,44 @@ export const zGetReportAdvertisersAdsDetailedData = z.object({
             'pending_review',
             'stock_out',
             'invalid_cost'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Filters ads by status.'
+        })),
         ad_type: z.optional(z.enum([
             'banner',
             'product',
             'sponsored_brand',
             'digital_signage'
-        ])),
-        targeting_type: z.optional(z.string()),
-        tag_id: z.optional(z.string()),
-        sub_publisher_id: z.optional(z.string()),
-        sub_publisher_name: z.optional(z.string()),
-        show_inactive: z.optional(z.boolean()).default(false),
-        hide_pending_rejected: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(true),
+        ]).register(z.globalRegistry, {
+            description: 'Filters by ad type.'
+        })),
+        targeting_type: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by targeting type.'
+        })),
+        tag_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by advertiser tag ID.'
+        })),
+        sub_publisher_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters network rows by subpublisher ID.'
+        })),
+        sub_publisher_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters network rows by subpublisher name.'
+        })),
+        show_inactive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes paused ads.'
+        })).default(false),
+        hide_pending_rejected: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, excludes `pending_review` and `rejected` rows when `ad_status` is not provided.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns pagination metadata.'
+        })).default(true),
         order_by: z.optional(z.enum([
             'ad_type',
             'ad_status',
@@ -514,13 +948,23 @@ export const zGetReportAdvertisersAdsDetailedData = z.object({
             'adcost',
             'created_at',
             'sub_publisher_name'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -528,12 +972,24 @@ export const zGetAdResultsV2Data = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        start_date: z.iso.date(),
-        end_date: z.iso.date(),
-        campaign_name: z.optional(z.string()),
-        campaign_id: z.optional(z.string()),
-        advertiser_id: z.optional(z.string()),
-        product_sku: z.optional(z.string()),
+        start_date: z.iso.date().register(z.globalRegistry, {
+            description: 'Start date for metrics in `YYYY-MM-DD` format.'
+        }),
+        end_date: z.iso.date().register(z.globalRegistry, {
+            description: 'End date for metrics in `YYYY-MM-DD` format.'
+        }),
+        campaign_name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by campaign name.'
+        })),
+        campaign_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by campaign ID.'
+        })),
+        advertiser_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by advertiser ID.'
+        })),
+        product_sku: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters ads by product SKU.'
+        })),
         ad_status: z.optional(z.enum([
             'enabled',
             'paused',
@@ -541,19 +997,35 @@ export const zGetAdResultsV2Data = z.object({
             'pending_review',
             'stock_out',
             'invalid_cost'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Filters ads by status.'
+        })),
         ad_type: z.optional(z.enum([
             'banner',
             'product',
             'sponsored_brand',
             'digital_signage'
-        ])),
-        targeting_type: z.optional(z.string()),
-        show_inactive: z.optional(z.boolean()).default(false),
-        account_info: z.optional(z.boolean()).default(false),
-        page: z.optional(z.int()).default(1),
-        quantity: z.optional(z.int()).default(100),
-        count: z.optional(z.boolean()).default(false),
+        ]).register(z.globalRegistry, {
+            description: 'Filters by ad type.'
+        })),
+        targeting_type: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filters by targeting type.'
+        })),
+        show_inactive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes paused ads.'
+        })).default(false),
+        account_info: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, includes detailed account information in the result.'
+        })).default(false),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Page number of the results.'
+        })).default(1),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.'
+        })).default(100),
+        count: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns the total number of available records.'
+        })).default(false),
         order_by: z.optional(z.enum([
             'ad_type',
             'ad_status',
@@ -565,29 +1037,51 @@ export const zGetAdResultsV2Data = z.object({
             'roas',
             'conversions',
             'total_conversions_item_quantity'
-        ])),
-        order_direction: z.optional(z.enum(['asc', 'desc'])),
-        download: z.optional(z.boolean()).default(false)
+        ]).register(z.globalRegistry, {
+            description: 'Field used to sort results.'
+        })),
+        order_direction: z.optional(z.enum(['asc', 'desc']).register(z.globalRegistry, {
+            description: 'Sort direction.'
+        })),
+        download: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If `true`, returns an XLSX file buffer for download instead of JSON.'
+        })).default(false)
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostWebhookMarketplaceTransfersByPublisherIdData = z.object({
     body: z.optional(z.object({
-        transaction_id: z.string(),
-        status: z.enum(['success', 'failure']),
-        message: z.optional(z.string())
+        transaction_id: z.string().register(z.globalRegistry, {
+            description: 'Identifier of the transfer transaction returned by the marketplace when the transfer was requested.'
+        }),
+        status: z.enum(['success', 'failure']).register(z.globalRegistry, {
+            description: 'Final status of the transfer.'
+        }),
+        message: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Description of the failure reason. Required when `status` is `failure`.'
+        }))
     })),
     path: z.object({
-        publisher_id: z.string()
+        publisher_id: z.string().register(z.globalRegistry, {
+            description: 'Publisher identifier provided by your account manager.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -596,22 +1090,38 @@ export const zPostAudienceUploadUrlData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostSsoMarketplaceData = z.object({
     body: z.optional(z.object({
-        sso_token: z.string(),
-        email: z.string(),
-        user_id: z.string(),
-        name: z.string(),
-        marketplace_name: z.string()
+        sso_token: z.string().register(z.globalRegistry, {
+            description: 'User identification token generated by the marketplace.'
+        }),
+        email: z.string().register(z.globalRegistry, {
+            description: 'Seller user\'s email address.'
+        }),
+        user_id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the user in the marketplace.'
+        }),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Seller user\'s name.'
+        }),
+        marketplace_name: z.string().register(z.globalRegistry, {
+            description: 'Name of the marketplace.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

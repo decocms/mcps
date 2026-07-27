@@ -8,15 +8,25 @@ import * as z from 'zod';
  * - **Mobile apps**: Both `userId` and `orderFormId` are required in the request body.
  */
 export const zStartSessionV2Request = z.object({
-    orderFormId: z.optional(z.string()),
-    userId: z.optional(z.string())
+    orderFormId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Order form ID associated with the session. Optional for web storefronts when `checkout.vtex.com` cookie is present. Required for mobile apps.'
+    })),
+    userId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'User ID for the session. Required for mobile apps. Optional for web storefronts.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Request body for starting a user session. Requirements vary by platform:\n- **Web storefronts**: `orderFormId` is optional when the `checkout.vtex.com` cookie is sent. The API extracts the order form from the cookie.\n- **Mobile apps**: Both `userId` and `orderFormId` are required in the request body.'
 });
 
 /**
  * Response body for starting a user session. The returned ID is also stored in the `vtex-rec-user-id` cookie.
  */
 export const zStartSessionV2Response = z.object({
-    recommendationsUserId: z.string()
+    recommendationsUserId: z.string().register(z.globalRegistry, {
+        description: 'The recommendations user ID to use in subsequent API calls. This value is also stored in the `vtex-rec-user-id` cookie and saved in the orderForm custom data for purchase attribution.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body for starting a user session. The returned ID is also stored in the `vtex-rec-user-id` cookie.'
 });
 
 /**
@@ -24,31 +34,81 @@ export const zStartSessionV2Response = z.object({
  */
 export const zRecommendationsV2Response = z.object({
     products: z.array(z.object({
-        brand: z.optional(z.string()),
-        productId: z.optional(z.string()),
-        productName: z.optional(z.string()),
-        link: z.optional(z.string()),
-        tags: z.optional(z.array(z.string())),
+        brand: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product brand name.'
+        })),
+        productId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product ID.'
+        })),
+        productName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product name.'
+        })),
+        link: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product page URL path.'
+        })),
+        tags: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Tag name.'
+        })).register(z.globalRegistry, {
+            description: 'Product tags. When `advertisement` tag is present, the product is sponsored and should display a sponsored label.'
+        })),
         items: z.optional(z.array(z.object({
-            itemId: z.optional(z.string()),
-            nameComplete: z.optional(z.string()),
+            itemId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'SKU ID.'
+            })),
+            nameComplete: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Complete SKU name including variant information.'
+            })),
             images: z.optional(z.array(z.object({
-                imageUrl: z.optional(z.string())
-            }))),
-            sellers: z.optional(z.array(z.object({
-                sellerId: z.optional(z.string()),
-                commertialOffer: z.optional(z.object({
-                    Price: z.optional(z.number()),
-                    ListPrice: z.optional(z.number()),
-                    AvailableQuantity: z.optional(z.number())
+                imageUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Image URL.'
                 }))
-            })))
-        })))
-    })),
-    correlationId: z.string(),
+            }).register(z.globalRegistry, {
+                description: 'Image object.'
+            })).register(z.globalRegistry, {
+                description: 'SKU images.'
+            })),
+            sellers: z.optional(z.array(z.object({
+                sellerId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Seller ID.'
+                })),
+                commertialOffer: z.optional(z.object({
+                    Price: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Selling price.'
+                    })),
+                    ListPrice: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'List price (before discount).'
+                    })),
+                    AvailableQuantity: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Available stock quantity.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Commercial offer details.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Seller object with pricing information.'
+            })).register(z.globalRegistry, {
+                description: 'List of sellers offering this SKU.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'SKU object with variant details.'
+        })).register(z.globalRegistry, {
+            description: 'List of SKUs for this product.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Product object with full details.'
+    })).register(z.globalRegistry, {
+        description: 'List of recommended products with full details including brand, name, images, and pricing.'
+    }),
+    correlationId: z.string().register(z.globalRegistry, {
+        description: 'Correlation ID for the recommendation request. Must be included when tracking recommendation view and click events.'
+    }),
     campaign: z.object({
-        id: z.string(),
-        title: z.optional(z.string()),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Campaign ID. Should be included when tracking recommendation view and click events.'
+        }),
+        title: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Campaign title.'
+        })),
         type: z.enum([
             'TOP_ITEMS',
             'PERSONALIZED',
@@ -60,54 +120,100 @@ export const zRecommendationsV2Response = z.object({
             'VISUAL_SIMILARITY',
             'SEARCH_BASED',
             'NEXT_INTERACTION'
-        ])
+        ]).register(z.globalRegistry, {
+            description: 'Campaign type. Supported types:\n\n- **TOP_ITEMS**: Most popular - products with the highest number of views.\n- **PERSONALIZED**: Recommended for you - custom recommendations based on user profile and behavior.\n- **SIMILAR_ITEMS**: Similar products - products similar to a specific one.\n- **CROSS_SELL**: Frequently bought together - complementary products commonly purchased together.\n- **CART_RECOMMENDATIONS**: Cart recommendations based on cart contents.\n- **LAST_SEEN**: Recently viewed - products recently viewed by the user.\n- **RECENT_INTERACTIONS**: Products the user recently interacted with.\n- **VISUAL_SIMILARITY**: Visually similar products - products visually similar to a specific one.\n- **SEARCH_BASED**: Manual collection - recommendations from a manually created collection.\n- **NEXT_INTERACTION**: Recent interactions - products most likely to engage the user in the future.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Campaign information.'
     })
+}).register(z.globalRegistry, {
+    description: 'Response containing recommended products with full product details and campaign information.'
 });
 
 /**
  * Request body for recording a recommendation view event when a shelf enters the viewport.
  */
 export const zRecommendationViewEventV2Request = z.object({
-    userId: z.string(),
-    correlationId: z.string(),
-    products: z.array(z.string()),
-    campaignId: z.optional(z.string())
+    userId: z.string().register(z.globalRegistry, {
+        description: 'The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user\'s session.'
+    }),
+    correlationId: z.string().register(z.globalRegistry, {
+        description: 'Correlation ID returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Used to track which recommendation request generated this view.'
+    }),
+    products: z.array(z.string().register(z.globalRegistry, {
+        description: 'Product ID.'
+    })).register(z.globalRegistry, {
+        description: 'List of product IDs that were rendered in the recommendation shelf.'
+    }),
+    campaignId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Campaign ID from the `campaign.id` field in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Include when available.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Request body for recording a recommendation view event when a shelf enters the viewport.'
 });
 
 /**
  * Request body for recording a recommendation click event when a user clicks on a recommended product.
  */
 export const zRecommendationClickEventV2Request = z.object({
-    userId: z.string(),
-    product: z.string(),
-    correlationId: z.string(),
-    campaignId: z.optional(z.string())
+    userId: z.string().register(z.globalRegistry, {
+        description: 'The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user\'s session.'
+    }),
+    product: z.string().register(z.globalRegistry, {
+        description: 'Product ID that was clicked.'
+    }),
+    correlationId: z.string().register(z.globalRegistry, {
+        description: 'Correlation ID returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Used to track which recommendation request generated this click.'
+    }),
+    campaignId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Campaign ID from the `campaign.id` field in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Include when available.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Request body for recording a recommendation click event when a user clicks on a recommended product.'
 });
 
 /**
  * Request body for recording a product view event when a user views a product detail page.
  */
 export const zProductViewEventV2Request = z.object({
-    userId: z.string(),
-    product: z.string(),
+    userId: z.string().register(z.globalRegistry, {
+        description: 'The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user\'s session.'
+    }),
+    product: z.string().register(z.globalRegistry, {
+        description: 'Product ID that was viewed.'
+    }),
     source: z.optional(z.enum([
         'WEB_DESKTOP',
         'WEB_MOBILE',
         'MOBILE_APP'
-    ])),
-    name: z.optional(z.string()),
-    category: z.optional(z.string()),
-    url: z.optional(z.string())
+    ]).register(z.globalRegistry, {
+        description: 'Source of the view event. When not provided, the API attempts to infer from the `user-agent` header. Use `WEB_DESKTOP` or `WEB_MOBILE` for web storefronts, and `WEB_MOBILE` or `MOBILE_APP` for mobile apps.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Display name of the product. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.'
+    })),
+    category: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Category of the product. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.'
+    })),
+    url: z.optional(z.string().register(z.globalRegistry, {
+        description: 'URL of the product page. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Request body for recording a product view event when a user views a product detail page.'
 });
 
 export const zPostApiRecommendBffV2EventsRecommendationViewData = z.object({
     body: zRecommendationViewEventV2Request,
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX account name. Must match the account name in the `x-vtex-rec-origin` header.'
+        })
     }),
     headers: z.object({
-        'x-vtex-rec-origin': z.string()
+        'x-vtex-rec-origin': z.string().register(z.globalRegistry, {
+            description: 'Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. Must match the `an` query parameter for account name.'
+        })
     })
 });
 
@@ -115,10 +221,14 @@ export const zPostApiRecommendBffV2EventsRecommendationClickData = z.object({
     body: zRecommendationClickEventV2Request,
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX account name. Must match the account name in the `x-vtex-rec-origin` header.'
+        })
     }),
     headers: z.object({
-        'x-vtex-rec-origin': z.string()
+        'x-vtex-rec-origin': z.string().register(z.globalRegistry, {
+            description: 'Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. Must match the `an` query parameter for account name.'
+        })
     })
 });
 
@@ -126,18 +236,38 @@ export const zGetApiRecommendBffV2RecommendationsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string(),
-        campaignVrn: z.string(),
-        userId: z.optional(z.string()),
-        products: z.optional(z.string()),
-        salesChannel: z.optional(z.string()),
-        locale: z.optional(z.string()),
-        zipCode: z.optional(z.string()),
-        pickupPoint: z.optional(z.string()),
-        regionId: z.optional(z.string())
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX account name. Must match the account name in the `x-vtex-rec-origin` header.'
+        }),
+        campaignVrn: z.string().register(z.globalRegistry, {
+            description: 'VRN identifier for an existing campaign, following the pattern: `vrn:recommendations:{store-name}:{campaignType}:{campaignId}`.\n\nAvailable campaign types:\n- `rec-top-items-v2`: Most popular (products with the highest number of views).\n- `rec-persona-v2`: Recommended for you (custom recommendations based on user profile and behavior).\n- `rec-similar-v2`: Similar products (products similar to a specific one).\n- `rec-cross-v2`: Frequently bought together (complementary products commonly purchased together).\n- `rec-cart-v2`: Cart-based recommendations.\n- `rec-last-v2`: Recently viewed (products recently viewed by the user).\n- `rec-visual-v2`: Visually similar products (products visually similar to a specific one).\n- `rec-search-v2`: Manual collection (recommendations from a manually created collection).\n- `rec-next-v2`: Recent interactions (products most likely to engage the user in the future).'
+        }),
+        userId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Required for personalized recommendations based on user behavior. This value is also stored in the `vtex-rec-user-id` cookie.'
+        })),
+        products: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Comma-separated list of product IDs for context-based recommendations. **Required** for: similar products (`rec-similar-v2`), buy together (`rec-cross-v2`), visually similar products (`rec-visual-v2`), next interaction (`rec-next-v2`), and cart recommendations. For similar items and cross-sell campaigns, send only **one product ID**. For cart recommendations, send **all product IDs** currently in the user\'s cart.'
+        })),
+        salesChannel: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Trade policy ID. We also try to extract it from the segment cookie. If none is provided in the query, we will use the default trade policy.'
+        })),
+        locale: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The user\'s locale information. If not provided, it is extracted from the segment cookie. This is important for multi-language stores.'
+        })),
+        zipCode: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Zip code for location-based recommendations. If not provided, it is extracted from the segment cookie.'
+        })),
+        pickupPoint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Pickup point identifier for location-based recommendations. If not provided, it is extracted from the segment cookie.'
+        })),
+        regionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Region identifier for location-based recommendations. If not provided, it is extracted from the segment cookie.'
+        }))
     }),
     headers: z.object({
-        'x-vtex-rec-origin': z.string()
+        'x-vtex-rec-origin': z.string().register(z.globalRegistry, {
+            description: 'Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. Must match the `an` query parameter for account name.'
+        })
     })
 });
 
@@ -145,12 +275,20 @@ export const zPostApiRecommendBffV2UsersStartSessionData = z.object({
     body: zStartSessionV2Request,
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX account name. Must match the account name in the `x-vtex-rec-origin` header.'
+        })
     }),
     headers: z.object({
-        'x-vtex-rec-origin': z.string(),
-        'x-forwarded-host': z.optional(z.string()),
-        host: z.optional(z.string())
+        'x-vtex-rec-origin': z.string().register(z.globalRegistry, {
+            description: 'Origin identifier for tracking integration sources. Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. The account name must match the `an` query parameter. Example: `apiexamples/storefront/vtex.recommendation-shelf@2.x`'
+        }),
+        'x-forwarded-host': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Forwarded host header, typically containing the original host requested by the client.'
+        })),
+        host: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Host header containing the domain name of the API server.'
+        }))
     })
 });
 
@@ -158,10 +296,16 @@ export const zPostApiRecommendBffV2EventsProductViewData = z.object({
     body: zProductViewEventV2Request,
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX account name. Must match the account name in the `x-vtex-rec-origin` header.'
+        })
     }),
     headers: z.object({
-        'x-vtex-rec-origin': z.string(),
-        'user-agent': z.optional(z.string())
+        'x-vtex-rec-origin': z.string().register(z.globalRegistry, {
+            description: 'Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. Must match the `an` query parameter for account name.'
+        }),
+        'user-agent': z.optional(z.string().register(z.globalRegistry, {
+            description: 'User agent string identifying the client application or browser.'
+        }))
     })
 });

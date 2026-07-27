@@ -5,34 +5,64 @@ import * as z from 'zod';
 /**
  * HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().default('application/json');
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+}).default('application/json');
 
 export const zRegisterClientData = z.object({
     body: z.object({
-        Store: z.string()
+        Store: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX store registering as a client.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Store information for client registration.'
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json; charset=utf-8'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json; charset=utf-8'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zValidateLegacyCredentialsData = z.object({
     body: z.object({
-        username: z.string(),
-        password: z.string()
+        username: z.string().register(z.globalRegistry, {
+            description: 'The user\'s username or login identifier from the legacy system.'
+        }),
+        password: z.string().register(z.globalRegistry, {
+            description: 'The user\'s password in plain text. Your middleware is responsible for secure handling and validation.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Legacy user credentials to validate.'
     }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json; charset=utf-8'),
-        Accept: z.string().default('application/json'),
-        'X-VTEX-Client-Id': z.string(),
-        'X-VTEX-Timestamp': z.string(),
-        'X-VTEX-Nonce': z.string(),
-        'X-VTEX-Content-SHA256': z.string(),
-        Authorization: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json; charset=utf-8'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'X-VTEX-Client-Id': z.string().register(z.globalRegistry, {
+            description: 'Client identifier agreed upon during registration.'
+        }),
+        'X-VTEX-Timestamp': z.string().register(z.globalRegistry, {
+            description: 'Request timestamp in RFC 1123 format. Must be within an acceptable clock skew window (recommended: ±300 seconds).'
+        }),
+        'X-VTEX-Nonce': z.string().register(z.globalRegistry, {
+            description: 'Unique random string for this request. Must be unique per client within the clock skew window. Your middleware must enforce nonce uniqueness to prevent replay attacks.'
+        }),
+        'X-VTEX-Content-SHA256': z.string().register(z.globalRegistry, {
+            description: 'Base64-encoded SHA-256 hash of the request body.'
+        }),
+        Authorization: z.string().register(z.globalRegistry, {
+            description: 'HMAC-SHA256 signature of the canonical string. Format: `HMAC-SHA256 SignedHeaders=X-VTEX-Client-Id;X-VTEX-Timestamp;X-VTEX-Nonce;X-VTEX-Content-SHA256&Signature={{signature}}`'
+        })
     })
 });

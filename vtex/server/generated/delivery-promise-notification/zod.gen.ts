@@ -5,21 +5,35 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().default('application/json');
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+}).default('application/json');
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().default('application/json');
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+}).default('application/json');
 
 export const zPutApiDeliveryPromisesExternalSellersBySellerIdProductsData = z.object({
     body: z.array(z.object({
-        itemId: z.string(),
-        productId: z.optional(z.string()),
-        availability: z.int(),
+        itemId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the binding of the seller with the SKU.'
+        }),
+        productId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product unique identifier.'
+        })),
+        availability: z.int().register(z.globalRegistry, {
+            description: 'Total available items for the SKU across all promises. Send `0` to make the SKU unavailable in this delivery context.'
+        }),
         promises: z.array(z.object({
-            availability: z.int(),
-            deliveryChannel: z.enum(['delivery', 'pickup-in-point']),
+            availability: z.int().register(z.globalRegistry, {
+                description: 'Available items for this delivery promise. Send `0` to make this specific promise unavailable.'
+            }),
+            deliveryChannel: z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+                description: 'Delivery channel type. Accepted values are `delivery` and `pickup-in-point`.'
+            }),
             deliveryZoneIds: z.array(z.enum([
                 'BRA_COUNTRY',
                 'BRA_REGION_NORTE',
@@ -153,32 +167,62 @@ export const zPutApiDeliveryPromisesExternalSellersBySellerIdProductsData = z.ob
                 'USA_STATE_HI',
                 'USA_STATE_OR',
                 'USA_STATE_WA'
-            ])).min(1),
+            ]).register(z.globalRegistry, {
+                description: 'Delivery zone unique identifier.'
+            })).min(1).register(z.globalRegistry, {
+                description: 'List of delivery zones where the item is available.'
+            }),
             deliveryInfo: z.optional(z.object({
-                id: z.optional(z.string()),
-                name: z.optional(z.string()),
-                deliveryTime: z.optional(z.string())
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Unique identifier of the delivery method. This value is the key used to update this promise later via [Update delivery promises for an external seller\'s item](https://developers.vtex.com/docs/api-reference/delivery-promise-notification-api#patch-/delivery-promises/external-sellers/-sellerId-/items/-itemId-) endpoint.'
+                })),
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Display name of the delivery method.'
+                })),
+                deliveryTime: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Estimated delivery time in `dd.hh:mm:ss` format. For example, `2.02:00:00` represents an estimated delivery time of two days and two hours.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Delivery method details. The `id` value sent here is the key used to update this promise later via [Update delivery promises for an external seller\'s item](https://developers.vtex.com/docs/api-reference/delivery-promise-notification-api#patch-/delivery-promises/external-sellers/-sellerId-/items/-itemId-) endpoint.'
             }))
-        }))
+        }).register(z.globalRegistry, {
+            description: 'Delivery promise details.'
+        })).register(z.globalRegistry, {
+            description: 'List of delivery promises.'
+        })
     })),
     path: z.object({
-        sellerId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'The seller\'s ID registered in the marketplace.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'The account name receiving the notification.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zPatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData = z.object({
     body: z.object({
-        availability: z.int(),
+        availability: z.int().register(z.globalRegistry, {
+            description: 'Total available items for the SKU across all promises. Send `0` to make the SKU unavailable in this delivery context.'
+        }),
         promises: z.array(z.object({
-            availability: z.int(),
-            deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
+            availability: z.int().register(z.globalRegistry, {
+                description: 'Available items for this delivery promise. Send `0` to make this specific promise unavailable.'
+            }),
+            deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+                description: 'Delivery channel type. Accepted values are `delivery` and `pickup-in-point`.'
+            })),
             deliveryZoneIds: z.array(z.enum([
                 'BRA_COUNTRY',
                 'BRA_REGION_NORTE',
@@ -312,20 +356,46 @@ export const zPatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData
                 'USA_STATE_HI',
                 'USA_STATE_OR',
                 'USA_STATE_WA'
-            ])).min(1),
-            id: z.string(),
-            name: z.optional(z.string()),
-            deliveryTime: z.optional(z.string())
-        })).min(1),
-        timestamp: z.iso.datetime()
+            ]).register(z.globalRegistry, {
+                description: 'Delivery zone unique identifier.'
+            })).min(1).register(z.globalRegistry, {
+                description: 'List of delivery zones where the item is available.'
+            }),
+            id: z.string().register(z.globalRegistry, {
+                description: 'Unique identifier of the delivery method. Required to identify which promise of the item must be updated. This value must match the `deliveryInfo.id` previously sent in a [Update product availability](https://developers.vtex.com/docs/api-reference/delivery-promise-notification-api#put-/delivery-promises/external-sellers/-sellerId-/products) request.'
+            }),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Display name of the delivery method in the format `dd.hh:mm:ss`.'
+            })),
+            deliveryTime: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Estimated delivery time in `dd.hh:mm:ss` format. For example, `2.02:00:00` represents an estimated delivery time of two days and two hours.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Delivery promise details.'
+        })).min(1).register(z.globalRegistry, {
+            description: 'List of delivery promises.'
+        }),
+        timestamp: z.iso.datetime().register(z.globalRegistry, {
+            description: 'Timestamp when this update was generated (ISO 8601).'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Delivery promises update payload.'
     }),
     path: z.object({
-        sellerId: z.string(),
-        itemId: z.string()
+        sellerId: z.string().register(z.globalRegistry, {
+            description: 'External seller identifier.'
+        }),
+        itemId: z.string().register(z.globalRegistry, {
+            description: 'Item identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });

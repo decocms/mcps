@@ -15,8 +15,9 @@ const sharedPlugins = [
     // Skip response schemas — tools return raw JSON; saves ~50K+ lines
     responses: false,
     // Reusable component schemas disabled (see definitions: false below)
-    // Skip metadata — descriptions are not read at runtime and waste ~2 MB
-    metadata: false,
+    // Descriptions ARE read at runtime: they flow into each tool inputSchema
+    // (the JSON Schema sent to the LLM), so the agent understands each param.
+    metadata: true,
     // Skip reusable component schemas — tools only use request schemas
     definitions: false,
   },

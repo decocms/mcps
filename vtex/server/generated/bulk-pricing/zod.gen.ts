@@ -5,49 +5,75 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 export const zPostApiPriceImporterPvtImportByImportTypeData = z.object({
     body: z.optional(z.object({
-        contentType: z.string(),
-        contentLengthBytes: z.int()
+        contentType: z.string().register(z.globalRegistry, {
+            description: 'MIME type of the file. Must be `text/csv`.'
+        }),
+        contentLengthBytes: z.int().register(z.globalRegistry, {
+            description: 'File size in bytes. Used for upload validation.'
+        })
     })),
     path: z.object({
-        importType: z.enum(['base-prices', 'fixed-prices'])
+        importType: z.enum(['base-prices', 'fixed-prices']).register(z.globalRegistry, {
+            description: 'Type of price import. Use `base-prices` for base prices or `fixed-prices` for fixed prices.'
+        })
     }),
     query: z.optional(z.object({
-        an: z.optional(z.string()),
-        output: z.optional(z.enum(['none', 'email']))
+        an: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Tenant account identifier. Can be sent as a query string or identified through the host URL.'
+        })),
+        output: z.optional(z.enum(['none', 'email']).register(z.globalRegistry, {
+            description: 'Output notification method for when the import job finishes. The target email is configured separately.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPriceImporterPvtBatchesByBatchIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        batchId: z.uuid()
+        batchId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier of the batch job.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPriceImporterPvtBatchesByBatchIdErrorsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        batchId: z.uuid()
+        batchId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier of the batch job.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

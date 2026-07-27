@@ -5,115 +5,245 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+});
 
 export const zPostApiProfileSystemPvtProfilesData = z.object({
     body: z.optional(z.object({
         personalData: z.object({
-            email: z.string(),
-            firstName: z.string(),
-            lastName: z.string(),
-            document: z.optional(z.string()),
-            documentType: z.optional(z.string()),
-            gender: z.optional(z.string()),
-            homePhone: z.optional(z.string()),
-            cellPhone: z.optional(z.string()),
-            businessPhone: z.optional(z.string()),
-            isPJ: z.optional(z.boolean())
+            email: z.string().register(z.globalRegistry, {
+                description: 'Email address of the user.'
+            }),
+            firstName: z.string().register(z.globalRegistry, {
+                description: 'First name of the user.'
+            }),
+            lastName: z.string().register(z.globalRegistry, {
+                description: 'Last name of the user.'
+            }),
+            document: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Document number of the user.'
+            })),
+            documentType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Type of document.'
+            })),
+            gender: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Gender of the user.'
+            })),
+            homePhone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Home phone number.'
+            })),
+            cellPhone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Cell phone number.'
+            })),
+            businessPhone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Business phone number.'
+            })),
+            isPJ: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Indicates if the user is a legal entity.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Personal information of the user.'
         }),
         addresses: z.record(z.string(), z.object({
-            addressId: z.optional(z.string()),
-            receiverName: z.optional(z.string()),
-            isDisposable: z.optional(z.boolean()),
-            addressType: z.optional(z.string()),
-            postalCode: z.optional(z.string()),
-            street: z.optional(z.string()),
-            neighborhood: z.optional(z.string()),
-            city: z.optional(z.string()),
-            state: z.optional(z.string()),
-            country: z.optional(z.string()),
-            number: z.optional(z.string())
-        }))
+            addressId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Unique identifier for the address.'
+            })),
+            receiverName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Name of the person receiving at this address.'
+            })),
+            isDisposable: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Indicates if the address is disposable.'
+            })),
+            addressType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Type of address.'
+            })),
+            postalCode: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Postal code of the address.'
+            })),
+            street: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Street name.'
+            })),
+            neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Neighborhood name.'
+            })),
+            city: z.optional(z.string().register(z.globalRegistry, {
+                description: 'City name.'
+            })),
+            state: z.optional(z.string().register(z.globalRegistry, {
+                description: 'State code.'
+            })),
+            country: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Country code.'
+            })),
+            number: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Street number.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Address object containing address details.'
+        })).register(z.globalRegistry, {
+            description: 'Address information for the user.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiCardTokenVaultTokensData = z.object({
     body: z.optional(z.object({
-        providerId: z.string(),
+        providerId: z.string().register(z.globalRegistry, {
+            description: 'Identifier of the payment provider.'
+        }),
         card: z.object({
-            paymentSystemName: z.string(),
-            paymentSystemId: z.string(),
-            firstDigits: z.string(),
-            lastDigits: z.string(),
+            paymentSystemName: z.string().register(z.globalRegistry, {
+                description: 'Name of the payment system.'
+            }),
+            paymentSystemId: z.string().register(z.globalRegistry, {
+                description: 'Identifier of the payment system.'
+            }),
+            firstDigits: z.string().register(z.globalRegistry, {
+                description: 'First six digits of the card number.'
+            }),
+            lastDigits: z.string().register(z.globalRegistry, {
+                description: 'Last four digits of the card number.'
+            }),
             address: z.optional(z.object({
-                addressType: z.optional(z.string()),
-                postalCode: z.optional(z.string()),
-                street: z.optional(z.string()),
-                neighborhood: z.optional(z.string()),
-                city: z.optional(z.string()),
-                state: z.optional(z.string()),
-                country: z.optional(z.string()),
-                number: z.optional(z.string())
+                addressType: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Type of address.'
+                })),
+                postalCode: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Postal code.'
+                })),
+                street: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Street name.'
+                })),
+                neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Neighborhood.'
+                })),
+                city: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'City name.'
+                })),
+                state: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'State code.'
+                })),
+                country: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Country name.'
+                })),
+                number: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Street number.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Billing address information.'
             })),
-            holderName: z.string()
+            holderName: z.string().register(z.globalRegistry, {
+                description: 'Name of the cardholder.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Card information.'
         }),
         cardTokenData: z.object({
-            type: z.string(),
-            value: z.string(),
-            expiration: z.string(),
-            label: z.optional(z.string()),
-            useCvvForAuthorization: z.optional(z.boolean())
+            type: z.string().register(z.globalRegistry, {
+                description: 'Type of token.'
+            }),
+            value: z.string().register(z.globalRegistry, {
+                description: 'Token value.'
+            }),
+            expiration: z.string().register(z.globalRegistry, {
+                description: 'Expiration date in `YYYY-MM` format.'
+            }),
+            label: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Label for the card token.'
+            })),
+            useCvvForAuthorization: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Indicates if CVV is required for authorization (`true`) or not (`false`).'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Token data for the card.'
         }),
-        email: z.string()
+        email: z.string().register(z.globalRegistry, {
+            description: 'Email address associated with the token.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiCheckoutPubOrderFormByOrderFormIdItemsData = z.object({
     body: z.optional(z.object({
         orderItems: z.array(z.object({
-            id: z.int(),
-            seller: z.string(),
-            quantity: z.int()
-        }))
+            id: z.int().register(z.globalRegistry, {
+                description: 'SKU ID of the item.'
+            }),
+            seller: z.string().register(z.globalRegistry, {
+                description: 'Seller ID.'
+            }),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Quantity of the item.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Order item details.'
+        })).register(z.globalRegistry, {
+            description: 'List of items to add to the cart.'
+        })
     })),
     path: z.object({
-        orderFormId: z.string()
+        orderFormId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the orderForm.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiCheckoutPubOrderFormByOrderFormIdAttachmentsClientProfileDataData = z.object({
     body: z.optional(z.object({
-        email: z.string()
+        email: z.string().register(z.globalRegistry, {
+            description: 'Email address of the client.'
+        })
     })),
     path: z.object({
-        orderFormId: z.string()
+        orderFormId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the orderForm.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -122,130 +252,218 @@ export const zPostApiVtexidPubAuthenticationStartloginData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidPubAuthenticationClassicValidateData = z.object({
     body: z.optional(z.object({
-        login: z.string(),
-        password: z.string()
+        login: z.string().register(z.globalRegistry, {
+            description: 'User email address.'
+        }),
+        password: z.string().register(z.globalRegistry, {
+            description: 'User password.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Account name parameter.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiCheckoutPubOrderFormByOrderFormIdAttachmentsPaymentDataData = z.object({
     body: z.optional(z.object({
         payments: z.array(z.object({
-            hasDefaultBillingAddress: z.optional(z.boolean()),
+            hasDefaultBillingAddress: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Indicates if default billing address should be used.'
+            })),
             installmentsInterestRate: z.optional(z.union([
                 z.number(),
                 z.null()
             ])),
-            referenceValue: z.optional(z.int()),
-            bin: z.optional(z.string()),
-            accountId: z.optional(z.string()),
-            value: z.int(),
-            paymentSystem: z.string(),
-            installments: z.int()
-        }))
+            referenceValue: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Reference value in cents.'
+            })),
+            bin: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Bank Identification Number (first 6 digits of card).'
+            })),
+            accountId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Account ID for saved payment method.'
+            })),
+            value: z.int().register(z.globalRegistry, {
+                description: 'Payment value in cents.'
+            }),
+            paymentSystem: z.string().register(z.globalRegistry, {
+                description: 'Payment system ID.'
+            }),
+            installments: z.int().register(z.globalRegistry, {
+                description: 'Number of installments.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Payment method details.'
+        })).register(z.globalRegistry, {
+            description: 'List of payment methods.'
+        })
     })),
     path: z.object({
-        orderFormId: z.string()
+        orderFormId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the orderForm.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiCheckoutPubOrderFormByOrderFormIdTransactionData = z.object({
     body: z.optional(z.object({
-        savePersonalData: z.optional(z.boolean()),
-        optinNewsLetter: z.optional(z.boolean()),
-        value: z.int(),
-        referenceValue: z.int(),
-        interestValue: z.optional(z.int())
+        savePersonalData: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates if personal data should be saved.'
+        })),
+        optinNewsLetter: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Indicates if user opted in for newsletter.'
+        })),
+        value: z.int().register(z.globalRegistry, {
+            description: 'Total value in cents.'
+        }),
+        referenceValue: z.int().register(z.globalRegistry, {
+            description: 'Reference value in cents.'
+        }),
+        interestValue: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Interest value in cents.'
+        }))
     })),
     path: z.object({
-        orderFormId: z.string()
+        orderFormId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the orderForm.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPvtTransactionsByTransactionIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the transaction.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPvtTransactionsByTransactionIdPaymentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the transaction.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Account name parameter.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPvtAccountsByAccountIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        accountId: z.string()
+        accountId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the account.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiProfileSystemPvtProfilesByProfileIdVcsCheckoutData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the profile.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteApiProfileSystemPvtProfilesByProfileIdPersonalDataData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the profile.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Account name parameter.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

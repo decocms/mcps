@@ -6,8 +6,14 @@ import * as z from 'zod';
  * Credentials object, composed of API key and application token.
  */
 export const zCredentials = z.object({
-    appkey: z.string(),
-    apptoken: z.string()
+    appkey: z.string().register(z.globalRegistry, {
+        description: 'API key.'
+    }),
+    apptoken: z.string().register(z.globalRegistry, {
+        description: 'Application token corresponding to the API key sent with it.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Credentials object, composed of API key and application token.'
 });
 
 /**
@@ -19,8 +25,12 @@ export const zValidateSessionResponse = z.object({
         'InvalidEmail',
         'InvalidToken',
         'WrongCredentials'
-    ])),
-    promptMFA: z.optional(z.boolean()),
+    ]).register(z.globalRegistry, {
+        description: 'Authentication status of the user, which can be: \n\n* `Success`: when authentication is completed successfully.\n* `InvalidEmail`: When the email informed is not valid.\n* `InvalidToken`: When the token is malformed, expired, or has an invalid signature.\n* `WrongCredentials`: When the informed credentials are not valid.'
+    })),
+    promptMFA: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether multi-factor authentication is required.'
+    })),
     lastAttemptAvailable: z.optional(z.union([
         z.int(),
         z.null()
@@ -31,19 +41,29 @@ export const zValidateSessionResponse = z.object({
     ])),
     authCookie: z.optional(z.union([
         z.object({
-            Name: z.optional(z.string()),
-            Value: z.optional(z.string())
+            Name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Name of the cookie.'
+            })),
+            Value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Value of the cookie.'
+            }))
         }),
         z.null()
     ])),
     accountAuthCookie: z.optional(z.union([
         z.object({
-            Name: z.optional(z.string()),
-            Value: z.optional(z.string())
+            Name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Name of the cookie.'
+            })),
+            Value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Value of the cookie.'
+            }))
         }),
         z.null()
     ])),
-    expiresIn: z.optional(z.int()),
+    expiresIn: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Time in seconds until authentication expires.'
+    })),
     userId: z.optional(z.union([
         z.string(),
         z.null()
@@ -56,37 +76,51 @@ export const zValidateSessionResponse = z.object({
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Validate session response object.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Name of your VTEX account.
  */
-export const zAn = z.string();
+export const zAn = z.string().register(z.globalRegistry, {
+    description: 'Name of your VTEX account.'
+});
 
 /**
  * Name of your VTEX account.
  */
-export const zAccountName = z.string();
+export const zAccountName = z.string().register(z.globalRegistry, {
+    description: 'Name of your VTEX account.'
+});
 
 /**
  * Environment to be used in the request.
  */
-export const zEnvironment = z.string().default('vtexcommercestable');
+export const zEnvironment = z.string().register(z.globalRegistry, {
+    description: 'Environment to be used in the request.'
+}).default('vtexcommercestable');
 
 /**
  * API Key name.
  */
-export const zApiKey = z.string();
+export const zApiKey = z.string().register(z.globalRegistry, {
+    description: 'API Key name.'
+});
 
 export const zPostApiAuthenticatorV1StorefrontUsersData = z.object({
     body: z.optional(z.object({
@@ -95,58 +129,96 @@ export const zPostApiAuthenticatorV1StorefrontUsersData = z.object({
                 'username',
                 'email',
                 'phoneNumber'
-            ]),
-            value: z.string()
-        })).min(1)
+            ]).register(z.globalRegistry, {
+                description: 'Type of authentication identifier. Accepted values are `username`, `email`, or `phoneNumber`. Note that phone numbers can be used for authentication but are not yet supported for password recovery.'
+            }),
+            value: z.string().register(z.globalRegistry, {
+                description: 'The actual identifier value. For `username`: case-insensitive string (3-70 characters, accepts special characters and whitespace). For `email`: valid email address format. For `phoneNumber`: valid phone number format.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Authentication identifier object containing the type and value.'
+        })).min(1).register(z.globalRegistry, {
+            description: 'Array of authentication identifiers for the user. You can provide one or more identifiers of different types (username, email, phoneNumber).'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        isLegacyPassword: z.optional(z.boolean()).default(false)
+        isLegacyPassword: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Flag indicating whether the user\'s password should be validated against an external legacy authentication system on their first login. Set to `true` for B2B password migration scenarios where users are being migrated from a legacy platform. When `true`, the user\'s first login will trigger validation against the configured middleware endpoint. Set to `false` (default) for standard user creation where users will need to define a new password. See the [B2B password migration guide](https://developers.vtex.com/docs/guides/b2b-password-migration) for more information.'
+        })).default(false)
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        name: z.string()
+        name: z.string().register(z.globalRegistry, {
+            description: 'Feature name for password migration. Must be `PasswordMigration`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPatchApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
     body: z.optional(z.object({
-        enabled: z.boolean()
+        enabled: z.boolean().register(z.globalRegistry, {
+            description: 'Flag to enable (`true`) or disable (`false`) the password migration feature. When disabled, legacy password validation will not be performed.'
+        })
     })),
     path: z.object({
-        name: z.string()
+        name: z.string().register(z.globalRegistry, {
+            description: 'Feature name for password migration. Must be `PasswordMigration`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPutApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
     body: z.optional(z.object({
-        clientId: z.string(),
-        idpEndpoint: z.string(),
-        secret: z.string()
+        clientId: z.string().register(z.globalRegistry, {
+            description: 'Public identifier used to select the correct shared secret on the middleware side. This identifier is included in the `X-VTEX-Client-Id` header of authentication requests sent to the middleware.'
+        }),
+        idpEndpoint: z.string().register(z.globalRegistry, {
+            description: 'HTTPS URL of the authentication middleware endpoint that VTEX will call to validate legacy credentials. The path must end with `/authentication`. Example: `https://your-middleware.com/authentication`.'
+        }),
+        secret: z.string().register(z.globalRegistry, {
+            description: 'Shared secret used to authenticate VTEX requests to the middleware via HMAC-SHA256 signatures. This should be a high-entropy value (recommended: 32+ random bytes / 256-bit, encoded as Base64). Treat this as a sensitive credential: do not log it, do not share it, and do not reuse it across environments.'
+        })
     })),
     path: z.object({
-        name: z.string()
+        name: z.string().register(z.globalRegistry, {
+            description: 'Feature name for password migration. Must be `PasswordMigration`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -154,11 +226,17 @@ export const zGetApiVtexidPvtUserInfoData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        user: z.string()
+        user: z.string().register(z.globalRegistry, {
+            description: 'URL-encoded storefront user identifier (username or email).'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -166,81 +244,135 @@ export const zPostApiVtexidApptokenLoginData = z.object({
     body: z.optional(zCredentials),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        an: z.optional(z.string())
+        an: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of your VTEX account.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidAudienceWebstoreProviderOauthExchangeData = z.object({
     body: z.optional(z.object({
-        providerId: z.string(),
-        accessToken: z.string(),
-        duration: z.optional(z.int()).default(60)
+        providerId: z.string().register(z.globalRegistry, {
+            description: 'Name of the [OAuth provider](https://developers.vtex.com/docs/guides/login-integration-guide-webstore-oauth2) set up in your Admin panel.'
+        }),
+        accessToken: z.string().register(z.globalRegistry, {
+            description: 'Access token obtained from your frontend via OAuth integration corresponding with the indicated `providerId`.'
+        }),
+        duration: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Duration of the token that will be returned, in minutes. The maximum value is `120`. The default is `60` when the duration isn\'t defined.'
+        })).default(60)
     })),
     path: z.object({
-        accountName: z.string(),
-        environment: z.string().default('vtexcommercestable')
+        accountName: z.string().register(z.globalRegistry, {
+            description: 'Name of your VTEX account.'
+        }),
+        environment: z.string().register(z.globalRegistry, {
+            description: 'Environment to be used in the request.'
+        }).default('vtexcommercestable')
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidCredentialValidateData = z.object({
     body: z.optional(z.object({
-        token: z.string()
+        token: z.string().register(z.globalRegistry, {
+            description: 'Value of the `VtexIdclientAutCookie`, [user token](https://developers.vtex.com/docs/guides/api-authentication-using-user-tokens), valid for 24 hours.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Request body object.'
     })),
     path: z.object({
-        environment: z.string().default('vtexcommercestable')
+        environment: z.string().register(z.globalRegistry, {
+            description: 'Environment to be used in the request.'
+        }).default('vtexcommercestable')
     }),
     query: z.optional(z.object({
-        an: z.optional(z.string())
+        an: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of your VTEX account.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidPubProvidersSetupPasswordWebstorePasswordData = z.object({
     body: z.optional(z.object({
-        isActive: z.optional(z.boolean()),
-        allowRepeated: z.optional(z.boolean())
+        isActive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if password access is active (`true`) or not (`false`).'
+        })),
+        allowRepeated: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if passwords can be repeated (`true`) or not (`false`).'
+        }))
     })),
     path: z.object({
-        accountName: z.string()
+        accountName: z.string().register(z.globalRegistry, {
+            description: 'Name of your VTEX account.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidPasswordExpireData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        accountName: z.string(),
-        environment: z.string().default('vtexcommercestable')
+        accountName: z.string().register(z.globalRegistry, {
+            description: 'Name of your VTEX account.'
+        }),
+        environment: z.string().register(z.globalRegistry, {
+            description: 'Environment to be used in the request.'
+        }).default('vtexcommercestable')
     }),
     query: z.object({
-        email: z.string()
+        email: z.string().register(z.globalRegistry, {
+            description: 'User email.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPatchApiVtexidApikeyByApiKeyApitokenRenewData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        apiKey: z.string()
+        apiKey: z.string().register(z.globalRegistry, {
+            description: 'API Key name.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -248,7 +380,9 @@ export const zPatchApiVtexidApikeyByApiKeyApitokenRenewData = z.object({
 export const zPatchApiVtexidApikeyByApiKeyApitokenFinishRenewalData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        apiKey: z.string()
+        apiKey: z.string().register(z.globalRegistry, {
+            description: 'API Key name.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -257,11 +391,17 @@ export const zGetApiVtexidPvtUserIdData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        usuario: z.string()
+        usuario: z.string().register(z.globalRegistry, {
+            description: 'URI-encoded user email.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -269,12 +409,20 @@ export const zGetApiVtexidPubAuthenticationStartData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        scope: z.string(),
-        fingerprint: z.optional(z.string())
+        scope: z.string().register(z.globalRegistry, {
+            description: 'Account name.'
+        }),
+        fingerprint: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Optional device fingerprint for enhanced security. Generated client-side using JavaScript libraries that collect anonymized device and browser parameters to create a unique identifier. When submitted in this request, it must later be provided when making a request to [refresh token](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/vtexid/refreshtoken/webstore).'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -282,24 +430,38 @@ export const zPostApiVtexidPubAuthenticationAccesskeySendData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        email: z.string()
+        email: z.string().register(z.globalRegistry, {
+            description: 'User email.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidPubAuthenticationAccesskeyValidateData = z.object({
     body: z.optional(z.object({
-        accessKey: z.optional(z.string()),
-        login: z.optional(z.string())
+        accessKey: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Access key sent to the user through the [Send access key](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/vtexid/pub/authentication/accesskey/send) endpoint.'
+        })),
+        login: z.optional(z.string().register(z.globalRegistry, {
+            description: 'User email.'
+        }))
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -313,70 +475,128 @@ export const zPostApiVtexidRefreshtokenWebstoreData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string(),
-        Host: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        Host: z.string().register(z.globalRegistry, {
+            description: 'Host address.'
+        })
     })
 });
 
 export const zDeleteApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
     body: z.object({
         settings: z.array(z.object({
-            type: z.enum(['OAuth', 'Password'])
-        }))
+            type: z.enum(['OAuth', 'Password']).register(z.globalRegistry, {
+                description: 'Authentication configuration category to delete.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Single entry identifying which authentication configuration type to delete.'
+        })).register(z.globalRegistry, {
+            description: 'Authentication configuration entries to delete.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payload listing authentication configuration types to delete for the organization unit.'
     }),
     path: z.object({
-        unitId: z.uuid()
+        unitId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier (GUID) of the organization unit from which the listed authentication settings will be deleted.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        unitId: z.uuid()
+        unitId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier (GUID) of the organization unit whose authentication settings are being read.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPatchApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
     body: z.object({
         settings: z.array(z.object({
-            type: z.enum(['OAuth']),
-            status: z.enum(['Enabled', 'Disabled'])
-        }))
+            type: z.enum(['OAuth']).register(z.globalRegistry, {
+                description: 'Authentication configuration category to update.'
+            }),
+            status: z.enum(['Enabled', 'Disabled']).register(z.globalRegistry, {
+                description: 'Target status for the configuration.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Update entry for one authentication configuration.'
+        })).register(z.globalRegistry, {
+            description: 'Authentication configuration entries to partially update for the organization unit.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payload listing existing authentication configuration entries to update by type and target status.'
     }),
     path: z.object({
-        unitId: z.uuid()
+        unitId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier (GUID) of the organization unit whose authentication settings are being patched.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
     body: z.object({
         settings: z.array(z.object({
-            type: z.enum(['Password', 'OAuth']),
-            name: z.string(),
-            status: z.enum(['Enabled', 'Disabled'])
-        }))
+            type: z.enum(['Password', 'OAuth']).register(z.globalRegistry, {
+                description: 'Machine-readable authentication method type: `Password` for password login or `OAuth` for SSO through an external identity provider.'
+            }),
+            name: z.string().register(z.globalRegistry, {
+                description: 'Display name of the authentication method to update, as returned by `GET` [Get organization unit authentication settings](https://developers.vtex.com/docs/api-reference/vtex-id-api#get-/api/vtexid/organization-units/-unitId-/settings) (for example the identity provider name for SSO).'
+            }),
+            status: z.enum(['Enabled', 'Disabled']).register(z.globalRegistry, {
+                description: 'Target status for the method.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Update entry for one authentication method.'
+        })).register(z.globalRegistry, {
+            description: 'Authentication methods to update for the organization unit.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payload listing authentication methods to update by display name and status.'
     }),
     path: z.object({
-        unitId: z.uuid()
+        unitId: z.uuid().register(z.globalRegistry, {
+            description: 'Unique identifier (GUID) of the organization unit whose authentication settings are being updated.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

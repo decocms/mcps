@@ -5,87 +5,185 @@ import * as z from 'zod';
 /**
  * JSONLogic expression evaluated against item context. Currently supports `and`, `or`, `==`, and `in`, with `collectionIds` and `shippingState` as available variables.
  */
-export const zJsonLogicExpression = z.record(z.string(), z.unknown());
+export const zJsonLogicExpression = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    description: 'JSONLogic expression evaluated against item context. Currently supports `and`, `or`, `==`, and `in`, with `collectionIds` and `shippingState` as available variables.'
+});
 
 /**
  * Payload used to create or replace a payment policy rule.
  */
 export const zPolicyRuleInput = z.object({
-    name: z.string().min(1),
+    name: z.string().min(1).register(z.globalRegistry, {
+        description: 'Policy rule name.'
+    }),
     expression: zJsonLogicExpression,
-    enabled: z.boolean(),
-    priority: z.int().gte(0).lte(999),
-    action: z.enum(['Include', 'Exclude']),
-    paymentSystems: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).min(1)
+    enabled: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the policy rule is active.'
+    }),
+    priority: z.int().gte(0).lte(999).register(z.globalRegistry, {
+        description: 'Rule priority, from `0` to `999`. Lower values have higher precedence when conflicting rules match the same item.'
+    }),
+    action: z.enum(['Include', 'Exclude']).register(z.globalRegistry, {
+        description: 'Action applied to the payment systems when the rule expression matches. Accepts `Include` or `Exclude`; value matching is case-insensitive.'
+    }),
+    paymentSystems: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Payment system ID.'
+    })).min(1).register(z.globalRegistry, {
+        description: 'Payment system IDs affected by the rule.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payload used to create or replace a payment policy rule.'
 });
 
 /**
  * Payment policy rule returned by the API.
  */
 export const zPolicyRule = z.object({
-    id: z.string(),
-    name: z.string().min(1),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the policy rule.'
+    }),
+    name: z.string().min(1).register(z.globalRegistry, {
+        description: 'Policy rule name.'
+    }),
     expression: zJsonLogicExpression,
-    enabled: z.boolean(),
-    priority: z.int().gte(0).lte(999),
-    action: z.enum(['Include', 'Exclude']),
-    paymentSystems: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })).min(1),
-    createdAt: z.iso.datetime(),
-    updatedAt: z.iso.datetime()
+    enabled: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the policy rule is active.'
+    }),
+    priority: z.int().gte(0).lte(999).register(z.globalRegistry, {
+        description: 'Rule priority, from `0` to `999`. Lower values have higher precedence when conflicting rules match the same item.'
+    }),
+    action: z.enum(['Include', 'Exclude']).register(z.globalRegistry, {
+        description: 'Action applied to the payment systems when the rule expression matches. Accepts `Include` or `Exclude`; value matching is case-insensitive.'
+    }),
+    paymentSystems: z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Payment system ID.'
+    })).min(1).register(z.globalRegistry, {
+        description: 'Payment system IDs affected by the rule.'
+    }),
+    createdAt: z.iso.datetime().register(z.globalRegistry, {
+        description: 'Date and time when the policy rule was created in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+    }),
+    updatedAt: z.iso.datetime().register(z.globalRegistry, {
+        description: 'Date and time when the policy rule was last updated in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment policy rule returned by the API.'
 });
 
 /**
  * Cart item context used by the payment policy engine.
  */
 export const zPaymentPolicySearchItem = z.object({
-    id: z.string(),
-    collectionIds: z.optional(z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Item identifier used to map available payment systems back to the cart item.'
+    }),
+    collectionIds: z.optional(z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Collection ID.'
+    })).register(z.globalRegistry, {
+        description: 'Collection IDs associated with the item in the VTEX catalog.'
+    })),
     shippingData: z.optional(z.object({
-        state: z.string()
+        state: z.string().register(z.globalRegistry, {
+            description: 'State code of the main delivery address.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Shipping context used by the payment policy engine.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Cart item context used by the payment policy engine.'
 });
 
 /**
  * Payload used to evaluate payment policies for cart items. Supports the same catalog filters as the merchant payment systems GET (`salesChannel`, `paymentSystemIds`), plus line items for policy evaluation.
  */
 export const zPaymentPolicySearchRequest = z.object({
-    salesChannel: z.optional(z.string()),
-    paymentSystemIds: z.optional(z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))),
-    items: z.array(zPaymentPolicySearchItem)
+    salesChannel: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Sales channel ID or name. When omitted, null, or whitespace, all sales channels are considered.'
+    })),
+    paymentSystemIds: z.optional(z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Payment system ID.'
+    })).register(z.globalRegistry, {
+        description: 'Optional subset of payment system IDs to consider from the merchant catalog before applying policy rules. When omitted or empty, no additional catalog filter is applied.'
+    })),
+    items: z.array(zPaymentPolicySearchItem).register(z.globalRegistry, {
+        description: 'Cart items to evaluate against active payment policy rules.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payload used to evaluate payment policies for cart items. Supports the same catalog filters as the merchant payment systems GET (`salesChannel`, `paymentSystemIds`), plus line items for policy evaluation.'
 });
 
 /**
  * Available payment methods response body information.
  */
 export const zPaymentSystemDefinition = z.object({
-    id: z.number(),
-    name: z.string(),
-    requiresDocument: z.optional(z.boolean()),
-    implementation: z.optional(z.string()),
-    connectorImplementation: z.optional(z.string()),
+    id: z.number().register(z.globalRegistry, {
+        description: 'Payment method identification.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Payment method name.'
+    }),
+    requiresDocument: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether a document is required.'
+    })),
+    implementation: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Payment method implementation class name.'
+    })),
+    connectorImplementation: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Connector (payment provider) implementation class name.'
+    })),
     antifraudConnectorImplementation: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    groupName: z.string(),
-    redirect: z.optional(z.boolean()),
-    isCustom: z.optional(z.boolean()),
-    isSelfAuthorized: z.optional(z.boolean()),
-    requiresAuthentication: z.optional(z.boolean()),
-    allowInstallments: z.optional(z.boolean()),
-    allowBinExclusion: z.optional(z.boolean()),
-    allowMultiple: z.optional(z.boolean()),
-    allowIssuer: z.optional(z.boolean()),
-    allowCountry: z.optional(z.boolean()),
-    allowCommercialPolicy: z.optional(z.boolean()),
-    allowCommercialCondition: z.optional(z.boolean()),
-    allowPeriod: z.optional(z.boolean()),
-    isAvailable: z.optional(z.boolean()),
+    groupName: z.string().register(z.globalRegistry, {
+        description: 'Payment group name.'
+    }),
+    redirect: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method allows redirection.'
+    })),
+    isCustom: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is custom.'
+    })),
+    isSelfAuthorized: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment is automatically authorized.'
+    })),
+    requiresAuthentication: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to log in to make the payment.'
+    })),
+    allowInstallments: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method allows installments.'
+    })),
+    allowBinExclusion: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict the use of specific BIN codes (only applicable for cards).'
+    })),
+    allowMultiple: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the method allows multiple payments. Example of `false`: debit card.'
+    })),
+    allowIssuer: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to identify the name of the bank responsible for issuing the card.'
+    })),
+    allowCountry: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict a payment rule by the country where the purchase is made.'
+    })),
+    allowCommercialPolicy: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether to restrict a payment rule by commercial policy type.'
+    })),
+    allowCommercialCondition: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether to restrict a payment rule by commercial condition type.'
+    })),
+    allowPeriod: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict a period for making the payment.'
+    })),
+    isAvailable: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method is available for use.'
+    })),
     description: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    supportRecurrence: z.optional(z.boolean()),
+    supportRecurrence: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method supports recurrence.'
+    })),
     validator: z.optional(z.object({
         regex: z.union([
             z.string(),
@@ -104,25 +202,43 @@ export const zPaymentSystemDefinition = z.object({
             z.null()
         ]),
         weights: z.union([
-            z.array(z.int()),
+            z.array(z.int().register(z.globalRegistry, {
+                description: 'Weigths information.'
+            })),
             z.null()
         ]),
-        useCvv: z.boolean(),
-        useExpirationDate: z.boolean(),
-        useCardHolderName: z.boolean(),
-        useBillingAddress: z.boolean(),
+        useCvv: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether it is necessary to use the CVV code to complete a transaction with payment made by card.'
+        }),
+        useExpirationDate: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether it is necessary to use the expiration date to complete a card payment transaction.'
+        }),
+        useCardHolderName: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether it is necessary to use the card holder name to complete a payment transaction made by card.'
+        }),
+        useBillingAddress: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether it is necessary to use the billing address to complete a card payment transaction.'
+        }),
         validCardLengths: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Validator information.'
     })),
     appDependencies: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    displayDocument: z.optional(z.boolean()),
-    dueDate: z.optional(z.string()),
-    allowNotification: z.optional(z.boolean()),
+    displayDocument: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether a document is shown.'
+    })),
+    dueDate: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Payment due date.'
+    })),
+    allowNotification: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates the possibility of payment notification (used by bank invoices and notes payable).'
+    })),
     affiliationId: z.optional(z.union([
         z.string(),
         z.null()
@@ -131,15 +247,25 @@ export const zPaymentSystemDefinition = z.object({
         z.string(),
         z.null()
     ])),
-    dueDateMinutes: z.optional(z.number())
+    dueDateMinutes: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Amount of time (in minutes) until the payment date (`dueDate`).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Available payment methods response body information.'
 });
 
 /**
  * Payment policy evaluation result returned by the Payment Information Service.
  */
 export const zPaymentPolicySearchResponse = z.object({
-    paymentSystemAssignments: z.record(z.string(), z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))),
-    paymentSystemDefinitions: z.array(zPaymentSystemDefinition)
+    paymentSystemAssignments: z.record(z.string(), z.array(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))).register(z.globalRegistry, {
+        description: 'Map of item IDs to the payment system IDs allowed for each item.'
+    }),
+    paymentSystemDefinitions: z.array(zPaymentSystemDefinition).register(z.globalRegistry, {
+        description: 'Payment system metadata for the payment systems returned in the assignments.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment policy evaluation result returned by the Payment Information Service.'
 });
 
 /**
@@ -163,51 +289,83 @@ export const zValidator = z.object({
         z.null()
     ]),
     weights: z.union([
-        z.array(z.int()),
+        z.array(z.int().register(z.globalRegistry, {
+            description: 'Weigths information.'
+        })),
         z.null()
     ]),
-    useCvv: z.boolean(),
-    useExpirationDate: z.boolean(),
-    useCardHolderName: z.boolean(),
-    useBillingAddress: z.boolean(),
+    useCvv: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the CVV code to complete a transaction with payment made by card.'
+    }),
+    useExpirationDate: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the expiration date to complete a card payment transaction.'
+    }),
+    useCardHolderName: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the card holder name to complete a payment transaction made by card.'
+    }),
+    useBillingAddress: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the billing address to complete a card payment transaction.'
+    }),
     validCardLengths: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Validator information.'
 });
 
 /**
  * RFC 7807 Problem Details response returned when the request cannot be completed.
  */
 export const zProblemDetails = z.object({
-    type: z.string(),
-    title: z.string(),
-    status: z.int().gte(100).lte(599),
-    detail: z.string(),
-    instance: z.string()
+    type: z.string().register(z.globalRegistry, {
+        description: 'URI reference that identifies the problem type.'
+    }),
+    title: z.string().register(z.globalRegistry, {
+        description: 'Short, human-readable summary of the problem type.'
+    }),
+    status: z.int().gte(100).lte(599).register(z.globalRegistry, {
+        description: 'HTTP status code generated by the server for this occurrence of the problem.'
+    }),
+    detail: z.string().register(z.globalRegistry, {
+        description: 'Human-readable explanation specific to this occurrence of the problem.'
+    }),
+    instance: z.string().register(z.globalRegistry, {
+        description: 'URI reference that identifies the specific occurrence of the problem.'
+    })
+}).register(z.globalRegistry, {
+    description: 'RFC 7807 Problem Details response returned when the request cannot be completed.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Unique identifier of the policy rule.
  */
-export const zPolicyRuleId = z.string();
+export const zPolicyRuleId = z.string().register(z.globalRegistry, {
+    description: 'Unique identifier of the policy rule.'
+});
 
 export const zListPolicyRulesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -216,15 +374,21 @@ export const zCreatePolicyRuleData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeletePolicyRuleData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the policy rule.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -232,23 +396,33 @@ export const zDeletePolicyRuleData = z.object({
 export const zGetPolicyRuleByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the policy rule.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdatePolicyRuleData = z.object({
     body: zPolicyRuleInput,
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the policy rule.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -257,7 +431,11 @@ export const zEvaluatePaymentPoliciesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
