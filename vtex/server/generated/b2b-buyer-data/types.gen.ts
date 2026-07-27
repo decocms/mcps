@@ -248,7 +248,7 @@ export type BuyerSchemaResponse = {
  */
 export type BuyerDocumentRequest = {
     /**
-     * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).
+     * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users).
      */
     userId: string;
     /**
@@ -282,7 +282,7 @@ export type BuyerDocumentRequest = {
  */
 export type BuyerDocument = {
     /**
-     * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).
+     * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users).
      */
     userId?: string;
     /**
@@ -469,7 +469,7 @@ export type DeleteApiDataentitiesShopperDocumentsByBuyerIdData = {
     };
     path: {
         /**
-         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).
+         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users).
          */
         buyerId: string;
     };
@@ -504,7 +504,7 @@ export type GetApiDataentitiesShopperDocumentsByBuyerIdData = {
     };
     path: {
         /**
-         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).
+         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users).
          */
         buyerId: string;
     };
@@ -531,7 +531,7 @@ export type PatchApiDataentitiesShopperDocumentsByBuyerIdData = {
     };
     path: {
         /**
-         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users).
+         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users).
          */
         buyerId: string;
     };
@@ -563,7 +563,7 @@ export type GetApiDataentitiesShopperSearchData = {
     path?: never;
     query: {
         /**
-         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/storefront/users). Use the `userId={{userId}}` value.
+         * Unique identifier for the buyer created by [VTEX ID API](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/authenticator/v1/storefront/users). Use the `userId={{userId}}` value.
          */
         _where?: string;
         /**

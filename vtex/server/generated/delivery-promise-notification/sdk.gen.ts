@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData, PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdErrors, PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdResponses, PutDeliveryPromisesExternalSellersBySellerIdProductsData, PutDeliveryPromisesExternalSellersBySellerIdProductsErrors, PutDeliveryPromisesExternalSellersBySellerIdProductsResponses } from './types.gen';
+import type { PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData, PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdErrors, PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdResponses, PutApiDeliveryPromisesExternalSellersBySellerIdProductsData, PutApiDeliveryPromisesExternalSellersBySellerIdProductsErrors, PutApiDeliveryPromisesExternalSellersBySellerIdProductsResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -21,7 +21,17 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * Update external product availability
  *
- * Notifies VTEX of changes in product availability and delivery promises.
+ * Creates or fully updates delivery promises for one or more [external seller's](https://help.vtex.com/en/tutorial/integration-guide-for-marketplaces-seller-non-vtex--yMji0ow0rQuYgQsg26Kus) items, notifying VTEX of changes in product availability and delivery promises.
+ *
+ * The Delivery Promise Notification API notifies the VTEX store of the external seller's product availability and delivery promises — that is, in which delivery zones, times, and methods the product is available.
+ *
+ * >ℹ️ This API is intended only for [**external sellers**](https://help.vtex.com/en/tutorial/integration-guide-for-marketplaces-seller-non-vtex--yMji0ow0rQuYgQsg26Kus). It is not required for [franchise accounts](https://help.vtex.com/en/docs/tutorials/what-is-a-franchise-account), sellers using [VTEX Seller Portal](https://help.vtex.com/en/docs/tutorials/how-to-set-up-your-store-on-seller-portal), or [VTEX sellers](https://help.vtex.com/en/tutorial/integrating-with-marketplace) already integrated into the [marketplace ecosystem](https://help.vtex.com/en/tutorial/integrating-with-marketplace). In these cases, availability and delivery options are managed natively by VTEX.
+ *
+ * Use this endpoint to **create or fully replace** the delivery promises for one or more external sellers' items. Each request sends the complete set of promises for the items included in the payload.
+ *
+ * ## Making a SKU unavailable
+ *
+ * To make a SKU unavailable for a given delivery context, send a `PUT` request with `availability: 0`. This action explicitly updates the [Delivery Promise](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd) state. Unlike [Seller Portal](https://help.vtex.com/en/docs/tutorials/how-to-set-up-your-store-on-seller-portal) integrations, this change is not automatically propagated and must be triggered via API.
  *
  * ## Permissions
  *
@@ -35,16 +45,30 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const putDeliveryPromisesExternalSellersBySellerIdProducts = <ThrowOnError extends boolean = false>(options: Options<PutDeliveryPromisesExternalSellersBySellerIdProductsData, ThrowOnError>) => (options.client ?? client).put<PutDeliveryPromisesExternalSellersBySellerIdProductsResponses, PutDeliveryPromisesExternalSellersBySellerIdProductsErrors, ThrowOnError>({
+export const putApiDeliveryPromisesExternalSellersBySellerIdProducts = <ThrowOnError extends boolean = false>(options: Options<PutApiDeliveryPromisesExternalSellersBySellerIdProductsData, ThrowOnError>) => (options.client ?? client).put<PutApiDeliveryPromisesExternalSellersBySellerIdProductsResponses, PutApiDeliveryPromisesExternalSellersBySellerIdProductsErrors, ThrowOnError>({
     security: [{ name: 'X-VTEX-API-AppKey', type: 'apiKey' }, { name: 'X-VTEX-API-AppToken', type: 'apiKey' }],
-    url: '/delivery-promises/external-sellers/{sellerId}/products',
+    url: '/api/delivery-promises/external-sellers/{sellerId}/products',
     ...options
 });
 
 /**
  * Update delivery promises for an external seller's item
  *
- * Updates availability and delivery promises for a specific item that belongs to an external seller.
+ * Updates one or more delivery promises of a single [external seller's](https://help.vtex.com/en/tutorial/integration-guide-for-marketplaces-seller-non-vtex--yMji0ow0rQuYgQsg26Kus) item, identified by the path parameter `itemId`.
+ *
+ * The Delivery Promise Notification API notifies the VTEX store of the external seller's product availability and delivery promises — that is, in which delivery zones, times, and methods the product is available.
+ *
+ * >ℹ️ This API is intended only for [**external sellers**](https://help.vtex.com/en/tutorial/integration-guide-for-marketplaces-seller-non-vtex--yMji0ow0rQuYgQsg26Kus). It is not required for [franchise accounts](https://help.vtex.com/en/docs/tutorials/what-is-a-franchise-account), sellers using [VTEX Seller Portal](https://help.vtex.com/en/docs/tutorials/how-to-set-up-your-store-on-seller-portal), or [VTEX sellers](https://help.vtex.com/en/tutorial/integrating-with-marketplace) already integrated into the [marketplace ecosystem](https://help.vtex.com/en/tutorial/integrating-with-marketplace). In these cases, availability and delivery options are managed natively by VTEX.
+ *
+ * Use this endpoint to update one or more delivery promises of a single external seller's item. A `PATCH` request always targets a single `itemId`, but you can update as many promises as needed within that item.
+ *
+ * Each promise to be updated must be identified by `id` (the same value previously sent as `deliveryInfo.id` in a `PUT` request). This field is required because, without it, the API cannot determine which promise of that item should be updated.
+ *
+ * >ℹ️ Before running a `PATCH` for an item, that item must have been previously created with a `PUT` request. `PATCH` is an update operation whose key is the `id` previously sent in the Update external product availability request.
+ *
+ * ## Making a SKU unavailable
+ *
+ * To make a SKU unavailable for a given delivery context, send a `PATCH` request with `availability: 0`. This action explicitly updates the [Delivery Promise](https://help.vtex.com/en/tutorial/delivery-promise-beta--p9EJH9GgxL0JceA6dBswd) state. Unlike [Seller Portal](https://help.vtex.com/en/docs/tutorials/how-to-set-up-your-store-on-seller-portal) integrations, this change is not automatically propagated and must be triggered via API.
  *
  * ## Permissions
  *
@@ -59,8 +83,8 @@ export const putDeliveryPromisesExternalSellersBySellerIdProducts = <ThrowOnErro
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const patchDeliveryPromisesExternalSellersBySellerIdItemsByItemId = <ThrowOnError extends boolean = false>(options: Options<PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData, ThrowOnError>) => (options.client ?? client).patch<PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdResponses, PatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdErrors, ThrowOnError>({
+export const patchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemId = <ThrowOnError extends boolean = false>(options: Options<PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData, ThrowOnError>) => (options.client ?? client).patch<PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdResponses, PatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdErrors, ThrowOnError>({
     security: [{ name: 'X-VTEX-API-AppKey', type: 'apiKey' }, { name: 'X-VTEX-API-AppToken', type: 'apiKey' }],
-    url: '/delivery-promises/external-sellers/{sellerId}/items/{itemId}',
+    url: '/api/delivery-promises/external-sellers/{sellerId}/items/{itemId}',
     ...options
 });

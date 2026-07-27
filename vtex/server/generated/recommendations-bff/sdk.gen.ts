@@ -21,7 +21,20 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * Recommendation view
  *
- * Records when a user views a recommendation.
+ * Records when a recommendation shelf enters the viewport.
+ *
+ * ## When to send
+ *
+ * **Web storefronts**: Automatically captured through Activity Flow when proper data attributes are rendered on the shelf container. See the integration guides for details.
+ *
+ * **Mobile apps**: Send this event when the recommendation shelf becomes visible (e.g., when at least 50% of the shelf is visible for 1 second). Ensure events are properly debounced to prevent duplicates.
+ *
+ * ## Important notes
+ *
+ * - Always use the same session `recommendationsUserId` in the `userId` field for accurate tracking.
+ * - Include the `correlationId` returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response.
+ * - Include the `campaignId` from `campaign.id` in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response.
+ * - The `products` array should contain all product IDs rendered in the shelf.
  *
  * ## Permissions
  *
@@ -39,7 +52,20 @@ export const postApiRecommendBffV2EventsRecommendationView = <ThrowOnError exten
 /**
  * Recommendation click
  *
- * Records a click on a product within a recommendation shelf.
+ * Records when a user clicks on a recommended product.
+ *
+ * ## When to send
+ *
+ * **Web storefronts**: Automatically captured through Activity Flow when proper data attributes are rendered on each product card. See the integration guides for details.
+ *
+ * **Mobile apps**: Send this event when the user taps on a recommended product.
+ *
+ * ## Important notes
+ *
+ * - Always use the same session `recommendationsUserId` in the `userId` field for accurate tracking.
+ * - Include the `correlationId` returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response.
+ * - Include the `campaignId` from `campaign.id` in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response.
+ * - The `product` field should contain the clicked product ID.
  *
  * ## Permissions
  *
@@ -57,8 +83,35 @@ export const postApiRecommendBffV2EventsRecommendationClick = <ThrowOnError exte
 /**
  * Fetch recommendations
  *
- * Retrieves a list of recommended products based on the provided campaign VRN (Virtual Resource Name), which identifies a specific recommendation campaign. The campaign determines the type of recommendations returned, such as personalized recommendations, similar items, cross-sell, and others.
+ * Retrieves recommended products with full product details based on the provided campaign VRN (Virtual Resource Name).
  *
+ * The campaign VRN identifies a specific recommendation strategy and follows the format: `vrn:recommendations:{store-name}:{campaignType}:{campaignId}`
+ *
+ * You can obtain the full VRN from:
+ * - [VTEX Support](https://help.vtex.com/en/support).
+ * - VTEX Admin at **Storefront > Recommendations** (click the three dots next to a shelf and select **Copy ID**).
+ *
+ * ## Campaign types and requirements
+ *
+ * **Non-contextual campaigns** (no `products` parameter needed):
+ * - `rec-top-items-v2`: Most popular (products with the highest number of views).
+ * - `rec-persona-v2`: Recommended for you (custom recommendations based on user profile and behavior).
+ * - `rec-last-v2`: Recently viewed (products recently viewed by the user).
+ * - `rec-search-v2`: Manual collection (recommendations from a manually created collection).
+ *
+ * **Contextual campaigns** (require `products` parameter):
+ * - `rec-similar-v2`: Similar products (products similar to a specific one).
+ * - `rec-cross-v2`: Frequently bought together (complementary products commonly purchased together).
+ * - `rec-visual-v2`: Visually similar products (products visually similar to a specific one).
+ * - `rec-next-v2`: Recent interactions (products most likely to engage the user in the future).
+ * - Cart recommendations (requires all product IDs currently in the cart).
+ *
+ * ## Response details
+ *
+ * - Returns full product objects with brand, name, link, items (SKUs), images, and pricing information.
+ * - Products marked with the `advertisement` tag are sponsored and should display a sponsored label.
+ * - The `correlationId` must be used when tracking recommendation view and click events.
+ * - The `campaign.id` should be included in event tracking calls.
  *
  * ## Permissions
  *
@@ -69,7 +122,26 @@ export const getApiRecommendBffV2Recommendations = <ThrowOnError extends boolean
 /**
  * Start session
  *
- * Creates a unique user ID to associate with the current session and links it to the provided order form ID. This user ID is also stored in the `vtex-rec-user-id` cookie for session continuity. If the `orderFormId` is not provided in the request body, the API attempts to retrieve it from the `checkout.vtex.com` cookie. This endpoint is typically used to initialize a recommendation session for tracking and personalization purposes.
+ * Starts or updates a user's recommendation session by associating the `userId` with the current `orderFormId` and returning the `recommendationsUserId` to use in subsequent requests.
+ *
+ * This endpoint:
+ * - Sets the `vtex-rec-user-id` cookie with the returned `recommendationsUserId`.
+ * - Sets the `vtex-rec-user-start-session` cookie to control when a new session call is needed.
+ * - Saves the recommendations identifier in the orderForm custom data for purchase attribution.
+ * - Links anonymous browsing behavior to completed purchases when the order is processed.
+ *
+ * ## When to call
+ *
+ * **Web storefronts (headless or FastStore)**:
+ * - On the first session load where an order form is available (via request body or `checkout.vtex.com` cookie).
+ * - Every time the `vtex-rec-user-start-session` cookie expires.
+ * - `orderFormId` is **optional** in the request body when the `checkout.vtex.com` cookie is forwarded (the API extracts it from the cookie).
+ *
+ * **Mobile apps**:
+ * - On the first session load where an `orderFormId` exists.
+ * - Every time the `orderFormId` changes.
+ * - Both `userId` and `orderFormId` are **required** in the request body.
+ * - Ensure the HTTP client preserves cookies or stores required values for subsequent calls.
  *
  * ## Permissions
  *
@@ -87,7 +159,18 @@ export const postApiRecommendBffV2UsersStartSession = <ThrowOnError extends bool
 /**
  * Product view
  *
- * Records when a user views a product. When source isn't passed, it defaults to `WEB_DESKTOP` or is derived from user agent.
+ * Records when a user views a product detail page. This event is used to measure performance and improve recommendations.
+ *
+ * ## When to send
+ *
+ * Send this event when the user opens a product detail page (PDP).
+ *
+ * ## Important notes
+ *
+ * - Always use the same session `recommendationsUserId` in the `userId` field for accurate tracking.
+ * - When `source` is not provided, the API attempts to infer it from the `user-agent` header.
+ * - For web integrations, use `WEB_DESKTOP` or `WEB_MOBILE`.
+ * - For mobile app integrations, use `WEB_MOBILE` or `MOBILE_APP`.
  *
  * ## Permissions
  *

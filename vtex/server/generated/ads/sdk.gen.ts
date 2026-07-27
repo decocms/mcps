@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { PostProductBulkInventoriesData, PostProductBulkInventoriesErrors, PostProductBulkInventoriesResponses, PostProductBulkProductsData, PostProductBulkProductsErrors, PostProductBulkProductsResponses, PostV1BeaconClickByAdIdData, PostV1BeaconClickByAdIdErrors, PostV1BeaconClickByAdIdResponses, PostV1BeaconConversionData, PostV1BeaconConversionErrors, PostV1BeaconConversionResponses, PostV1BeaconImpressionByAdIdData, PostV1BeaconImpressionByAdIdErrors, PostV1BeaconImpressionByAdIdResponses, PostV1BeaconViewByAdIdData, PostV1BeaconViewByAdIdErrors, PostV1BeaconViewByAdIdResponses, PostV1RmaByPublisherIdData, PostV1RmaByPublisherIdErrors, PostV1RmaByPublisherIdResponses } from './types.gen';
+import type { GetAdResultsV2Data, GetAdResultsV2Errors, GetAdResultsV2Responses, GetCampaignByCampaignIdData, GetCampaignByCampaignIdErrors, GetCampaignByCampaignIdResponses, GetCampaignV2Data, GetCampaignV2Errors, GetCampaignV2Responses, GetReportAdvertisersAdsDetailedData, GetReportAdvertisersAdsDetailedErrors, GetReportAdvertisersAdsDetailedResponses, GetReportAdvertisersCampaignsDetailedData, GetReportAdvertisersCampaignsDetailedErrors, GetReportAdvertisersCampaignsDetailedResponses, GetReportNetworkPublishersData, GetReportNetworkPublishersErrors, GetReportNetworkPublishersResponses, GetReportV2AdvertisersData, GetReportV2AdvertisersErrors, GetReportV2AdvertisersResponses, GetReportV2PublishersData, GetReportV2PublishersErrors, GetReportV2PublishersResponses, PostAudienceUploadUrlData, PostAudienceUploadUrlErrors, PostAudienceUploadUrlResponses, PostProductBulkInventoriesData, PostProductBulkInventoriesErrors, PostProductBulkInventoriesResponses, PostProductBulkProductsData, PostProductBulkProductsErrors, PostProductBulkProductsResponses, PostSsoMarketplaceData, PostSsoMarketplaceErrors, PostSsoMarketplaceResponses, PostV1BeaconClickByAdIdData, PostV1BeaconClickByAdIdErrors, PostV1BeaconClickByAdIdResponses, PostV1BeaconConversionData, PostV1BeaconConversionErrors, PostV1BeaconConversionResponses, PostV1BeaconImpressionByAdIdData, PostV1BeaconImpressionByAdIdErrors, PostV1BeaconImpressionByAdIdResponses, PostV1BeaconViewByAdIdData, PostV1BeaconViewByAdIdErrors, PostV1BeaconViewByAdIdResponses, PostV1RmaByPublisherIdData, PostV1RmaByPublisherIdErrors, PostV1RmaByPublisherIdResponses, PostWebhookMarketplaceTransfersByPublisherIdData, PostWebhookMarketplaceTransfersByPublisherIdErrors, PostWebhookMarketplaceTransfersByPublisherIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -21,13 +21,13 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 /**
  * Synchronize product information
  *
- * Update the basic product data in the VTEX Ads catalog.
+ * Updates the basic product data in the VTEX Ads catalog.
  *
  * >⚠️ For each batch insert/update, a maximum of 500 objects per request and 3 simultaneous requests are allowed.
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postProductBulkProducts = <ThrowOnError extends boolean = false>(options: Options<PostProductBulkProductsData, ThrowOnError>) => (options.client ?? client).post<PostProductBulkProductsResponses, PostProductBulkProductsErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -40,11 +40,11 @@ export const postProductBulkProducts = <ThrowOnError extends boolean = false>(op
  *
  * Update inventory information, which defines the price, promotional price, and product availability.
  *
- * >⚠️ For each batch insert/update, a maximum of 500 objects per request and 3 simultaneous requests are allowed.
+ * >⚠️ For each batch insert/update, a maximum of 500 objects per request and three simultaneous requests are allowed.
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postProductBulkInventories = <ThrowOnError extends boolean = false>(options: Options<PostProductBulkInventoriesData, ThrowOnError>) => (options.client ?? client).post<PostProductBulkInventoriesResponses, PostProductBulkInventoriesErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -55,11 +55,13 @@ export const postProductBulkInventories = <ThrowOnError extends boolean = false>
 /**
  * Track ad impressions
  *
- * Track when an ad is rendered or visible to a user. The event URL must not be constructed manually — always use the URL provided from `POST` [Get ads](https://developers.vtex.com/docs/api-reference/vtex-ads-api#post-/v1/rma/-publisher_id-).
+ * Track when an ad is rendered on a page. An impression does not determine whether the ad became visible to the user. Visibility is tracked by the separate `view` event. Do not construct the event URL manually. Always use the URL provided from `POST` [Get ads](https://developers.vtex.com/docs/api-reference/vtex-ads-api#post-/v1/rma/-publisher_id-).
+ *
+ * >ℹ️ Fire this event whenever a page loads that contains rendered ads.
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postV1BeaconImpressionByAdId = <ThrowOnError extends boolean = false>(options: Options<PostV1BeaconImpressionByAdIdData, ThrowOnError>) => (options.client ?? client).post<PostV1BeaconImpressionByAdIdResponses, PostV1BeaconImpressionByAdIdErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -74,7 +76,7 @@ export const postV1BeaconImpressionByAdId = <ThrowOnError extends boolean = fals
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postV1BeaconClickByAdId = <ThrowOnError extends boolean = false>(options: Options<PostV1BeaconClickByAdIdData, ThrowOnError>) => (options.client ?? client).post<PostV1BeaconClickByAdIdResponses, PostV1BeaconClickByAdIdErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -85,11 +87,13 @@ export const postV1BeaconClickByAdId = <ThrowOnError extends boolean = false>(op
 /**
  * Track ad views
  *
- * Track views for banner ads. The event URL must not be constructed manually — always use the URL provided from `POST` [Get ads](https://developers.vtex.com/docs/api-reference/vtex-ads-api#post-/v1/rma/-publisher_id-).
+ * Track when an ad becomes visible to the user. Do not construct the event URL manually. Always use the URL provided from `POST` [Get ads](https://developers.vtex.com/docs/api-reference/vtex-ads-api#post-/v1/rma/-publisher_id-).
+ *
+ * >ℹ️ Fire this event when the ad occupies at least 50% of the viewport for at least 1 second.
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postV1BeaconViewByAdId = <ThrowOnError extends boolean = false>(options: Options<PostV1BeaconViewByAdIdData, ThrowOnError>) => (options.client ?? client).post<PostV1BeaconViewByAdIdResponses, PostV1BeaconViewByAdIdErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -100,11 +104,11 @@ export const postV1BeaconViewByAdId = <ThrowOnError extends boolean = false>(opt
 /**
  * Track conversions
  *
- * Track when an ad leads to a purchase. This endpoint is used to notify one or more orders (sending them in a batch).
+ * Track completed sales for conversion attribution. Send this event for every completed sale, regardless of whether an ad led to the purchase. Notifying all sales enables attribution within time windows after ad-impacted navigation and metrics such as assisted sales. Send one or more orders in a batch request.
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  */
 export const postV1BeaconConversion = <ThrowOnError extends boolean = false>(options: Options<PostV1BeaconConversionData, ThrowOnError>) => (options.client ?? client).post<PostV1BeaconConversionResponses, PostV1BeaconConversionErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
@@ -119,15 +123,211 @@ export const postV1BeaconConversion = <ThrowOnError extends boolean = false>(opt
  *
  * ## Permissions
  *
- * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
  *
  * ## Request best practices
  *
  * - **HTTP persistence:** Prefer persistent connections (`Connection: keep-alive`).
- * - **Timeout:** Apply a 500–600 ms timeout to the ad query.
+ * - **Timeout:** Apply a 500-600 ms timeout to the ad query.
+ *
+ * ## Context-specific fields
+ *
+ * The `context` value determines which additional fields are required in the request body. The example below uses the `search` context — adapt it to your context using the table below. Include only the fields listed for your context (in addition to the common required fields `session_id`, `context`, `channel`, and `placements`).
+ *
+ * | `context` | Additional required fields | Notes |
+ * | --- | --- | --- |
+ * | `home` | None | Use generic placements (top banner, home shelf). |
+ * | `category` | `category_name` | Provide the full breadcrumb path (for example, `Daily Care > Deodorant > Spray`). |
+ * | `search` | `term` | Send the search query. Optionally pass `tags` to scope eligible ads. |
+ * | `product_page` | `product_sku` | SKU of the product currently being viewed. |
+ * | `brand_page` | `brand_name` | Name of the brand. Pair with `sponsored_brand` placements when applicable. |
+ * | `digital_signage` | `device_id`, `store_name` | Use `digital_signage` placements and the `app` channel. |
  */
 export const postV1RmaByPublisherId = <ThrowOnError extends boolean = false>(options: Options<PostV1RmaByPublisherIdData, ThrowOnError>) => (options.client ?? client).post<PostV1RmaByPublisherIdResponses, PostV1RmaByPublisherIdErrors, ThrowOnError>({
     security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
     url: '/v1/rma/{publisher_id}',
+    ...options
+});
+
+/**
+ * Get advertisers report
+ *
+ * Retrieves information from all advertisers associated with a publisher account. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ Only available in the publisher view (publisher account).
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getReportV2Advertisers = <ThrowOnError extends boolean = false>(options: Options<GetReportV2AdvertisersData, ThrowOnError>) => (options.client ?? client).get<GetReportV2AdvertisersResponses, GetReportV2AdvertisersErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/report/v2/advertisers',
+    ...options
+});
+
+/**
+ * Get publishers report
+ *
+ * Retrieves information about the publishers associated with an advertiser account. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ Only available in the advertiser view (advertiser account).
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getReportV2Publishers = <ThrowOnError extends boolean = false>(options: Options<GetReportV2PublishersData, ThrowOnError>) => (options.client ?? client).get<GetReportV2PublishersResponses, GetReportV2PublishersErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/report/v2/publishers',
+    ...options
+});
+
+/**
+ * Get network publishers report
+ *
+ * Retrieves information about publishers associated with a Network Publisher account. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ Only publishers operating in the Network format are allowed to access this report.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getReportNetworkPublishers = <ThrowOnError extends boolean = false>(options: Options<GetReportNetworkPublishersData, ThrowOnError>) => (options.client ?? client).get<GetReportNetworkPublishersResponses, GetReportNetworkPublishersErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/report/network/publishers',
+    ...options
+});
+
+/**
+ * List campaigns
+ *
+ * Fetches all available campaigns, applying filters as needed. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getCampaignV2 = <ThrowOnError extends boolean = false>(options: Options<GetCampaignV2Data, ThrowOnError>) => (options.client ?? client).get<GetCampaignV2Responses, GetCampaignV2Errors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/campaign/v2',
+    ...options
+});
+
+/**
+ * Get campaign details
+ *
+ * Retrieves detailed information about a campaign, such as the products associated with the campaign, status history, ads, and metrics. The data is returned only in JSON format.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getCampaignByCampaignId = <ThrowOnError extends boolean = false>(options: Options<GetCampaignByCampaignIdData, ThrowOnError>) => (options.client ?? client).get<GetCampaignByCampaignIdResponses, GetCampaignByCampaignIdErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/campaign/{campaign_id}',
+    ...options
+});
+
+/**
+ * Get advertiser campaigns detailed report
+ *
+ * Exports a mixed campaign report for advertiser accounts, including both regular campaigns and subpublisher information for network campaigns. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ This route is intended for advertiser accounts. For non white-label accounts, only non-private publisher rows are returned.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getReportAdvertisersCampaignsDetailed = <ThrowOnError extends boolean = false>(options: Options<GetReportAdvertisersCampaignsDetailedData, ThrowOnError>) => (options.client ?? client).get<GetReportAdvertisersCampaignsDetailedResponses, GetReportAdvertisersCampaignsDetailedErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/report/advertisers/campaigns-detailed',
+    ...options
+});
+
+/**
+ * Get advertiser ads detailed report
+ *
+ * Exports a detailed ad report for advertiser accounts, including subpublisher breakdown for network campaigns. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ This route is intended for advertiser accounts. Non-network campaigns return one row per ad, while network campaigns return one row per `ad + subpublisher`. For non white-label accounts, only non-private publisher rows are returned.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getReportAdvertisersAdsDetailed = <ThrowOnError extends boolean = false>(options: Options<GetReportAdvertisersAdsDetailedData, ThrowOnError>) => (options.client ?? client).get<GetReportAdvertisersAdsDetailedResponses, GetReportAdvertisersAdsDetailedErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/report/advertisers/ads-detailed',
+    ...options
+});
+
+/**
+ * Get ads performance report
+ *
+ * Fetches all available ads, applying filters as needed. The data is returned in JSON format by default, but can be exported as an XLSX file by setting `download=true`.
+ *
+ * >ℹ️ Paused ads are excluded from the default response. To include paused ads, set `show_inactive=true`.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const getAdResultsV2 = <ThrowOnError extends boolean = false>(options: Options<GetAdResultsV2Data, ThrowOnError>) => (options.client ?? client).get<GetAdResultsV2Responses, GetAdResultsV2Errors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/ad/results/v2',
+    ...options
+});
+
+/**
+ * Notify credit transfer status
+ *
+ * Notifies VTEX Ads about the final status of a credit transfer that was previously requested by VTEX Ads to the marketplace's `POST /checking_account/transfer` endpoint. The marketplace must call this webhook with the resolved status of each transfer transaction.
+ *
+ * >⚠️ In case of a webhook call failure, the marketplace must retry until a `204 No Content` response is received.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const postWebhookMarketplaceTransfersByPublisherId = <ThrowOnError extends boolean = false>(options: Options<PostWebhookMarketplaceTransfersByPublisherIdData, ThrowOnError>) => (options.client ?? client).post<PostWebhookMarketplaceTransfersByPublisherIdResponses, PostWebhookMarketplaceTransfersByPublisherIdErrors, ThrowOnError>({
+    security: [{ name: 'X-Api-Key', type: 'apiKey' }, { name: 'X-Secret-Key', type: 'apiKey' }],
+    url: '/webhook/marketplace/transfers/{publisher_id}',
+    ...options
+});
+
+/**
+ * Generate audience upload URL
+ *
+ * Returns a short-lived pre-signed Amazon S3 `POST` that lets a publisher upload an audience file without long-lived credentials. The response carries the destination `url` and the signed `fields` that must accompany the upload.
+ *
+ * The backend builds the object `key` from the authenticated publisher, so a publisher cannot write to another publisher's path. The pre-signed `POST` is valid for `expires_in` seconds (900 by default) and Amazon S3 rejects files larger than `max_bytes` (2 GiB by default).
+ *
+ * >ℹ️ The file upload itself is a separate multipart `POST` request sent directly to Amazon S3 with the returned `url` and `fields`. It is not part of this API. See [Integrating audiences](https://developers.vtex.com/docs/guides/integrating-audiences) for the full flow, file format, and PII hashing rules.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const postAudienceUploadUrl = <ThrowOnError extends boolean = false>(options: Options<PostAudienceUploadUrlData, ThrowOnError>) => (options.client ?? client).post<PostAudienceUploadUrlResponses, PostAudienceUploadUrlErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/audience/upload-url',
+    ...options
+});
+
+/**
+ * Generate seller single sign-on URL
+ *
+ * Generates a redirect URL that allows a seller user to access the VTEX Ads platform without needing to log in again. Use this endpoint to enable a unified login experience for marketplace sellers.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [License Manager resources](https://help.vtex.com/docs/tutorials/license-manager-resources).
+ */
+export const postSsoMarketplace = <ThrowOnError extends boolean = false>(options: Options<PostSsoMarketplaceData, ThrowOnError>) => (options.client ?? client).post<PostSsoMarketplaceResponses, PostSsoMarketplaceErrors, ThrowOnError>({
+    security: [{ name: 'X-App-Id', type: 'apiKey' }, { name: 'X-Api-Key', type: 'apiKey' }],
+    url: '/sso/marketplace',
     ...options
 });

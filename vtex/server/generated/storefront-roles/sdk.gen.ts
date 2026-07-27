@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdData, DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdErrors, DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdResponses, DeleteApiLicenseManagerStorefrontUserRolesData, DeleteApiLicenseManagerStorefrontUserRolesErrors, DeleteApiLicenseManagerStorefrontUserRolesResponses, GetApiLicenseManagerStorefrontUsersByEmailRolesData, GetApiLicenseManagerStorefrontUsersByEmailRolesErrors, GetApiLicenseManagerStorefrontUsersByEmailRolesResponses, GetApiLicenseManagerStorefrontUsersByUserIdData, GetApiLicenseManagerStorefrontUsersByUserIdErrors, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedData, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedErrors, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedResponses, GetApiLicenseManagerStorefrontUsersByUserIdResponses, GetApiLicenseManagerStorefrontUsersByUserIdRolesData, GetApiLicenseManagerStorefrontUsersByUserIdRolesErrors, GetApiLicenseManagerStorefrontUsersByUserIdRolesResponses, PostApiLicenseManagerStorefrontRolesAssignData, PostApiLicenseManagerStorefrontRolesAssignErrors, PostApiLicenseManagerStorefrontRolesAssignResponses, PostApiLicenseManagerStorefrontUserRolesData, PostApiLicenseManagerStorefrontUserRolesErrors, PostApiLicenseManagerStorefrontUserRolesResponses } from './types.gen';
+import type { DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdData, DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdErrors, DeleteApiLicenseManagerStorefrontRemoveUsersByUserIdResponses, DeleteApiLicenseManagerStorefrontResourceByIdData, DeleteApiLicenseManagerStorefrontResourceByIdErrors, DeleteApiLicenseManagerStorefrontResourceByIdResponses, DeleteApiLicenseManagerStorefrontRoleByRoleIdData, DeleteApiLicenseManagerStorefrontRoleByRoleIdErrors, DeleteApiLicenseManagerStorefrontRoleByRoleIdResponses, DeleteApiLicenseManagerStorefrontUserRolesData, DeleteApiLicenseManagerStorefrontUserRolesErrors, DeleteApiLicenseManagerStorefrontUserRolesResponses, GetApiLicenseManagerStorefrontResourceData, GetApiLicenseManagerStorefrontResourceErrors, GetApiLicenseManagerStorefrontResourceResponses, GetApiLicenseManagerStorefrontRoleByRoleIdData, GetApiLicenseManagerStorefrontRoleByRoleIdErrors, GetApiLicenseManagerStorefrontRoleByRoleIdResponses, GetApiLicenseManagerStorefrontRoleData, GetApiLicenseManagerStorefrontRoleErrors, GetApiLicenseManagerStorefrontRoleResponses, GetApiLicenseManagerStorefrontUsersByEmailRolesData, GetApiLicenseManagerStorefrontUsersByEmailRolesErrors, GetApiLicenseManagerStorefrontUsersByEmailRolesResponses, GetApiLicenseManagerStorefrontUsersByUserIdData, GetApiLicenseManagerStorefrontUsersByUserIdErrors, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedData, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedErrors, GetApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGrantedResponses, GetApiLicenseManagerStorefrontUsersByUserIdResponses, GetApiLicenseManagerStorefrontUsersByUserIdRolesData, GetApiLicenseManagerStorefrontUsersByUserIdRolesErrors, GetApiLicenseManagerStorefrontUsersByUserIdRolesResponses, PostApiLicenseManagerStorefrontResourceData, PostApiLicenseManagerStorefrontResourceErrors, PostApiLicenseManagerStorefrontResourceResponses, PostApiLicenseManagerStorefrontRoleData, PostApiLicenseManagerStorefrontRoleErrors, PostApiLicenseManagerStorefrontRoleResponses, PostApiLicenseManagerStorefrontRolesAssignData, PostApiLicenseManagerStorefrontRolesAssignErrors, PostApiLicenseManagerStorefrontRolesAssignResponses, PostApiLicenseManagerStorefrontUserRolesData, PostApiLicenseManagerStorefrontUserRolesErrors, PostApiLicenseManagerStorefrontUserRolesResponses, PutApiLicenseManagerStorefrontRoleByRoleIdData, PutApiLicenseManagerStorefrontRoleByRoleIdErrors, PutApiLicenseManagerStorefrontRoleByRoleIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -23,7 +23,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Assigns a specific storefront role to an existing user.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -56,7 +56,7 @@ export const postApiLicenseManagerStorefrontRolesAssign = <ThrowOnError extends 
  *
  * Removes the specified storefront roles from a user. The endpoint ignores role IDs that do not exist or are not assigned to the user. Returns the resulting role list after removal.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -89,7 +89,7 @@ export const deleteApiLicenseManagerStorefrontUserRoles = <ThrowOnError extends 
  *
  * Fully updates the user's role list based on the `roleIds` provided. This endpoint replaces all existing roles with the specified ones. If the user does not exist, this endpoint creates the user and assigns the indicated roles.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -122,7 +122,7 @@ export const postApiLicenseManagerStorefrontUserRoles = <ThrowOnError extends bo
  *
  * Verifies if a specific storefront user has access to a particular storefront resource.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -155,7 +155,7 @@ export const getApiLicenseManagerStorefrontUsersByUserIdResourcesByResourceKeyGr
  *
  * Removes a storefront user from the system, including all their storefront role assignments.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -188,7 +188,7 @@ export const deleteApiLicenseManagerStorefrontRemoveUsersByUserId = <ThrowOnErro
  *
  * Retrieves all storefront roles assigned to a specific user by user ID.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -221,7 +221,7 @@ export const getApiLicenseManagerStorefrontUsersByUserIdRoles = <ThrowOnError ex
  *
  * Retrieves all storefront roles assigned to a specific user by email.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * >ℹ️ Learn more about the available storefront roles and resources at the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide.
  *
@@ -254,7 +254,7 @@ export const getApiLicenseManagerStorefrontUsersByEmailRoles = <ThrowOnError ext
  *
  * Retrieves storefront user details by ID.
  *
- * > ⚠️ This feature is available only for stores using B2B Buyer Portal, currently available for select accounts.
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
  *
  * ## Permissions
  *
@@ -277,5 +277,253 @@ export const getApiLicenseManagerStorefrontUsersByUserId = <ThrowOnError extends
         { name: 'VtexIdclientAutCookie', type: 'apiKey' }
     ],
     url: '/api/license-manager/storefront/users/{userId}',
+    ...options
+});
+
+/**
+ * List storefront roles
+ *
+ * Returns all storefront roles visible to the account, including native VTEX roles and the account's own custom roles. An empty array is a valid response.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **View Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const getApiLicenseManagerStorefrontRole = <ThrowOnError extends boolean = false>(options: Options<GetApiLicenseManagerStorefrontRoleData, ThrowOnError>) => (options.client ?? client).get<GetApiLicenseManagerStorefrontRoleResponses, GetApiLicenseManagerStorefrontRoleErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/role',
+    ...options
+});
+
+/**
+ * Create storefront role
+ *
+ * Creates a new account-scoped custom role with the specified name and resource assignments.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **Edit Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const postApiLicenseManagerStorefrontRole = <ThrowOnError extends boolean = false>(options: Options<PostApiLicenseManagerStorefrontRoleData, ThrowOnError>) => (options.client ?? client).post<PostApiLicenseManagerStorefrontRoleResponses, PostApiLicenseManagerStorefrontRoleErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/role',
+    ...options
+});
+
+/**
+ * Delete storefront role
+ *
+ * Permanently removes a custom role from the account. The role must be unassigned from all users before it can be deleted. Native VTEX roles cannot be deleted.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **Edit Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiLicenseManagerStorefrontRoleByRoleId = <ThrowOnError extends boolean = false>(options: Options<DeleteApiLicenseManagerStorefrontRoleByRoleIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiLicenseManagerStorefrontRoleByRoleIdResponses, DeleteApiLicenseManagerStorefrontRoleByRoleIdErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/role/{roleId}',
+    ...options
+});
+
+/**
+ * Fetch storefront role by ID
+ *
+ * Retrieves a single role by its identifier.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **View Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const getApiLicenseManagerStorefrontRoleByRoleId = <ThrowOnError extends boolean = false>(options: Options<GetApiLicenseManagerStorefrontRoleByRoleIdData, ThrowOnError>) => (options.client ?? client).get<GetApiLicenseManagerStorefrontRoleByRoleIdResponses, GetApiLicenseManagerStorefrontRoleByRoleIdErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/role/{roleId}',
+    ...options
+});
+
+/**
+ * Edit storefront role resources
+ *
+ * Replaces the full resource list of an existing custom role. Send all resources you want the role to have after the update.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **Edit Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const putApiLicenseManagerStorefrontRoleByRoleId = <ThrowOnError extends boolean = false>(options: Options<PutApiLicenseManagerStorefrontRoleByRoleIdData, ThrowOnError>) => (options.client ?? client).put<PutApiLicenseManagerStorefrontRoleByRoleIdResponses, PutApiLicenseManagerStorefrontRoleByRoleIdErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/role/{roleId}',
+    ...options
+});
+
+/**
+ * List storefront resources
+ *
+ * Returns every storefront resource visible to the account, including native VTEX resources and the account's own custom resources.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **View Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const getApiLicenseManagerStorefrontResource = <ThrowOnError extends boolean = false>(options: Options<GetApiLicenseManagerStorefrontResourceData, ThrowOnError>) => (options.client ?? client).get<GetApiLicenseManagerStorefrontResourceResponses, GetApiLicenseManagerStorefrontResourceErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/resource',
+    ...options
+});
+
+/**
+ * Create custom storefront resource
+ *
+ * Registers a new account-scoped permission resource. Each account may hold at most 10 custom resources.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **Edit Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const postApiLicenseManagerStorefrontResource = <ThrowOnError extends boolean = false>(options: Options<PostApiLicenseManagerStorefrontResourceData, ThrowOnError>) => (options.client ?? client).post<PostApiLicenseManagerStorefrontResourceResponses, PostApiLicenseManagerStorefrontResourceErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/resource',
+    ...options
+});
+
+/**
+ * Delete custom storefront resource
+ *
+ * Removes a account-level custom resource. Native VTEX resources cannot be deleted through this endpoint.
+ *
+ * > ⚠️ This feature is available only for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), currently available for select accounts.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | License Manager | Services access control | **Edit Storefront User Permissions** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiLicenseManagerStorefrontResourceById = <ThrowOnError extends boolean = false>(options: Options<DeleteApiLicenseManagerStorefrontResourceByIdData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiLicenseManagerStorefrontResourceByIdResponses, DeleteApiLicenseManagerStorefrontResourceByIdErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/license-manager/storefront/resource/{id}',
     ...options
 });

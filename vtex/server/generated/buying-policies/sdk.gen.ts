@@ -91,11 +91,13 @@ export const getByAccountNameAuthorizationDimensions = <ThrowOnError extends boo
  *
  * ## Rule priority
  *
- * Within each dimension (org unit), rules are evaluated in ascending priority order. Use fixed priorities by policy type:
+ * Within each dimension (org unit), rules are evaluated in ascending priority order (lower numbers first). Rules must be organized in the following order, with sequential priority values:
  *
- * - `1` = bypass (effectType: 0) - checked first, approves and stops evaluation.
- * - `2` = deny (effectType: 1) - checked second, denies and stops evaluation.
- * - `3` = sequential workflow (effectType: 2) - checked last, requires approval.
+ * 1. **Bypass rules** (`effectType: 0`) — checked first, approve and stop evaluation.
+ * 2. **Deny rules** (`effectType: 1`) — checked after all bypass rules, deny and stop evaluation.
+ * 3. **Sequential workflow rules** (`effectType: 2`) — checked last, require manual approval.
+ *
+ * Priority values are not fixed to specific numbers. They must be assigned sequentially across all rules, keeping the group order above. For example, with 2 bypass rules, 3 deny rules, and 2 approval rules, priorities would be: `1` and `2` for bypass, `3`, `4`, and `5` for deny, `6` and `7` for approval.
  *
  * >❗ Set `requireAllRulesAcceptance: false` so the first matching rule executes and stops further evaluation. This enables bypass rules to immediately approve orders without checking deny or approval rules.
  *

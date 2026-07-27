@@ -13,53 +13,53 @@ export type EnqueueNewOrderRequest = {
      */
     marketplaceOrderId: string;
     /**
-     * Required field including a string with the order’s status in the marketplace. If you send an order with the status APPROVED to integrate, our service will automatically try to advance it’s status in VTEX after integrating it. This field accepts the following values:
-     *
-     * - `new`
-     *
-     * - `approved`
-     */
-    marketplaceOrderStatus: string;
-    /**
-     * Integer that indicates the order’s total value, which the marketplace will pay to the seller. It’s important to note that this value should include interest, if that’s the case. If the value is `USD110.50`, convert it to the format → `11050`.
-     */
-    marketplacePaymentValue: number;
-    /**
-     * String with the identifier code of the connector responsible for the order.
-     *
-     * This field is optional if the connector uses the [App Template](https://developers.vtex.com/vtex-rest-api/docs/external-marketplace-integration-app-template) and authenticates on our request via `VtexIdclientAutCookie`.
-     *
-     * It is required if the connector is native or does not use the App Template.
+     * String with the identifier code of the connector responsible for the order. This field is optional if the connector uses the App Template and authenticates via `VtexIdclientAutCookie`.
      */
     connectorName?: string;
     /**
-     * String with the connector's base endpoint that will receive notifications about the orders processing results, as well as status updates from VTEX OMS. This field accepts query strings. You can use the models below:
-     *
-     * - `https://{{externalconnector}}.com`
-     *
-     * - `https://{{externalconnector.com}}/api/vtex` if you additionaly want to send a relative URL with the endpoint.
-     *
-     * This field is optional if the connector uses the [App Template](https://developers.vtex.com/vtex-rest-api/docs/external-marketplace-integration-app-template) and authenticates on our request via `VtexIdclientAutCookie`.
-     *
-     * It is required if the connector is native or does not use the App Template.
+     * String with the connector's base endpoint that will receive notifications about the order's processing results and status updates from VTEX OMS.
      */
     connectorEndpoint?: string;
     /**
-     * Boolean indicating whether franchise accounts linked to the main seller should be considered. That is, if the order delivery pickup/SLA can belong to a [franchise account](https://help.vtex.com/en/tutorial/what-is-a-franchise-account--kWQC6RkFSCUFGgY5gSjdl), for example. This field is optional and defaults to `false`.
+     * Order's status in the marketplace. Accepts the values: `new` and `approved`.
+     */
+    marketplaceOrderStatus: string;
+    /**
+     * Integer that indicates the order's total value, which the marketplace will pay to the seller. Includes interest, if applicable. If the value is `USD110.50`, convert it to `11050`.
+     */
+    marketplacePaymentValue: number;
+    /**
+     * Integer with the interest amount included in the order's total value. If the value is `USD10.50`, convert it to `1050`.
+     */
+    marketplaceInterestValue?: number;
+    /**
+     * Decimal value with the allowed price divergence rate between the marketplace and the seller's prices.
+     */
+    priceDivergenceAllowanceRate?: number;
+    /**
+     * Boolean indicating whether franchise accounts linked to the main seller should be considered. Optional, defaulting to `false`.
      */
     allowFranchises: boolean;
     /**
-     * String that indicates the name of the account responsible for the order’s pickup point. It is only required for pickup-in-point orders from franchise accounts, when franchise accounts `allowFranchises` is `true` and the order in question has a `pickup-in-point` delivery type. It is optional otherwise.
+     * String that indicates the name of the account responsible for the order's pickup point. Required only for pickup-in-point orders from franchise accounts.
      */
     pickupAccountName?: string;
     /**
-     * List of items included in the order. Each item object references the schema definition for an individual item.
+     * List of items included in the order.
      */
     items: Array<Item>;
     clientProfileData: ClientProfileData;
     shippingData: ShippingData;
     invoiceData: InvoiceData;
     customData?: CustomData;
+    /**
+     * List of tax information per SKU in the order.
+     */
+    taxData?: Array<TaxData>;
+    /**
+     * String with additional free-text information about the order.
+     */
+    openTextField?: string;
 };
 
 /**
@@ -132,24 +132,24 @@ export type ClientProfileData = {
 export type ShippingData = {
     /**
      * List that references the SLAs responsible for delivering each item in the order.
-     *
-     * This list must contain the same number of items as the `items` list, previously defined. For example: if the order contains 3 SKUs, you must describe 3 SLAs in this list, one for each SKU (even in cases where the same SLA will deliver all of them).
-     *
-     * The order of the SLAs in this list must also follow the same order as in the `items` list. For example: if the SLA named **Correios Express** will be responsible for delivering the SKU with ID equal to **1015**, which is found at index 0 of the `items` list, it must be in index 0 of the `logisticsInfo` list as well.
      */
     logisticsInfo: Array<LogisticsInfo>;
     /**
-     * List of selected addresses for the order. Each address contains detailed information such as receiver name, postal code, city, state, country, street, number, neighborhood, complement, and geographical coordinates.
+     * List of selected addresses for the order.
      */
     selectedAddresses: Array<SelectedAddress>;
     /**
-     * Boolean that indicates whether the order's delivery is the marketplace responsibility. Optional, defaulting to false.
+     * Boolean that indicates whether the order's delivery is the marketplace responsibility. Optional, defaulting to `false`.
      */
     isFob: boolean;
     /**
-     * Boolean that indicates whether the order's inventory in warehouse is the marketplace's responsibility. Optional, defaulting to false.
+     * Boolean that indicates whether the order's inventory in warehouse is the marketplace's responsibility. Optional, defaulting to `false`.
      */
     isMarketplaceFulfillment: boolean;
+    /**
+     * List of tracking information hints for the order's shipments.
+     */
+    trackingHints?: Array<TrackingHint>;
 };
 
 /**
@@ -200,11 +200,14 @@ export type LogisticsInfo = {
      * Example formats: `12d`, `5bd`, `3h`, `50m`.
      */
     shippingEstimate: string;
-    deliveryIds: DeliveryIds;
+    /**
+     * List of delivery IDs, used for orders where the marketplace is responsible for the fulfillment of the order.
+     */
+    deliveryIds: Array<DeliveryIds>;
 };
 
 /**
- * List of delivery IDs, used for orders where the marketplace is responsible for the fulfillment of the order, including keeping inventory at a warehouse as well as the delivery.
+ * Object with the delivery ID information for orders where the marketplace is responsible for the fulfillment of the order, including keeping inventory at a warehouse as well as the delivery.
  */
 export type DeliveryIds = {
     /**
@@ -269,15 +272,13 @@ export type SelectedAddress = {
  */
 export type GeoCoordinates = {
     /**
-     * Double value with the latitude coordinates of the address. Required only if the geoCoordinates field is defined.
-     *
-     * Example format: `-25.4158764`.
+     * Double value with the latitude coordinates of the address. Required only if the `geoCoordinates` field is defined.
      */
-    latitude: string;
+    latitude: number;
     /**
-     * Double value with the longitude coordinates of the address. Required only if the geoCoordinates field is defined. Example format: `-49.342759`.
+     * Double value with the longitude coordinates of the address. Required only if the `geoCoordinates` field is defined.
      */
-    longitude: string;
+    longitude: number;
 };
 
 /**
@@ -390,33 +391,20 @@ export type Deliverybyseller = {
         description: string;
     }> | null;
     /**
-     * Structure with important fields for the connector. This structure is only returned if the response is successful. Includes the following fields:
-     *
-     * `mainOrderId`: String with the order's ID inside the main seller account in VTEX.
-     *
-     * `franchiseOrderId`: - String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
-     *
-     * - `allowFranchises` field set to `true` when integrating the order
-     *
-     * - `SLA` chosen for the order is from a franchise account.
+     * Structure with important fields for the connector. This structure is only returned if the response is successful.
      */
     fields: {
         /**
-         * Additional fields associated with the request.
+         * String with the order’s ID inside the main seller account in VTEX.
          */
-        fields?: {
-            /**
-             * String with the order’s ID inside the main seller account in VTEX.
-             */
-            mainOrderId: string;
-            /**
-             * String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
-             *
-             * - `allowFranchises` field set to `true` when integrating the order
-             * - SLA chosen for the order is from a franchise account
-             */
-            franchiseOrderId?: string;
-        };
+        mainOrderId: string;
+        /**
+         * String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
+         *
+         * - `allowFranchises` field set to `true` when integrating the order
+         * - SLA chosen for the order is from a franchise account.
+         */
+        franchiseOrderId?: string;
     } | null;
     /**
      * String with a message explaining the code returned in the response.
@@ -482,33 +470,20 @@ export type Deliverybyfranchiseseller = {
         description: string;
     }> | null;
     /**
-     * Structure with important fields for the connector. This structure is only returned if the response is successful. Includes the following fields:
-     *
-     * `mainOrderId`: String with the order's ID inside the main seller account in VTEX.
-     *
-     * `franchiseOrderId`: - String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
-     *
-     * - `allowFranchises` field set to `true` when integrating the order
-     *
-     * - `SLA` chosen for the order is from a franchise account.
+     * Structure with important fields for the connector. This structure is only returned if the response is successful.
      */
     fields: {
         /**
-         * Object containing fields related to the order.
+         * String with the order’s ID inside the main seller account in VTEX.
          */
-        fields?: {
-            /**
-             * String with the order’s ID inside the main seller account in VTEX.
-             */
-            mainOrderId: string;
-            /**
-             * String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
-             *
-             * - `allowFranchises` field set to `true` when integrating the order
-             * - SLA chosen for the order is from a franchise account
-             */
-            franchiseOrderId?: string;
-        };
+        mainOrderId: string;
+        /**
+         * String with the order's ID inside the franchise seller account in VTEX. Only returned if the order was integrated using the [Multilevel Omnichannel Inventory](https://help.vtex.com/en/tutorial/multilevel-omnichannel-inventory--7M1xyCZWUyCB7PcjNtOyw4) feature, that is:
+         *
+         * - `allowFranchises` field set to `true` when integrating the order
+         * - SLA chosen for the order is from a franchise account.
+         */
+        franchiseOrderId?: string;
     } | null;
     /**
      * String with a message explaining the code returned in the response.
@@ -1350,6 +1325,42 @@ export type PlaceFulfillmentOrderResponse = {
          */
         openTextField?: string;
     };
+};
+
+/**
+ * Object with tax information for a specific SKU in the order.
+ */
+export type TaxData = {
+    /**
+     * String with the SKU ID in VTEX's catalog.
+     */
+    skuId: string;
+    /**
+     * Integer with the tax value applied to the SKU. If the value is `USD1.50`, convert it to `150`.
+     */
+    value: number;
+};
+
+/**
+ * Object with tracking information hints for the order's shipment.
+ */
+export type TrackingHint = {
+    /**
+     * String with the shipment tracking identifier.
+     */
+    trackingId: string;
+    /**
+     * String with the name of the courier responsible for the delivery.
+     */
+    courierName: string;
+    /**
+     * String with the URL to track the shipment.
+     */
+    trackingUrl?: string;
+    /**
+     * String with the label or display name for the tracking.
+     */
+    trackingLabel?: string;
 };
 
 export type PlaceFulfillmentOrderData = {

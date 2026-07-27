@@ -25,6 +25,8 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * For more information, check the Intelligent Search [Autocomplete](https://help.vtex.com/en/tracks/vtex-intelligent-search--19wrbB7nEQcmwzDPl1l4Cb/4gXFsEWjF7QF7UtI2GAvhL) guide.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching, lower latency, and a simpler URL structure. The new endpoint is: `GET` [Get list of the 10 most searched terms](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/top-searches). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * ## Permissions
  *
  * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
@@ -38,6 +40,8 @@ export const getTopSearches = <ThrowOnError extends boolean = false>(options?: O
  *
  * For more information, check the Intelligent Search [Autocomplete](https://help.vtex.com/en/tracks/vtex-intelligent-search--19wrbB7nEQcmwzDPl1l4Cb/4gXFsEWjF7QF7UtI2GAvhL) guide.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching, lower latency, and a simpler URL structure. The new endpoint is: `GET` [Get list of suggested terms and attributes similar to the search term](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/autocomplete-suggestions). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * ## Permissions
  *
  * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
@@ -49,6 +53,8 @@ export const getAutocompleteSuggestions = <ThrowOnError extends boolean = false>
  *
  * Tries to correct a misspelled term from the search.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching, lower latency, and a simpler URL structure. The new endpoint is: `GET` [Get attempt of correction of a misspelled term](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/correction-search). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * ## Permissions
  *
  * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
@@ -59,6 +65,8 @@ export const getCorrectionSearch = <ThrowOnError extends boolean = false>(option
  * Get list of banners registered for query
  *
  * Lists the banners registered for a given query. Check the [configuring banners documentation](https://help.vtex.com/en/tracks/vtex-intelligent-search--19wrbB7nEQcmwzDPl1l4Cb/4ViKEivLJtJsvpaW0aqIQ5) for a full explanation of the banner feature.
+ *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching, lower latency, and a simpler URL structure. The new endpoint is: `GET` [Get list of banners registered for query](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/banners/-facets-). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
  *
  * ## Permissions
  *
@@ -73,6 +81,8 @@ export const getBannersByFacets = <ThrowOnError extends boolean = false>(options
  *
  * For more information, check the Intelligent Search [Autocomplete](https://help.vtex.com/en/tracks/vtex-intelligent-search--19wrbB7nEQcmwzDPl1l4Cb/4gXFsEWjF7QF7UtI2GAvhL) guide.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching, lower latency, and a simpler URL structure. The new endpoint is: `GET` [Get list of suggested terms similar to the search term](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/search-suggestions). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * ## Permissions
  *
  * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
@@ -84,9 +94,25 @@ export const getSearchSuggestions = <ThrowOnError extends boolean = false>(optio
  *
  * Lists the active products for a given query.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching (`Cache-Control: public, max-age=600`), lower latency, and explicit regionalization without relying on the segment cookie. The new endpoint is: `GET` [Search products](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/product-search/-facets-). If you need to look up a single product by a known identifier (for a product detail page), use the new `GET` [Get product](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/products) endpoint. It skips the search pipeline entirely, reducing latency and improving cache-hit rates. See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * >⚠️ **Required facet:** Only the `trade-policy` facet is required in the path. All other facets (such as `productClusterIds`, `category`, `color`, etc.) are optional filters that can be used to narrow down the search results. When no additional facets are provided, all products for the trade policy will be returned.
  *
  * >⚠️ When possible, use the store's production domain in the URL (for example, `https://apiexamples.com/api/io/_v/api/intelligent-search`) for a better performance. This is particularly important for headless integrations. In case it's not possible to use the store's production URL, prefer using `https://{accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search`.
+ *
+ * If using this option in a fully headless store with no store domain configured, follow these steps:
+ * 1. Configure a domain by following the [Configuring the store domain](https://help.vtex.com/docs/tutorials/configuring-the-store-domain) guide.
+ * 2. Send the `Host` header with the configured domain:
+ * ```sh
+ * curl --location 'https://{accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search/product_search/' \
+ * --header 'Accept: application/json' \
+ * --header 'Content-Type: application/json' \
+ * --header 'Host: {configured domain}'
+ * ```
+ *
+ * ## Sponsored products (VTEX Ads)
+ *
+ * The query parameters **`showSponsored`**, **`sponsoredCount`**, **`advertisementPlacement`**, and **`repeatSponsoredProducts`** apply only to stores using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads). See each parameter for behavior details.
  *
  * ## Permissions
  *
@@ -99,9 +125,19 @@ export const getProductSearchByFacets = <ThrowOnError extends boolean = false>(o
  *
  * Lists the possible facets for a given query.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching (`Cache-Control: public, max-age=600`), lower latency, and explicit regionalization without relying on the segment cookie. The new endpoint is: `GET` [List filters for a search](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/facets/-facets-). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * >⚠️ When possible, use the store's production domain in the URL (for example, `https://apiexamples.com/api/io/_v/api/intelligent-search`) for a better performance. This is particularly important for headless integrations. In case it's not possible to use the store's production URL, prefer using `https://{accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search`.
  *
- *
+ * If using this option in a fully headless store with no store domain configured, follow these steps:
+ * 1. Configure a domain by following the [Configuring the store domain](https://help.vtex.com/docs/tutorials/configuring-the-store-domain) guide.
+ * 2. Send the `Host` header with the configured domain:
+ * ```sh
+ * curl --location 'https://{accountName}.vtexcommercestable.com.br/api/io/_v/api/intelligent-search/facets/' \
+ * --header 'Accept: application/json' \
+ * --header 'Content-Type: application/json' \
+ * --header 'Host: {configured domain}'
+ * ```
  *
  * ## Permissions
  *
@@ -114,6 +150,8 @@ export const getFacetsByFacets = <ThrowOnError extends boolean = false>(options:
  *
  * Retrieves the list of available pickup points with their IDs, distances, addresses, and business hours. This endpoint returns pickup points sorted by distance from the provided coordinates.
  *
+ * >ℹ️ Migrate to [Intelligent Search API v1](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1) for HTTP caching and lower latency. The new endpoint is: `GET` [Get pickup point availability for Delivery Promise](https://developers.vtex.com/docs/api-reference/intelligent-search-api-v1#get-/pickup-point-availability/-facets-). See the [migration guide](https://developers.vtex.com/docs/guides/migrating-to-intelligent-search-api-v1).
+ *
  * >⚠️ **Required facet:** Only the `tradePolicy` (trade policy/sales channel) facet is required. All product filters, including `productClusterIds`, are optional and can be provided as query parameters to narrow down the results. When no product filters are provided, all available pickup points for the trade policy will be returned.
  *
  * >ℹ️ This endpoint is designed for use in [Delivery Promise for headless stores](https://developers.vtex.com/docs/guides/delivery-promise-for-headless-stores) implementations. It provides the complete list of pickup points required as a mandatory dependency for the [Delivery Promise feature](https://help.vtex.com/en/docs/tutorials/delivery-promise-beta). The system displays all available pickup points within the 50 km radius configured in Checkout when customers select pickup in the header or a specific pickup point.
@@ -121,7 +159,7 @@ export const getFacetsByFacets = <ThrowOnError extends boolean = false>(options:
  * You can call this endpoint in two ways:
  *
  * - **With country and ZIP code:** Provide the country and ZIP code to retrieve pickup points based on location.
- * - **With delivery zones and pickups hashes:** Alternatively, provide pre-computed hashes (`deliveryZonesHash` and `pickupsHash`) for faster lookup.
+ * - **With delivery zones and pickup point hashes:** Alternatively, provide pre-computed hashes (`deliveryZonesHash` and `pickupPointsHash`) for faster lookup.
  *
  * ## Permissions
  *

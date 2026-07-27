@@ -5,7 +5,9 @@ import * as z from 'zod';
 export const zGetAllContentTypesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        projectId: z.string()
+        projectId: z.string().register(z.globalRegistry, {
+            description: 'Project ID specified in the settings of the CMS (alpha) app.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -13,26 +15,48 @@ export const zGetAllContentTypesData = z.object({
 export const zGetPagesbyContentTypeData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        projectId: z.string(),
-        'content-type': z.string()
+        projectId: z.string().register(z.globalRegistry, {
+            description: 'Project ID specified in the settings of the CMS (alpha) app.'
+        }),
+        'content-type': z.string().register(z.globalRegistry, {
+            description: 'Content type identifier defined in the FastStore project.'
+        })
     }),
     query: z.optional(z.object({
-        page: z.optional(z.string()),
-        versionId: z.optional(z.string()),
-        releaseId: z.optional(z.string()),
-        'filters[{field}]': z.optional(z.string())
+        page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The page number to retrieve in a paginated list of results. If not specified, the default return is 10 items per page.'
+        })),
+        versionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Version ID presented in the URL path of a CMS preview.'
+        })),
+        releaseId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Release ID presented in the URL path of a CMS preview.'
+        })),
+        'filters[{field}]': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filter results by a property of the page (e.g., `filters[status]`) or by a nested custom field of the `parameters` object (e.g., `filters[parameters.collection.sort]`).\n*Replace {field} with the desired property.*'
+        }))
     }))
 });
 
 export const zGetCmSpageData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        projectId: z.string(),
-        'content-type': z.string(),
-        'document-id': z.string()
+        projectId: z.string().register(z.globalRegistry, {
+            description: 'Project ID specified in the settings of the CMS (alpha) app.'
+        }),
+        'content-type': z.string().register(z.globalRegistry, {
+            description: 'Content type ID defined in the FastStore project.'
+        }),
+        'document-id': z.string().register(z.globalRegistry, {
+            description: 'Document ID presented in the URL path of a CMS preview.'
+        })
     }),
     query: z.optional(z.object({
-        versionId: z.optional(z.string()),
-        releaseId: z.optional(z.string())
+        versionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Version ID presented in the URL path of a CMS preview.'
+        })),
+        releaseId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Release ID presented in the URL path of a CMS preview.'
+        }))
     }))
 });

@@ -82,43 +82,99 @@ export const zCommertialOffer = z.object({
     DiscountHighLight: z.array(z.string()),
     GiftSkuIds: z.array(z.string()),
     Teasers: z.array(z.object({
-        '<Name>k__BackingField': z.optional(z.string()),
+        '<Name>k__BackingField': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name.'
+        })),
         '<GeneralValues>k__BackingField': z.optional(z.object({
             '{field}': z.optional(z.string())
+        }).register(z.globalRegistry, {
+            description: 'General values. Each property follows the format: `{field}:{value}.'
         })),
         '<Conditions>k__BackingField': z.optional(z.object({
-            '<MinimumQuantity>k__BackingField': z.optional(z.int()),
+            '<MinimumQuantity>k__BackingField': z.optional(z.int().register(z.globalRegistry, {
+                description: 'Minimum quantity.'
+            })),
             '<Parameters>k__BackingField': z.optional(z.array(z.object({
-                '<Name>k__BackingField': z.optional(z.string()),
-                '<Value>k__BackingField': z.optional(z.string())
-            })))
+                '<Name>k__BackingField': z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name.'
+                })),
+                '<Value>k__BackingField': z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Parameter.'
+            })).register(z.globalRegistry, {
+                description: 'Parameters.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Conditions.'
         })),
         '<Effects>k__BackingField': z.optional(z.object({
             '<Parameters>k__BackingField': z.optional(z.array(z.object({
-                '<Name>k__BackingField': z.optional(z.string()),
-                '<Value>k__BackingField': z.optional(z.string())
-            })))
+                '<Name>k__BackingField': z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name.'
+                })),
+                '<Value>k__BackingField': z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Parameter.'
+            })).register(z.globalRegistry, {
+                description: 'Parameters.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Effects.'
         }))
-    })),
+    })).register(z.globalRegistry, {
+        description: 'List with promotions teasers.'
+    }),
     PromotionTeasers: z.optional(z.array(z.object({
-        Name: z.optional(z.string()),
+        Name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name.'
+        })),
         GeneralValues: z.optional(z.object({
             '{field}': z.optional(z.string())
+        }).register(z.globalRegistry, {
+            description: 'General values. Each property follows the format: `{field}:{value}.'
         })),
         Conditions: z.optional(z.object({
-            MinimumQuantity: z.optional(z.int()),
+            MinimumQuantity: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Minimum quantity.'
+            })),
             Parameters: z.optional(z.array(z.object({
-                Name: z.optional(z.string()),
-                Value: z.optional(z.string())
-            })))
+                Name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name.'
+                })),
+                Value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Parameter.'
+            })).register(z.globalRegistry, {
+                description: 'Parameters.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Conditions.'
         })),
         Effects: z.optional(z.object({
             Parameters: z.optional(z.array(z.object({
-                Name: z.optional(z.string()),
-                Value: z.optional(z.string())
-            })))
+                Name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name.'
+                })),
+                Value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Parameter.'
+            })).register(z.globalRegistry, {
+                description: 'Parameters.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Effects.'
         }))
-    }))),
+    })).register(z.globalRegistry, {
+        description: 'List with promotions teasers.'
+    })),
     BuyTogether: z.array(z.string()),
     Price: z.number(),
     ListPrice: z.number(),
@@ -253,96 +309,144 @@ export const zExample3 = z.object({
 export const zProductSearchWhoSawAlsoSawData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int()
+        productId: z.int().register(z.globalRegistry, {
+            description: 'Product unique identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchWhoSawAlsoBoughtData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string()
+        productId: z.string().register(z.globalRegistry, {
+            description: 'Product unique identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchWhoBoughtAlsoBoughtData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string()
+        productId: z.string().register(z.globalRegistry, {
+            description: 'Product unique identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchShowTogetherData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int()
+        productId: z.int().register(z.globalRegistry, {
+            description: 'Product\'s unique identifier'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchAccessoriesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int()
+        productId: z.int().register(z.globalRegistry, {
+            description: 'Product\'s unique identifier'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchSimilarsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int()
+        productId: z.int().register(z.globalRegistry, {
+            description: 'Product\'s unique identifier'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchSuggestionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.int()
+        productId: z.int().register(z.globalRegistry, {
+            description: 'Product\'s unique identifier'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zProductSearchData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        search: z.string()
+        search: z.string().register(z.globalRegistry, {
+            description: 'Term used to search products'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
@@ -350,81 +454,133 @@ export const zProductSearchFilteredandOrderedData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        _from: z.optional(z.string()),
-        _to: z.optional(z.string()),
-        ft: z.optional(z.string()),
-        fq: z.optional(z.string()),
-        O: z.optional(z.string())
+        _from: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Starting page of the pagination range. This number must be below or equal to 2500 for the query to work. Note that the difference between the initial and final pages cannot exceed 50 pages. Therefore, each page will display a maximum of 50 items.'
+        })),
+        _to: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Final page of the pagination range. Note that the difference between the initial and final pages cannot exceed 50 pages. Therefore, each page will display a maximum of 50 items.'
+        })),
+        ft: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filter by full text. The form is`ft={searchWord}`.'
+        })),
+        fq: z.optional(z.string().register(z.globalRegistry, {
+            description: 'General filter. It can be by category (`fq=C:{a}/{b}`), by specification (`fq=specificationFilter_{a}:{b}`),  by price range (`fq=P:[{a} TO {b}]`), by collection (`fq=productClusterIds:{{productClusterId}}`), by product ID (`fq=productId:{{productId}}`),  by SKU ID (`fq=skuId:{{skuId}}`), by Reference ID (`fq=alternateIds_RefId:{{referenceId}}`), by EAN13 (`fq=alternateIds_Ean:{{ean13}}`), by availability at a specific sales channel (`fq=isAvailablePerSalesChannel_{{sc}}:{{bool}}`), by available at a specific seller (`fq=sellerId:{{sellerId}}`).'
+        })),
+        O: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Sorting method. It can be by Price (`O=OrderByPriceDESC` or `O=OrderByPriceASC`), by Top Selling Products (`O=OrderByTopSaleDESC`), by Best Reviews (`O=OrderByReviewRateDESC`), by Name (`O=OrderByNameASC` or `O=OrderByNameDESC`), by Release Date (`O=OrderByReleaseDateDESC`), by Best Discounts (`O=OrderByBestDiscountDESC`), by Score (`O=OrderByScoreDESC`).'
+        }))
     })),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zSearchbyproducturlData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        'product-text-link': z.string()
+        'product-text-link': z.string().register(z.globalRegistry, {
+            description: 'Product URL'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zGetApiCatalogSystemPubProductsOffersByProductIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string()
+        productId: z.string().register(z.globalRegistry, {
+            description: 'Product unique number identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zGetApiCatalogSystemPubProductsOffersByProductIdSkuBySkuIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        productId: z.string(),
-        skuId: z.string()
+        productId: z.string().register(z.globalRegistry, {
+            description: 'Product unique number identifier.'
+        }),
+        skuId: z.string().register(z.globalRegistry, {
+            description: 'Product unique number identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zGetApiCatalogSystemPubFacetsCategoryByCategoryIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        categoryId: z.string()
+        categoryId: z.string().register(z.globalRegistry, {
+            description: 'Category unique number identifier.'
+        })
     }),
     query: z.optional(z.object({
-        _from: z.optional(z.string()),
-        _to: z.optional(z.string())
+        _from: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Starter page range. These parameters allow the API to be paginated. Take into account that the initial and final pages cannot have a separation superior to 50 pages. Thus, it will be displayed 50 items per page.'
+        })),
+        _to: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Finisher page range. These parameters allow the API to be paginated. Take into account that the initial and final pages cannot have a separation superior to 50 pages. Thus, it will be displayed 50 items per page.'
+        }))
     })),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
 export const zFacetscategoryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        term: z.string()
+        term: z.string().register(z.globalRegistry, {
+            description: 'Term used for the facet\'s search. You can search for as much term as you want. The term can be: `categoryId`, `brandId`, `specificationId`.'
+        })
     }),
     query: z.object({
-        map: z.string()
+        map: z.string().register(z.globalRegistry, {
+            description: 'Mapping of the term. It can be `c` for a category, `b` for a brand, or `specificationFilter_{specificationId}` for a specification. You need to include a map for each term you are searching for in the same term\'s order.'
+        })
     }),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        })
     })
 });
 
@@ -432,10 +588,16 @@ export const zAutoCompleteData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        productNameContains: z.string()
+        productNameContains: z.string().register(z.globalRegistry, {
+            description: 'Part of the string that will be searched.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand '
+        })
     })
 });

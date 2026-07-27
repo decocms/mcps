@@ -457,7 +457,15 @@ export type Sku = {
      * Weight of the SKU.
      */
     weight: number;
-    images: Images;
+    /**
+     * An object that represents a single SKU image with a filename as the key and the image URL as the value.
+     */
+    images: {
+        /**
+         * The URL of the SKU's image. Must be an `https` URL.
+         */
+        'imagem1.jpg'?: string;
+    };
     /**
      * Unit multiplier for this SKU. If this information doesn't apply, you should use the default value 1.
      */
@@ -466,7 +474,15 @@ export type Sku = {
      * Measurement unit that should be used for this SKU. If this information doesn't apply, you should use the default value un.
      */
     measurementUnit: string | null;
-    specifications: Specifications;
+    /**
+     * Object representing the specifications of a product, including details related to its packaging and other relevant attributes.
+     */
+    specifications: {
+        /**
+         * Packaging specifications. Should include package's weight.
+         */
+        Packaging: string;
+    };
 };
 
 /**
@@ -1368,7 +1384,7 @@ export type MatchMultipleData = {
     /**
      * Array of objects representing multiple SKU or product match requests.
      */
-    body: unknown;
+    body: MatchMultiple;
     headers: {
         /**
          * Describes the type of the content being sent.

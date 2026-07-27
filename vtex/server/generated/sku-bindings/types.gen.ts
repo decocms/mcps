@@ -428,11 +428,11 @@ export type ChangeNotificationErrors = {
      */
     403: unknown;
     /**
-     * Not found
+     * Not Found
      */
     404: unknown;
     /**
-     * Too many requests
+     * Too Many Requests
      */
     429: unknown;
 };
@@ -480,11 +480,11 @@ export type PostSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuIdE
      */
     403: unknown;
     /**
-     * Not found
+     * Not Found
      */
     404: unknown;
     /**
-     * Too many requests
+     * Too Many Requests
      */
     429: unknown;
 };

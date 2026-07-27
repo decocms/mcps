@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { DeleteBySkuIdWarehousesByWarehouseIdData, DeleteBySkuIdWarehousesByWarehouseIdResponses, DeleteBySkuIdWarehousesData, DeleteBySkuIdWarehousesResponses, GetBySkuIdWarehousesByWarehouseIdData, GetBySkuIdWarehousesByWarehouseIdResponses, GetBySkuIdWarehousesData, GetBySkuIdWarehousesResponses, PostBySkuIdWarehousesByWarehouseIdData, PostBySkuIdWarehousesByWarehouseIdResponses, PostOrderChangesData, PostOrderChangesErrors, PostOrderChangesResponses, PutBySkuIdWarehousesByWarehouseIdData, PutBySkuIdWarehousesByWarehouseIdResponses, PutOrdersByOrderIdDeadlineData, PutOrdersByOrderIdDeadlineErrors, PutOrdersByOrderIdDeadlineResponses } from './types.gen';
+import type { DeleteBySkuIdWarehousesByWarehouseIdData, DeleteBySkuIdWarehousesByWarehouseIdResponses, DeleteBySkuIdWarehousesData, DeleteBySkuIdWarehousesResponses, GetBySkuIdWarehousesByWarehouseIdData, GetBySkuIdWarehousesByWarehouseIdResponses, GetBySkuIdWarehousesData, GetBySkuIdWarehousesResponses, PostBySkuIdWarehousesByWarehouseIdData, PostBySkuIdWarehousesByWarehouseIdResponses, PutBySkuIdWarehousesByWarehouseIdData, PutBySkuIdWarehousesByWarehouseIdResponses, PutOrdersByOrderIdDeadlineData, PutOrdersByOrderIdDeadlineErrors, PutOrdersByOrderIdDeadlineResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -50,42 +50,9 @@ export const putOrdersByOrderIdDeadline = <ThrowOnError extends boolean = false>
 });
 
 /**
- * Update items of the order
+ * Delete bin location
  *
- * The endpoint supports actions like adding items, modifying quantities, rejecting or replacing items, and updating item details, adding notes and suggest product replacements.
- *
- * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
- *
- * >⚠️ Before using this endpoint, you must make a request with the [Cart simulation](https://developers.vtex.com/docs/api-reference/checkout-api#post-/api/checkout/pub/orderForms/simulation) endpoint to check inventory availability. For more information of how to simulate a cart, check the [Simulate a shopping cart](https://developers.vtex.com/docs/guides/simulate-a-shopping-cart) guide.
- *
- * ## Permissions
- *
- * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
- *
- * | **Product** | **Category** | **Resource** |
- * | --------------- | ----------------- | ----------------- |
- * | OMS | OMS access | **View order** |
- * | OMS | OMS access | **Only show orders created by the user (via call center)** |
- * | Catalog | Telesales | **Assisted Sales** |
- *
- * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
- *
- * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
- */
-export const postOrderChanges = <ThrowOnError extends boolean = false>(options: Options<PostOrderChangesData, ThrowOnError>) => (options.client ?? client).post<PostOrderChangesResponses, PostOrderChangesErrors, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
-    url: '/order/changes',
-    ...options
-});
-
-/**
- * Delete BIN location
- *
- * Deletes a specific BIN location by warehouse ID and SKU ID. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Deletes a specific bin location by warehouse ID and SKU ID. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *
@@ -110,9 +77,9 @@ export const deleteBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolea
 });
 
 /**
- * Get BIN location
+ * Get bin location
  *
- * Retrieves the BIN location for a specific SKU in a warehouse. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Retrieves the bin location for a specific SKU in a warehouse. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *
@@ -137,9 +104,9 @@ export const getBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean =
 });
 
 /**
- * Create BIN location
+ * Create bin location
  *
- * Creates a new BIN location by warehouse ID and SKU ID. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Creates a new bin location by warehouse ID and SKU ID. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *
@@ -164,9 +131,9 @@ export const postBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean 
 });
 
 /**
- * Update BIN location
+ * Update bin location
  *
- * Updates the BIN location by warehouse ID and SKU ID. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Updates the bin location by warehouse ID and SKU ID. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *
@@ -191,9 +158,9 @@ export const putBySkuIdWarehousesByWarehouseId = <ThrowOnError extends boolean =
 });
 
 /**
- * Delete all BIN locations
+ * Delete all bin locations
  *
- * Deletes all BIN locations for a specific SKU ID. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Deletes all bin locations for a specific SKU ID. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *
@@ -218,9 +185,9 @@ export const deleteBySkuIdWarehouses = <ThrowOnError extends boolean = false>(op
 });
 
 /**
- * List BIN locations
+ * List bin locations
  *
- * Retrieves a list of warehouses associated with a specific SKU ID. The BIN location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each BIN is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
+ * Retrieves a list of warehouses associated with a specific SKU ID. The bin location is a specific, designated storage location within a warehouse. This location isn't necessarily a physical container. Each bin is typically assigned a unique identifier or code, facilitating precise tracking and retrieval of items within the warehouse.
  *
  * >ℹ️ This endpoint is currently in beta and subject to changes. Use with caution in production environments.
  *

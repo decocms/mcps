@@ -1053,6 +1053,41 @@ export type RequestOrderId = {
      * When set as `true`, the cancellation was requested by the shopper, and when set as `false`, the cancellation was not requested by the shopper.
      */
     requestedByUser: boolean;
+    /**
+     * Payments information.
+     */
+    paymentData?: {
+        /**
+         * Array containing information about payments.
+         */
+        payments?: Array<{
+            /**
+             * Payment system ID.
+             */
+            paymentSystem?: string;
+            /**
+             * Payment system name.
+             */
+            paymentSystemName?: string;
+            /**
+             * Order total payment value in cents.
+             */
+            value?: number;
+            /**
+             * Number of payment installments.
+             */
+            installments?: number;
+            /**
+             * Total payment reference value in cents.
+             */
+            referenceValue?: number;
+            /**
+             * Transaction payment method, which can be credit card, debit card, bank invoice, promissory, gift card or pix (`instantPayment`).
+             */
+            group?: 'creditCard' | 'debitCard' | 'bankInvoice' | 'promissory' | 'giftCard' | 'instantPayment';
+        }>;
+        connectorResponses?: ConnectorResponses;
+    };
 };
 
 /**
@@ -1083,6 +1118,64 @@ export type RepsonseOrderId = {
      * Order receipt code.
      */
     receipt?: string;
+};
+
+/**
+ * Payment provider (connector) responses. The fields within this object can vary according to the order payment provider.
+ */
+export type ConnectorResponses = {
+    /**
+     * Provider operational message or error to be logged.
+     */
+    Message?: string | null;
+    /**
+     * Provider unique identifier for the transaction.
+     */
+    tid?: string | null;
+    /**
+     * Provider authorization ID.
+     */
+    authorizationId?: string | null;
+    /**
+     * Order payment status in the [transaction flow](https://help.vtex.com/docs/tracks/the-transaction-flow).
+     */
+    status?: string | null;
+    /**
+     * Total time (in seconds) before the auto settle, when the platform makes an automatic call to `/settlements`, regardless if the payment was approved by the merchant's anti-fraud provider. The maximum value allowed is `604800` seconds (7 days).
+     */
+    delayToAutoSettle?: number | null;
+    /**
+     * Provider operational return code or error to be logged.
+     */
+    ReturnCode?: string | null;
+    /**
+     * Provider unique sequential number for the transaction.
+     */
+    nsu?: string;
+    /**
+     * Provider operational code or error to be logged.
+     */
+    code?: string;
+    /**
+     * Provider operational message or error to be logged.
+     */
+    message?: string;
+    /**
+     * [Acquirer](https://help.vtex.com/docs/tracks/how-the-payments-module-works#acquirer) name (mostly used for card payments).
+     */
+    acquirer?: string;
+    /**
+     * Provider unique identifier for the transaction.
+     */
+    authId?: string;
+    /**
+     * Payment ID.
+     */
+    paymentId?: string;
+    /**
+     * Total time (in seconds) before the auto settle, when the platform makes an automatic call to `/settlements`. This happens only after the payment was approved by the merchant's anti-fraud provider.
+     */
+    delayToAutoSettleAfterAntifraud?: string;
 };
 
 /**

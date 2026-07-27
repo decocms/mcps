@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AddClientPreferencesData, AddClientPreferencesResponses, AddClientProfileData, AddClientProfileResponses, AddCouponsData, AddCouponsResponses, AddMarketingDataData, AddMarketingDataResponses, AddMerchantContextDataData, AddMerchantContextDataResponses, AddPaymentDataData, AddPaymentDataResponses, AddShippingAddressData, AddShippingAddressResponses, CartSimulationData, CartSimulationResponses, ClearorderFormMessagesData, ClearorderFormMessagesResponses, CreateANewCartData, CreateANewCartResponses, DeleteApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdData, DeleteApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdResponses, GetAddressByPostalCodeData, GetAddressByPostalCodeResponses, GetCartInformationByIdData, GetCartInformationByIdResponses, GetCartInstallmentsData, GetCartInstallmentsResponses, GetClientProfileByEmailData, GetClientProfileByEmailResponses, GetorderFormconfigurationData, GetorderFormconfigurationResponses, GetSellersByRegionData, GetSellersByRegionResponses, GetWindowToChangeSellerData, GetWindowToChangeSellerResponses, IgnoreProfileDataData, IgnoreProfileDataResponses, ItemsData, ItemsHandleData, ItemsHandleResponses, ItemsResponses, ItemsUpdateData, ItemsUpdateResponses, ListPickupPpointsByLocationData, ListPickupPpointsByLocationResponses, PlaceOrderData, PlaceOrderFromExistingOrderFormData, PlaceOrderFromExistingOrderFormResponses, PlaceOrderResponses, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsInvoiceDataData, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsInvoiceDataResponses, PriceChangeData, PriceChangeResponses, ProcessOrderData, ProcessOrderErrors, ProcessOrderResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsAddressByAddressIdData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsAddressByAddressIdResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsOrderData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsOrderResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsResponses, RemoveAllItemsData, RemoveAllItemsResponses, RemoveallpersonaldataData, RemoveallpersonaldataResponses, RemovesinglecustomfieldvalueData, RemovesinglecustomfieldvalueResponses, SetMultipleCustomFieldValuesData, SetMultipleCustomFieldValuesResponses, SetSingleCustomFieldValueData, SetSingleCustomFieldValueResponses, UpdateorderFormconfigurationData, UpdateorderFormconfigurationResponses, UpdateWindowToChangeSellerData, UpdateWindowToChangeSellerResponses } from './types.gen';
+import type { AddClientPreferencesData, AddClientPreferencesResponses, AddClientProfileData, AddClientProfileResponses, AddCouponsData, AddCouponsResponses, AddMarketingDataData, AddMarketingDataResponses, AddMerchantContextDataData, AddMerchantContextDataResponses, AddPaymentDataData, AddPaymentDataResponses, AddShippingAddressData, AddShippingAddressResponses, CartSimulationData, CartSimulationResponses, ClearorderFormMessagesData, ClearorderFormMessagesResponses, CreateANewCartData, CreateANewCartResponses, CreateorderFormconfigurationData, CreateorderFormconfigurationResponses, DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData, DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses, DeleteApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdData, DeleteApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdResponses, DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData, DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses, DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceData, DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponses, GetAddressByPostalCodeData, GetAddressByPostalCodeResponses, GetCartInformationByIdData, GetCartInformationByIdResponses, GetCartInstallmentsData, GetCartInstallmentsResponses, GetClientProfileByEmailData, GetClientProfileByEmailResponses, GetorderFormconfigurationData, GetorderFormconfigurationResponses, GetSellersByRegionData, GetSellersByRegionResponses, GetWindowToChangeSellerData, GetWindowToChangeSellerResponses, IgnoreProfileDataData, IgnoreProfileDataResponses, ItemsData, ItemsHandleData, ItemsHandleResponses, ItemsResponses, ItemsUpdateData, ItemsUpdateResponses, ListPickupPpointsByLocationData, ListPickupPpointsByLocationResponses, PlaceOrderData, PlaceOrderFromExistingOrderFormData, PlaceOrderFromExistingOrderFormResponses, PlaceOrderResponses, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsInvoiceDataData, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsInvoiceDataResponses, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData, PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses, PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData, PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses, PriceChangeData, PriceChangeResponses, ProcessOrderData, ProcessOrderErrors, ProcessOrderResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsAddressByAddressIdData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsAddressByAddressIdResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsItemByItemIdResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsOrderData, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsOrderResponses, PutApiCheckoutPubOrderFormByOrderFormIdCustomFieldsResponses, RemoveAllItemsData, RemoveAllItemsResponses, RemoveallpersonaldataData, RemoveallpersonaldataResponses, RemovesinglecustomfieldvalueData, RemovesinglecustomfieldvalueResponses, SetMultipleCustomFieldValuesData, SetMultipleCustomFieldValuesResponses, SetSingleCustomFieldValueData, SetSingleCustomFieldValueResponses, UpdateorderFormconfigurationData, UpdateorderFormconfigurationResponses, UpdateWindowToChangeSellerData, UpdateWindowToChangeSellerResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -222,6 +222,41 @@ export const itemsHandle = <ThrowOnError extends boolean = false>(options: Optio
 export const items = <ThrowOnError extends boolean = false>(options: Options<ItemsData, ThrowOnError>) => (options.client ?? client).post<ItemsResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/items', ...options });
 
 /**
+ * Delete manual price of an SKU in a cart
+ *
+ * This request deletes the manual price previously set for an SKU in a cart, reverting the item to its original price.
+ *
+ * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
+ *
+ * You need to inform which cart you are referring to, by sending its `orderFormId`, and which item should have its manual price deleted, by sending its `itemIndex`.
+ *
+ * Remember that, to use this endpoint, the feature of *manual price* must be active. To check if it's active, use the [Get orderForm configuration](https://developers.vtex.com/docs/api-reference/checkout-api#get-/api/checkout/pvt/configuration/orderForm) endpoint. To make it active, use the [Update orderForm configuration](https://developers.vtex.com/docs/api-reference/checkout-api#post-/api/checkout/pvt/configuration/orderForm) endpoint, making the `allowManualPrice` field `true`.
+ *
+ * > Whenever you use this request to delete the manual price of an item, all items in that cart with the same SKU are affected by this change. This applies even to items that share the SKU but have been separated into different objects in the `items` array due to customizations or attachments, for example.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Read Shopping Cart** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPrice = <ThrowOnError extends boolean = false>(options: Options<DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/price',
+    ...options
+});
+
+/**
  * Change price of an SKU in a cart
  *
  * This request changes the price of an SKU in a cart.
@@ -328,7 +363,7 @@ export const getClientProfileByEmail = <ThrowOnError extends boolean = false>(op
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * >⚠️ The authentication of this endpoint can change depending on the customer context. If you are modifying information from a customer with a complete profile on the store, the response will return the customer's data masked. You can only access the customer data with an authenticated request.
  *
@@ -351,14 +386,23 @@ export const addClientProfile = <ThrowOnError extends boolean = false>(options: 
  *
  * Use this request to include shipping information and/or selected delivery option to a given shopping cart.
  *
- * To add shipping addresses send the `selectedAddresses` array. For delivery option use the `logisticsInfo` array.
+ * To add shipping addresses, send the `selectedAddresses` array. To select a delivery option, use the `logisticsInfo` array.
  *
- * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
+ * The `orderFormId` identifies the shopping cart. For more information, see [orderForm](https://developers.vtex.com/docs/guides/orderform-fields).
  *
+ * This request has a timeout of 12 seconds.
  *
- * > This request has a time out of 12 seconds.
+ * >⚠️ If the request modifies a customer with a complete profile, the response will return masked data. To access unmasked data, use an authenticated request.
  *
- * >⚠️ The authentication of this endpoint can change depending on the customer context. If you are modifying information from a customer with a complete profile on the store, the response will return the customer's data masked. You can only access the customer data with an authenticated request.
+ * ## Delivery option selection
+ *
+ * If no `selectedSla` is sent in the request body, the API will automatically select the best delivery option among the ones available in the `slas` array, excluding pickup options and scheduled delivery options. If no such option is available, none will be selected.
+ *
+ * The best delivery option selected is the one that can fulfill the biggest item quantity for the lowest price. This selection does not consider delivery time.
+ *
+ * This process happens after the White Label Sellers selection in the Checkout pipeline. White label sellers selection is a separate process and is the responsibility of the Order Allocation module. For more information, see the [White label sellers selection](https://help.vtex.com/en/docs/tutorials/white-label-sellers-selection) article.
+ *
+ * For a pickup option or a scheduled delivery option to be selected, it must be explicitly sent in the request body in the `selectedSla` field.
  *
  * ## Permissions
  *
@@ -382,7 +426,7 @@ export const addShippingAddress = <ThrowOnError extends boolean = false>(options
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * ## Permissions
  *
@@ -406,7 +450,7 @@ export const addClientPreferences = <ThrowOnError extends boolean = false>(optio
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * ## Permissions
  *
@@ -430,7 +474,7 @@ export const addMarketingData = <ThrowOnError extends boolean = false>(options: 
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * ## Permissions
  *
@@ -447,6 +491,108 @@ export const addMarketingData = <ThrowOnError extends boolean = false>(options: 
 export const addPaymentData = <ThrowOnError extends boolean = false>(options: Options<AddPaymentDataData, ThrowOnError>) => (options.client ?? client).post<AddPaymentDataResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/attachments/paymentData', ...options });
 
 /**
+ * Remove item attachment
+ *
+ * Use this request to remove an attachment from a specific item in a shopping cart. Attachments allow you to include extra information to a cart item, such as subscription or gift details, according to the attachment schemas available for that item, which can be checked in the `attachmentOfferings` field of the [orderForm](https://developers.vtex.com/docs/guides/orderform-fields).
+ *
+ * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. This means the `orderFormId` is the identification code of a given cart.
+ *
+ *
+ * You need to inform which cart you are referring to, by sending its `orderFormId`, which item will have the attachment removed, by sending its `itemIndex`, and the name of the attachment, by sending its `attachmentName`.
+ *
+ *
+ * > This request has a timeout of 12 seconds.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Read Shopping Cart** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentName = <ThrowOnError extends boolean = false>(options: Options<DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/attachments/{attachmentName}', ...options });
+
+/**
+ * Add item attachment
+ *
+ * Use this request to add an attachment to a specific item in a shopping cart. Attachments allow you to include extra information to a cart item, such as subscription or gift details, according to the attachment schemas available for that item, which can be checked in the `attachmentOfferings` field of the [orderForm](https://developers.vtex.com/docs/guides/orderform-fields).
+ *
+ * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. This means the `orderFormId` is the identification code of a given cart.
+ *
+ *
+ * You need to inform which cart you are referring to, by sending its `orderFormId`, which item will receive the attachment, by sending its `itemIndex`, and the name of the attachment, by sending its `attachmentName`.
+ *
+ *
+ * > This request has a timeout of 12 seconds.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Read Shopping Cart** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const postApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentName = <ThrowOnError extends boolean = false>(options: Options<PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData, ThrowOnError>) => (options.client ?? client).post<PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/attachments/{attachmentName}', ...options });
+
+/**
+ * Remove item subscription attachment
+ *
+ * Use this request to remove the subscription information attached to the items in a shopping cart. To remove all subscriptions from the cart, send an empty `subscriptions` array in the request body.
+ *
+ * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. This means the `orderFormId` is the identification code of a given cart.
+ *
+ *
+ * > This request has a timeout of 12 seconds.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Read Shopping Cart** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionData = <ThrowOnError extends boolean = false>(options: Options<DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/attachments/subscriptionData', ...options });
+
+/**
+ * Add item subscription attachment
+ *
+ * Use this request to attach subscription information to one or more items in a shopping cart, defining the recurrence plan (frequency, validity, and type) under which the items will be purchased. The available subscription schemas for each item can be checked in the `attachmentOfferings` field of the [orderForm](https://developers.vtex.com/docs/guides/orderform-fields).
+ *
+ * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. This means the `orderFormId` is the identification code of a given cart.
+ *
+ *
+ * > This request has a timeout of 12 seconds.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Read Shopping Cart** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const postApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionData = <ThrowOnError extends boolean = false>(options: Options<PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData, ThrowOnError>) => (options.client ?? client).post<PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses, unknown, ThrowOnError>({ url: '/api/checkout/pub/orderForm/{orderFormId}/attachments/subscriptionData', ...options });
+
+/**
  * Add merchant context data
  *
  * This endpoint is used for the merchant to add to the cart any relevant information that is related to the context of a specific order.
@@ -454,7 +600,7 @@ export const addPaymentData = <ThrowOnError extends boolean = false>(options: Op
  * The [orderForm](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * ## Permissions
  *
@@ -478,7 +624,7 @@ export const addMerchantContextData = <ThrowOnError extends boolean = false>(opt
  * The [`orderForm`](https://developers.vtex.com/docs/guides/orderform-fields) is the data structure which represents a shopping cart and contains all information pertaining to it. Hence, the `orderFormId` is the identification code of a given cart.
  *
  *
- * > This request has a time out of 12 seconds.
+ * This request has a timeout of 12 seconds.
  *
  * ## Permissions
  *
@@ -752,7 +898,40 @@ export const getorderFormconfiguration = <ThrowOnError extends boolean = false>(
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const updateorderFormconfiguration = <ThrowOnError extends boolean = false>(options: Options<UpdateorderFormconfigurationData, ThrowOnError>) => (options.client ?? client).post<UpdateorderFormconfigurationResponses, unknown, ThrowOnError>({
+export const updateorderFormconfiguration = <ThrowOnError extends boolean = false>(options: Options<UpdateorderFormconfigurationData, ThrowOnError>) => (options.client ?? client).patch<UpdateorderFormconfigurationResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/checkout/pvt/configuration/orderForm',
+    ...options
+});
+
+/**
+ * Create order form configuration
+ *
+ * Creates the settings that will apply to every `orderForm` in the account.
+ *
+ *
+ * For example, if you create an app using this request, every `orderForm` of this account will have the custom fields created through it.
+ *
+ *
+ * >ℹ️ This request overwrites the entire configuration. To update only specific properties without overwriting the others, use the request [Update order form configuration](https://developers.vtex.com/docs/api-reference/checkout-api#patch-/api/checkout/pvt/configuration/orderForm) instead. Always retrieve the current configuration beforehand using the request [Get orderForm configuration](https://developers.vtex.com/docs/api-reference/checkout-api#get-/api/checkout/pvt/configuration/orderForm).
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a `403` status code. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Checkout | CheckoutResources | **Save OrderForm Configuration** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const createorderFormconfiguration = <ThrowOnError extends boolean = false>(options: Options<CreateorderFormconfigurationData, ThrowOnError>) => (options.client ?? client).post<CreateorderFormconfigurationResponses, unknown, ThrowOnError>({
     security: [
         { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
         { name: 'X-VTEX-API-AppToken', type: 'apiKey' },

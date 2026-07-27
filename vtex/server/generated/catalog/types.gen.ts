@@ -1987,6 +1987,60 @@ export type SupplierResponse = {
 };
 
 /**
+ * Object with information about a product assortment.
+ */
+export type ProductAssortment = {
+    /**
+     * Assortment's unique numerical identifier.
+     */
+    Id?: number;
+    /**
+     * Assortment's unique name.
+     */
+    Name?: string;
+    /**
+     * Date and time when the assortment was created, in UTC format.
+     */
+    CreatedAt?: string;
+    /**
+     * Date and time when the assortment was last updated, in UTC format.
+     */
+    UpdatedAt?: string;
+    /**
+     * List of collection IDs explicitly allowed by the assortment.
+     */
+    IncludedCollections?: Array<number>;
+    /**
+     * List of collection IDs explicitly restricted by the assortment.
+     */
+    ExcludedCollections?: Array<number>;
+};
+
+/**
+ * Object with information about the association between an assortment and a collection.
+ */
+export type AssortmentCollectionAssociation = {
+    /**
+     * Assortment's unique identifier.
+     */
+    assortmentId?: number;
+    /**
+     * Collection's unique identifier associated with the assortment.
+     */
+    collectionId?: number;
+};
+
+/**
+ * Object with information about the error.
+ */
+export type ErrorResponse = {
+    /**
+     * Error message describing the reason the request failed.
+     */
+    Message?: string;
+};
+
+/**
  * Type of the content being sent.
  */
 export type ContentType = string;
@@ -2075,6 +2129,16 @@ export type SkuServiceValueId = number;
  * Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as 'en-US' for English (United States), 'en-ES' for Spanish (Spain), or 'pt-BR' for Portuguese (Brazil).
  */
 export type Locale = string;
+
+/**
+ * Product assortment's unique numerical identifier.
+ */
+export type ProductAssortmentId = number;
+
+/**
+ * Collection's unique numerical identifier.
+ */
+export type CollectionId2 = number;
 
 export type ProductAndSkuIdsData = {
     body?: never;
@@ -5346,7 +5410,7 @@ export type PutApiCatalogPvtStockkeepingunitBySkuIdFileReorderErrors = {
 
 export type PutApiCatalogPvtStockkeepingunitBySkuIdFileReorderResponses = {
     /**
-     * OK.
+     * OK
      */
     200: unknown;
 };
@@ -14517,3 +14581,411 @@ export type PutApiCatalogPvtCollectionByCollectionIdLanguageResponses = {
      */
     201: unknown;
 };
+
+export type GetApiCatalogPvtAssortmentData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Assortment name.
+         */
+        name?: string;
+        /**
+         * Cursor indicating the assortment ID after which the next page of results must start. Useful for cursor-based pagination.
+         */
+        after?: number;
+        /**
+         * Maximum number of assortments returned in the response when using cursor-based pagination.
+         */
+        size?: number;
+        /**
+         * Filters the result to return only assortments that reference the specified collection ID, either as an included or as an excluded collection.
+         */
+        collectionId?: number;
+    };
+    url: '/api/catalog/pvt/assortment';
+};
+
+export type GetApiCatalogPvtAssortmentResponses = {
+    /**
+     * OK
+     */
+    200: {
+        /**
+         * Total number of assortments available at the merchant level.
+         */
+        TotalRows?: number;
+        /**
+         * List of assortments returned in the current page.
+         */
+        Data?: Array<{
+            /**
+             * Assortment's unique numerical identifier.
+             */
+            Id?: number;
+            /**
+             * Assortment's unique name.
+             */
+            Name?: string;
+            /**
+             * Date and time when the assortment was created, in UTC format.
+             */
+            CreatedAt?: string;
+            /**
+             * Date and time when the assortment was last updated, in UTC format.
+             */
+            UpdatedAt?: string;
+            /**
+             * List of collection IDs explicitly allowed by the assortment.
+             */
+            IncludedCollections?: Array<number>;
+            /**
+             * List of collection IDs explicitly restricted by the assortment.
+             */
+            ExcludedCollections?: Array<number>;
+        }>;
+        /**
+         * Number of assortments returned in the current page.
+         */
+        Size?: number;
+    };
+};
+
+export type GetApiCatalogPvtAssortmentResponse = GetApiCatalogPvtAssortmentResponses[keyof GetApiCatalogPvtAssortmentResponses];
+
+export type PostApiCatalogPvtAssortmentData = {
+    body?: {
+        /**
+         * Assortment's unique name at the merchant level.
+         */
+        name: string;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query?: never;
+    url: '/api/catalog/pvt/assortment';
+};
+
+export type PostApiCatalogPvtAssortmentErrors = {
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorResponse;
+};
+
+export type PostApiCatalogPvtAssortmentError = PostApiCatalogPvtAssortmentErrors[keyof PostApiCatalogPvtAssortmentErrors];
+
+export type PostApiCatalogPvtAssortmentResponses = {
+    /**
+     * Created
+     */
+    201: ProductAssortment;
+};
+
+export type PostApiCatalogPvtAssortmentResponse = PostApiCatalogPvtAssortmentResponses[keyof PostApiCatalogPvtAssortmentResponses];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}';
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdErrors = {
+    /**
+     * Bad Request
+     */
+    400: ErrorResponse;
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdError = DeleteApiCatalogPvtAssortmentByProductAssortmentIdErrors[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdErrors];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdResponses = {
+    /**
+     * Empty response body returned upon successful deletion.
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdResponse = DeleteApiCatalogPvtAssortmentByProductAssortmentIdResponses[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdResponses];
+
+export type GetApiCatalogPvtAssortmentByProductAssortmentIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}';
+};
+
+export type GetApiCatalogPvtAssortmentByProductAssortmentIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type GetApiCatalogPvtAssortmentByProductAssortmentIdError = GetApiCatalogPvtAssortmentByProductAssortmentIdErrors[keyof GetApiCatalogPvtAssortmentByProductAssortmentIdErrors];
+
+export type GetApiCatalogPvtAssortmentByProductAssortmentIdResponses = {
+    /**
+     * OK
+     */
+    200: ProductAssortment;
+};
+
+export type GetApiCatalogPvtAssortmentByProductAssortmentIdResponse = GetApiCatalogPvtAssortmentByProductAssortmentIdResponses[keyof GetApiCatalogPvtAssortmentByProductAssortmentIdResponses];
+
+export type PutApiCatalogPvtAssortmentByProductAssortmentIdData = {
+    body?: {
+        /**
+         * Assortment's new unique name. Must not collide with existing assortments at the merchant level.
+         */
+        name: string;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}';
+};
+
+export type PutApiCatalogPvtAssortmentByProductAssortmentIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+    /**
+     * Unprocessable Entity
+     */
+    422: ErrorResponse;
+};
+
+export type PutApiCatalogPvtAssortmentByProductAssortmentIdError = PutApiCatalogPvtAssortmentByProductAssortmentIdErrors[keyof PutApiCatalogPvtAssortmentByProductAssortmentIdErrors];
+
+export type PutApiCatalogPvtAssortmentByProductAssortmentIdResponses = {
+    /**
+     * OK
+     */
+    200: ProductAssortment;
+};
+
+export type PutApiCatalogPvtAssortmentByProductAssortmentIdResponse = PutApiCatalogPvtAssortmentByProductAssortmentIdResponses[keyof PutApiCatalogPvtAssortmentByProductAssortmentIdResponses];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+        /**
+         * Collection's unique numerical identifier.
+         */
+        collectionID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}/included-collections/{collectionID}';
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdError = DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses = {
+    /**
+     * Empty response body returned upon successful removal.
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponse = DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses];
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+        /**
+         * Collection's unique numerical identifier.
+         */
+        collectionID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}/included-collections/{collectionID}';
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdError = PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors[keyof PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdErrors];
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses = {
+    /**
+     * OK
+     */
+    200: AssortmentCollectionAssociation;
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponse = PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses[keyof PostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdResponses];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+        /**
+         * Collection's unique numerical identifier.
+         */
+        collectionID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}/excluded-collections/{collectionID}';
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors = {
+    /**
+     * Not Found
+     */
+    404: ErrorResponse;
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdError = DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors];
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses = {
+    /**
+     * Empty response body returned upon successful removal.
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponse = DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses[keyof DeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses];
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Product assortment's unique numerical identifier.
+         */
+        productAssortmentID: number;
+        /**
+         * Collection's unique numerical identifier.
+         */
+        collectionID: number;
+    };
+    query?: never;
+    url: '/api/catalog/pvt/assortment/{productAssortmentID}/excluded-collections/{collectionID}';
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors = {
+    /**
+     * Conflict
+     */
+    409: ErrorResponse;
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdError = PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors[keyof PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdErrors];
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses = {
+    /**
+     * OK
+     */
+    200: AssortmentCollectionAssociation;
+};
+
+export type PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponse = PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses[keyof PostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdResponses];

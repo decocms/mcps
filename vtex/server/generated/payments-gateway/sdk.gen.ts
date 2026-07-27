@@ -379,9 +379,9 @@ export const _1Createanewtransaction = <ThrowOnError extends boolean = false>(op
 export const _2SendPaymentsPublic = <ThrowOnError extends boolean = false>(options: Options<SendPaymentsPublicData, ThrowOnError>) => (options.client ?? client).post<SendPaymentsPublicResponses, unknown, ThrowOnError>({ url: '/api/payments/transactions/{transactionId}/payments', ...options });
 
 /**
- * Update additional data (optional)
+ * Update additional data
  *
- * This request is used to update any information that has previously been sent on endpoint [Send additional data](https://developers.vtex.com/docs/api-reference/payments-gateway-api#post-/api/pvt/transactions/-transactionId-/additional-data).
+ * This request is used to update any information that has previously been sent on endpoint [Send additional data](https://developers.vtex.com/docs/api-reference/payments-gateway-api#post-/api/pvt/transactions/-transactionId-/additional-data), if required.
  *
  * ## Permissions
  *
@@ -495,7 +495,9 @@ export const transactionDetails = <ThrowOnError extends boolean = false>(options
 /**
  * Get payment details
  *
- * Returns data about a specific payment made in your store.
+ * Returns data about all payments created for a transaction or a specific payment made in your store.
+ *
+ * >⚠️ To get information about a specific payment, use the `paymentId` parameter in the request path.
  *
  * ## Permissions
  *

@@ -41,6 +41,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  * | `Banricompras` | Credit Card | Brazil |
  * | `Credz` | Credit Card | Brazil |
  * | `Cabal` | Credit Card | Argentina, Brazil, Uruguay, Paraguay |
+ * | `Patagonia 365` | Credit Card | Argentina |
  * | `Cartes Bancaires (CB)` | Credit Card | France |
  * | `VirtualDebitElo` | Debit Card | Brazil |
  * | `Visa Electron` | Debit Card | Global |

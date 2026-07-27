@@ -6,14 +6,20 @@ import * as z from 'zod';
  * Object containing the payment system reference route.
  */
 export const zSelf = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Payment system reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the payment system reference route.'
 });
 
 /**
  * Payment system information.
  */
 export const zPayment = z.object({
-    id: z.int(),
+    id: z.int().register(z.globalRegistry, {
+        description: 'Payment system identification.'
+    }),
     name: z.union([
         z.string(),
         z.null()
@@ -22,9 +28,15 @@ export const zPayment = z.object({
         z.string(),
         z.null()
     ]),
-    value: z.number(),
-    isDefault: z.boolean().default(false),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Value to be paid in installments.'
+    }),
+    isDefault: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment system is automatically applied by default.'
+    }).default(false),
     self: zSelf
+}).register(z.globalRegistry, {
+    description: 'Payment system information.'
 });
 
 /**
@@ -35,9 +47,15 @@ export const zOption = z.object({
         z.string(),
         z.null()
     ]),
-    quantity: z.int(),
-    value: z.number(),
-    interestRate: z.number(),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Number of installments.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Value of each installment.'
+    }),
+    interestRate: z.number().register(z.globalRegistry, {
+        description: 'Interest rate (percent 0.1 = 10%).'
+    }),
     isExternalInstallmentService: z.union([
         z.number(),
         z.null()
@@ -46,22 +64,95 @@ export const zOption = z.object({
         z.number(),
         z.null()
     ])
-});
-
-/**
- * Installment options information.
- */
-export const zInstallment = z.object({
-    payment: zPayment,
-    options: z.array(zOption)
+}).register(z.globalRegistry, {
+    description: 'Installment options information.'
 });
 
 /**
  * Installments options response body information.
  */
 export const zValidRequest = z.object({
-    value: z.number(),
-    installments: z.array(zInstallment)
+    value: z.number().register(z.globalRegistry, {
+        description: 'Value to be paid in installments.'
+    }),
+    installments: z.array(z.object({
+        payment: z.object({
+            id: z.int().register(z.globalRegistry, {
+                description: 'Payment system identification.'
+            }),
+            name: z.union([
+                z.string(),
+                z.null()
+            ]),
+            bin: z.union([
+                z.string(),
+                z.null()
+            ]),
+            value: z.number().register(z.globalRegistry, {
+                description: 'Value to be paid in installments.'
+            }),
+            isDefault: z.boolean().register(z.globalRegistry, {
+                description: 'Indicates whether the payment system is automatically applied by default.'
+            }).default(false),
+            self: z.object({
+                href: z.string().register(z.globalRegistry, {
+                    description: 'Payment system reference route.'
+                })
+            }).register(z.globalRegistry, {
+                description: 'Object containing the payment system reference route.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Payment system information.'
+        }),
+        options: z.array(zOption).register(z.globalRegistry, {
+            description: 'Array containing information about installment options.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Installment options information.'
+    })).register(z.globalRegistry, {
+        description: 'Installments information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Installments options response body information.'
+});
+
+/**
+ * Installment options information.
+ */
+export const zInstallment = z.object({
+    payment: z.object({
+        id: z.int().register(z.globalRegistry, {
+            description: 'Payment system identification.'
+        }),
+        name: z.union([
+            z.string(),
+            z.null()
+        ]),
+        bin: z.union([
+            z.string(),
+            z.null()
+        ]),
+        value: z.number().register(z.globalRegistry, {
+            description: 'Value to be paid in installments.'
+        }),
+        isDefault: z.boolean().register(z.globalRegistry, {
+            description: 'Indicates whether the payment system is automatically applied by default.'
+        }).default(false),
+        self: z.object({
+            href: z.string().register(z.globalRegistry, {
+                description: 'Payment system reference route.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Object containing the payment system reference route.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payment system information.'
+    }),
+    options: z.array(zOption).register(z.globalRegistry, {
+        description: 'Array containing information about installment options.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Installment options information.'
 });
 
 /**
@@ -69,84 +160,162 @@ export const zValidRequest = z.object({
  */
 export const zInvalidRequestValue = z.object({
     error: z.object({
-        code: z.string(),
-        message: z.string(),
+        code: z.string().register(z.globalRegistry, {
+            description: 'Error code.'
+        }),
+        message: z.string().register(z.globalRegistry, {
+            description: 'Error message.'
+        }),
         exception: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Error information.'
     })
+}).register(z.globalRegistry, {
+    description: 'Installments options response body information.'
 });
 
 /**
  * Insert new affiliation request body information.
  */
 export const zInsertAffiliationRequest = z.object({
-    implementation: z.string(),
-    name: z.string(),
+    implementation: z.string().register(z.globalRegistry, {
+        description: 'Provider implementation class name.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Provider name.'
+    }),
     configuration: z.array(z.object({
-        name: z.string(),
-        value: z.string()
-    })),
-    isdelivered: z.boolean(),
-    isConfigured: z.boolean()
+        name: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter name.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter value.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Provider configuration information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing provider configuration information.'
+    }),
+    isdelivered: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is published and available for use.'
+    }),
+    isConfigured: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is configured.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Insert new affiliation request body information.'
 });
 
 /**
  * Update affiliation by ID request body information.
  */
 export const zUpdateAffiliationRequest = z.object({
-    id: z.string(),
-    implementation: z.string(),
-    name: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Provider identification.'
+    }),
+    implementation: z.string().register(z.globalRegistry, {
+        description: 'Provider implementation class name.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Provider name.'
+    }),
     configuration: z.array(z.object({
-        name: z.string(),
-        value: z.string(),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter name.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter value.'
+        }),
         valueKey: z.union([
             z.string(),
             z.null()
         ])
-    })),
-    isdelivered: z.boolean(),
-    isConfigured: z.boolean()
+    }).register(z.globalRegistry, {
+        description: 'Provider configuration information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing provider configuration information.'
+    }),
+    isdelivered: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is published and available for use.'
+    }),
+    isConfigured: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is configured.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Update affiliation by ID request body information.'
 });
 
 /**
  * Affiliation by ID response body information.
  */
 export const zAffiliationResponse = z.object({
-    id: z.string(),
-    implementation: z.string(),
-    name: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Provider identification.'
+    }),
+    implementation: z.string().register(z.globalRegistry, {
+        description: 'Provider implementation class name.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Provider name.'
+    }),
     configuration: z.array(z.object({
-        name: z.string(),
-        value: z.string(),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter name.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'Configuration parameter value.'
+        }),
         valueKey: z.union([
             z.string(),
             z.null()
         ])
-    })),
-    isdelivered: z.boolean(),
-    isConfigured: z.boolean()
+    }).register(z.globalRegistry, {
+        description: 'Provider configuration information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing provider configuration information.'
+    }),
+    isdelivered: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is published and available for use.'
+    }),
+    isConfigured: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the provider is configured.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Affiliation by ID response body information.'
 });
 
 /**
  * Array containing information about the Sales channel.
  */
 export const zSalesChannel = z.array(z.object({
-    id: z.string()
-}));
+    id: z.string().register(z.globalRegistry, {
+        description: 'Sales channel identification.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Sales channel information.'
+})).register(z.globalRegistry, {
+    description: 'Array containing information about the Sales channel.'
+});
 
 /**
  * Payment system information.
  */
 export const zPaymentSystem = z.object({
-    id: z.number(),
-    name: z.string(),
+    id: z.number().register(z.globalRegistry, {
+        description: 'Payment system identification.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Payment system name.'
+    }),
     implementation: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Payment system information.'
 });
 
 /**
@@ -154,8 +323,12 @@ export const zPaymentSystem = z.object({
  */
 export const zConnector = z.union([
     z.object({
-        implementation: z.string(),
-        affiliationId: z.string()
+        implementation: z.string().register(z.globalRegistry, {
+            description: 'Connector (payment provider) implementation class name.'
+        }),
+        affiliationId: z.string().register(z.globalRegistry, {
+            description: 'Affiliation connector (payment provider) identification.'
+        })
     }),
     z.null()
 ]);
@@ -168,6 +341,8 @@ export const zIssuer = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Card issuer information.'
 });
 
 /**
@@ -191,8 +366,12 @@ export const zAntifraud = z.union([
  * Array containing payment rules information.
  */
 export const zGetRulesResponse = z.array(z.object({
-    id: z.optional(z.string()),
-    name: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Rule identification.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Rule name.'
+    })),
     salesChannels: z.optional(zSalesChannel),
     paymentSystem: z.optional(zPaymentSystem),
     connector: z.optional(zConnector),
@@ -200,21 +379,33 @@ export const zGetRulesResponse = z.array(z.object({
     antifraud: z.optional(zAntifraud),
     installmentOptions: z.optional(z.union([
         z.object({
-            dueDateType: z.union([z.literal(0), z.literal(1)]),
+            dueDateType: z.union([z.literal(0), z.literal(1)]).register(z.globalRegistry, {
+                description: 'Indicates whether the billing date will be at the end (0) or beginning of the period (1).'
+            }),
             interestRateMethod: z.nullable(z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ])),
-            minimumInstallmentValue: z.number(),
+            ])).register(z.globalRegistry, {
+                description: 'Indicates the type of interest to calculate the value of the installments (Compound Interest = `null` or `0`, Simple Interest Rate with Tax = `1` and Single Interest = `2`).'
+            }),
+            minimumInstallmentValue: z.number().register(z.globalRegistry, {
+                description: 'Minimum value of each installment.'
+            }),
             installments: z.array(z.object({
                 ruleId: z.union([
                     z.string(),
                     z.null()
                 ]),
-                quantity: z.int(),
-                value: z.number(),
-                interestRate: z.number(),
+                quantity: z.int().register(z.globalRegistry, {
+                    description: 'Number of installments.'
+                }),
+                value: z.number().register(z.globalRegistry, {
+                    description: 'Value of each installment.'
+                }),
+                interestRate: z.number().register(z.globalRegistry, {
+                    description: 'Interest rate (percent 0.1 = 10%).'
+                }),
                 isExternalInstallmentService: z.union([
                     z.number(),
                     z.null()
@@ -223,7 +414,11 @@ export const zGetRulesResponse = z.array(z.object({
                     z.number(),
                     z.null()
                 ])
-            }))
+            }).register(z.globalRegistry, {
+                description: 'Installments information.'
+            })).register(z.globalRegistry, {
+                description: 'Array containing installments information.'
+            })
         }),
         z.null()
     ])),
@@ -235,8 +430,12 @@ export const zGetRulesResponse = z.array(z.object({
         z.boolean(),
         z.null()
     ])),
-    enabled: z.optional(z.boolean()),
-    installmentsService: z.optional(z.boolean()),
+    enabled: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the rule is enabled in the store.'
+    })),
+    installmentsService: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether any specific type of installment service is used.'
+    })),
     isDefault: z.optional(z.union([
         z.boolean(),
         z.null()
@@ -251,8 +450,12 @@ export const zGetRulesResponse = z.array(z.object({
     ])),
     condition: z.optional(z.union([
         z.object({
-            id: z.string(),
-            pullRate: z.number(),
+            id: z.string().register(z.globalRegistry, {
+                description: 'Commercial condition identification.'
+            }),
+            pullRate: z.number().register(z.globalRegistry, {
+                description: 'Indicates the minimum percentage of SKUs required in the cart using this commercial condition for it to be activated.'
+            }),
             name: z.union([
                 z.string(),
                 z.null()
@@ -261,7 +464,9 @@ export const zGetRulesResponse = z.array(z.object({
         z.null()
     ])),
     multiMerchantList: z.optional(z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Account names.'
+        })),
         z.null()
     ])),
     country: z.optional(z.union([
@@ -270,52 +475,86 @@ export const zGetRulesResponse = z.array(z.object({
                 z.string(),
                 z.null()
             ]),
-            isoCode: z.string()
+            isoCode: z.string().register(z.globalRegistry, {
+                description: 'Country code (ISO 3166 alpha-2).'
+            })
         }),
         z.null()
     ])),
     dateIntervals: z.optional(z.union([
         z.array(z.object({
-            start: z.string(),
-            end: z.string()
+            start: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week, and GMT time zone in which the rule is activated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            }),
+            end: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week and GMT time zone in which the rule is deactivated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Rule enablement period information.'
         })),
         z.null()
     ])),
-    externalInterest: z.optional(z.boolean()),
+    externalInterest: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether interest can be calculated externally.'
+    })),
     minimumValue: z.optional(z.union([
         z.number(),
         z.null()
     ])),
     deadlines: z.optional(z.array(z.object({
         paymentOptions: z.array(z.object({
-            days: z.number(),
-            interestRate: z.number()
-        }))
-    }))),
+            days: z.number().register(z.globalRegistry, {
+                description: 'Deadline in days to make payment.'
+            }),
+            interestRate: z.number().register(z.globalRegistry, {
+                description: 'Interest rate applied (in percentage, e.g. `3.0` means 3%).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Payment options information.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing payment options information.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payment deadlines information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information about the payment deadlines (applicable for credit payment method).'
+    })),
     cobrand: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the cobranded card.'
     })),
     cardLevel: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the card category.'
     })),
     excludedBinsRanges: z.optional(z.union([
         z.number(),
         z.null()
     ]))
-}));
+}).register(z.globalRegistry, {
+    description: 'Payment rules information.'
+})).register(z.globalRegistry, {
+    description: 'Array containing payment rules information.'
+});
 
 /**
  * Payment rules information.
  */
 export const zRulesRequest = z.object({
-    id: z.string(),
-    name: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Rule identification.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Rule name.'
+    }),
     salesChannels: zSalesChannel,
     paymentSystem: zPaymentSystem,
     connector: zConnector,
@@ -323,21 +562,33 @@ export const zRulesRequest = z.object({
     antifraud: zAntifraud,
     installmentOptions: z.union([
         z.object({
-            dueDateType: z.union([z.literal(0), z.literal(1)]),
+            dueDateType: z.union([z.literal(0), z.literal(1)]).register(z.globalRegistry, {
+                description: 'Indicates whether the billing date will be at the end (0) or beginning of the period (1).'
+            }),
             interestRateMethod: z.nullable(z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ])),
-            minimumInstallmentValue: z.number(),
+            ])).register(z.globalRegistry, {
+                description: 'Indicates the type of interest to calculate the value of the installments (Compound Interest = `null` or `0`, Simple Interest Rate with Tax = `1` and Single Interest = `2`).'
+            }),
+            minimumInstallmentValue: z.number().register(z.globalRegistry, {
+                description: 'Minimum value of each installment.'
+            }),
             installments: z.array(z.object({
                 ruleId: z.union([
                     z.string(),
                     z.null()
                 ]),
-                quantity: z.int(),
-                value: z.number(),
-                interestRate: z.number(),
+                quantity: z.int().register(z.globalRegistry, {
+                    description: 'Number of installments.'
+                }),
+                value: z.number().register(z.globalRegistry, {
+                    description: 'Value of each installment.'
+                }),
+                interestRate: z.number().register(z.globalRegistry, {
+                    description: 'Interest rate (percent 0.1 = 10%).'
+                }),
                 isExternalInstallmentService: z.union([
                     z.number(),
                     z.null()
@@ -346,7 +597,11 @@ export const zRulesRequest = z.object({
                     z.number(),
                     z.null()
                 ])
-            }))
+            }).register(z.globalRegistry, {
+                description: 'Installments information.'
+            })).register(z.globalRegistry, {
+                description: 'Array containing installments information.'
+            })
         }),
         z.null()
     ]),
@@ -358,8 +613,12 @@ export const zRulesRequest = z.object({
         z.boolean(),
         z.null()
     ]),
-    enabled: z.boolean(),
-    installmentsService: z.boolean(),
+    enabled: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the rule is enabled in the store.'
+    }),
+    installmentsService: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether any specific type of installment service is used.'
+    }),
     isDefault: z.union([
         z.boolean(),
         z.null()
@@ -374,8 +633,12 @@ export const zRulesRequest = z.object({
     ]),
     condition: z.union([
         z.object({
-            id: z.string(),
-            pullRate: z.number(),
+            id: z.string().register(z.globalRegistry, {
+                description: 'Commercial condition identification.'
+            }),
+            pullRate: z.number().register(z.globalRegistry, {
+                description: 'Indicates the minimum percentage of SKUs required in the cart using this commercial condition for it to be activated.'
+            }),
             name: z.union([
                 z.string(),
                 z.null()
@@ -384,7 +647,9 @@ export const zRulesRequest = z.object({
         z.null()
     ]),
     multiMerchantList: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Account names.'
+        })),
         z.null()
     ]),
     country: z.union([
@@ -393,51 +658,81 @@ export const zRulesRequest = z.object({
                 z.string(),
                 z.null()
             ]),
-            isoCode: z.string()
+            isoCode: z.string().register(z.globalRegistry, {
+                description: 'Country code (ISO 3166 alpha-2).'
+            })
         }),
         z.null()
     ]),
     dateIntervals: z.union([
         z.array(z.object({
-            start: z.string(),
-            end: z.string()
+            start: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week, and GMT time zone in which the rule is activated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            }),
+            end: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week and GMT time zone in which the rule is deactivated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Rule enablement period information.'
         })),
         z.null()
     ]),
-    externalInterest: z.optional(z.boolean()),
+    externalInterest: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether interest can be calculated externally.'
+    })),
     minimumValue: z.optional(z.union([
         z.number(),
         z.null()
     ])),
     deadlines: z.optional(z.array(z.object({
         paymentOptions: z.array(z.object({
-            days: z.number(),
-            interestRate: z.number()
-        }))
-    }))),
+            days: z.number().register(z.globalRegistry, {
+                description: 'Deadline in days to make payment.'
+            }),
+            interestRate: z.number().register(z.globalRegistry, {
+                description: 'Interest rate applied (in percentage, e.g. `3.0` means 3%).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Payment options information.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing payment options information.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payment deadlines information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information about the payment deadlines (applicable for credit payment method).'
+    })),
     cobrand: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the cobranded card.'
     })),
     cardLevel: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the card category.'
     })),
     excludedBinsRanges: z.optional(z.union([
         z.number(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Payment rules information.'
 });
 
 /**
  * New payment rule request body information.
  */
 export const zInsertRuleRequest = z.object({
-    name: z.string(),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Rule name.'
+    }),
     salesChannels: zSalesChannel,
     paymentSystem: zPaymentSystem,
     connector: zConnector,
@@ -445,21 +740,33 @@ export const zInsertRuleRequest = z.object({
     antifraud: zAntifraud,
     installmentOptions: z.union([
         z.object({
-            dueDateType: z.union([z.literal(0), z.literal(1)]),
+            dueDateType: z.union([z.literal(0), z.literal(1)]).register(z.globalRegistry, {
+                description: 'Indicates whether the billing date will be at the end (0) or beginning of the period (1).'
+            }),
             interestRateMethod: z.nullable(z.union([
                 z.literal(0),
                 z.literal(1),
                 z.literal(2)
-            ])),
-            minimumInstallmentValue: z.number(),
+            ])).register(z.globalRegistry, {
+                description: 'Indicates the type of interest to calculate the value of the installments (Compound Interest = `null` or `0`, Simple Interest Rate with Tax = `1` and Single Interest = `2`).'
+            }),
+            minimumInstallmentValue: z.number().register(z.globalRegistry, {
+                description: 'Minimum value of each installment.'
+            }),
             installments: z.array(z.object({
                 ruleId: z.union([
                     z.string(),
                     z.null()
                 ]),
-                quantity: z.int(),
-                value: z.number(),
-                interestRate: z.number(),
+                quantity: z.int().register(z.globalRegistry, {
+                    description: 'Number of installments.'
+                }),
+                value: z.number().register(z.globalRegistry, {
+                    description: 'Value of each installment.'
+                }),
+                interestRate: z.number().register(z.globalRegistry, {
+                    description: 'Interest rate (percent 0.1 = 10%).'
+                }),
                 isExternalInstallmentService: z.union([
                     z.number(),
                     z.null()
@@ -468,7 +775,11 @@ export const zInsertRuleRequest = z.object({
                     z.number(),
                     z.null()
                 ])
-            }))
+            }).register(z.globalRegistry, {
+                description: 'Installments information.'
+            })).register(z.globalRegistry, {
+                description: 'Array containing installments information.'
+            })
         }),
         z.null()
     ]),
@@ -480,8 +791,12 @@ export const zInsertRuleRequest = z.object({
         z.boolean(),
         z.null()
     ]),
-    enabled: z.boolean(),
-    installmentsService: z.boolean(),
+    enabled: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the rule is enabled in the store.'
+    }),
+    installmentsService: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether any specific type of installment service is used.'
+    }),
     isDefault: z.union([
         z.boolean(),
         z.null()
@@ -496,8 +811,12 @@ export const zInsertRuleRequest = z.object({
     ]),
     condition: z.union([
         z.object({
-            id: z.string(),
-            pullRate: z.number(),
+            id: z.string().register(z.globalRegistry, {
+                description: 'Commercial condition identification.'
+            }),
+            pullRate: z.number().register(z.globalRegistry, {
+                description: 'Indicates the minimum percentage of SKUs required in the cart using this commercial condition for it to be activated.'
+            }),
             name: z.union([
                 z.string(),
                 z.null()
@@ -506,7 +825,9 @@ export const zInsertRuleRequest = z.object({
         z.null()
     ]),
     multiMerchantList: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Account names.'
+        })),
         z.null()
     ]),
     country: z.union([
@@ -515,44 +836,72 @@ export const zInsertRuleRequest = z.object({
                 z.string(),
                 z.null()
             ]),
-            isoCode: z.string()
+            isoCode: z.string().register(z.globalRegistry, {
+                description: 'Country code (ISO 3166 alpha-2).'
+            })
         }),
         z.null()
     ]),
     dateIntervals: z.union([
         z.array(z.object({
-            start: z.string(),
-            end: z.string()
+            start: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week, and GMT time zone in which the rule is activated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            }),
+            end: z.string().register(z.globalRegistry, {
+                description: 'Time, days of the week and GMT time zone in which the rule is deactivated. This data is available in [CRON format](https://en.wikipedia.org/wiki/Cron).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Rule enablement period information.'
         })),
         z.null()
     ]),
-    externalInterest: z.optional(z.boolean()),
+    externalInterest: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether interest can be calculated externally.'
+    })),
     minimumValue: z.optional(z.union([
         z.number(),
         z.null()
     ])),
     deadlines: z.optional(z.array(z.object({
         paymentOptions: z.array(z.object({
-            days: z.number(),
-            interestRate: z.number()
-        }))
-    }))),
+            days: z.number().register(z.globalRegistry, {
+                description: 'Deadline in days to make payment.'
+            }),
+            interestRate: z.number().register(z.globalRegistry, {
+                description: 'Interest rate applied (in percentage, e.g. `3.0` means 3%).'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Payment options information.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing payment options information.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Payment deadlines information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information about the payment deadlines (applicable for credit payment method).'
+    })),
     cobrand: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the cobranded card.'
     })),
     cardLevel: z.optional(z.object({
         name: z.union([
             z.string(),
             z.null()
         ])
+    }).register(z.globalRegistry, {
+        description: 'Information about the card category.'
     })),
     excludedBinsRanges: z.optional(z.union([
         z.number(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'New payment rule request body information.'
 });
 
 /**
@@ -576,59 +925,117 @@ export const zValidator = z.object({
         z.null()
     ]),
     weights: z.union([
-        z.array(z.int()),
+        z.array(z.int().register(z.globalRegistry, {
+            description: 'Weigths information.'
+        })),
         z.null()
     ]),
-    useCvv: z.boolean(),
-    useExpirationDate: z.boolean(),
-    useCardHolderName: z.boolean(),
-    useBillingAddress: z.boolean(),
+    useCvv: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the CVV code to complete a transaction with payment made by card.'
+    }),
+    useExpirationDate: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the expiration date to complete a card payment transaction.'
+    }),
+    useCardHolderName: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the card holder name to complete a payment transaction made by card.'
+    }),
+    useBillingAddress: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to use the billing address to complete a card payment transaction.'
+    }),
     validCardLengths: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Validator information.'
 });
 
 /**
  * Available payment methods response body information.
  */
 export const zPaymentSystemsResponse = z.object({
-    id: z.number(),
-    name: z.string(),
-    requiresDocument: z.boolean(),
-    implementation: z.string(),
-    connectorImplementation: z.string(),
+    id: z.number().register(z.globalRegistry, {
+        description: 'Payment method identification.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Payment method name.'
+    }),
+    requiresDocument: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether a document is required.'
+    }),
+    implementation: z.string().register(z.globalRegistry, {
+        description: 'Payment method implementation class name.'
+    }),
+    connectorImplementation: z.string().register(z.globalRegistry, {
+        description: 'Connector (payment provider) implementation class name.'
+    }),
     antifraudConnectorImplementation: z.union([
         z.string(),
         z.null()
     ]),
-    groupName: z.string(),
-    redirect: z.boolean(),
-    isCustom: z.boolean(),
-    isSelfAuthorized: z.boolean(),
-    requiresAuthentication: z.boolean(),
-    allowInstallments: z.boolean(),
-    allowBinExclusion: z.boolean(),
-    allowMultiple: z.boolean(),
-    allowIssuer: z.boolean(),
-    allowCountry: z.boolean(),
-    allowCommercialPolicy: z.boolean(),
-    allowCommercialCondition: z.boolean(),
-    allowPeriod: z.boolean(),
-    isAvailable: z.boolean(),
+    groupName: z.string().register(z.globalRegistry, {
+        description: 'Payment group name.'
+    }),
+    redirect: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method allows redirection.'
+    }),
+    isCustom: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is custom.'
+    }),
+    isSelfAuthorized: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment is automatically authorized.'
+    }),
+    requiresAuthentication: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to log in to make the payment.'
+    }),
+    allowInstallments: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method allows installments.'
+    }),
+    allowBinExclusion: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict the use of specific BIN codes (only applicable for cards).'
+    }),
+    allowMultiple: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the method allows multiple payments. Example of `false`: debit card.'
+    }),
+    allowIssuer: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to identify the name of the bank responsible for issuing the card.'
+    }),
+    allowCountry: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict a payment rule by the country where the purchase is made.'
+    }),
+    allowCommercialPolicy: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether to restrict a payment rule by commercial policy type.'
+    }),
+    allowCommercialCondition: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether to restrict a payment rule by commercial condition type.'
+    }),
+    allowPeriod: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to restrict a period for making the payment.'
+    }),
+    isAvailable: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method is available for use.'
+    }),
     description: z.union([
         z.string(),
         z.null()
     ]),
-    supportRecurrence: z.boolean(),
+    supportRecurrence: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method supports recurrence.'
+    }),
     validator: zValidator,
     appDependencies: z.union([
         z.string(),
         z.null()
     ]),
-    displayDocument: z.boolean(),
-    dueDate: z.string(),
-    allowNotification: z.boolean(),
+    displayDocument: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether a document is shown.'
+    }),
+    dueDate: z.string().register(z.globalRegistry, {
+        description: 'Payment due date.'
+    }),
+    allowNotification: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates the possibility of payment notification (used by bank invoices and notes payable).'
+    }),
     affiliationId: z.union([
         z.string(),
         z.null()
@@ -637,80 +1044,130 @@ export const zPaymentSystemsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    dueDateMinutes: z.number()
+    dueDateMinutes: z.number().register(z.globalRegistry, {
+        description: 'Amount of time (in minutes) until the payment date (`dueDate`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Available payment methods response body information.'
 });
 
 /**
  * New transaction request body information.
  */
 export const z1CreateanewtransactionRequest = z.object({
-    value: z.number(),
-    referenceId: z.string(),
-    channel: z.string(),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Transaction value. The value must be described without using separation for decimals, e.g. for a transaction with a value equal to 201.50, send 20150.'
+    }),
+    referenceId: z.string().register(z.globalRegistry, {
+        description: 'Identification number that relates the transaction to a purchase order.'
+    }),
+    channel: z.string().register(z.globalRegistry, {
+        description: 'Store where the transaction was initiated.'
+    }),
     urn: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    salesChannel: z.string()
+    salesChannel: z.string().register(z.globalRegistry, {
+        description: 'Sales channel information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'New transaction request body information.'
 });
 
 /**
  * Object containing the reference route of transaction interactions.
  */
 export const zInteractions = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction interaction reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction interactions.'
 });
 
 /**
  * Object containing the reference route of transaction settlements.
  */
 export const zSettlements = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction settlement reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction settlements.'
 });
 
 /**
  * Object containing the reference route of transaction payments.
  */
 export const zPayments = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction payment reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction payments.'
 });
 
 /**
  * Object containing the reference route of transaction refunds.
  */
 export const zRefunds = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction refund reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction refunds.'
 });
 
 /**
  * Object containing the reference route of transaction cancellations.
  */
 export const zCancellations = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction cancellation reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction cancellations.'
 });
 
 /**
  * Object containing the reference route of transaction capabilities.
  */
 export const zCapabilities = z.object({
-    href: z.string()
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction capabilities reference route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the reference route of transaction capabilities.'
 });
 
 /**
  * Transaction parameters information.
  */
 export const zField = z.object({
-    name: z.string(),
-    value: z.string()
+    name: z.string().register(z.globalRegistry, {
+        description: 'Transaction parameter name.'
+    }),
+    value: z.string().register(z.globalRegistry, {
+        description: 'Transaction parameter value.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Transaction parameters information.'
 });
 
 /**
  * New transaction response body information.
  */
 export const zStartTransactionResponse = z.object({
-    id: z.string(),
-    transactionId: z.string(),
-    referenceKey: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification.'
+    }),
+    transactionId: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification (same value of the `id` field).'
+    }),
+    referenceKey: z.string().register(z.globalRegistry, {
+        description: 'Identification number that relates the transaction to a purchase order. It can be also used for anti-fraud to identify the transaction.'
+    }),
     interactions: zInteractions,
     settlements: zSettlements,
     payments: zPayments,
@@ -723,15 +1180,25 @@ export const zStartTransactionResponse = z.object({
         z.literal(2),
         z.literal(3),
         z.literal(4)
-    ]),
-    totalRefunds: z.number(),
-    status: z.string(),
-    value: z.number(),
+    ]).register(z.globalRegistry, {
+        description: 'Field that represents the possible transaction timeout statuses. Possible statuses and meanings: `0` = NotStarted, `1` = CancellingOrFinishing, `2` = CancellingOrFinishingByTimeout, `3` = CancelledOrFinished and `4` = TriesExceeded.'
+    }),
+    totalRefunds: z.number().register(z.globalRegistry, {
+        description: 'Total refunded transaction amount.'
+    }),
+    status: z.string().register(z.globalRegistry, {
+        description: 'Transaction status.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Transaction value.'
+    }),
     receiverUri: z.union([
         z.string(),
         z.null()
     ]),
-    startDate: z.string(),
+    startDate: z.string().register(z.globalRegistry, {
+        description: 'Transaction start date.'
+    }),
     authorizationToken: z.union([
         z.string(),
         z.null()
@@ -764,7 +1231,9 @@ export const zStartTransactionResponse = z.object({
         z.string(),
         z.null()
     ]),
-    fields: z.array(zField),
+    fields: z.array(zField).register(z.globalRegistry, {
+        description: 'Field containing transaction information.'
+    }),
     ipAddress: z.union([
         z.string(),
         z.null()
@@ -789,7 +1258,9 @@ export const zStartTransactionResponse = z.object({
         z.string(),
         z.null()
     ]),
-    owner: z.string(),
+    owner: z.string().register(z.globalRegistry, {
+        description: 'Responsible for transaction request.'
+    }),
     orderId: z.union([
         z.string(),
         z.null()
@@ -818,8 +1289,12 @@ export const zStartTransactionResponse = z.object({
         z.string(),
         z.null()
     ]),
-    channel: z.string(),
-    salesChannel: z.string(),
+    channel: z.string().register(z.globalRegistry, {
+        description: 'Store where the transaction was initiated.'
+    }),
+    salesChannel: z.string().register(z.globalRegistry, {
+        description: 'Sales channel information.'
+    }),
     urn: z.union([
         z.string(),
         z.null()
@@ -828,19 +1303,37 @@ export const zStartTransactionResponse = z.object({
         z.string(),
         z.null()
     ]),
-    markedForRecurrence: z.boolean(),
+    markedForRecurrence: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment transaction should be recurring.'
+    }),
     buyer: z.union([
         z.object({
-            firstName: z.optional(z.string()),
-            lastName: z.optional(z.string()),
-            documentType: z.optional(z.string()),
-            document: z.optional(z.string()),
-            email: z.optional(z.string()),
-            address: z.optional(z.string()),
-            phone: z.optional(z.string())
+            firstName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer first name.'
+            })),
+            lastName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer last name.'
+            })),
+            documentType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Type of the document informed by the buyer.'
+            })),
+            document: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Document informed by the buyer.'
+            })),
+            email: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer email address.'
+            })),
+            address: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer address.'
+            })),
+            phone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer phone number.'
+            }))
         }),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'New transaction response body information.'
 });
 
 /**
@@ -871,19 +1364,35 @@ export const zFields = z.object({
         z.string(),
         z.null()
     ]),
-    address: z.array(z.object({
-        addressType: z.optional(z.string()),
-        receiverName: z.optional(z.string()),
-        postalCode: z.optional(z.string()),
-        city: z.optional(z.string()),
-        state: z.optional(z.string()),
+    address: z.object({
+        addressType: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Address type.'
+        })),
+        receiverName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the receiver.'
+        })),
+        postalCode: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Postal code information.'
+        })),
+        city: z.optional(z.string().register(z.globalRegistry, {
+            description: 'City of the address.'
+        })),
+        state: z.optional(z.string().register(z.globalRegistry, {
+            description: 'State of the address.'
+        })),
         country: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        street: z.optional(z.string()),
-        number: z.optional(z.number()),
-        neighborhood: z.optional(z.string()),
+        street: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Street of the address.'
+        })),
+        number: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Number of the address.'
+        })),
+        neighborhood: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Neighborhood of the address.'
+        })),
         complement: z.optional(z.union([
             z.string(),
             z.null()
@@ -892,99 +1401,179 @@ export const zFields = z.object({
             z.string(),
             z.null()
         ])),
-        geoCoordinates: z.optional(z.array(z.number()))
-    })),
-    callbackUrl: z.string()
+        geoCoordinates: z.optional(z.array(z.number().register(z.globalRegistry, {
+            description: 'Geocoordinates information.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing two floats with geocoordinates, first longitude, then latitude.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Customer address information.'
+    }),
+    callbackUrl: z.string().register(z.globalRegistry, {
+        description: 'Callback URL information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Fields information.'
 });
 
 /**
  * Transaction information.
  */
 export const zTransaction = z.object({
-    id: z.string(),
-    merchantName: z.string()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification.'
+    }),
+    merchantName: z.string().register(z.globalRegistry, {
+        description: 'Merchant name.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Transaction information.'
 });
 
 /**
  * Payment parameters information.
  */
 export const zFields1 = z.object({
-    name: z.string(),
-    value: z.string()
+    name: z.string().register(z.globalRegistry, {
+        description: 'Payment parameter name.'
+    }),
+    value: z.string().register(z.globalRegistry, {
+        description: 'Payment parameter value.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment parameters information.'
 });
 
 /**
  * Send payments information public request body information.
  */
 export const z2SendPaymentsPublicRequest = z.object({
-    paymentSystem: z.number(),
-    installments: z.number(),
-    currencyCode: z.string(),
-    value: z.number(),
-    installmentsInterestRate: z.number(),
-    installmentsValue: z.number(),
-    referenceValue: z.number(),
+    paymentSystem: z.number().register(z.globalRegistry, {
+        description: 'Payment system identification.'
+    }),
+    installments: z.number().register(z.globalRegistry, {
+        description: 'Number of installments.'
+    }),
+    currencyCode: z.string().register(z.globalRegistry, {
+        description: 'Currency code in ISO 4217 standard.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Payment value.'
+    }),
+    installmentsInterestRate: z.number().register(z.globalRegistry, {
+        description: 'The interest rate.'
+    }),
+    installmentsValue: z.number().register(z.globalRegistry, {
+        description: 'The value of each installment.'
+    }),
+    referenceValue: z.number().register(z.globalRegistry, {
+        description: 'Value amount of the payment without interest applied. This value is the same as the `value` field when `installmentsInterestRate` is `0.0`.'
+    }),
     fields: zFields,
     transaction: zTransaction
+}).register(z.globalRegistry, {
+    description: 'Send payments information public request body information.'
 });
 
 /**
  * Fields information.
  */
 export const zFields3 = z.object({
-    holderName: z.string(),
-    cardNumber: z.string(),
-    validationCode: z.string(),
-    dueDate: z.string(),
-    document: z.string(),
+    holderName: z.string().register(z.globalRegistry, {
+        description: 'Card holder name.'
+    }),
+    cardNumber: z.string().register(z.globalRegistry, {
+        description: 'Card number information.'
+    }),
+    validationCode: z.string().register(z.globalRegistry, {
+        description: 'CVV code.'
+    }),
+    dueDate: z.string().register(z.globalRegistry, {
+        description: 'Due date information. The date format is `mm/yy`.'
+    }),
+    document: z.string().register(z.globalRegistry, {
+        description: 'Card holder documentation.'
+    }),
     accountId: z.union([
         z.string(),
         z.null()
     ]),
     address: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Customer address information.'
+        })),
         z.null()
     ]),
     callbackUrl: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Fields information.'
 });
 
 /**
  * Send payments with saved credit card request body information.
  */
 export const z2SendPaymentsWithSavedCreditCardRequest = z.object({
-    paymentSystem: z.number(),
-    installments: z.number(),
-    currencyCode: z.string(),
-    value: z.number(),
-    installmentsInterestRate: z.number(),
-    installmentsValue: z.number(),
-    referenceValue: z.number(),
+    paymentSystem: z.number().register(z.globalRegistry, {
+        description: 'Payment system identification.'
+    }),
+    installments: z.number().register(z.globalRegistry, {
+        description: 'Number of installments.'
+    }),
+    currencyCode: z.string().register(z.globalRegistry, {
+        description: 'Currency code in ISO 4217 standard.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Payment value.'
+    }),
+    installmentsInterestRate: z.number().register(z.globalRegistry, {
+        description: 'The interest rate.'
+    }),
+    installmentsValue: z.number().register(z.globalRegistry, {
+        description: 'The value of each installment.'
+    }),
+    referenceValue: z.number().register(z.globalRegistry, {
+        description: 'Value amount of the payment without interest applied. This value is the same as the `value` field when `installmentsInterestRate` is `0.0`.'
+    }),
     fields: zFields3,
     transaction: zTransaction
+}).register(z.globalRegistry, {
+    description: 'Send payments with saved credit card request body information.'
 });
 
 /**
  * Authorize new transaction request body information.
  */
 export const z4DoauthorizationRequest = z.object({
-    transactionId: z.string(),
+    transactionId: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification.'
+    }),
     softDescriptor: z.union([
         z.string(),
         z.null()
     ]),
-    prepareForRecurrency: z.boolean()
+    prepareForRecurrency: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the transaction supports recurrence.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Authorize new transaction request body information.'
 });
 
 /**
  * Transaction details response body information.
  */
 export const zTransactionDetailsResponse = z.object({
-    id: z.string(),
-    transactionId: z.string(),
-    referenceKey: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification.'
+    }),
+    transactionId: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification (same value of the `id` field).'
+    }),
+    referenceKey: z.string().register(z.globalRegistry, {
+        description: 'Field used for anti-fraud to identify the transaction.'
+    }),
     interactions: zInteractions,
     settlements: zSettlements,
     payments: zPayments,
@@ -997,15 +1586,25 @@ export const zTransactionDetailsResponse = z.object({
         z.literal(2),
         z.literal(3),
         z.literal(4)
-    ]),
-    totalRefunds: z.number(),
-    status: z.string(),
-    value: z.number(),
+    ]).register(z.globalRegistry, {
+        description: 'Field that represents the possible transaction timeout statuses. Possible statuses and meanings: `0` = NotStarted, `1` = CancellingOrFinishing, `2` = CancellingOrFinishingByTimeout, `3` = CancelledOrFinished and `4` = TriesExceeded.'
+    }),
+    totalRefunds: z.number().register(z.globalRegistry, {
+        description: 'Total refunded transaction amount.'
+    }),
+    status: z.string().register(z.globalRegistry, {
+        description: 'Transaction status.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Transaction value.'
+    }),
     receiverUri: z.union([
         z.string(),
         z.null()
     ]),
-    startDate: z.string(),
+    startDate: z.string().register(z.globalRegistry, {
+        description: 'Transaction start date.'
+    }),
     authorizationToken: z.union([
         z.string(),
         z.null()
@@ -1038,8 +1637,12 @@ export const zTransactionDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    fields: z.array(zFields1),
-    shopperInteraction: z.string(),
+    fields: z.array(zFields1).register(z.globalRegistry, {
+        description: 'Field containing information and values of payment parameters.'
+    }),
+    shopperInteraction: z.string().register(z.globalRegistry, {
+        description: 'Transaction origin.'
+    }),
     ipAddress: z.union([
         z.string(),
         z.null()
@@ -1048,7 +1651,9 @@ export const zTransactionDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    macId: z.string(),
+    macId: z.string().register(z.globalRegistry, {
+        description: 'Random [UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier) V4 generated when the Request Capture receives a session that does not contain the macID already set. This value is set to the cookie `VtexRCMacIdv7`. The cookie has 1 year of expiration.'
+    }),
     vtexFingerprint: z.union([
         z.string(),
         z.null()
@@ -1061,13 +1666,19 @@ export const zTransactionDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    owner: z.string(),
+    owner: z.string().register(z.globalRegistry, {
+        description: 'Responsible for transaction request.'
+    }),
     orderId: z.union([
         z.string(),
         z.null()
     ]),
-    userAgent: z.string(),
-    acceptHeader: z.string(),
+    userAgent: z.string().register(z.globalRegistry, {
+        description: 'HTTP client used in the transaction.'
+    }),
+    acceptHeader: z.string().register(z.globalRegistry, {
+        description: 'Type of content accepted in the transaction request header.'
+    }),
     antifraudTid: z.union([
         z.string(),
         z.null()
@@ -1084,8 +1695,12 @@ export const zTransactionDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    channel: z.string(),
-    salesChannel: z.string(),
+    channel: z.string().register(z.globalRegistry, {
+        description: 'Store where the transaction was initiated.'
+    }),
+    salesChannel: z.string().register(z.globalRegistry, {
+        description: 'Sales channel information.'
+    }),
     urn: z.union([
         z.string(),
         z.null()
@@ -1094,60 +1709,116 @@ export const zTransactionDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    markedForRecurrence: z.boolean(),
+    markedForRecurrence: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment transaction should be recurring.'
+    }),
     buyer: z.union([
         z.object({
-            firstName: z.optional(z.string()),
-            lastName: z.optional(z.string()),
-            documentType: z.optional(z.string()),
-            document: z.optional(z.string()),
-            email: z.optional(z.string()),
-            address: z.optional(z.string()),
-            phone: z.optional(z.string())
+            firstName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer first name.'
+            })),
+            lastName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer last name.'
+            })),
+            documentType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Type of the document informed by the buyer.'
+            })),
+            document: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Document informed by the buyer.'
+            })),
+            email: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer email address.'
+            })),
+            address: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer address.'
+            })),
+            phone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Buyer phone number.'
+            }))
         }),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Transaction details response body information.'
 });
 
 /**
  * Array containing transaction interactions information.
  */
 export const zTransactionInteractionsResponse = z.array(z.object({
-    Id: z.optional(z.string()),
+    Id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Interaction identification.'
+    })),
     PaymentId: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    TransactionId: z.optional(z.string()),
-    Source: z.optional(z.string()),
-    Status: z.optional(z.string()),
-    Date: z.optional(z.string()),
-    Message: z.optional(z.string()),
-    Ticks: z.optional(z.number())
-}));
+    TransactionId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Transaction identification.'
+    })),
+    Source: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Origin of interaction in the VTEX system.'
+    })),
+    Status: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Transaction status.'
+    })),
+    Date: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Date of interaction in the transaction.'
+    })),
+    Message: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Information about the action performed in the interaction.'
+    })),
+    Ticks: z.optional(z.number().register(z.globalRegistry, {
+        description: '[Time span value](https://learn.microsoft.com/en-us/dotnet/api/system.timespan.ticks?view=net-8.0#remarks) information. A Tick is the smallest unit of time, equal to 100 nanoseconds or one ten-millionth of a second.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Transaction interactions response body information.'
+})).register(z.globalRegistry, {
+    description: 'Array containing transaction interactions information.'
+});
 
 /**
  * Payment details information.
  */
 export const zPaymentDetailsResponse = z.object({
-    id: z.string(),
-    paymentSystem: z.number(),
-    paymentSystemName: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Payment identification.'
+    }),
+    paymentSystem: z.number().register(z.globalRegistry, {
+        description: 'Payment system identification.'
+    }),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system name.'
+    }),
     merchantName: z.union([
         z.string(),
         z.null()
     ]),
-    group: z.string(),
+    group: z.string().register(z.globalRegistry, {
+        description: 'Payment group name.'
+    }),
     userProfileId: z.union([
         z.string(),
         z.null()
     ]),
-    isCustom: z.boolean(),
-    allowInstallments: z.boolean(),
-    requiresAuthentication: z.boolean(),
-    allowIssuer: z.boolean(),
-    allowNotification: z.boolean(),
-    isAvailable: z.boolean(),
+    isCustom: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is custom.'
+    }),
+    allowInstallments: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method allows installments.'
+    }),
+    requiresAuthentication: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is necessary to log in to make the payment.'
+    }),
+    allowIssuer: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether it is possible to identify the name of the bank responsible for issuing the card.'
+    }),
+    allowNotification: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates the possibility of payment notification (used by bank invoices and notes payable).'
+    }),
+    isAvailable: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether the payment method is available for use.'
+    }),
     description: z.union([
         z.string(),
         z.null()
@@ -1173,55 +1844,75 @@ export const zPaymentDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    status: z.string(),
+    status: z.string().register(z.globalRegistry, {
+        description: 'Payment status.'
+    }),
     connector: z.union([
         z.string(),
         z.null()
     ]),
-    ConnectorResponses: z.union([
-        z.array(z.object({
-            Tid: z.optional(z.string()),
-            ReturnCode: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            Message: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            authId: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            nsu: z.optional(z.string())
+    ConnectorResponses: z.object({
+        Tid: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Provider\'s unique identifier for the transaction.'
         })),
-        z.null()
-    ]),
-    connectorResponse: z.union([
-        z.array(z.object({
-            Tid: z.optional(z.string()),
-            ReturnCode: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            Message: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            authId: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            nsu: z.optional(z.string())
+        ReturnCode: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        Message: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        authId: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        nsu: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Provider\'s unique sequential number for the transaction.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Connector responses information.'
+    }),
+    connectorResponse: z.object({
+        Tid: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Provider\'s unique identifier for the transaction.'
         })),
-        z.null()
-    ]),
-    ShowConnectorResponses: z.boolean(),
-    value: z.number(),
-    installmentsInterestRate: z.number(),
-    installmentsValue: z.number(),
-    referenceValue: z.number(),
-    installments: z.number(),
+        ReturnCode: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        Message: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        authId: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        nsu: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Provider\'s unique sequential number for the transaction.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Connector response information.'
+    }),
+    ShowConnectorResponses: z.boolean().register(z.globalRegistry, {
+        description: 'Indicates whether to display connector responses.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Payment value.'
+    }),
+    installmentsInterestRate: z.number().register(z.globalRegistry, {
+        description: 'The interest rate.'
+    }),
+    installmentsValue: z.number().register(z.globalRegistry, {
+        description: 'The value of each installment.'
+    }),
+    referenceValue: z.number().register(z.globalRegistry, {
+        description: 'Value amount of the payment without interest applied. This value is the same as the {value` field when `installmentsInterestRate` is 0.0.'
+    }),
+    installments: z.number().register(z.globalRegistry, {
+        description: 'Number of installments.'
+    }),
     currencyCode: z.union([
         z.string(),
         z.null()
@@ -1242,7 +1933,9 @@ export const zPaymentDetailsResponse = z.object({
         z.boolean(),
         z.null()
     ]),
-    fields: z.array(zFields1),
+    fields: z.array(zFields1).register(z.globalRegistry, {
+        description: 'Field containing information and values ​​of payment parameters.'
+    }),
     sheets: z.union([
         z.string(),
         z.null()
@@ -1251,52 +1944,112 @@ export const zPaymentDetailsResponse = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Payment details information.'
 });
 
 /**
  * Requests information.
  */
 export const zRequest = z.object({
-    id: z.string(),
-    date: z.string(),
-    value: z.number()
-});
-
-/**
- * Object containing the transaction settlement reference route.
- */
-export const zPayment1 = z.object({
-    href: z.string()
-});
-
-/**
- * Actions information.
- */
-export const zAction = z.object({
-    paymentId: z.string(),
-    payment: zPayment1,
-    date: z.string(),
-    type: z.string(),
-    value: z.int(),
-    connectorResponse: z.union([
-        z.string(),
-        z.null()
-    ])
+    id: z.string().register(z.globalRegistry, {
+        description: 'Transaction identification. This is the same `transactionId` value sent in the request path.'
+    }),
+    date: z.string().register(z.globalRegistry, {
+        description: 'Transaction settlement date.'
+    }),
+    value: z.number().register(z.globalRegistry, {
+        description: 'Transaction settlement value.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Requests information.'
 });
 
 /**
  * Transaction settlement details response body information.
  */
 export const zTransactionSettlementDetails = z.object({
-    requests: z.array(zRequest),
-    actions: z.array(zAction)
+    requests: z.array(zRequest).register(z.globalRegistry, {
+        description: 'Array containing requests information.'
+    }),
+    actions: z.array(z.object({
+        paymentId: z.string().register(z.globalRegistry, {
+            description: 'Payment identification.'
+        }),
+        payment: z.object({
+            href: z.string().register(z.globalRegistry, {
+                description: 'Transaction reference settlement route.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Object containing the transaction settlement reference route.'
+        }),
+        date: z.string().register(z.globalRegistry, {
+            description: 'Transaction settlement date.'
+        }),
+        type: z.string().register(z.globalRegistry, {
+            description: 'Settlement action date.'
+        }),
+        value: z.int().register(z.globalRegistry, {
+            description: 'Transaction settlement value.'
+        }),
+        connectorResponse: z.union([
+            z.string(),
+            z.null()
+        ])
+    }).register(z.globalRegistry, {
+        description: 'Actions information.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing actions information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Transaction settlement details response body information.'
+});
+
+/**
+ * Object containing the transaction settlement reference route.
+ */
+export const zPayment1 = z.object({
+    href: z.string().register(z.globalRegistry, {
+        description: 'Transaction reference settlement route.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing the transaction settlement reference route.'
+});
+
+/**
+ * Actions information.
+ */
+export const zAction = z.object({
+    paymentId: z.string().register(z.globalRegistry, {
+        description: 'Payment identification.'
+    }),
+    payment: zPayment1,
+    date: z.string().register(z.globalRegistry, {
+        description: 'Transaction settlement date.'
+    }),
+    type: z.string().register(z.globalRegistry, {
+        description: 'Settlement action date.'
+    }),
+    value: z.int().register(z.globalRegistry, {
+        description: 'Transaction settlement value.'
+    }),
+    connectorResponse: z.union([
+        z.string(),
+        z.null()
+    ])
+}).register(z.globalRegistry, {
+    description: 'Actions information.'
 });
 
 /**
  * Settle transaction request body information.
  */
 export const zSettlethetransactionRequest = z.object({
-    value: z.number()
+    value: z.number().register(z.globalRegistry, {
+        description: 'Value to be settled. The value must be described without using separation for decimals, e.g. to capture a value of 320.50, send 32050.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Settle transaction request body information.'
 });
 
 /**
@@ -1307,11 +2060,21 @@ export const zSettleResponse = z.object({
         z.string(),
         z.null()
     ]),
-    token: z.string(),
-    status: z.number(),
-    statusDetail: z.string(),
-    processingDate: z.string(),
-    refundedValue: z.int(),
+    token: z.string().register(z.globalRegistry, {
+        description: 'Token identification.'
+    }),
+    status: z.number().register(z.globalRegistry, {
+        description: 'Status code.'
+    }),
+    statusDetail: z.string().register(z.globalRegistry, {
+        description: 'Status detail information.'
+    }),
+    processingDate: z.string().register(z.globalRegistry, {
+        description: 'Settlement processing date.'
+    }),
+    refundedValue: z.int().register(z.globalRegistry, {
+        description: 'Refunded value.'
+    }),
     refundedToken: z.union([
         z.string(),
         z.null()
@@ -1324,78 +2087,130 @@ export const zSettleResponse = z.object({
         z.string(),
         z.null()
     ]),
-    connectorRefundedValue: z.number(),
-    cancelledValue: z.int()
+    connectorRefundedValue: z.number().register(z.globalRegistry, {
+        description: 'Refunded value by connector (provider).'
+    }),
+    cancelledValue: z.int().register(z.globalRegistry, {
+        description: 'Cancelled value.'
+    })
+}).register(z.globalRegistry, {
+    description: ' Transaction response body information.'
 });
 
 /**
  * Refund transaction request body information.
  */
 export const zRefundthetransactionRequest = z.object({
-    value: z.number(),
-    freight: z.optional(z.number()),
-    tax: z.optional(z.number()),
-    minicart: z.optional(z.record(z.string(), z.unknown()))
+    value: z.number().register(z.globalRegistry, {
+        description: 'Purchase value. The value must be described without using separation for decimals, e.g. to capture a value of 320.50, send 32050.'
+    }),
+    freight: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Freigth value, if applicable.'
+    })),
+    tax: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Tax value, if applicable.'
+    })),
+    minicart: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'This field is filled with the content of the cart of the transaction, which can be obtained using [Get Orders](https://developers.vtex.com/docs/api-reference/orders-api?endpoint=get-/api/oms/pvt/orders/-orderId-) or [Transaction Details](https://developers.vtex.com/docs/api-reference/payments-gateway-api?endpoint=get-/api/pvt/transactions/-transactionId-) endpoints. It should only be included for transactions with split payment.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Refund transaction request body information.'
 });
 
 /**
  * Cancel transaction request body information.
  */
 export const zCancelthetransactionRequest = z.object({
-    value: z.number()
+    value: z.number().register(z.globalRegistry, {
+        description: 'Value of the purchase that will be cancelled.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Cancel transaction request body information.'
 });
 
 /**
  * Payment notification request body information.
  */
 export const zNotifyPaymentRequest = z.object({
-    paymentDate: z.string(),
-    valuePaid: z.number()
+    paymentDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the payment was made, in DD/MM/YYYY format.'
+    }),
+    valuePaid: z.number().register(z.globalRegistry, {
+        description: 'Value that was paid.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment notification request body information.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Affiliation (payment or anti-fraud provider) identification.
  */
-export const zAffiliationId = z.string();
+export const zAffiliationId = z.string().register(z.globalRegistry, {
+    description: 'Affiliation (payment or anti-fraud provider) identification.'
+});
 
 /**
  * Rule identification.
  */
-export const zRuleId = z.string();
+export const zRuleId = z.string().register(z.globalRegistry, {
+    description: 'Rule identification.'
+});
 
 /**
  * Transaction identification.
  */
-export const zTransactionId = z.string();
+export const zTransactionId = z.string().register(z.globalRegistry, {
+    description: 'Transaction identification.'
+});
 
 /**
  * Payment identification.
  */
-export const zPaymentId = z.string();
+export const zPaymentId = z.string().register(z.globalRegistry, {
+    description: 'Payment identification.'
+});
 
 export const zInstallmentsoptionsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        'request.value': z.int(),
-        'request.salesChannel': z.optional(z.int()),
-        'request.paymentDetails[0].id': z.optional(z.int()),
-        'request.paymentDetails[0].value': z.optional(z.int()),
-        'request.paymentDetails[0].bin': z.optional(z.int())
+        'request.value': z.int().register(z.globalRegistry, {
+            description: 'Value to be divided into installments.'
+        }),
+        'request.salesChannel': z.optional(z.int().register(z.globalRegistry, {
+            description: 'Sales channel identification. Attribute created by the seller in their VTEX store configuration.'
+        })),
+        'request.paymentDetails[0].id': z.optional(z.int().register(z.globalRegistry, {
+            description: 'Payment system identification.'
+        })),
+        'request.paymentDetails[0].value': z.optional(z.int().register(z.globalRegistry, {
+            description: 'Total value paid in installments. If applied in the search, it must be equal to the `request.value` field.'
+        })),
+        'request.paymentDetails[0].bin': z.optional(z.int().register(z.globalRegistry, {
+            description: 'First six digits of the card number.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1404,8 +2219,12 @@ export const zAffiliationsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1414,32 +2233,48 @@ export const zInsertAffiliationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zAffiliationByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        affiliationId: z.string()
+        affiliationId: z.string().register(z.globalRegistry, {
+            description: 'Affiliation (payment or anti-fraud provider) identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateAffiliationData = z.object({
     body: z.optional(zUpdateAffiliationRequest),
     path: z.object({
-        affiliationId: z.string()
+        affiliationId: z.string().register(z.globalRegistry, {
+            description: 'Affiliation (payment or anti-fraud provider) identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1448,8 +2283,12 @@ export const zRulesData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1458,44 +2297,66 @@ export const zInsertRuleData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zRuleData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        ruleId: z.string()
+        ruleId: z.string().register(z.globalRegistry, {
+            description: 'Rule identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zRuleByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        ruleId: z.string()
+        ruleId: z.string().register(z.globalRegistry, {
+            description: 'Rule identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPutRuleByIdData = z.object({
     body: z.optional(zRulesRequest),
     path: z.object({
-        ruleId: z.string()
+        ruleId: z.string().register(z.globalRegistry, {
+            description: 'Rule identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1503,23 +2364,35 @@ export const zAvailablePaymentMethodsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        salesChannel: z.optional(z.int())
+        salesChannel: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Sales channel ([trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) identification. This parameter must be filled in if you wish to obtain information on payment methods available in a specific store sales channel.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetCardTokenByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        cardId: z.string()
+        cardId: z.string().register(z.globalRegistry, {
+            description: 'Card identification. This is the `accountId` associated with the client\'s profile, which can be viewed by accessing [Profile System](https://developers.vtex.com/docs/guides/profile-system#profile-system-api-reference). As a client can have more than one card registered in their profile, check the desired `accountId` and send it in this request.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -1528,161 +2401,261 @@ export const zCreateanewtransactionData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zSendPaymentsPublicData = z.object({
-    body: z.optional(z.array(z2SendPaymentsPublicRequest)),
+    body: z.optional(z.array(z2SendPaymentsPublicRequest).register(z.globalRegistry, {
+        description: 'Payment information.'
+    })),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.object({
-        an: z.string(),
-        orderId: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Account name.'
+        }),
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order identification.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateAdditionalDataData = z.object({
     body: z.optional(z.array(z.object({
-        name: z.string(),
-        value: z.string()
-    }))),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Dataset name. This information must be sent in escaped JSON format.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'Dataset values. This information must be sent in escaped JSON format.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Additional data fields.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing additional data.'
+    })),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zSendAdditionalDataData = z.object({
     body: z.optional(z.array(z.object({
-        name: z.string(),
-        value: z.string()
-    }))),
+        name: z.string().register(z.globalRegistry, {
+            description: 'Dataset name. This information must be sent in escaped JSON format.'
+        }),
+        value: z.string().register(z.globalRegistry, {
+            description: 'Dataset values. This information must be sent in escaped JSON format.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Additional data fields.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing additional data.'
+    })),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDoauthorizationData = z.object({
     body: z.optional(z4DoauthorizationRequest),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zTransactionDetailsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPaymentDetailsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        transactionId: z.string(),
-        paymentId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        }),
+        paymentId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Payment identification.'
+        }))
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zTransactionSettlementDetailsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zSettlethetransactionData = z.object({
     body: z.optional(zSettlethetransactionRequest),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zRefundthetransactionData = z.object({
     body: z.optional(zRefundthetransactionRequest),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zCancelthetransactionData = z.object({
     body: z.optional(zCancelthetransactionRequest),
     path: z.object({
-        transactionId: z.string()
+        transactionId: z.string().register(z.globalRegistry, {
+            description: 'Transaction identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetApiPaymentsPvtPaymentsByPaymentIdPaymentNotificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        paymentId: z.string()
+        paymentId: z.string().register(z.globalRegistry, {
+            description: 'Payment identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPostApiPaymentsPvtPaymentsByPaymentIdPaymentNotificationData = z.object({
     body: z.optional(zNotifyPaymentRequest),
     path: z.object({
-        paymentId: z.string()
+        paymentId: z.string().register(z.globalRegistry, {
+            description: 'Payment identification.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

@@ -69,13 +69,13 @@ export type UpdateContractRequest = {
      */
     restrictions?: {
         /**
-         * Contains restrictions regarding catalog.
+         * Contains catalog restrictions for the contract.
          */
         'vtex.catalog'?: {
             /**
-             * A list of collection IDs that define which product collections (sets of SKUs) the B2B customer can view or purchase from.
+             * IDs of product assortments authorized for this contract (maximum of 20). An assortment is a reusable, merchant-level catalog profile, built from inclusion and exclusion collections, that controls which SKUs buyers can browse and purchase. This field defines the allowlist at the contract level. When empty, buyers fall back to the Sales Channel catalog associated with their navigation context. Organization Unit managers select one active assortment from this allowlist for their unit. Assortments supersede the legacy `collectionIds` restriction.
              */
-            collectionIds?: Array<string>;
+            assortmentIds?: Array<string>;
         };
         /**
          * Contains restrictions regarding checkout.
@@ -221,13 +221,13 @@ export type ContractResponse = {
      */
     restrictions?: {
         /**
-         * Contains restrictions regarding catalog.
+         * Contains catalog restrictions for the contract.
          */
         'vtex.catalog'?: {
             /**
-             * A list of collection IDs that define which product collections (sets of SKUs) the B2B customer can view or purchase from.
+             * IDs of product assortments authorized for this contract (maximum of 20). An assortment is a reusable, merchant-level catalog profile, built from inclusion and exclusion collections, that controls which SKUs buyers can browse and purchase. This field defines the allowlist at the contract level. When empty, buyers fall back to the Sales Channel catalog associated with their navigation context. Organization Unit managers select one active assortment from this allowlist for their unit. Assortments supersede the legacy `collectionIds` restriction.
              */
-            collectionIds?: Array<string>;
+            assortmentIds?: Array<string>;
         };
         /**
          * Contains restrictions regarding checkout.

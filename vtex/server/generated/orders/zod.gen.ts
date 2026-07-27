@@ -11,30 +11,62 @@ export const zTotalsUpdated = z.array(z.object({
         'Discounts',
         'Shipping',
         'Tax'
-    ])),
-    name: z.optional(z.string()),
-    value: z.optional(z.int()),
+    ]).register(z.globalRegistry, {
+        description: 'Total ID, which defines what the total is about.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Total name.'
+    })),
+    value: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Total value in cents.'
+    })),
     alternativeTotals: z.optional(z.union([
         z.array(z.object({
-            id: z.optional(z.string()),
-            name: z.optional(z.string()),
-            value: z.optional(z.int())
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Alternative total ID, which can be related to items, discounts, shipping or taxes.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Alternative total name.'
+            })),
+            value: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Alternative total value in cents.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Details about the order alternative totals.'
         })),
         z.null()
     ]))
-}));
+}).register(z.globalRegistry, {
+    description: 'Details about the order totals.'
+})).register(z.globalRegistry, {
+    description: 'Information about the order totals.'
+});
 
 /**
  * Information about the customer profile.
  */
 export const zClientProfileDataUpdated = z.object({
-    id: z.optional(z.string()),
-    email: z.optional(z.string()),
-    firstName: z.optional(z.string()),
-    lastName: z.optional(z.string()),
-    documentType: z.optional(z.string()),
-    document: z.optional(z.string()),
-    phone: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Object ID, the expected value is `clientProfileData`.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Customer email.'
+    })),
+    firstName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Customer first name.'
+    })),
+    lastName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Customer last name.'
+    })),
+    documentType: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Type of the document informed by the customer.'
+    })),
+    document: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Document identification code informed by the customer.'
+    })),
+    phone: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Customer phone number.'
+    })),
     corporateName: z.optional(z.union([
         z.string(),
         z.null()
@@ -55,8 +87,12 @@ export const zClientProfileDataUpdated = z.object({
         z.string(),
         z.null()
     ])),
-    isCorporate: z.optional(z.boolean()),
-    userProfileId: z.optional(z.string()),
+    isCorporate: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the customer is a legal entity (`true`) or not (`false`).'
+    })),
+    userProfileId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Customer user profile ID.'
+    })),
     userProfileVersion: z.optional(z.union([
         z.string(),
         z.null()
@@ -69,6 +105,8 @@ export const zClientProfileDataUpdated = z.object({
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Information about the customer profile.'
 });
 
 /**
@@ -76,11 +114,21 @@ export const zClientProfileDataUpdated = z.object({
  */
 export const zGiftRegistryDataUpdated = z.union([
     z.object({
-        giftRegistryId: z.optional(z.string()),
-        giftRegistryType: z.optional(z.string()),
-        giftRegistryTypeName: z.optional(z.string()),
-        addressId: z.optional(z.string()),
-        description: z.optional(z.string())
+        giftRegistryId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Gift list ID.'
+        })),
+        giftRegistryType: z.optional(z.string().register(z.globalRegistry, {
+            description: '[Gift list type](https://help.vtex.com/en/tutorial/creating-a-type-of-list).'
+        })),
+        giftRegistryTypeName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Gift list type name.'
+        })),
+        addressId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Gift list shipping address ID.'
+        })),
+        description: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Gift list description.'
+        }))
     }),
     z.null()
 ]);
@@ -90,7 +138,9 @@ export const zGiftRegistryDataUpdated = z.union([
  */
 export const zMarketingDataUpdated = z.union([
     z.object({
-        id: z.optional(z.string()),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Object ID. The expected value is `marketingData`.'
+        })),
         utmSource: z.optional(z.union([
             z.string(),
             z.null()
@@ -99,7 +149,9 @@ export const zMarketingDataUpdated = z.union([
             z.string(),
             z.null()
         ])),
-        utmMedium: z.optional(z.string()),
+        utmMedium: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM for tracking the advertising or marketing media used to reach your site, such as banners and newsletters.'
+        })),
         utmCampaign: z.optional(z.union([
             z.string(),
             z.null()
@@ -120,7 +172,11 @@ export const zMarketingDataUpdated = z.union([
             z.string(),
             z.null()
         ])),
-        marketingTags: z.optional(z.array(z.string()))
+        marketingTags: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Marketing tag name.'
+        })).register(z.globalRegistry, {
+            description: 'List of marketing tags valid for the item.'
+        }))
     }),
     z.null()
 ]);
@@ -129,49 +185,93 @@ export const zMarketingDataUpdated = z.union([
  * Information on promotions and taxes that apply to the order.
  */
 export const zRatesAndBenefitsDataUpdated = z.object({
-    id: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Object ID. The expected value is `ratesAndBenefitsData`.'
+    })),
     rateAndBenefitsIdentifiers: z.optional(z.array(z.object({
         description: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        featured: z.optional(z.boolean()),
-        id: z.optional(z.string()),
-        name: z.optional(z.string()),
-        matchedParameters: z.optional(z.record(z.string(), z.string())),
+        featured: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the [target audience](https://help.vtex.com/en/tutorial/creating-a-campaign-audience--6cnuDZJzIkIeocewAQQK4K) is featured (`true`) or not (`false`).'
+        })),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Promotion or tax ID.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Promotion or tax name.'
+        })),
+        matchedParameters: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
+            description: 'Promotion or tax criteria content.'
+        })).register(z.globalRegistry, {
+            description: 'Informs the criteria and conditions fulfilled so the promotion became valid.'
+        })),
         additionalInfo: z.optional(z.union([
-            z.record(z.string(), z.string()),
+            z.record(z.string(), z.string().register(z.globalRegistry, {
+                description: 'Additional information.'
+            })),
             z.null()
         ]))
-    })))
+    }).register(z.globalRegistry, {
+        description: 'Information about a given promotion or tax.'
+    })).register(z.globalRegistry, {
+        description: 'Information about order\'s promotions and taxes identifiers.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Information on promotions and taxes that apply to the order.'
 });
 
 /**
  * Information about a [loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) that was transformed into a [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).
  */
 export const zPickupStoreInfoUpdated = z.object({
-    isPickupStore: z.boolean(),
+    isPickupStore: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the shipping type was pickup (`true`) or not (`false`).'
+    }),
     friendlyName: z.union([
         z.string(),
         z.null()
     ]),
     address: z.union([
         z.object({
-            postalCode: z.optional(z.string()),
-            country: z.optional(z.string()),
-            city: z.optional(z.string()),
-            state: z.optional(z.string()),
-            neighborhood: z.optional(z.string()),
-            street: z.optional(z.string()),
-            number: z.optional(z.string()),
-            complement: z.optional(z.string()),
+            postalCode: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address postal code.'
+            })),
+            country: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Three-digit country code of the pickup point address in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+            })),
+            city: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address city.'
+            })),
+            state: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address state.'
+            })),
+            neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address neighborhood.'
+            })),
+            street: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address street.'
+            })),
+            number: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address number.'
+            })),
+            complement: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Pickup point address complement.'
+            })),
             reference: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
             location: z.optional(z.object({
-                latitude: z.optional(z.number()),
-                longitude: z.optional(z.number())
+                latitude: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Latitude coordinate.'
+                })),
+                longitude: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Longitude coordinate.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Pickup point geolocation coordinates.'
             }))
         }),
         z.null()
@@ -184,17 +284,27 @@ export const zPickupStoreInfoUpdated = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Information about a [loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) that was transformed into a [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
 });
 
 /**
  * Order shipping information.
  */
 export const zShippingDataUpdated = z.object({
-    id: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Object ID. The expected value is `shippingData`.'
+    })),
     address: z.optional(z.object({
-        addressType: z.enum(['residential', 'pickup']),
-        receiverName: z.string(),
-        addressId: z.string(),
+        addressType: z.enum(['residential', 'pickup']).register(z.globalRegistry, {
+            description: 'Shipping address type.'
+        }),
+        receiverName: z.string().register(z.globalRegistry, {
+            description: 'Full name of the order receiver.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'Shipping address ID.'
+        }),
         versionId: z.optional(z.union([
             z.string(),
             z.null()
@@ -203,13 +313,27 @@ export const zShippingDataUpdated = z.object({
             z.string(),
             z.null()
         ])),
-        postalCode: z.string(),
-        city: z.string(),
-        state: z.string(),
-        country: z.string(),
-        street: z.string(),
-        number: z.string(),
-        neighborhood: z.string(),
+        postalCode: z.string().register(z.globalRegistry, {
+            description: 'Shipping address postal code.'
+        }),
+        city: z.string().register(z.globalRegistry, {
+            description: 'Shipping address city.'
+        }),
+        state: z.string().register(z.globalRegistry, {
+            description: 'Shipping address state.'
+        }),
+        country: z.string().register(z.globalRegistry, {
+            description: 'Shipping address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+        }),
+        street: z.string().register(z.globalRegistry, {
+            description: 'Shipping address street.'
+        }),
+        number: z.string().register(z.globalRegistry, {
+            description: 'Shipping address number.'
+        }),
+        neighborhood: z.string().register(z.globalRegistry, {
+            description: 'Shipping address neighborhood.'
+        }),
         complement: z.union([
             z.string(),
             z.null()
@@ -218,27 +342,59 @@ export const zShippingDataUpdated = z.object({
             z.string(),
             z.null()
         ]),
-        geoCoordinates: z.array(z.number())
+        geoCoordinates: z.array(z.number().register(z.globalRegistry, {
+            description: 'Longitude or latitude.'
+        })).register(z.globalRegistry, {
+            description: 'Shipping address pair of geolocation coordinates, first longitude then latitude.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Shipping address details.'
     })),
     logisticsInfo: z.optional(z.array(z.object({
-        itemIndex: z.optional(z.int()),
-        itemId: z.optional(z.string()),
-        selectedSla: z.optional(z.string()),
-        lockTTL: z.optional(z.string()),
-        price: z.optional(z.int()),
-        listPrice: z.optional(z.int()),
-        sellingPrice: z.optional(z.int()),
+        itemIndex: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Each item in the order is identified by an index. The position starts in `0`, followed by `1`, `2`, and so on.'
+        })),
+        itemId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID.'
+        })),
+        selectedSla: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Service Level Agreement (SLA), which corresponds to the shipping method selected by the customer, usually like normal or express.'
+        })),
+        lockTTL: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Logistics [reservation](https://help.vtex.com/en/tutorial/how-does-reservation-work--tutorials_92) waiting time.'
+        })),
+        price: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item shipping price in cents. This value does not correspond to the order total shipping price.'
+        })),
+        listPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item [list price](https://help.vtex.com/en/tracks/prices-101--6f8pwCns3PJHqMvQSugNfP/3XcXp0r5WrJvogB8KIX4Kx#list-price) in cents.'
+        })),
+        sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item selling price in cents.'
+        })),
         deliveryWindow: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        deliveryCompany: z.optional(z.string()),
-        shippingEstimate: z.optional(z.string()),
-        shippingEstimateDate: z.optional(z.string()),
+        deliveryCompany: z.optional(z.string().register(z.globalRegistry, {
+            description: '[Carrier](https://help.vtex.com/en/tutorial/carriers-on-vtex--7u9duMD5UQa2QQwukAWMcE) company name.'
+        })),
+        shippingEstimate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Shipping estimate time in days. For instance, three business days is represented `3bd`.'
+        })),
+        shippingEstimateDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Shipping estimate date, defined after order confirmation, in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+        })),
         slas: z.optional(z.array(z.object({
-            id: z.optional(z.string()),
-            name: z.optional(z.string()),
-            shippingEstimate: z.optional(z.string()),
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'ID of the shipping method used in the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: '[Shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) name.'
+            })),
+            shippingEstimate: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Shipping estimate time in days. For instance, three business days is represented `3bd`.'
+            })),
             shippingEstimateDate: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -248,58 +404,124 @@ export const zShippingDataUpdated = z.object({
                 z.null()
             ])),
             availableDeliveryWindows: z.optional(z.union([
-                z.array(z.string()),
+                z.array(z.string().register(z.globalRegistry, {
+                    description: 'Information about an available delivery window.'
+                })),
                 z.null()
             ])),
             deliveryIds: z.optional(z.array(z.object({
-                courierId: z.optional(z.string()),
-                courierName: z.optional(z.string()),
-                dockId: z.optional(z.string()),
-                quantity: z.optional(z.int()),
-                warehouseId: z.optional(z.string()),
-                accountCarrierName: z.optional(z.string()),
+                courierId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Carrier ID.'
+                })),
+                courierName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Carrier name.'
+                })),
+                dockId: z.optional(z.string().register(z.globalRegistry, {
+                    description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
+                })),
+                quantity: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Quantity of items being delivered.'
+                })),
+                warehouseId: z.optional(z.string().register(z.globalRegistry, {
+                    description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
+                })),
+                accountCarrierName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Account carrier name.'
+                })),
                 kitItemDetails: z.optional(z.union([
-                    z.array(z.string()),
+                    z.array(z.string().register(z.globalRegistry, {
+                        description: 'Kit item information.'
+                    })),
                     z.null()
                 ]))
-            }))),
-            listPrice: z.optional(z.int()),
-            price: z.optional(z.int()),
-            selectedDeliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
+            }).register(z.globalRegistry, {
+                description: 'Information about a delivery ID.'
+            })).register(z.globalRegistry, {
+                description: 'SLA delivery IDs information.'
+            })),
+            listPrice: z.optional(z.int().register(z.globalRegistry, {
+                description: 'SLA shipping list price in cents.'
+            })),
+            price: z.optional(z.int().register(z.globalRegistry, {
+                description: 'SLA shipping price in cents. Does not account for the order total shipping price.'
+            })),
+            selectedDeliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+                description: 'Defines if the delivery channel is delivery or [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
+            })),
             pickupStoreInfo: z.optional(zPickupStoreInfoUpdated),
             polygonName: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            lockTTL: z.optional(z.string()),
+            lockTTL: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Logistics [reservation](https://help.vtex.com/en/tutorial/how-does-reservation-work--tutorials_92) waiting time related to the SLA.'
+            })),
             pickupPointId: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            transitTime: z.optional(z.string()),
+            transitTime: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Number of days the carrier takes in transit to deliver the order. For instance, three business days is represented `3bd`.'
+            })),
             pickupDistance: z.optional(z.union([
                 z.number(),
                 z.null()
             ]))
-        }))),
-        shipsTo: z.optional(z.array(z.string())),
+        }).register(z.globalRegistry, {
+            description: 'Service Level Agreement (SLA) information.'
+        })).register(z.globalRegistry, {
+            description: 'Service Level Agreements (SLA) corresponding to [shipping policies](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+        })),
+        shipsTo: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Shipping address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+        })).register(z.globalRegistry, {
+            description: 'List of shipping address countries.'
+        })),
         deliveryIds: z.optional(z.array(z.object({
-            courierId: z.optional(z.string()),
-            courierName: z.optional(z.string()),
-            dockId: z.optional(z.string()),
-            quantity: z.optional(z.int()),
-            warehouseId: z.optional(z.string()),
-            accountCarrierName: z.optional(z.string()),
+            courierId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Carrier ID.'
+            })),
+            courierName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Carrier name.'
+            })),
+            dockId: z.optional(z.string().register(z.globalRegistry, {
+                description: '[Loading dock](https://help.vtex.com/en/tutorial/loading-dock--5DY8xHEjOLYDVL41Urd5qj) ID.'
+            })),
+            quantity: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Quantity of items being delivered.'
+            })),
+            warehouseId: z.optional(z.string().register(z.globalRegistry, {
+                description: '[Warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.'
+            })),
+            accountCarrierName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Account carrier name.'
+            })),
             kitItemDetails: z.optional(z.union([
-                z.array(z.string()),
+                z.array(z.string().register(z.globalRegistry, {
+                    description: 'Kit item information.'
+                })),
                 z.null()
             ]))
-        }))),
+        }).register(z.globalRegistry, {
+            description: 'Information about a delivery ID.'
+        })).register(z.globalRegistry, {
+            description: 'Order delivery IDs information.'
+        })),
         deliveryChannels: z.optional(z.array(z.object({
-            id: z.optional(z.enum(['delivery', 'pickup-in-point'])),
-            stockBalance: z.optional(z.int())
-        }))),
-        deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
+            id: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+                description: 'Delivery channel shipping type.'
+            })),
+            stockBalance: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Stock check for SKU availability.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Delivery channel information.'
+        })).register(z.globalRegistry, {
+            description: 'Delivery channels associated with the sales channel (or [trade policy](https://help.vtex.com/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)).'
+        })),
+        deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+            description: 'Defines if the delivery channel is delivery or pickup. This field is deprecated and was replaced by the `deliveryChannels` field.'
+        })),
         pickupStoreInfo: z.optional(zPickupStoreInfoUpdated),
         addressId: z.optional(z.union([
             z.string(),
@@ -321,19 +543,37 @@ export const zShippingDataUpdated = z.object({
             z.string(),
             z.null()
         ])),
-        transitTime: z.optional(z.string())
-    }))),
+        transitTime: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Number of days the carrier takes in transit to deliver the order. For instance, three business days is represented `3bd`.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Logistics information about an item.'
+    })).register(z.globalRegistry, {
+        description: 'Logistics information regarding order items.'
+    })),
     trackingHints: z.optional(z.union([
         z.array(z.object({
-            trackingId: z.optional(z.string()),
-            courierName: z.optional(z.string()),
-            trackingUrl: z.optional(z.string()),
-            trackingLabel: z.optional(z.string())
+            trackingId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Order tracking ID.'
+            })),
+            courierName: z.optional(z.string().register(z.globalRegistry, {
+                description: '[Carrier](https://help.vtex.com/en/tutorial/carriers-on-vtex--7u9duMD5UQa2QQwukAWMcE) name.'
+            })),
+            trackingUrl: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Order tracking URL.'
+            })),
+            trackingLabel: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Order tracking label.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Shipping label details.'
         })),
         z.null()
     ])),
     selectedAddresses: z.optional(z.array(z.object({
-        addressId: z.optional(z.string()),
+        addressId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address ID.'
+        })),
         versionId: z.optional(z.union([
             z.string(),
             z.null()
@@ -342,27 +582,55 @@ export const zShippingDataUpdated = z.object({
             z.string(),
             z.null()
         ])),
-        addressType: z.optional(z.enum(['residential', 'pickup'])),
-        receiverName: z.optional(z.string()),
-        street: z.optional(z.string()),
-        number: z.optional(z.string()),
+        addressType: z.optional(z.enum(['residential', 'pickup']).register(z.globalRegistry, {
+            description: 'Selected adress shipping type.'
+        })),
+        receiverName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Full name of the order receiver.'
+        })),
+        street: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address street.'
+        })),
+        number: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address number.'
+        })),
         complement: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        neighborhood: z.optional(z.string()),
-        postalCode: z.optional(z.string()),
-        city: z.optional(z.string()),
-        state: z.optional(z.string()),
-        country: z.optional(z.string()),
+        neighborhood: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address neighborhood.'
+        })),
+        postalCode: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address postal code.'
+        })),
+        city: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address city.'
+        })),
+        state: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address state.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Selected address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+        })),
         reference: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        geoCoordinates: z.optional(z.array(z.number()))
-    }))),
+        geoCoordinates: z.optional(z.array(z.number().register(z.globalRegistry, {
+            description: 'Longitude or latitude.'
+        })).register(z.globalRegistry, {
+            description: 'Selected address pair of geolocation coordinates, first longitude then latitude.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Details about a selected adress.'
+    })).register(z.globalRegistry, {
+        description: 'Selected adresses information.'
+    })),
     availableAddresses: z.optional(z.array(z.object({
-        addressId: z.optional(z.string()),
+        addressId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address ID.'
+        })),
         versionId: z.optional(z.union([
             z.string(),
             z.null()
@@ -371,37 +639,81 @@ export const zShippingDataUpdated = z.object({
             z.string(),
             z.null()
         ])),
-        addressType: z.optional(z.enum(['residential', 'pickup'])),
-        receiverName: z.optional(z.string()),
-        street: z.optional(z.string()),
-        number: z.optional(z.string()),
+        addressType: z.optional(z.enum(['residential', 'pickup']).register(z.globalRegistry, {
+            description: 'Available adress shipping type.'
+        })),
+        receiverName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Full name of the order receiver.'
+        })),
+        street: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address street.'
+        })),
+        number: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address number.'
+        })),
         complement: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        neighborhood: z.optional(z.string()),
-        postalCode: z.optional(z.string()),
-        city: z.optional(z.string()),
-        state: z.optional(z.string()),
-        country: z.optional(z.string()),
+        neighborhood: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address neighborhood.'
+        })),
+        postalCode: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address postal code.'
+        })),
+        city: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address city.'
+        })),
+        state: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address state.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Available address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+        })),
         reference: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        geoCoordinates: z.optional(z.array(z.number()))
-    }))),
+        geoCoordinates: z.optional(z.array(z.number().register(z.globalRegistry, {
+            description: 'Longitude or latitude.'
+        })).register(z.globalRegistry, {
+            description: 'Available address pair of geolocation coordinates, first longitude then latitude.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Details about an available adress.'
+    })).register(z.globalRegistry, {
+        description: 'Available adresses information.'
+    })),
     contactInformation: z.optional(z.union([
         z.array(z.object({
-            id: z.optional(z.string()),
-            email: z.optional(z.string()),
-            firstName: z.optional(z.string()),
-            lastName: z.optional(z.string()),
-            document: z.optional(z.string()),
-            phone: z.optional(z.string()),
-            documentType: z.optional(z.string())
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact ID.'
+            })),
+            email: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact email.'
+            })),
+            firstName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact first name.'
+            })),
+            lastName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact last name.'
+            })),
+            document: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact document number.'
+            })),
+            phone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact phone number.'
+            })),
+            documentType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Contact document type.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Order contact details.'
         })),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Order shipping information.'
 });
 
 /**
@@ -410,8 +722,12 @@ export const zShippingDataUpdated = z.object({
 export const zPaymentDataUpdated = z.object({
     giftCards: z.optional(z.union([
         z.array(z.object({
-            id: z.optional(z.string()),
-            redemptionCode: z.optional(z.string()),
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Gift card identification.'
+            })),
+            redemptionCode: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Gift card code used by the customer at checkout.'
+            })),
             name: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -420,29 +736,59 @@ export const zPaymentDataUpdated = z.object({
                 z.string(),
                 z.null()
             ])),
-            value: z.optional(z.int()),
-            balance: z.optional(z.number()),
-            provider: z.optional(z.string()),
+            value: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Gift card value in cents.'
+            })),
+            balance: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Gift card current balance. For newly created gift cards, the balance will be `0.0`.'
+            })),
+            provider: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Gift card provider name.'
+            })),
             groupName: z.optional(z.union([
                 z.string(),
                 z.null()
             ])),
-            inUse: z.optional(z.boolean()),
-            isSpecialCard: z.optional(z.boolean())
+            inUse: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines if the gift card is in use (`true`) or not (`false`).'
+            })),
+            isSpecialCard: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines if the gift card is a special card (`true`) or not (`false`).'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Gift card details.'
         })),
         z.null()
     ])),
     transactions: z.optional(z.array(z.object({
-        isActive: z.optional(z.boolean()),
-        transactionId: z.optional(z.string()),
-        merchantName: z.optional(z.string()),
+        isActive: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines of the transaction is active (`true`) or inactive (`false`).'
+        })),
+        transactionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Transaction ID.'
+        })),
+        merchantName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Merchant name.'
+        })),
         payments: z.optional(z.array(z.object({
-            id: z.optional(z.string()),
-            paymentSystem: z.optional(z.string()),
-            paymentSystemName: z.optional(z.string()),
-            value: z.optional(z.int()),
-            installments: z.optional(z.int()),
-            referenceValue: z.optional(z.int()),
+            id: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Payment unique identifier.'
+            })),
+            paymentSystem: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Payment system ID.'
+            })),
+            paymentSystemName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Payment system name.'
+            })),
+            value: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Order total payment value in cents.'
+            })),
+            installments: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Number of payment installments.'
+            })),
+            referenceValue: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Total payment reference value in cents.'
+            })),
             cardHolder: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -498,8 +844,12 @@ export const zPaymentDataUpdated = z.object({
                 'promissory',
                 'giftCard',
                 'instantPayment'
-            ])),
-            tid: z.optional(z.string()),
+            ]).register(z.globalRegistry, {
+                description: 'Transaction payment method, which can be credit card, debid card, bank invoice, promissory, gift card or pix (`instantPayment`).'
+            })),
+            tid: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Provider unique identifier for the transaction.'
+            })),
             dueDate: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -509,22 +859,48 @@ export const zPaymentDataUpdated = z.object({
                     z.string(),
                     z.null()
                 ])),
-                tid: z.optional(z.string()),
-                authorizationId: z.optional(z.string()),
-                status: z.optional(z.string()),
-                delayToAutoSettle: z.optional(z.int()),
+                tid: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider unique identifier for the transaction.'
+                })),
+                authorizationId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider authorization ID.'
+                })),
+                status: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Order payment status in the [transaction flow](https://help.vtex.com/en/tracks/payments--6GAS7ZzGAm7AGoEAwDbwJG/1xjzgJZvqwaI1rfxLMCC3Y).'
+                })),
+                delayToAutoSettle: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Total time (in seconds) before the auto settle, when the platform makes an automatic call to `/settlements`, regardless if the payment was approved by the merchant\'s anti-fraud provider. The maximum value allowed is `604800` seconds (7 days).'
+                })),
                 ReturnCode: z.optional(z.union([
                     z.string(),
                     z.null()
                 ])),
-                nsu: z.optional(z.string()),
-                code: z.optional(z.string()),
-                message: z.optional(z.string()),
-                Tid: z.optional(z.string()),
-                acquirer: z.optional(z.string()),
-                authId: z.optional(z.string()),
-                paymentId: z.optional(z.string()),
-                delayToAutoSettleAfterAntifraud: z.optional(z.string())
+                nsu: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider unique sequential number for the transaction.'
+                })),
+                code: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider operational code or error to be logged.'
+                })),
+                message: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider operational message or error to be logged.'
+                })),
+                Tid: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Provider unique identifier for the transaction.'
+                })),
+                acquirer: z.optional(z.string().register(z.globalRegistry, {
+                    description: '[Acquirer](https://help.vtex.com/en/tracks/payments--6GAS7ZzGAm7AGoEAwDbwJG/kdPbEIWf8Xq8tESQvViMB#acquirer) name (mostly used for card payments).'
+                })),
+                authId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Authorization identification.'
+                })),
+                paymentId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Payment ID.'
+                })),
+                delayToAutoSettleAfterAntifraud: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Total time (in seconds) before the auto settle, when the platform makes an automatic call to `/settlements`. This happens only after the payment was approved by the merchant\'s anti-fraud provider.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Payment provider (connector) responses. The fields within this object can vary according to the order payment provider.'
             })),
             giftCardProvider: z.optional(z.union([
                 z.string(),
@@ -564,13 +940,27 @@ export const zPaymentDataUpdated = z.object({
             ])),
             billingAddress: z.optional(z.union([
                 z.object({
-                    postalCode: z.optional(z.string()),
-                    city: z.optional(z.string()),
-                    state: z.optional(z.string()),
-                    country: z.optional(z.string()),
-                    street: z.optional(z.string()),
-                    number: z.optional(z.string()),
-                    neighborhood: z.optional(z.string()),
+                    postalCode: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address postal code.'
+                    })),
+                    city: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address city.'
+                    })),
+                    state: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address state.'
+                    })),
+                    country: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+                    })),
+                    street: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address street.'
+                    })),
+                    number: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address number.'
+                    })),
+                    neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Billing address neighborhood.'
+                    })),
                     complement: z.optional(z.union([
                         z.string(),
                         z.null()
@@ -579,7 +969,11 @@ export const zPaymentDataUpdated = z.object({
                         z.string(),
                         z.null()
                     ])),
-                    geoCoordinates: z.optional(z.array(z.number()))
+                    geoCoordinates: z.optional(z.array(z.number().register(z.globalRegistry, {
+                        description: 'Longitude or latitude.'
+                    })).register(z.globalRegistry, {
+                        description: 'Billing address pair of geolocation coordinates, first longitude then latitude.'
+                    }))
                 }),
                 z.null()
             ])),
@@ -587,8 +981,18 @@ export const zPaymentDataUpdated = z.object({
                 z.string(),
                 z.null()
             ]))
-        })))
-    })))
+        }).register(z.globalRegistry, {
+            description: 'Payment details.'
+        })).register(z.globalRegistry, {
+            description: 'Payments information.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Information about a given transaction.'
+    })).register(z.globalRegistry, {
+        description: 'Information about the order financial transactions.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Payments information.'
 });
 
 /**
@@ -598,43 +1002,97 @@ export const zPackageAttachmentUpdated = z.union([
     z.object({
         packages: z.optional(z.union([
             z.array(z.object({
-                courier: z.optional(z.string()),
+                courier: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name of the [carrier](https://help.vtex.com/en/tutorial/carriers-on-vtex--7u9duMD5UQa2QQwukAWMcE) responsible for the package shipping.'
+                })),
                 description: z.optional(z.union([
                     z.string(),
                     z.null()
                 ])),
-                invoiceNumber: z.optional(z.string()),
-                invoiceValue: z.optional(z.int()),
-                invoiceUrl: z.optional(z.string()),
-                issuanceDate: z.optional(z.string()),
-                trackingNumber: z.optional(z.string()),
-                invoiceKey: z.optional(z.string()),
-                trackingUrl: z.optional(z.string()),
-                embeddedInvoice: z.optional(z.string()),
-                type: z.optional(z.enum(['Output', 'Input'])),
+                invoiceNumber: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Unique identification code of the package invoice.'
+                })),
+                invoiceValue: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Package invoice value in cents.'
+                })),
+                invoiceUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package invoice URL.'
+                })),
+                issuanceDate: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package invoice issuance date in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                })),
+                trackingNumber: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package [tracking number](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/oms/pvt/orders/-orderId-/invoice/-invoiceNumber-).'
+                })),
+                invoiceKey: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package invoice key.'
+                })),
+                trackingUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package tracking URL.'
+                })),
+                embeddedInvoice: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Package invoice text in [xml format](https://help.vtex.com/en/tutorial/configuring-xml--tutorials_242). This field is important for stores integrated with [external marketplaces](https://developers.vtex.com/docs/guides/external-marketplace-integration-guide).'
+                })),
+                type: z.optional(z.enum(['Output', 'Input']).register(z.globalRegistry, {
+                    description: 'Package invoice type, which can be:\r\n- `Output`: Selling order invoice.\r\n- `Input`: Returning items invoice.'
+                })),
                 items: z.optional(z.array(z.object({
-                    itemIndex: z.optional(z.int()),
-                    id: z.optional(z.string()),
-                    quantity: z.optional(z.int()),
-                    price: z.optional(z.int()),
-                    description: z.optional(z.string()),
-                    unitMultiplier: z.optional(z.number())
-                }))),
+                    itemIndex: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Item index of the item position whithin the `items` array. The count starts at `0`.'
+                    })),
+                    id: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'SKU ID.'
+                    })),
+                    quantity: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Package item quantity.'
+                    })),
+                    price: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Package item price in cents.'
+                    })),
+                    description: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Package item description.'
+                    })),
+                    unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Package item unit multiplier.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Package item details.'
+                })).register(z.globalRegistry, {
+                    description: 'Information on each item in the package.'
+                })),
                 courierStatus: z.optional(z.union([
                     z.object({
-                        deliveredDate: z.optional(z.string()),
+                        deliveredDate: z.optional(z.string().register(z.globalRegistry, {
+                            description: 'Package delivery date in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                        })),
                         status: z.optional(z.union([
                             z.string(),
                             z.null()
                         ])),
-                        finished: z.optional(z.boolean()),
+                        finished: z.optional(z.boolean().register(z.globalRegistry, {
+                            description: 'Defines if the carrier has already delivered the package (`true`) or not (`false`).'
+                        })),
                         data: z.optional(z.array(z.object({
-                            lastChange: z.optional(z.string()),
-                            city: z.optional(z.string()),
-                            state: z.optional(z.string()),
-                            description: z.optional(z.string()),
-                            createDate: z.optional(z.string())
-                        })))
+                            lastChange: z.optional(z.string().register(z.globalRegistry, {
+                                description: 'Date since package tracking last change in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                            })),
+                            city: z.optional(z.string().register(z.globalRegistry, {
+                                description: 'Package tracking city.'
+                            })),
+                            state: z.optional(z.string().register(z.globalRegistry, {
+                                description: 'Package tracking state in two-digit code format.'
+                            })),
+                            description: z.optional(z.string().register(z.globalRegistry, {
+                                description: 'Package tracking description.'
+                            })),
+                            createDate: z.optional(z.string().register(z.globalRegistry, {
+                                description: 'Package tracking creation date in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                            }))
+                        }).register(z.globalRegistry, {
+                            description: 'Package tracking details.'
+                        })).register(z.globalRegistry, {
+                            description: 'Package tracking information.'
+                        }))
                     }),
                     z.null()
                 ])),
@@ -642,11 +1100,15 @@ export const zPackageAttachmentUpdated = z.union([
                     z.string(),
                     z.null()
                 ])),
-                lastChange: z.optional(z.string()),
+                lastChange: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Date since package tracking last change in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                })),
                 restitutions: z.optional(z.union([
                     z.object({
                         refund: z.optional(z.object({
-                            value: z.optional(z.int()),
+                            value: z.optional(z.int().register(z.globalRegistry, {
+                                description: 'Refund value in cents.'
+                            })),
                             giftCardData: z.optional(z.union([
                                 z.string(),
                                 z.null()
@@ -657,15 +1119,31 @@ export const zPackageAttachmentUpdated = z.union([
                                         z.boolean(),
                                         z.null()
                                     ])),
-                                    isCompensation: z.optional(z.boolean()),
-                                    compensationValue: z.optional(z.int()),
-                                    id: z.optional(z.string()),
-                                    quantity: z.optional(z.int()),
-                                    price: z.optional(z.int()),
-                                    description: z.optional(z.string())
+                                    isCompensation: z.optional(z.boolean().register(z.globalRegistry, {
+                                        description: 'Defines if there are compensated unit tags in the package (`true`) or not (`false`).'
+                                    })),
+                                    compensationValue: z.optional(z.int().register(z.globalRegistry, {
+                                        description: 'Compensational refund value in cents.'
+                                    })),
+                                    id: z.optional(z.string().register(z.globalRegistry, {
+                                        description: 'SKU ID of the returned item.'
+                                    })),
+                                    quantity: z.optional(z.int().register(z.globalRegistry, {
+                                        description: 'Number of items being returned.'
+                                    })),
+                                    price: z.optional(z.int().register(z.globalRegistry, {
+                                        description: 'Returned item price in cents.'
+                                    })),
+                                    description: z.optional(z.string().register(z.globalRegistry, {
+                                        description: 'Customer reason for returning the item.'
+                                    }))
+                                }).register(z.globalRegistry, {
+                                    description: 'Returned item details.'
                                 })),
                                 z.null()
                             ]))
+                        }).register(z.globalRegistry, {
+                            description: 'Customer refund details.'
                         }))
                     }),
                     z.null()
@@ -674,6 +1152,8 @@ export const zPackageAttachmentUpdated = z.union([
                     z.int(),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Package details.'
             })),
             z.null()
         ]))
@@ -685,14 +1165,24 @@ export const zPackageAttachmentUpdated = z.union([
  * Information about the sellers associated with the order.
  */
 export const zSellersUpdated = z.array(z.object({
-    id: z.optional(z.string()),
-    name: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Seller identifier.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Seller name.'
+    })),
     logo: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    fulfillmentEndpoint: z.optional(z.string())
-}));
+    fulfillmentEndpoint: z.optional(z.string().register(z.globalRegistry, {
+        description: 'URL of the endpoint for fulfillment of seller\'s orders, which the marketplace use to communicate with the seller.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Information about a given seller.'
+})).register(z.globalRegistry, {
+    description: 'Information about the sellers associated with the order.'
+});
 
 /**
  * Order invoices information.
@@ -701,7 +1191,9 @@ export const zInvoiceDataUpdated = z.union([
     z.object({
         address: z.optional(z.union([
             z.object({
-                addressType: z.optional(z.enum(['residential', 'pickup'])),
+                addressType: z.optional(z.enum(['residential', 'pickup']).register(z.globalRegistry, {
+                    description: 'Invoice address type, which can be `residential`, when the customer gives an address for delivery, or `pickup`, when the customer picks the order at a pickup point.'
+                })),
                 receiverName: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -718,13 +1210,27 @@ export const zInvoiceDataUpdated = z.union([
                     z.string(),
                     z.null()
                 ])),
-                postalCode: z.optional(z.string()),
-                city: z.optional(z.string()),
-                state: z.optional(z.string()),
-                country: z.optional(z.string()),
-                street: z.optional(z.string()),
-                number: z.optional(z.string()),
-                neighborhood: z.optional(z.string()),
+                postalCode: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address postal code.'
+                })),
+                city: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address city.'
+                })),
+                state: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address state.'
+                })),
+                country: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address three-digit country code in [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
+                })),
+                street: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address street.'
+                })),
+                number: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address number.'
+                })),
+                neighborhood: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice address neighborhood.'
+                })),
                 complement: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -733,7 +1239,11 @@ export const zInvoiceDataUpdated = z.union([
                     z.string(),
                     z.null()
                 ])),
-                geoCoordinates: z.optional(z.array(z.number())),
+                geoCoordinates: z.optional(z.array(z.number().register(z.globalRegistry, {
+                    description: 'Longitude or latitude.'
+                })).register(z.globalRegistry, {
+                    description: 'Invoice address pair of geolocation coordinates, first longitude then latitude.'
+                })),
                 contactId: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -743,17 +1253,31 @@ export const zInvoiceDataUpdated = z.union([
         ])),
         userPaymentInfo: z.optional(z.union([
             z.object({
-                paymentMethods: z.optional(z.array(z.string()))
+                paymentMethods: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Payment method name.'
+                })).register(z.globalRegistry, {
+                    description: 'List of the payment methods used by the customer in the purchase.'
+                }))
             }),
             z.null()
         ])),
         invoiceSubject: z.optional(z.union([
             z.object({
-                id: z.optional(z.string()),
-                email: z.optional(z.string()),
-                firstName: z.optional(z.string()),
-                lastName: z.optional(z.string()),
-                phone: z.optional(z.string())
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice subject ID.'
+                })),
+                email: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice subject email address.'
+                })),
+                firstName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice subject first name.'
+                })),
+                lastName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice subject last name.'
+                })),
+                phone: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Invoice subject phone number.'
+                }))
             }),
             z.null()
         ]))
@@ -766,9 +1290,13 @@ export const zInvoiceDataUpdated = z.union([
  */
 export const zChangesAttachmentUpdated = z.union([
     z.object({
-        id: z.string(),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Order changes ID.'
+        }),
         changesData: z.array(z.object({
-            reason: z.string(),
+            reason: z.string().register(z.globalRegistry, {
+                description: 'Text explaining why the order was changed. This information may be shown to the customer in the storefront or transactional emails.'
+            }),
             discountValue: z.union([
                 z.int(),
                 z.null()
@@ -779,36 +1307,68 @@ export const zChangesAttachmentUpdated = z.union([
             ]),
             itemsAdded: z.union([
                 z.array(z.object({
-                    id: z.optional(z.string()),
-                    name: z.optional(z.string()),
-                    quantity: z.optional(z.int()),
-                    price: z.optional(z.int()),
+                    id: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Added item SKU ID.'
+                    })),
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Added item SKU name.'
+                    })),
+                    quantity: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Quantity of items added.'
+                    })),
+                    price: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Added item price in cents.'
+                    })),
                     unitMultiplier: z.optional(z.union([
                         z.string(),
                         z.null()
                     ]))
+                }).register(z.globalRegistry, {
+                    description: 'Information about an item added to the order.'
                 })),
                 z.null()
             ]),
             itemsRemoved: z.union([
                 z.array(z.object({
-                    id: z.string(),
-                    name: z.string(),
-                    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-                    price: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+                    id: z.string().register(z.globalRegistry, {
+                        description: 'Removed item SKU ID.'
+                    }),
+                    name: z.string().register(z.globalRegistry, {
+                        description: 'Removed item name.'
+                    }),
+                    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+                        description: 'Quantity of removed items.'
+                    }),
+                    price: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+                        description: 'Removed item price in cents.'
+                    }),
                     unitMultiplier: z.union([
                         z.string(),
                         z.null()
                     ])
+                }).register(z.globalRegistry, {
+                    description: 'Information about an item removed from the order.'
                 })),
                 z.null()
             ]),
             receipt: z.object({
-                date: z.string(),
-                orderId: z.string(),
-                receipt: z.string()
+                date: z.string().register(z.globalRegistry, {
+                    description: 'Receipt creation date in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                }),
+                orderId: z.string().register(z.globalRegistry, {
+                    description: 'Order ID.'
+                }),
+                receipt: z.string().register(z.globalRegistry, {
+                    description: 'Receipt unique identifier code.'
+                })
+            }).register(z.globalRegistry, {
+                description: 'Order changes receipt information.'
             })
-        }))
+        }).register(z.globalRegistry, {
+            description: 'Details about an order change.'
+        })).register(z.globalRegistry, {
+            description: 'Information about changes in the order.'
+        })
     }),
     z.null()
 ]);
@@ -818,9 +1378,15 @@ export const zChangesAttachmentUpdated = z.union([
  */
 export const zCallCenterOperatorDataUpdated = z.union([
     z.object({
-        id: z.optional(z.string()),
-        email: z.optional(z.string()),
-        userName: z.optional(z.string())
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Call center operator identification code.'
+        })),
+        email: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Call center operator email.'
+        })),
+        userName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Call center operator user name.'
+        }))
     }),
     z.null()
 ]);
@@ -829,18 +1395,42 @@ export const zCallCenterOperatorDataUpdated = z.union([
  * Store preferences in the [Account settings](https://help.vtex.com/en/tutorial/account-details-page--2vhUVOKfCaswqLguT2F9xq) page.
  */
 export const zStorePreferencesDataUpdated = z.object({
-    countryCode: z.optional(z.string()),
-    currencyCode: z.optional(z.string()),
-    currencyFormatInfo: z.optional(z.object({
-        CurrencyDecimalDigits: z.optional(z.int()),
-        CurrencyDecimalSeparator: z.optional(z.string()),
-        CurrencyGroupSeparator: z.optional(z.string()),
-        CurrencyGroupSize: z.optional(z.int()),
-        StartsWithCurrencySymbol: z.optional(z.boolean())
+    countryCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Country code in three-digit [ISO 3166 ALPHA-3](https://www.iban.com/country-codes) format.'
     })),
-    currencyLocale: z.optional(z.int()),
-    currencySymbol: z.optional(z.string()),
-    timeZone: z.optional(z.string())
+    currencyCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Currency code in [ISO 4217](https://www.iban.com/currency-codes) format.'
+    })),
+    currencyFormatInfo: z.optional(z.object({
+        CurrencyDecimalDigits: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Number of currency decimal digits.'
+        })),
+        CurrencyDecimalSeparator: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Character for currency decimal separation.'
+        })),
+        CurrencyGroupSeparator: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Character for currency group separation.'
+        })),
+        CurrencyGroupSize: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Limit of characters that can be grouped for currency groups.'
+        })),
+        StartsWithCurrencySymbol: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the prices displayed for customers start with the currency symbol (`true`) or not (`false`).'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Currency format settings.'
+    })),
+    currencyLocale: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Currency locale code in [LCID](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oe376/6c085406-a698-4e12-9d4d-c3b0ee3dbc4a) format.'
+    })),
+    currencySymbol: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Currency symbol characters.'
+    })),
+    timeZone: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Time zone considered for the store orders.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Store preferences in the [Account settings](https://help.vtex.com/en/tutorial/account-details-page--2vhUVOKfCaswqLguT2F9xq) page.'
 });
 
 /**
@@ -848,12 +1438,16 @@ export const zStorePreferencesDataUpdated = z.object({
  */
 export const zMarketplaceUpdated = z.union([
     z.object({
-        baseURL: z.optional(z.string()),
+        baseURL: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Marketplace base URL.'
+        })),
         isCertified: z.optional(z.union([
             z.boolean(),
             z.null()
         ])),
-        name: z.optional(z.string())
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Marketplace name.'
+        }))
     }),
     z.null()
 ]);
@@ -863,23 +1457,45 @@ export const zMarketplaceUpdated = z.union([
  */
 export const zItemMetadataUpdated = z.object({
     Items: z.optional(z.array(z.object({
-        Id: z.optional(z.string()),
-        Seller: z.optional(z.string()),
-        Name: z.optional(z.string()),
-        SkuName: z.optional(z.string()),
-        ProductId: z.optional(z.string()),
-        RefId: z.optional(z.string()),
+        Id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID.'
+        })),
+        Seller: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Seller ID.'
+        })),
+        Name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Item name as displayed to customers in the storefront.'
+        })),
+        SkuName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU name.'
+        })),
+        ProductId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Product ID.'
+        })),
+        RefId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU reference ID.'
+        })),
         Ean: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        ImageUrl: z.optional(z.string()),
-        DetailUrl: z.optional(z.string()),
+        ImageUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU image URL.'
+        })),
+        DetailUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU slug.'
+        })),
         AssemblyOptions: z.optional(z.union([
             z.array(z.object({
-                Id: z.optional(z.string()),
-                Name: z.optional(z.string()),
-                Required: z.optional(z.boolean()),
+                Id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Assembly option ID.'
+                })),
+                Name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Assembly option name.'
+                })),
+                Required: z.optional(z.boolean().register(z.globalRegistry, {
+                    description: 'Defines if sending the attachment for the item purchased is required(`true`) or optional (`false`).'
+                })),
                 InputValues: z.optional(z.union([
                     z.record(z.string(), z.union([
                         z.string(),
@@ -888,13 +1504,23 @@ export const zItemMetadataUpdated = z.object({
                     z.null()
                 ])),
                 Composition: z.optional(z.union([
-                    z.record(z.string(), z.string()),
+                    z.record(z.string(), z.string().register(z.globalRegistry, {
+                        description: 'Assembly option composition value.'
+                    })),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: '[Assembly option](https://help.vtex.com/en/tutorial/assembly-options--5x5FhNr4f5RUGDEGWzV1nH) details.'
             })),
             z.null()
         ]))
-    })))
+    }).register(z.globalRegistry, {
+        description: 'Metadata details about a given item'
+    })).register(z.globalRegistry, {
+        description: 'Metadata details about items.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Metadata information about items.'
 });
 
 /**
@@ -908,31 +1534,51 @@ export const zSubscriptionDataUpdated = z.union([
         ])),
         subscriptions: z.optional(z.union([
             z.array(z.object({
-                executionCount: z.optional(z.int()),
+                executionCount: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Position of the order in the subscription cycle. The first order will have the value `0`, the second will have the value `1`, and so on.'
+                })),
                 priceAtSubscriptionDate: z.optional(z.union([
                     z.number(),
                     z.null()
                 ])),
-                itemIndex: z.optional(z.int()),
+                itemIndex: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Each item in the subscription order is identified by an index. The position starts in `0`, followed by `1`, `2`, and so on.'
+                })),
                 plan: z.optional(z.object({
-                    type: z.optional(z.string()),
+                    type: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Plan type.'
+                    })),
                     frequency: z.optional(z.object({
                         periodicity: z.optional(z.enum([
                             'DAILY',
                             'WEEKLY',
                             'MONTHLY',
                             'YEARLY'
-                        ])),
-                        interval: z.optional(z.int())
+                        ]).register(z.globalRegistry, {
+                            description: 'Defines the subscription recurrence period.'
+                        })),
+                        interval: z.optional(z.int().register(z.globalRegistry, {
+                            description: 'Time interval configured between subscription orders, which depends on the frequency. For a `DAY` frequency, the value will be days, for `MONTH` it will be months, and so on.'
+                        }))
+                    }).register(z.globalRegistry, {
+                        description: 'Information about the subscription recurrence.'
                     })),
                     validity: z.optional(z.object({
-                        begin: z.optional(z.string()),
+                        begin: z.optional(z.string().register(z.globalRegistry, {
+                            description: 'Subscription plan beginning date and time in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+                        })),
                         end: z.optional(z.union([
                             z.string(),
                             z.null()
                         ]))
+                    }).register(z.globalRegistry, {
+                        description: 'Information about the period during which the subscription will be valid.'
                     }))
+                }).register(z.globalRegistry, {
+                    description: 'Information about the [subscription plan](https://help.vtex.com/en/tutorial/subscription-plans-beta--5kczKRqHEsrs1tYtRcY8wR).'
                 }))
+            }).register(z.globalRegistry, {
+                description: 'Subscription details.'
             })),
             z.null()
         ]))
@@ -945,21 +1591,43 @@ export const zSubscriptionDataUpdated = z.union([
  */
 export const zTaxDataUpdated = z.union([
     z.object({
-        areTaxesDesignatedByMarketplace: z.boolean(),
+        areTaxesDesignatedByMarketplace: z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the taxes were applied by the marketplace (`true`) or not (`false`).'
+        }),
         taxInfoCollection: z.array(z.object({
-            itemIndex: z.int(),
-            sku: z.string(),
+            itemIndex: z.int().register(z.globalRegistry, {
+                description: 'Item indexing number.'
+            }),
+            sku: z.string().register(z.globalRegistry, {
+                description: 'SKU ID.'
+            }),
             priceTags: z.union([
                 z.array(z.object({
-                    identifier: z.optional(z.string()),
-                    isPercentual: z.optional(z.boolean()),
-                    name: z.optional(z.string()),
-                    value: z.optional(z.int()),
-                    rawValue: z.optional(z.number())
+                    identifier: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Price tag identifier code.'
+                    })),
+                    isPercentual: z.optional(z.boolean().register(z.globalRegistry, {
+                        description: 'Indicates whether price tag value is applied through a percentage (`true`) or not (`false`).'
+                    })),
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Price tag name.'
+                    })),
+                    value: z.optional(z.int().register(z.globalRegistry, {
+                        description: 'Price tag value in cents.'
+                    })),
+                    rawValue: z.optional(z.number().register(z.globalRegistry, {
+                        description: 'Price tag raw value that can contain up to five decimals, separated by a period.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Information about a given price tag.'
                 })),
                 z.null()
             ])
-        }))
+        }).register(z.globalRegistry, {
+            description: 'Information about a given tax.'
+        })).register(z.globalRegistry, {
+            description: 'Order taxes details.'
+        })
     }),
     z.null()
 ]);
@@ -969,7 +1637,9 @@ export const zTaxDataUpdated = z.union([
  */
 export const zCancellationDataUpdated = z.union([
     z.object({
-        requestedByUser: z.optional(z.boolean()),
+        requestedByUser: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the order cancellation was requested by the customer (`true`) or not (`false`).'
+        })),
         requestedBySystem: z.optional(z.union([
             z.boolean(),
             z.null()
@@ -982,9 +1652,15 @@ export const zCancellationDataUpdated = z.union([
             z.boolean(),
             z.null()
         ])),
-        reason: z.optional(z.string()),
-        cancellationDate: z.optional(z.string()),
-        cancellationRequestId: z.optional(z.string())
+        reason: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Reason why the order was canceled.'
+        })),
+        cancellationDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Order cancellation date in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+        })),
+        cancellationRequestId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the cancellation operation.'
+        }))
     }),
     z.null()
 ]);
@@ -994,11 +1670,21 @@ export const zCancellationDataUpdated = z.union([
  */
 export const zCancellationRequestsUpdated = z.union([
     z.array(z.object({
-        id: z.optional(z.string()),
-        reason: z.optional(z.string()),
-        cancellationRequestDate: z.optional(z.string()),
-        requestedByUser: z.optional(z.boolean()),
-        deniedBySeller: z.optional(z.boolean()),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the original cancellation operation made by the marketplaces or its customer care service using the [Cancel order](https://developers.vtex.com/docs/api-reference/orders-api#post-/api/oms/pvt/orders/-orderId-/cancel) endpoint.'
+        })),
+        reason: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Reason why there was a request to cancel the order.'
+        })),
+        cancellationRequestDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Date of when the order cancellation request was processed by the platform. The date format is [ISO 8601 time zone offset](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+        })),
+        requestedByUser: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the order cancellation was requested by the customer (`true`) or not (`false`).'
+        })),
+        deniedBySeller: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the order cancellation request was [denied by the seller](https://developers.vtex.com/docs/guides/order-canceling-improvements) (`true`) or accepted by the seller (`false`).'
+        })),
         deniedBySellerReason: z.optional(z.union([
             z.string(),
             z.null()
@@ -1007,6 +1693,8 @@ export const zCancellationRequestsUpdated = z.union([
             z.string(),
             z.null()
         ]))
+    }).register(z.globalRegistry, {
+        description: 'Information about the seller denial to a given order cancellation request.'
     })),
     z.null()
 ]);
@@ -1015,17 +1703,31 @@ export const zCancellationRequestsUpdated = z.union([
  * Information about the customer preferences.
  */
 export const zClientPreferencesDataUpdated = z.object({
-    locale: z.optional(z.string()),
-    optinNewsLetter: z.optional(z.boolean())
+    locale: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Language code of the customer preferred language while accessing the store.'
+    })),
+    optinNewsLetter: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if the customer receives the store\'s newsletter (`true`) or not (`false`).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Information about the customer preferences.'
 });
 
 /**
  * Object about order's totals.
  */
 export const zTotal = z.object({
-    id: z.string(),
-    name: z.string(),
-    value: z.int()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Code that identifies if the information is about `Items`, `Discounts`, `Shipping`, `Tax` or `Change`.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Name of `Items`, `Discounts`, `Shipping`, `Tax` or `Change`.'
+    }),
+    value: z.int().register(z.globalRegistry, {
+        description: 'Total amount of `Items`, `Discounts`, `Shipping`, `Tax` or `Change`.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object about order\'s totals.'
 });
 
 /**
@@ -1034,31 +1736,53 @@ export const zTotal = z.object({
  * Information about attachments, if it applies.
  */
 export const zItemAttachment = z.object({
-    content: z.record(z.string(), z.unknown()),
+    content: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Attachment\'s custom field for content.'
+    }),
     name: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Information about attachments, if it applies.'
 });
 
 /**
  * Item dimensions.
  */
 export const zDimension = z.object({
-    cubicweight: z.number(),
-    height: z.number(),
-    length: z.number(),
-    weight: z.number(),
-    width: z.number()
+    cubicweight: z.number().register(z.globalRegistry, {
+        description: 'Item cubic weight.'
+    }),
+    height: z.number().register(z.globalRegistry, {
+        description: 'Item height.'
+    }),
+    length: z.number().register(z.globalRegistry, {
+        description: 'Item length.'
+    }),
+    weight: z.number().register(z.globalRegistry, {
+        description: 'Item weight.'
+    }),
+    width: z.number().register(z.globalRegistry, {
+        description: 'Item width.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Item dimensions.'
 });
 
 /**
  * Information on order items.
  */
 export const zItemsUpdated = z.array(z.object({
-    uniqueId: z.optional(z.string()),
-    id: z.optional(z.string()),
-    productId: z.optional(z.string()),
+    uniqueId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Order item unique ID.'
+    })),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Item ID.'
+    })),
+    productId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Product ID.'
+    })),
     ean: z.optional(z.union([
         z.string(),
         z.null()
@@ -1080,15 +1804,29 @@ export const zItemsUpdated = z.array(z.object({
                 ])),
                 z.null()
             ]))
+        }).register(z.globalRegistry, {
+            description: 'Information about a given attachment.'
         })),
         z.null()
     ])),
-    quantity: z.optional(z.int()),
-    seller: z.optional(z.string()),
-    name: z.optional(z.string()),
-    refId: z.optional(z.string()),
-    price: z.optional(z.int()),
-    listPrice: z.optional(z.int()),
+    quantity: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Item quantity.'
+    })),
+    seller: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Seller name. When the store acts both as marketplace and seller, this field corresponds to `1`, because every VTEX store is its own seller 1.'
+    })),
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'SKU name.'
+    })),
+    refId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Ref ID.'
+    })),
+    price: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Item price in cents.'
+    })),
+    listPrice: z.optional(z.int().register(z.globalRegistry, {
+        description: 'List price in cents.'
+    })),
     manualPrice: z.optional(z.union([
         z.int(),
         z.null()
@@ -1098,14 +1836,22 @@ export const zItemsUpdated = z.array(z.object({
         z.null()
     ])),
     priceTags: z.optional(z.array(z.object({
-        name: z.optional(z.string()),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Price tag name.'
+        })),
         value: z.optional(z.union([
             z.number(),
             z.null()
         ])),
-        isPercentual: z.optional(z.boolean()),
-        identifier: z.optional(z.string()),
-        rawValue: z.optional(z.number()),
+        isPercentual: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the price tag value is applied through a percentage (`true`) or not (`false`).'
+        })),
+        identifier: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Price tag identifier.'
+        })),
+        rawValue: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Price tag raw value.'
+        })),
         rate: z.optional(z.union([
             z.int(),
             z.null()
@@ -1122,9 +1868,17 @@ export const zItemsUpdated = z.array(z.object({
             z.string(),
             z.null()
         ]))
-    }))),
-    imageUrl: z.optional(z.string()),
-    detailUrl: z.optional(z.string()),
+    }).register(z.globalRegistry, {
+        description: 'Information about a given price tag.'
+    })).register(z.globalRegistry, {
+        description: 'Information about price tags. A price tag is a price modifier, like s discount or a promotion applicable to the item in the order context.'
+    })),
+    imageUrl: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Image URL.'
+    })),
+    detailUrl: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Detail URL.'
+    })),
     components: z.optional(z.union([
         z.array(z.union([
             z.string(),
@@ -1134,14 +1888,28 @@ export const zItemsUpdated = z.array(z.object({
     ])),
     bundleItems: z.optional(z.union([
         z.array(z.object({
-            type: z.optional(z.string()),
-            id: z.optional(z.int()),
-            name: z.optional(z.string()),
-            price: z.optional(z.int())
+            type: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Service type.'
+            })),
+            id: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Service ID.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Service name.'
+            })),
+            price: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Service price in cents.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about a given service.'
         })),
         z.null()
     ])),
-    params: z.optional(z.array(z.string())),
+    params: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Param name.'
+    })).register(z.globalRegistry, {
+        description: 'Array with information about params.'
+    })),
     offerings: z.optional(z.union([
         z.array(z.union([
             z.string(),
@@ -1172,27 +1940,51 @@ export const zItemsUpdated = z.array(z.object({
         ])),
         z.null()
     ])),
-    sellerSku: z.optional(z.string()),
+    sellerSku: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Seller SKU ID.'
+    })),
     priceValidUntil: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    commission: z.optional(z.int()),
-    tax: z.optional(z.int()),
+    commission: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Commission value registered for the seller.'
+    })),
+    tax: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Tax value in cents.'
+    })),
     preSaleDate: z.optional(z.union([
         z.string(),
         z.null()
     ])),
     additionalInfo: z.optional(z.object({
-        brandName: z.optional(z.string()),
-        brandId: z.optional(z.string()),
-        categoriesIds: z.optional(z.string()),
+        brandName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Item brand name.'
+        })),
+        brandId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Item brand ID.'
+        })),
+        categoriesIds: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Categories IDs.'
+        })),
         categories: z.optional(z.array(z.object({
-            id: z.optional(z.int()),
-            name: z.optional(z.string())
-        }))),
-        productClusterId: z.optional(z.string()),
-        commercialConditionId: z.optional(z.string()),
+            id: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Category ID.'
+            })),
+            name: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Category name.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about a given category.'
+        })).register(z.globalRegistry, {
+            description: 'Item [categories](https://help.vtex.com/tracks/catalog-101--5AF0XfnjfWeopIFBgs3LIQ/2gkZDjXRqfsq62TlAkj4uf) information.'
+        })),
+        productClusterId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'All product clusters related to the item.'
+        })),
+        commercialConditionId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Commercial condition ID.'
+        })),
         dimension: z.optional(zDimension),
         offeringInfo: z.optional(z.union([
             z.string(),
@@ -1206,28 +1998,56 @@ export const zItemsUpdated = z.array(z.object({
             z.string(),
             z.null()
         ]))
+    }).register(z.globalRegistry, {
+        description: 'Item additional information.'
     })),
-    measurementUnit: z.optional(z.string()),
-    unitMultiplier: z.optional(z.number()),
-    sellingPrice: z.optional(z.int()),
-    isGift: z.optional(z.boolean()),
+    measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Item measurement unit.'
+    })),
+    unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Item unit multiplier.'
+    })),
+    sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Selling price in cents. This field can present rounding discrepancies, so we recommend retrieving pricing information from the `priceDefinition` field.'
+    })),
+    isGift: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines it the item is a gift (`true`) or not (`false`).'
+    })),
     shippingPrice: z.optional(z.union([
         z.int(),
         z.null()
     ])),
-    rewardValue: z.optional(z.int()),
-    freightCommission: z.optional(z.int()),
+    rewardValue: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Reward value in cents.'
+    })),
+    freightCommission: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Freight commission value in cents.'
+    })),
     priceDefinition: z.optional(z.object({
         sellingPrices: z.optional(z.array(z.object({
-            value: z.optional(z.int()),
-            quantity: z.optional(z.int())
-        }))),
-        calculatedSellingPrice: z.optional(z.int()),
-        total: z.optional(z.int()),
+            value: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Item selling price value in cents.'
+            })),
+            quantity: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Item quantity.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Price value per quantity.'
+        })).register(z.globalRegistry, {
+            description: 'Item selling prices.'
+        })),
+        calculatedSellingPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item calculated selling price in cents.'
+        })),
+        total: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item total price in cents.'
+        })),
         reason: z.optional(z.union([
             z.string(),
             z.null()
         ]))
+    }).register(z.globalRegistry, {
+        description: 'Item price information.'
     })),
     taxCode: z.optional(z.union([
         z.string(),
@@ -1260,7 +2080,11 @@ export const zItemsUpdated = z.array(z.object({
         z.int(),
         z.null()
     ]))
-}));
+}).register(z.globalRegistry, {
+    description: 'Information on each order item.'
+})).register(z.globalRegistry, {
+    description: 'Information on order items.'
+});
 
 /**
  * AdditionalInfo
@@ -1268,11 +2092,21 @@ export const zItemsUpdated = z.array(z.object({
  * Additional information about the item.
  */
 export const zAdditionalInfo = z.object({
-    brandName: z.string(),
-    brandId: z.string(),
-    categoriesIds: z.string(),
-    productClusterId: z.string(),
-    commercialConditionId: z.string(),
+    brandName: z.string().register(z.globalRegistry, {
+        description: 'Item\'s brand name.'
+    }),
+    brandId: z.string().register(z.globalRegistry, {
+        description: 'Item\'s brand ID.'
+    }),
+    categoriesIds: z.string().register(z.globalRegistry, {
+        description: 'Item\'s category ID.'
+    }),
+    productClusterId: z.string().register(z.globalRegistry, {
+        description: 'All product clusters related to the item.'
+    }),
+    commercialConditionId: z.string().register(z.globalRegistry, {
+        description: 'Commercial conditions ID.'
+    }),
     dimension: zDimension,
     offeringInfo: z.union([
         z.string(),
@@ -1286,39 +2120,89 @@ export const zAdditionalInfo = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Additional information about the item.'
 });
 
 /**
  * Item details.
  */
 export const zItem = z.object({
-    uniqueId: z.string(),
-    id: z.string(),
-    productId: z.string(),
+    uniqueId: z.string().register(z.globalRegistry, {
+        description: 'Unique ID is an alphanumeric sequence that identifies an SKU in a given order.'
+    }),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Item\'s SKU ID, which is a unique numerical identifier.'
+    }),
+    productId: z.string().register(z.globalRegistry, {
+        description: 'ID of the Product associated with the item.'
+    }),
     ean: z.union([
         z.string(),
         z.null()
     ]),
-    lockId: z.string(),
+    lockId: z.string().register(z.globalRegistry, {
+        description: 'Reservation ID.'
+    }),
     itemAttachment: zItemAttachment,
-    attachments: z.array(z.string()),
-    quantity: z.int(),
-    seller: z.string(),
-    name: z.string(),
-    refId: z.string(),
-    price: z.int(),
-    listPrice: z.int(),
+    attachments: z.array(z.string().register(z.globalRegistry, {
+        description: 'Attachment details.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information on attachments.'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of items.'
+    }),
+    seller: z.string().register(z.globalRegistry, {
+        description: 'Seller related to the order.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Item\'s name.'
+    }),
+    refId: z.string().register(z.globalRegistry, {
+        description: 'Product referencial code associated with the item.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Item\'s price.'
+    }),
+    listPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s list price.'
+    }),
     manualPrice: z.union([
         z.string(),
         z.null()
     ]),
-    priceTags: z.array(z.string()),
-    imageUrl: z.string(),
-    detailUrl: z.string(),
-    components: z.array(z.string()),
-    bundleItems: z.array(z.string()),
-    params: z.array(z.string()),
-    offerings: z.array(z.string()),
+    priceTags: z.array(z.string().register(z.globalRegistry, {
+        description: 'Price modifier.'
+    })).register(z.globalRegistry, {
+        description: 'List of objects with item\'s price modifiers.'
+    }),
+    imageUrl: z.string().register(z.globalRegistry, {
+        description: 'Item\'s SKU image URL.'
+    }),
+    detailUrl: z.string().register(z.globalRegistry, {
+        description: 'URL slug of the item.'
+    }),
+    components: z.array(z.string().register(z.globalRegistry, {
+        description: 'A given component.'
+    })).register(z.globalRegistry, {
+        description: 'Item\'s components.'
+    }),
+    bundleItems: z.array(z.string().register(z.globalRegistry, {
+        description: 'Item offering details.'
+    })).register(z.globalRegistry, {
+        description: 'This field groups offerings (services) related to the item and displays their ID and quantity. A gift package is an example of an offering.'
+    }),
+    params: z.array(z.string().register(z.globalRegistry, {
+        description: 'Param name.'
+    })).register(z.globalRegistry, {
+        description: 'Information about params.'
+    }),
+    offerings: z.array(z.string().register(z.globalRegistry, {
+        description: 'Name of the service related to the item. For example, guarantee or installation.'
+    })).register(z.globalRegistry, {
+        description: 'Item\'s offerings, which are services related to the item. For example, guarantee or installation.'
+    }),
     attachmentOfferings: z.union([
         z.array(z.object({
             name: z.union([
@@ -1333,38 +2217,72 @@ export const zItem = z.object({
                 z.record(z.string(), z.unknown()),
                 z.null()
             ])
+        }).register(z.globalRegistry, {
+            description: 'Attachment details.'
         })),
         z.null()
     ]),
-    sellerSku: z.string(),
+    sellerSku: z.string().register(z.globalRegistry, {
+        description: 'SKU ID from the seller perspective.'
+    }),
     priceValidUntil: z.union([
         z.string(),
         z.null()
     ]),
-    commission: z.int(),
-    tax: z.int(),
+    commission: z.int().register(z.globalRegistry, {
+        description: 'Commission value registered for the seller.'
+    }),
+    tax: z.int().register(z.globalRegistry, {
+        description: 'Item\'s tax.'
+    }),
     preSaleDate: z.union([
         z.string(),
         z.null()
     ]),
     additionalInfo: zAdditionalInfo,
-    measurementUnit: z.string(),
-    unitMultiplier: z.int(),
-    sellingPrice: z.int(),
-    isGift: z.boolean(),
+    measurementUnit: z.string().register(z.globalRegistry, {
+        description: 'Item\'s measurement unit.'
+    }),
+    unitMultiplier: z.int().register(z.globalRegistry, {
+        description: 'Item\'s unit multiplier.'
+    }),
+    sellingPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s selling price.'
+    }),
+    isGift: z.boolean().register(z.globalRegistry, {
+        description: 'This field is `true` when the item is a gift in order context and `false` when it is not.'
+    }),
     shippingPrice: z.union([
         z.string(),
         z.null()
     ]),
-    rewardValue: z.int(),
-    freightCommission: z.int(),
+    rewardValue: z.int().register(z.globalRegistry, {
+        description: 'Item\'s reward value.'
+    }),
+    freightCommission: z.int().register(z.globalRegistry, {
+        description: 'Value of the freight commission.'
+    }),
     priceDefinitions: z.object({
         sellingPrices: z.array(z.object({
-            value: z.int(),
-            quantity: z.int()
-        })),
-        calculatedSellingPrice: z.int(),
-        total: z.int()
+            value: z.int().register(z.globalRegistry, {
+                description: 'Total value of items in cents.'
+            }),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Quantity of items.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Item value and quantity.'
+        })).register(z.globalRegistry, {
+            description: 'Details on item\'s selling price.'
+        }),
+        calculatedSellingPrice: z.int().register(z.globalRegistry, {
+            description: 'Item\'s calculated unitary selling price in cents.'
+        }),
+        total: z.int().register(z.globalRegistry, {
+            description: 'Total value of all item\'s units in cents.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Item\'s price information.'
     }),
     taxCode: z.union([
         z.string(),
@@ -1387,10 +2305,16 @@ export const zItem = z.object({
         z.null()
     ]),
     assemblies: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Customization information.'
+        })),
         z.null()
     ]),
-    costPrice: z.int()
+    costPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s cost price.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Item details.'
 });
 
 /**
@@ -1399,13 +2323,27 @@ export const zItem = z.object({
  * Object with information on the client's profile.
  */
 export const zClientProfileData = z.object({
-    id: z.string(),
-    email: z.string(),
-    firstName: z.string(),
-    lastName: z.string(),
-    documentType: z.string(),
-    document: z.string(),
-    phone: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Object ID, the expected value is `clientProfileData`.'
+    }),
+    email: z.string().register(z.globalRegistry, {
+        description: 'Customer\'s email.'
+    }),
+    firstName: z.string().register(z.globalRegistry, {
+        description: 'Customer\'s first name.'
+    }),
+    lastName: z.string().register(z.globalRegistry, {
+        description: 'Customer\'s last name.'
+    }),
+    documentType: z.string().register(z.globalRegistry, {
+        description: 'Type of the document informed by the customer.'
+    }),
+    document: z.string().register(z.globalRegistry, {
+        description: 'Document identification code informed by the customer.'
+    }),
+    phone: z.string().register(z.globalRegistry, {
+        description: 'Customers\'s phone number.'
+    }),
     corporateName: z.union([
         z.string(),
         z.null()
@@ -1426,12 +2364,18 @@ export const zClientProfileData = z.object({
         z.string(),
         z.null()
     ]),
-    isCorporate: z.boolean(),
-    userProfileId: z.string(),
+    isCorporate: z.boolean().register(z.globalRegistry, {
+        description: 'The value is `true` when the customer is a legal entity and `false` when not.'
+    }),
+    userProfileId: z.string().register(z.globalRegistry, {
+        description: 'Customer user profile ID.'
+    }),
     customerClass: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Object with information on the client\'s profile.'
 });
 
 /**
@@ -1440,8 +2384,14 @@ export const zClientProfileData = z.object({
  * Information on promotions and taxes that apply to the order.
  */
 export const zRatesAndBenefitsData = z.object({
-    id: z.string(),
-    rateAndBenefitsIdentifiers: z.array(z.string())
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the rate or benefit.'
+    }),
+    rateAndBenefitsIdentifiers: z.array(z.string()).register(z.globalRegistry, {
+        description: 'Information about order\'s promotions and taxes identifiers.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Information on promotions and taxes that apply to the order.'
 });
 
 /**
@@ -1450,9 +2400,15 @@ export const zRatesAndBenefitsData = z.object({
  * Shipping address details.
  */
 export const zAddress = z.object({
-    addressType: z.string(),
-    receiverName: z.string(),
-    addressId: z.string(),
+    addressType: z.string().register(z.globalRegistry, {
+        description: 'Type of address. For example, `Residential` or `Pickup`, among others.'
+    }),
+    receiverName: z.string().register(z.globalRegistry, {
+        description: 'Name of the person who is going to receive the order.'
+    }),
+    addressId: z.string().register(z.globalRegistry, {
+        description: 'Shipping address ID.'
+    }),
     versionId: z.union([
         z.string(),
         z.null()
@@ -1461,19 +2417,39 @@ export const zAddress = z.object({
         z.string(),
         z.null()
     ]),
-    postalCode: z.string(),
-    city: z.string(),
-    state: z.string(),
-    country: z.string(),
-    street: z.string(),
-    number: z.string(),
-    neighborhood: z.string(),
-    complement: z.string(),
+    postalCode: z.string().register(z.globalRegistry, {
+        description: 'Postal code of the shipping address.'
+    }),
+    city: z.string().register(z.globalRegistry, {
+        description: 'City of the shipping address.'
+    }),
+    state: z.string().register(z.globalRegistry, {
+        description: 'State of the shipping address.'
+    }),
+    country: z.string().register(z.globalRegistry, {
+        description: 'Three letters ISO code of the country of the shipping address (ISO 3166 ALPHA-3).'
+    }),
+    street: z.string().register(z.globalRegistry, {
+        description: 'Street of the shipping address.'
+    }),
+    number: z.string().register(z.globalRegistry, {
+        description: 'Number of the building, house or apartment in the shipping address.'
+    }),
+    neighborhood: z.string().register(z.globalRegistry, {
+        description: 'Neighborhood of the shipping address.'
+    }),
+    complement: z.string().register(z.globalRegistry, {
+        description: 'Complement to the shipping address when it applies.'
+    }),
     reference: z.union([
         z.string(),
         z.null()
     ]),
-    geoCoordinates: z.array(z.number())
+    geoCoordinates: z.array(z.number()).register(z.globalRegistry, {
+        description: 'Array with two numbers with geocoordinates, first longitude then latitude.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Shipping address details.'
 });
 
 /**
@@ -1498,31 +2474,53 @@ export const zPickupStoreInfo = z.object({
         z.string(),
         z.null()
     ]),
-    isPickupStore: z.boolean()
+    isPickupStore: z.boolean().register(z.globalRegistry, {
+        description: 'If this field is set `true`, it means the type of shipping is pickup, and if set as `false`, it is not.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Detailed information about a [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
 });
 
 /**
  * Sla
  */
 export const zSla = z.object({
-    id: z.string(),
-    name: z.string(),
-    shippingEstimate: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the shipping method used in the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Name of the shipping policy.'
+    }),
+    shippingEstimate: z.string().register(z.globalRegistry, {
+        description: 'Total shipping estimate time in days. For instance, three business days is represented `3bd`.'
+    }),
     deliveryWindow: z.union([
         z.string(),
         z.null()
     ]),
-    price: z.int(),
-    deliveryChannel: z.string(),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Shipping price for the item in cents. Does not account for the whole order\'s shipping price.'
+    }),
+    deliveryChannel: z.string().register(z.globalRegistry, {
+        description: 'If the delivery channel is `delivery` or `pickup-in-point`.'
+    }),
     pickupStoreInfo: zPickupStoreInfo,
     polygonName: z.union([
         z.string(),
         z.null()
     ]),
-    lockTTL: z.string(),
-    pickupPointId: z.string(),
-    transitTime: z.string(),
-    pickupDistance: z.number()
+    lockTTL: z.string().register(z.globalRegistry, {
+        description: 'Logistics [reservation](https://help.vtex.com/en/tutorial/how-does-reservation-work--tutorials_92) waiting time of the SLA.'
+    }),
+    pickupPointId: z.string().register(z.globalRegistry, {
+        description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R) ID related to the SLA.'
+    }),
+    transitTime: z.string().register(z.globalRegistry, {
+        description: 'Duration in business days of the time the carrier takes in transit to fulfill the order. For example, three business days is represented `3bd`.'
+    }),
+    pickupDistance: z.number().register(z.globalRegistry, {
+        description: 'Distance in kilometers between the pickup point and the customer\'s address. The distance is measured as a straight line.'
+    })
 });
 
 /**
@@ -1531,63 +2529,121 @@ export const zSla = z.object({
  * Information about delivery IDs.
  */
 export const zDeliveryId = z.object({
-    courierId: z.string(),
-    courierName: z.string(),
-    dockId: z.string(),
-    quantity: z.int(),
-    warehouseId: z.string(),
-    accountCarrierName: z.string(),
+    courierId: z.string().register(z.globalRegistry, {
+        description: '[Carrier](https://help.vtex.com/en/tutorial/transportadoras-na-vtex--7u9duMD5UQa2QQwukAWMcE)\'s ID.'
+    }),
+    courierName: z.string().register(z.globalRegistry, {
+        description: 'Carrier\'s name.'
+    }),
+    dockId: z.string().register(z.globalRegistry, {
+        description: 'ID of the [loading dock](https://help.vtex.com/pt/tutorial/doca--5DY8xHEjOLYDVL41Urd5qj).'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of items.'
+    }),
+    warehouseId: z.string().register(z.globalRegistry, {
+        description: 'ID of the [warehouse](https://help.vtex.com/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
+    }),
+    accountCarrierName: z.string().register(z.globalRegistry, {
+        description: 'Name of the account\'s [carrier](https://help.vtex.com/en/tutorial/transportadoras-na-vtex--7u9duMD5UQa2QQwukAWMcE).'
+    }),
     kitItemDetails: z.union([
         z.array(z.string()),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Information about delivery IDs.'
 });
 
 /**
  * LogisticsInfo
  */
 export const zLogisticsInfo = z.object({
-    itemIndex: z.int(),
-    selectedSla: z.string(),
-    lockTTL: z.string(),
-    price: z.int(),
-    listPrice: z.int(),
-    sellingPrice: z.int(),
+    itemIndex: z.int().register(z.globalRegistry, {
+        description: 'Index of the item starting from 0.'
+    }),
+    selectedSla: z.string().register(z.globalRegistry, {
+        description: 'Selected shipping option.'
+    }),
+    lockTTL: z.string().register(z.globalRegistry, {
+        description: 'Logistics [reservation](https://help.vtex.com/en/tutorial/how-does-reservation-work--tutorials_92) waiting time.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Shipping price for the item in cents. Does not account for the whole order\'s shipping price.'
+    }),
+    listPrice: z.int().register(z.globalRegistry, {
+        description: 'SKU\'s optional price for a specific trade policy.'
+    }),
+    sellingPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s selling price.'
+    }),
     deliveryWindow: z.union([
         z.string(),
         z.null()
     ]),
-    deliveryCompany: z.string(),
-    shippingEstimate: z.string(),
-    shippingEstimateDate: z.string(),
-    slas: z.array(zSla),
-    shipsTo: z.array(z.string()),
-    deliveryIds: z.array(zDeliveryId),
+    deliveryCompany: z.string().register(z.globalRegistry, {
+        description: '[Carrier](https://help.vtex.com/en/tutorial/transportadoras-na-vtex--7u9duMD5UQa2QQwukAWMcE) company\'s name.'
+    }),
+    shippingEstimate: z.string().register(z.globalRegistry, {
+        description: 'Total shipping estimate time in days. For instance, three business days is represented `3bd`.'
+    }),
+    shippingEstimateDate: z.string().register(z.globalRegistry, {
+        description: 'Shipping estimate date. It is defined only after the confirmation of the order.'
+    }),
+    slas: z.array(zSla).register(z.globalRegistry, {
+        description: 'Information on Service Level Agreement (SLA), corresponding to [shipping policies](https://help.vtex.com/tutorial/shipping-policy--tutorials_140).'
+    }),
+    shipsTo: z.array(z.string().register(z.globalRegistry, {
+        description: 'Three letters ISO code.'
+    })).register(z.globalRegistry, {
+        description: 'Three letters ISO code of the country of the shipping address (ISO 3166 ALPHA-3).'
+    }),
+    deliveryIds: z.array(zDeliveryId).register(z.globalRegistry, {
+        description: 'Information about delivery IDs.'
+    }),
     deliveryChannels: z.array(z.object({
-        id: z.string(),
-        stockBalance: z.int()
-    })),
-    deliveryChannel: z.string(),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Delivery channel\'s shipping type, which can be `delivery` or `pickup-in-point`.'
+        }),
+        stockBalance: z.int().register(z.globalRegistry, {
+            description: 'Stock check for an SKU availability.'
+        })
+    })).register(z.globalRegistry, {
+        description: 'List of delivery channels associated with the trade policy.'
+    }),
+    deliveryChannel: z.string().register(z.globalRegistry, {
+        description: 'If the delivery channel is `delivery` or `pickup-in-point`.'
+    }),
     pickupStoreInfo: zPickupStoreInfo,
-    addressId: z.string(),
+    addressId: z.string().register(z.globalRegistry, {
+        description: 'Address ID.'
+    }),
     versionId: z.union([
         z.string(),
         z.null()
     ]),
-    entityId: z.string(),
+    entityId: z.string().register(z.globalRegistry, {
+        description: 'Shipping address entity ID.'
+    }),
     polygonName: z.union([
         z.string(),
         z.null()
     ]),
-    pickupPointId: z.string(),
-    transitTime: z.string()
+    pickupPointId: z.string().register(z.globalRegistry, {
+        description: '[Pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R)\'s ID.'
+    }),
+    transitTime: z.string().register(z.globalRegistry, {
+        description: 'Duration in business days of the time the carrier takes in transit to fulfill the order. For example, three business days is represented `3bd`.'
+    })
 });
 
 /**
  * SelectedAddress
  */
 export const zSelectedAddress = z.object({
-    addressId: z.string(),
+    addressId: z.string().register(z.globalRegistry, {
+        description: 'Selected address ID.'
+    }),
     versionId: z.union([
         z.string(),
         z.null()
@@ -1596,21 +2652,43 @@ export const zSelectedAddress = z.object({
         z.string(),
         z.null()
     ]),
-    addressType: z.string(),
-    receiverName: z.string(),
-    street: z.string(),
-    number: z.string(),
-    complement: z.string(),
-    neighborhood: z.string(),
-    postalCode: z.string(),
-    city: z.string(),
-    state: z.string(),
-    country: z.string(),
+    addressType: z.string().register(z.globalRegistry, {
+        description: 'Selected adress\'s shipping type, which can be `pickup`, `residential`, `invoice`, `search`, `inStore`, `commercial` or `giftRegistry`.'
+    }),
+    receiverName: z.string().register(z.globalRegistry, {
+        description: 'Name of the person who is going to receive the order in the selected address.'
+    }),
+    street: z.string().register(z.globalRegistry, {
+        description: 'Street of the selected address.'
+    }),
+    number: z.string().register(z.globalRegistry, {
+        description: 'Number of the building, house or apartment of the selected address.'
+    }),
+    complement: z.string().register(z.globalRegistry, {
+        description: 'Complement to the selected address if it applies.'
+    }),
+    neighborhood: z.string().register(z.globalRegistry, {
+        description: 'Neighborhood of the selected address.'
+    }),
+    postalCode: z.string().register(z.globalRegistry, {
+        description: 'Postal code of the selected address.'
+    }),
+    city: z.string().register(z.globalRegistry, {
+        description: 'City of the selected address.'
+    }),
+    state: z.string().register(z.globalRegistry, {
+        description: 'State of the selected address.'
+    }),
+    country: z.string().register(z.globalRegistry, {
+        description: 'Three letters ISO code of the country of the selected address (ISO 3166 ALPHA-3).'
+    }),
     reference: z.union([
         z.string(),
         z.null()
     ]),
-    geoCoordinates: z.array(z.number())
+    geoCoordinates: z.array(z.number()).register(z.globalRegistry, {
+        description: 'Array with two numbers with the selected address\'s geocoordinates, first longitude then latitude.'
+    })
 });
 
 /**
@@ -1619,14 +2697,22 @@ export const zSelectedAddress = z.object({
  * Object containing shipping data.
  */
 export const zShippingData = z.object({
-    id: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Object ID, the expected value is `shippingData`.'
+    }),
     address: zAddress,
-    logisticsInfo: z.array(zLogisticsInfo),
+    logisticsInfo: z.array(zLogisticsInfo).register(z.globalRegistry, {
+        description: 'Array of objects containing item\'s logistics information.'
+    }),
     trackingHints: z.union([
         z.string(),
         z.null()
     ]),
-    selectedAddresses: z.array(zSelectedAddress)
+    selectedAddresses: z.array(zSelectedAddress).register(z.globalRegistry, {
+        description: 'Information about selected adresses.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing shipping data.'
 });
 
 /**
@@ -1635,12 +2721,24 @@ export const zShippingData = z.object({
  * Payment details.
  */
 export const zPayment = z.object({
-    id: z.string(),
-    paymentSystem: z.string(),
-    paymentSystemName: z.string(),
-    value: z.int(),
-    installments: z.int(),
-    referenceValue: z.int(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'VTEX payment ID that can be used as unique identifier.'
+    }),
+    paymentSystem: z.string().register(z.globalRegistry, {
+        description: 'Payment system\'s ID.'
+    }),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system\'s name.'
+    }),
+    value: z.int().register(z.globalRegistry, {
+        description: 'Payment\'s final amount in cents.'
+    }),
+    installments: z.int().register(z.globalRegistry, {
+        description: 'Number of payment installments.'
+    }),
+    referenceValue: z.int().register(z.globalRegistry, {
+        description: 'Payment\'s reference value in cents.'
+    }),
     cardHolder: z.union([
         z.string(),
         z.null()
@@ -1669,7 +2767,9 @@ export const zPayment = z.object({
         z.string(),
         z.null()
     ]),
-    url: z.string(),
+    url: z.string().register(z.globalRegistry, {
+        description: 'Payment\'s URL.'
+    }),
     giftCardId: z.union([
         z.string(),
         z.null()
@@ -1686,28 +2786,64 @@ export const zPayment = z.object({
         z.string(),
         z.null()
     ]),
-    group: z.string(),
+    group: z.string().register(z.globalRegistry, {
+        description: 'Name of the collection the Gift Card belongs to.'
+    }),
     tid: z.union([
         z.string(),
         z.null()
     ]),
-    dueDate: z.string(),
-    connectorResponses: z.object({
-        Tid: z.string(),
-        ReturnCode: z.string(),
-        Message: z.string(),
-        authId: z.string()
+    dueDate: z.string().register(z.globalRegistry, {
+        description: 'Payment due date, with the format `yyyy-mm-dd`.'
     }),
-    giftCardProvider: z.string(),
-    giftCardAsDiscount: z.boolean(),
-    koinUrl: z.string(),
-    accountId: z.string(),
-    parentAccountId: z.string(),
-    bankIssuedInvoiceIdentificationNumber: z.string(),
-    bankIssuedInvoiceIdentificationNumberFormatted: z.string(),
-    bankIssuedInvoiceBarCodeNumber: z.string(),
-    bankIssuedInvoiceBarCodeType: z.string(),
-    billingAddress: z.record(z.string(), z.unknown())
+    connectorResponses: z.object({
+        Tid: z.string().register(z.globalRegistry, {
+            description: 'Provider\'s unique identifier for the transaction.'
+        }),
+        ReturnCode: z.string().register(z.globalRegistry, {
+            description: 'Provider\'s operation/error code to be logged.'
+        }),
+        Message: z.string().register(z.globalRegistry, {
+            description: 'Provider\'s operation/error message to be logged.'
+        }),
+        authId: z.string().register(z.globalRegistry, {
+            description: 'Connector\'s authorization ID.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Information about the connector responses.'
+    }),
+    giftCardProvider: z.string().register(z.globalRegistry, {
+        description: 'Gift Card provider\'s ID.'
+    }),
+    giftCardAsDiscount: z.boolean().register(z.globalRegistry, {
+        description: 'When this field is set as `true`, the Gift Card is a discount over the price, and when set as `false`, it is not a discount.'
+    }),
+    koinUrl: z.string().register(z.globalRegistry, {
+        description: 'Payment\'s account ID.'
+    }),
+    accountId: z.string().register(z.globalRegistry, {
+        description: 'Payment\'s account ID.'
+    }),
+    parentAccountId: z.string().register(z.globalRegistry, {
+        description: 'This field retrieves the main account if the payment was made in a subaccount.'
+    }),
+    bankIssuedInvoiceIdentificationNumber: z.string().register(z.globalRegistry, {
+        description: 'Numeric sequence that identifies the bank issued invoice.'
+    }),
+    bankIssuedInvoiceIdentificationNumberFormatted: z.string().register(z.globalRegistry, {
+        description: 'Bank issued invoice ID formatted.'
+    }),
+    bankIssuedInvoiceBarCodeNumber: z.string().register(z.globalRegistry, {
+        description: 'Number of the bank issued invoice bar code.'
+    }),
+    bankIssuedInvoiceBarCodeType: z.string().register(z.globalRegistry, {
+        description: 'Type of the bank issued invoice bar code.'
+    }),
+    billingAddress: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Billing address information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment details.'
 });
 
 /**
@@ -1716,10 +2852,20 @@ export const zPayment = z.object({
  * Financial transaction details.
  */
 export const zTransaction = z.object({
-    isActive: z.boolean(),
-    transactionId: z.string(),
-    merchantName: z.string(),
-    payments: z.array(zPayment)
+    isActive: z.boolean().register(z.globalRegistry, {
+        description: 'When this field is set as `true`, the payment is active, and when it is `false`, the payment is inactive.'
+    }),
+    transactionId: z.string().register(z.globalRegistry, {
+        description: 'ID of the transaction.'
+    }),
+    merchantName: z.string().register(z.globalRegistry, {
+        description: 'Name of the merchant that will receive the payment.'
+    }),
+    payments: z.array(zPayment).register(z.globalRegistry, {
+        description: 'Detailed information about payment.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Financial transaction details.'
 });
 
 /**
@@ -1728,8 +2874,14 @@ export const zTransaction = z.object({
  * Object with information about the payment.
  */
 export const zPaymentData = z.object({
-    giftCards: z.optional(z.array(z.string())),
-    transactions: z.array(zTransaction)
+    giftCards: z.optional(z.array(z.string()).register(z.globalRegistry, {
+        description: 'Array with information about Gift Cards.'
+    })),
+    transactions: z.array(zTransaction).register(z.globalRegistry, {
+        description: 'Information about financial transactions.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object with information about the payment.'
 });
 
 /**
@@ -1738,7 +2890,11 @@ export const zPaymentData = z.object({
  * Package object populated after order invoiced.
  */
 export const zPackageAttachment = z.object({
-    packages: z.array(z.string())
+    packages: z.array(z.string()).register(z.globalRegistry, {
+        description: 'Packages details.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Package object populated after order invoiced.'
 });
 
 /**
@@ -1747,20 +2903,38 @@ export const zPackageAttachment = z.object({
  * Information about the seller associated with the order.
  */
 export const zSeller = z.object({
-    id: z.string(),
-    name: z.string(),
-    logo: z.string(),
-    fulfillmentEndpoint: z.string()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Seller ID that identifies the seller.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Seller\'s name.'
+    }),
+    logo: z.string().register(z.globalRegistry, {
+        description: 'URL of the seller\'s logo.'
+    }),
+    fulfillmentEndpoint: z.string().register(z.globalRegistry, {
+        description: 'URL of the endpoint for fulfillment of seller\'s orders.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Information about the seller associated with the order.'
 });
 
 /**
  * ItemsRemoved
  */
 export const zItemsRemoved = z.object({
-    id: z.string(),
-    name: z.string(),
-    quantity: z.int(),
-    price: z.int(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'SKU ID of the item removed from the order.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Name of the item removed from the order.'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of items removed from the order.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Total amount of items removed from the order.'
+    }),
     unitMultiplier: z.union([
         z.string(),
         z.null()
@@ -1773,20 +2947,38 @@ export const zItemsRemoved = z.object({
  * Information about the receipt for modified orders.
  */
 export const zReceipt = z.object({
-    date: z.string(),
-    orderId: z.string(),
-    receipt: z.string()
+    date: z.string().register(z.globalRegistry, {
+        description: 'Date when the receipt was created.'
+    }),
+    orderId: z.string().register(z.globalRegistry, {
+        description: 'ID of the order.'
+    }),
+    receipt: z.string().register(z.globalRegistry, {
+        description: 'Receipt\'s unique identifier code.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Information about the receipt for modified orders.'
 });
 
 /**
  * ChangesDatum
  */
 export const zChangesDatum = z.object({
-    reason: z.string(),
-    discountValue: z.int(),
-    incrementValue: z.int(),
-    itemsAdded: z.array(z.string()),
-    itemsRemoved: z.array(zItemsRemoved),
+    reason: z.string().register(z.globalRegistry, {
+        description: 'Text explaining why there was a change in the order. This information may be shown to the customer in the UI or transactional emails.'
+    }),
+    discountValue: z.int().register(z.globalRegistry, {
+        description: 'Order change discount value.'
+    }),
+    incrementValue: z.int().register(z.globalRegistry, {
+        description: 'Order change increment value.'
+    }),
+    itemsAdded: z.array(z.string()).register(z.globalRegistry, {
+        description: 'List of items added to the order.'
+    }),
+    itemsRemoved: z.array(zItemsRemoved).register(z.globalRegistry, {
+        description: 'List of items removed from the order.'
+    }),
     receipt: zReceipt
 });
 
@@ -1796,8 +2988,14 @@ export const zChangesDatum = z.object({
  * Information about changes in the order.
  */
 export const zChangesAttachment = z.object({
-    id: z.string(),
-    changesData: z.array(zChangesDatum)
+    id: z.string().register(z.globalRegistry, {
+        description: 'Object ID, the expect value is `changeAttachment`.'
+    }),
+    changesData: z.array(zChangesDatum).register(z.globalRegistry, {
+        description: 'Order change details.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Information about changes in the order.'
 });
 
 /**
@@ -1806,11 +3004,23 @@ export const zChangesAttachment = z.object({
  * Object with currency format details.
  */
 export const zCurrencyFormatInfo = z.object({
-    CurrencyDecimalDigits: z.int(),
-    CurrencyDecimalSeparator: z.string(),
-    CurrencyGroupSeparator: z.string(),
-    CurrencyGroupSize: z.int(),
-    StartsWithCurrencySymbol: z.boolean()
+    CurrencyDecimalDigits: z.int().register(z.globalRegistry, {
+        description: 'Quantity of currency decimal digits.'
+    }),
+    CurrencyDecimalSeparator: z.string().register(z.globalRegistry, {
+        description: 'Defines what currency decimal separator will be applied.'
+    }),
+    CurrencyGroupSeparator: z.string().register(z.globalRegistry, {
+        description: 'Defines what currency group separator will be applied.'
+    }),
+    CurrencyGroupSize: z.int().register(z.globalRegistry, {
+        description: 'Defines how many characters will be grouped.'
+    }),
+    StartsWithCurrencySymbol: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if all prices will be initiated with the currency symbol (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object with currency format details.'
 });
 
 /**
@@ -1819,12 +3029,24 @@ export const zCurrencyFormatInfo = z.object({
  * Object with data from the store's configuration - stored in VTEX's License Manager.
  */
 export const zStorePreferencesData = z.object({
-    countryCode: z.string(),
-    currencyCode: z.string(),
+    countryCode: z.string().register(z.globalRegistry, {
+        description: 'Three letters ISO code of the country (ISO 3166 ALPHA-3).'
+    }),
+    currencyCode: z.string().register(z.globalRegistry, {
+        description: 'Currency code in ISO 4217. For example, `BRL`.'
+    }),
     currencyFormatInfo: zCurrencyFormatInfo,
-    currencyLocale: z.int(),
-    currencySymbol: z.string(),
-    timeZone: z.string()
+    currencyLocale: z.int().register(z.globalRegistry, {
+        description: 'Currency Locale Code in LCID in decimal.'
+    }),
+    currencySymbol: z.string().register(z.globalRegistry, {
+        description: 'Currency symbol.'
+    }),
+    timeZone: z.string().register(z.globalRegistry, {
+        description: 'Time zone from where the order was made.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object with data from the store\'s configuration - stored in VTEX\'s License Manager.'
 });
 
 /**
@@ -1833,12 +3055,18 @@ export const zStorePreferencesData = z.object({
  * Details about the marketplace related to the order.
  */
 export const zMarketplace = z.object({
-    baseURL: z.string(),
+    baseURL: z.string().register(z.globalRegistry, {
+        description: 'Marketplace base URL.'
+    }),
     isCertified: z.union([
         z.string(),
         z.null()
     ]),
-    name: z.string()
+    name: z.string().register(z.globalRegistry, {
+        description: 'Name of the marketplace.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Details about the marketplace related to the order.'
 });
 
 /**
@@ -1855,7 +3083,9 @@ export const zList = z.object({
     totalValue: z.int(),
     paymentNames: z.string(),
     status: z.string(),
-    statusDescription: z.string(),
+    statusDescription: z.string().register(z.globalRegistry, {
+        description: '`Deprecated`. Status description which is displayed on the Admin panel. This field is obsolete and may not return any value.'
+    }),
     marketPlaceOrderId: z.union([
         z.string(),
         z.null()
@@ -1907,10 +3137,20 @@ export const zList = z.object({
  * Pagination information.
  */
 export const zPaging = z.object({
-    total: z.int(),
-    pages: z.int(),
-    currentPage: z.int(),
-    perPage: z.int()
+    total: z.int().register(z.globalRegistry, {
+        description: 'Total number of orders.'
+    }),
+    pages: z.int().register(z.globalRegistry, {
+        description: 'Total number of pages.'
+    }),
+    currentPage: z.int().register(z.globalRegistry, {
+        description: 'Number of the current page.'
+    }),
+    perPage: z.int().register(z.globalRegistry, {
+        description: 'Number of orders per page.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Pagination information.'
 });
 
 /**
@@ -2116,8 +3356,12 @@ export const zStats = z.object({
  * ListOrders
  */
 export const zListOrders = z.object({
-    list: z.array(zList),
-    facets: z.array(z.string()),
+    list: z.array(zList).register(z.globalRegistry, {
+        description: 'Array containing list information.'
+    }),
+    facets: z.array(z.string()).register(z.globalRegistry, {
+        description: 'Array containing facets information.'
+    }),
     paging: zPaging,
     stats: zStats
 });
@@ -2126,7 +3370,9 @@ export const zListOrders = z.object({
  * Updatepartialinvoice.SendTrackingNumber.Request
  */
 export const zUpdatepartialinvoiceSendTrackingNumberRequest = z.object({
-    trackingNumber: z.string(),
+    trackingNumber: z.string().register(z.globalRegistry, {
+        description: 'The number code that identifies the order tracking.'
+    }),
     trackingUrl: z.union([
         z.string(),
         z.null()
@@ -2164,12 +3410,16 @@ export const zEvent = z.object({
  * UpdateTrackingStatusRequest
  */
 export const zUpdateTrackingStatusRequest = z.object({
-    isDelivered: z.boolean(),
+    isDelivered: z.boolean().register(z.globalRegistry, {
+        description: 'When set as `true`, it means the order got to its final shipping address, whether by delivery or pickup shipping type. When set as `false`, the order is still in transit to its shipping address.'
+    }),
     deliveredDate: z.union([
         z.string(),
         z.null()
     ]),
-    events: z.array(zEvent)
+    events: z.array(zEvent).register(z.globalRegistry, {
+        description: 'Array containing events information.'
+    })
 });
 
 /**
@@ -2187,16 +3437,30 @@ export const zUpdateTrackingStatus = z.object({
  * Conversation sender.
  */
 export const zFrom = z.object({
-    conversationRelatedTo: z.string(),
-    conversationSubject: z.string(),
-    emailAlias: z.string(),
-    aliasMaskType: z.int(),
-    email: z.string(),
-    name: z.string(),
+    conversationRelatedTo: z.string().register(z.globalRegistry, {
+        description: 'Related order ID.'
+    }),
+    conversationSubject: z.string().register(z.globalRegistry, {
+        description: 'Conversation subject.'
+    }),
+    emailAlias: z.string().register(z.globalRegistry, {
+        description: 'Sender transactional tracker email.'
+    }),
+    aliasMaskType: z.int().register(z.globalRegistry, {
+        description: 'Conversation tracker mask type.'
+    }),
+    email: z.string().register(z.globalRegistry, {
+        description: 'Sender\'s email.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Sender\'s name.'
+    }),
     role: z.union([
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Conversation sender.'
 });
 
 /**
@@ -2205,35 +3469,71 @@ export const zFrom = z.object({
  * Conversation receiver.
  */
 export const zTo = z.object({
-    conversationRelatedTo: z.string(),
-    conversationSubject: z.string(),
-    emailAlias: z.string(),
-    aliasMaskType: z.int(),
-    email: z.string(),
-    name: z.string(),
-    role: z.string()
+    conversationRelatedTo: z.string().register(z.globalRegistry, {
+        description: 'Related order ID.'
+    }),
+    conversationSubject: z.string().register(z.globalRegistry, {
+        description: 'Conversation subject.'
+    }),
+    emailAlias: z.string().register(z.globalRegistry, {
+        description: 'Sender transactional tracker email.'
+    }),
+    aliasMaskType: z.int().register(z.globalRegistry, {
+        description: 'Conversation tracker mask type.'
+    }),
+    email: z.string().register(z.globalRegistry, {
+        description: 'Receiver\'s email.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Receiver\'s name.'
+    }),
+    role: z.string().register(z.globalRegistry, {
+        description: 'If it is a customer or null, for transactional emails.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Conversation receiver.'
 });
 
 /**
  * GetConversation
  */
 export const zGetConversation = z.object({
-    id: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Conversation ID.'
+    }),
     from: zFrom,
-    to: z.array(zTo),
-    subject: z.string(),
-    firstWords: z.string(),
-    body: z.string(),
-    hasAttachment: z.boolean(),
-    attachmentNames: z.array(z.string()),
-    date: z.string()
+    to: z.array(zTo).register(z.globalRegistry, {
+        description: 'Conversation receiver.'
+    }),
+    subject: z.string().register(z.globalRegistry, {
+        description: 'Conversation content subject.'
+    }),
+    firstWords: z.string().register(z.globalRegistry, {
+        description: 'First words of Conversation content.'
+    }),
+    body: z.string().register(z.globalRegistry, {
+        description: 'Conversation content body.'
+    }),
+    hasAttachment: z.boolean().register(z.globalRegistry, {
+        description: 'When set as `true`, it means there are attachments, when set as `false`, there are not.'
+    }),
+    attachmentNames: z.array(z.string().register(z.globalRegistry, {
+        description: 'Name of the attachment.'
+    })).register(z.globalRegistry, {
+        description: 'List with attachments\' names, if there are any.'
+    }),
+    date: z.string().register(z.globalRegistry, {
+        description: 'Conversation date.'
+    })
 });
 
 /**
  * ConnectorResponses
  */
 export const zConnectorResponses = z.object({
-    Tid: z.string(),
+    Tid: z.string().register(z.globalRegistry, {
+        description: 'Connector transaction ID.'
+    }),
     ReturnCode: z.union([
         z.string(),
         z.null()
@@ -2242,19 +3542,33 @@ export const zConnectorResponses = z.object({
         z.string(),
         z.null()
     ]),
-    authId: z.string()
+    authId: z.string().register(z.globalRegistry, {
+        description: 'Connector authorization ID.'
+    })
 });
 
 /**
  * Payment1
  */
 export const zPayment1 = z.object({
-    id: z.string(),
-    paymentSystem: z.string(),
-    paymentSystemName: z.string(),
-    value: z.int(),
-    installments: z.int(),
-    referenceValue: z.int(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Payment ID.'
+    }),
+    paymentSystem: z.string().register(z.globalRegistry, {
+        description: 'Payment system ID.'
+    }),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system name.'
+    }),
+    value: z.int().register(z.globalRegistry, {
+        description: 'Payment value.'
+    }),
+    installments: z.int().register(z.globalRegistry, {
+        description: 'Payment Installments quantity.'
+    }),
+    referenceValue: z.int().register(z.globalRegistry, {
+        description: 'Payment reference Value.'
+    }),
     cardHolder: z.union([
         z.string(),
         z.null()
@@ -2263,8 +3577,12 @@ export const zPayment1 = z.object({
         z.string(),
         z.null()
     ]),
-    firstDigits: z.string(),
-    lastDigits: z.string(),
+    firstDigits: z.string().register(z.globalRegistry, {
+        description: 'Payment card first digits.'
+    }),
+    lastDigits: z.string().register(z.globalRegistry, {
+        description: 'Payment card last digits.'
+    }),
     cvv2: z.union([
         z.string(),
         z.null()
@@ -2297,8 +3615,12 @@ export const zPayment1 = z.object({
         z.string(),
         z.null()
     ]),
-    group: z.string(),
-    tid: z.string(),
+    group: z.string().register(z.globalRegistry, {
+        description: 'It represents the payment method. For each method, it can have the following values: \n\r\n- **Credit card:** `creditCard` \r\n\r\n- **Debid card:** `debitCard`\r\n\r\n- **Bank invoice:** `bankInvoice`\r\n\r\n- **Promissory:** `promissory` \r\n\r\n- **Gift card:** `giftCard` \n\r\n- **Pix:** `instantPayment`.'
+    }),
+    tid: z.string().register(z.globalRegistry, {
+        description: 'Payment transaction ID.'
+    }),
     dueDate: z.union([
         z.string(),
         z.null()
@@ -2307,11 +3629,21 @@ export const zPayment1 = z.object({
 });
 
 export const zGetPaymenttransaction = z.object({
-    status: z.string(),
-    isActive: z.boolean(),
-    transactionId: z.string(),
-    merchantName: z.string(),
-    payments: z.array(zPayment1)
+    status: z.string().register(z.globalRegistry, {
+        description: 'Transaction status.'
+    }),
+    isActive: z.boolean().register(z.globalRegistry, {
+        description: 'If it is an active transaction (`true`) or not (`false`).'
+    }),
+    transactionId: z.string().register(z.globalRegistry, {
+        description: 'Transaction ID.'
+    }),
+    merchantName: z.string().register(z.globalRegistry, {
+        description: 'Transaction merchant\'s name.'
+    }),
+    payments: z.array(zPayment1).register(z.globalRegistry, {
+        description: 'Payments\' details object.'
+    })
 });
 
 /**
@@ -2339,10 +3671,18 @@ export const zGetfeedorderstatus = z.object({
  * Filter
  */
 export const zHookFilter = z.object({
-    type: z.string(),
-    status: z.optional(z.array(z.string())),
-    expression: z.optional(z.string()),
-    disableSingleFire: z.optional(z.boolean())
+    type: z.string().register(z.globalRegistry, {
+        description: 'Determines what orders appear in the hook and how they are filtered. As shown in the examples above, there are two ways:\r\n\r\n - `FromWorkflow`: the hook will receive order updates only when there is a change or update in the [order status](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196). You must send at least one value for the `status` field to determine by which status the orders will be filtered.\r\n\r\n - `FromOrders`: the hook will receive order updates when there is a change in the order. In this case, orders can be filtered by any property, according to JSONata expressions passed in the `expression` field. You must send the request with values for the `expression` and `disableSingleFire` fields.'
+    }),
+    status: z.optional(z.array(z.string()).register(z.globalRegistry, {
+        description: 'List of order statuses that should be included in the hook. This should only be used in case `type` is `FromWorkflow`.'
+    })),
+    expression: z.optional(z.string().register(z.globalRegistry, {
+        description: 'JSONata query expression that defines what conditions must be met for an order to be included in the hook. This should only be used in case `type` is `FromOrders`.'
+    })),
+    disableSingleFire: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Sets a limit to how many times a specific order shows on the hook, after it first meets filtering conditions. Using the `FromOrders` type configuration with JSONata filtering expressions might cause orders to appear more than once on a feed, whenever changes are made to that order. If this field is `false` orders will appear in the hook only once. Send this field if you want to filter `FromOrders`.'
+    }))
 });
 
 /**
@@ -2393,9 +3733,15 @@ export const zHookConfiguration = z.object({
  * Item2
  */
 export const zItem2 = z.object({
-    seller: z.string(),
-    quantity: z.int(),
-    description: z.string(),
+    seller: z.string().register(z.globalRegistry, {
+        description: 'Seller related to the order.'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of SKUs.'
+    }),
+    description: z.string().register(z.globalRegistry, {
+        description: 'Description of items.'
+    }),
     ean: z.union([
         z.string(),
         z.null()
@@ -2404,40 +3750,72 @@ export const zItem2 = z.object({
         z.string(),
         z.null()
     ]),
-    id: z.string(),
-    productId: z.string(),
-    sellingPrice: z.int(),
-    price: z.int()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Item\'s SKU ID, which is a unique numerical identifier.'
+    }),
+    productId: z.string().register(z.globalRegistry, {
+        description: 'ID of the Product associated with the item.'
+    }),
+    sellingPrice: z.int().register(z.globalRegistry, {
+        description: 'Details on item\'s selling price.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Item\'s price.'
+    })
 });
 
 /**
  * List1
  */
 export const zList1 = z.object({
-    orderId: z.string(),
-    creationDate: z.string(),
-    clientName: z.string(),
+    orderId: z.string().register(z.globalRegistry, {
+        description: 'Order ID is a unique code that identifies an order.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Order\'s creation date.'
+    }),
+    clientName: z.string().register(z.globalRegistry, {
+        description: 'Order\'s customer name.'
+    }),
     items: z.union([
         z.array(zItem2),
         z.null()
     ]),
-    totalValue: z.int(),
+    totalValue: z.int().register(z.globalRegistry, {
+        description: 'Total value amount.'
+    }),
     paymentNames: z.union([
         z.string(),
         z.null()
     ]),
-    status: z.string(),
-    statusDescription: z.string(),
+    status: z.string().register(z.globalRegistry, {
+        description: 'Order [status](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196).'
+    }),
+    statusDescription: z.string().register(z.globalRegistry, {
+        description: 'Status description which is displayed on the Admin panel. This field is deprecated and may not return any value.'
+    }),
     marketPlaceOrderId: z.union([
         z.string(),
         z.null()
     ]),
-    sequence: z.string(),
-    salesChannel: z.string(),
-    affiliateId: z.string(),
-    origin: z.string(),
-    workflowInErrorState: z.boolean(),
-    workflowInRetry: z.boolean(),
+    sequence: z.string().register(z.globalRegistry, {
+        description: 'Six-digit string that follows the order ID. For example, in order `1268540501456-01 (501456)`, the sequence is `501456`.'
+    }),
+    salesChannel: z.string().register(z.globalRegistry, {
+        description: 'Sales channel (or [trade policy](https://help.vtex.com/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) ID related to the order.'
+    }),
+    affiliateId: z.string().register(z.globalRegistry, {
+        description: 'Corresponds to the three-digits [affiliate](https://help.vtex.com/en/tutorial/configuring-affiliates--tutorials_187) identification code of the seller responsible for the order.'
+    }),
+    origin: z.string().register(z.globalRegistry, {
+        description: 'Order\'s [origin in the order flow](https://developers.vtex.com/docs/guides/orders-overview#understanding-order-flow-types), which can be `Marketplace`, `Fulfillment` or `Chain`.'
+    }),
+    workflowInErrorState: z.boolean().register(z.globalRegistry, {
+        description: 'If there is a work flow error (`true`) or not (`false`).'
+    }),
+    workflowInRetry: z.boolean().register(z.globalRegistry, {
+        description: 'If the order is in a work flow retry (`true`) or not (`false`).'
+    }),
     lastMessageUnread: z.union([
         z.string(),
         z.null()
@@ -2454,7 +3832,9 @@ export const zList1 = z.object({
         z.string(),
         z.null()
     ]),
-    orderIsComplete: z.boolean(),
+    orderIsComplete: z.boolean().register(z.globalRegistry, {
+        description: 'If it is a completed order (`true`) or not (`false`). For more information, see [Order flow and status](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196).'
+    }),
     listId: z.union([
         z.string(),
         z.null()
@@ -2471,7 +3851,9 @@ export const zList1 = z.object({
         z.string(),
         z.null()
     ]),
-    totalItems: z.int(),
+    totalItems: z.int().register(z.globalRegistry, {
+        description: 'Order\'s total amount of items.'
+    }),
     currencyCode: z.union([
         z.string(),
         z.null()
@@ -2529,66 +3911,136 @@ export const zStats2 = z.object({
  * Order list object.
  */
 export const zUserorderslist = z.object({
-    list: z.array(zList1),
-    facets: z.array(z.string()),
+    list: z.array(zList1).register(z.globalRegistry, {
+        description: 'List with user\'s orders details.'
+    }),
+    facets: z.array(z.string()).register(z.globalRegistry, {
+        description: 'Array containing facets information.'
+    }),
     paging: zPaging,
     stats: zStats2
+}).register(z.globalRegistry, {
+    description: 'Order list object.'
 });
 
 /**
  * Userorderdetails
  */
 export const zUserorderdetails = z.object({
-    orderId: z.string(),
-    sequence: z.string(),
-    marketplaceOrderId: z.string(),
-    marketplaceServicesEndpoint: z.string(),
-    sellerOrderId: z.string(),
-    origin: z.string(),
-    affiliateId: z.string(),
-    salesChannel: z.string(),
-    merchantName: z.string(),
-    status: z.string(),
-    statusDescription: z.string(),
-    value: z.int(),
-    creationDate: z.string(),
-    lastChange: z.string(),
-    orderGroup: z.string(),
-    totals: z.array(zTotal),
-    items: z.array(zItem),
-    marketplaceItems: z.array(z.string()),
+    orderId: z.string().register(z.globalRegistry, {
+        description: 'Order ID is a unique code that identifies an order.'
+    }),
+    sequence: z.string().register(z.globalRegistry, {
+        description: 'Sequence is a six-digit string that follows the order ID. For example, in order `1268540501456-01 (501456)`, the sequence is `501456`.'
+    }),
+    marketplaceOrderId: z.string().register(z.globalRegistry, {
+        description: 'Marketplace order ID.'
+    }),
+    marketplaceServicesEndpoint: z.string().register(z.globalRegistry, {
+        description: 'Marketplace services endpoint.'
+    }),
+    sellerOrderId: z.string().register(z.globalRegistry, {
+        description: 'ID of the seller related to the order. It can be a VTEX seller or an external seller.'
+    }),
+    origin: z.string().register(z.globalRegistry, {
+        description: 'Order\'s [origin in the order flow](https://developers.vtex.com/docs/guides/orders-overview#understanding-order-flow-types), which can be `Marketplace`, `Fulfillment` or `Chain`.'
+    }),
+    affiliateId: z.string().register(z.globalRegistry, {
+        description: 'Corresponds to the three-digit [affiliate](https://help.vtex.com/en/tutorial/configuring-affiliates--tutorials_187) identification code of the seller responsible for the order.'
+    }),
+    salesChannel: z.string().register(z.globalRegistry, {
+        description: 'Sales channel (or [trade policy](https://help.vtex.com/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) ID related to the order.'
+    }),
+    merchantName: z.string().register(z.globalRegistry, {
+        description: 'Name of the merchant.'
+    }),
+    status: z.string().register(z.globalRegistry, {
+        description: 'Order [status](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196).'
+    }),
+    statusDescription: z.string().register(z.globalRegistry, {
+        description: '`Deprecated`. Status description which is displayed on the Admin panel. This field is obsolete and may not return any value.'
+    }),
+    value: z.int().register(z.globalRegistry, {
+        description: 'Order\'s total amount.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Order\'s creation date.'
+    }),
+    lastChange: z.string().register(z.globalRegistry, {
+        description: 'Order\'s last change date.'
+    }),
+    orderGroup: z.string().register(z.globalRegistry, {
+        description: 'Order\'s group ID.'
+    }),
+    totals: z.array(zTotal).register(z.globalRegistry, {
+        description: 'List with details about orders\' totals.'
+    }),
+    items: z.array(zItem).register(z.globalRegistry, {
+        description: 'Information about order\'s items.'
+    }),
+    marketplaceItems: z.array(z.string()).register(z.globalRegistry, {
+        description: 'Marketplace details object.'
+    }),
     clientProfileData: zClientProfileData,
     giftRegistryData: z.union([
         z.string(),
         z.null()
     ]),
     marketingData: z.object({
-        id: z.string(),
-        utmSource: z.string(),
-        utmPartner: z.string(),
-        utmMedium: z.string(),
-        utmCampaign: z.string(),
-        coupon: z.string(),
-        utmiCampaign: z.string(),
-        utmipage: z.string(),
-        utmiPart: z.string(),
-        marketingTags: z.array(z.string())
+        id: z.string().register(z.globalRegistry, {
+            description: 'Object ID which expected value is `marketingData`.'
+        }),
+        utmSource: z.string().register(z.globalRegistry, {
+            description: 'Value of the `utm_source` parameter of the URL that led to the request.'
+        }),
+        utmPartner: z.string().register(z.globalRegistry, {
+            description: 'UTM Source Parameters.'
+        }),
+        utmMedium: z.string().register(z.globalRegistry, {
+            description: 'Value of the `utm_medium` parameter of the URL that led to the request.'
+        }),
+        utmCampaign: z.string().register(z.globalRegistry, {
+            description: 'Value of the `utm_campaign` parameter of the URL that led to the request.'
+        }),
+        coupon: z.string().register(z.globalRegistry, {
+            description: 'Coupon\'s code information.'
+        }),
+        utmiCampaign: z.string().register(z.globalRegistry, {
+            description: 'Internal UTM value `utmi_cp`.'
+        }),
+        utmipage: z.string().register(z.globalRegistry, {
+            description: 'Internal UTM value `utmi_p`.'
+        }),
+        utmiPart: z.string().register(z.globalRegistry, {
+            description: 'Internal UTM value `utmi_pc`.'
+        }),
+        marketingTags: z.array(z.string()).register(z.globalRegistry, {
+            description: 'Marketing tags information. This field can be used to register campaign data or informative tags regarding promotions.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Information about promotions and marketing. For example, coupon tracking information and internal or external UTMs.'
     }),
     ratesAndBenefitsData: zRatesAndBenefitsData,
     shippingData: zShippingData,
     paymentData: zPaymentData,
     packageAttachment: zPackageAttachment,
-    sellers: z.array(zSeller),
+    sellers: z.array(zSeller).register(z.globalRegistry, {
+        description: 'List of all sellers associated with the order.'
+    }),
     callCenterOperatorData: z.union([
         z.string(),
         z.null()
     ]),
-    followUpEmail: z.string(),
+    followUpEmail: z.string().register(z.globalRegistry, {
+        description: 'Email of the store\'s employee responsible for managing the order.'
+    }),
     lastMessage: z.union([
         z.string(),
         z.null()
     ]),
-    hostname: z.string(),
+    hostname: z.string().register(z.globalRegistry, {
+        description: 'Account Hostname registered in License Manager.'
+    }),
     invoiceData: z.union([
         z.record(z.string(), z.unknown()),
         z.null()
@@ -2598,23 +4050,37 @@ export const zUserorderdetails = z.object({
         z.string(),
         z.null()
     ]),
-    roundingError: z.int(),
-    orderFormId: z.string(),
+    roundingError: z.int().register(z.globalRegistry, {
+        description: 'Rounding error total amount, if it applies. For example, in orders with a discount over non-integer multiplier items, the rounding price is performed per item, not after the sum of all items. That can cause a difference in the total discount amount, which is informed in this field.'
+    }),
+    orderFormId: z.string().register(z.globalRegistry, {
+        description: '[Order form](https://developers.vtex.com/docs/guides/orderform-fields) ID.'
+    }),
     commercialConditionData: z.union([
         z.string(),
         z.null()
     ]),
-    isCompleted: z.boolean(),
+    isCompleted: z.boolean().register(z.globalRegistry, {
+        description: 'When set as `true`, the order\'s payment has been settled, and when set as `false`, it has not been settled yet.'
+    }),
     customData: z.union([
         z.string(),
         z.null()
     ]),
     storePreferencesData: zStorePreferencesData,
-    allowCancellation: z.boolean(),
-    allowEdition: z.boolean(),
-    isCheckedIn: z.boolean(),
+    allowCancellation: z.boolean().register(z.globalRegistry, {
+        description: 'When set as `true`, the order can be canceled, and when set as `false`, it is no longer possible to cancel the order.'
+    }),
+    allowEdition: z.boolean().register(z.globalRegistry, {
+        description: 'When set as `true`, the order can be edited, and when set as `false`, it is no longer possible to edit the order.'
+    }),
+    isCheckedIn: z.boolean().register(z.globalRegistry, {
+        description: 'This field is set `true` when the order was made via inStore and `false` when it was not.'
+    }),
     marketplace: zMarketplace,
-    authorizedDate: z.string(),
+    authorizedDate: z.string().register(z.globalRegistry, {
+        description: 'Authorized order date.'
+    }),
     invoicedDate: z.union([
         z.string(),
         z.null()
@@ -2625,19 +4091,43 @@ export const zUserorderdetails = z.object({
     ]),
     itemMetadata: z.object({
         Items: z.array(z.object({
-            Id: z.string(),
-            Seller: z.string(),
-            Name: z.string(),
-            SkuName: z.string(),
-            ProductId: z.string(),
-            RefId: z.string(),
-            Ean: z.string(),
-            ImageUrl: z.string(),
-            DetailUrl: z.string(),
+            Id: z.string().register(z.globalRegistry, {
+                description: 'Item\'s SKU ID, which is a unique numerical identifier.'
+            }),
+            Seller: z.string().register(z.globalRegistry, {
+                description: 'Seller ID that identifies the seller the item belongs to.'
+            }),
+            Name: z.string().register(z.globalRegistry, {
+                description: 'Name of the item as displayed to customers in the storefront.'
+            }),
+            SkuName: z.string().register(z.globalRegistry, {
+                description: 'Name of the SKU corresponding to the item.'
+            }),
+            ProductId: z.string().register(z.globalRegistry, {
+                description: 'ID of the Product associated with the item.'
+            }),
+            RefId: z.string().register(z.globalRegistry, {
+                description: 'Item\'s reference ID.'
+            }),
+            Ean: z.string().register(z.globalRegistry, {
+                description: 'EAN of the item.'
+            }),
+            ImageUrl: z.string().register(z.globalRegistry, {
+                description: 'Item\'s SKU image URL.'
+            }),
+            DetailUrl: z.string().register(z.globalRegistry, {
+                description: 'URL slug of the item.'
+            }),
             AssemblyOptions: z.array(z.object({
-                Id: z.string(),
-                Name: z.string(),
-                Required: z.boolean(),
+                Id: z.string().register(z.globalRegistry, {
+                    description: 'ID of the attachment related to the order.'
+                }),
+                Name: z.string().register(z.globalRegistry, {
+                    description: 'Name of the attachment related to the order.'
+                }),
+                Required: z.boolean().register(z.globalRegistry, {
+                    description: 'If this field is set as `true`, when the customer purchases the item sending the attachment is required, and when set as `false`, sending the attachment is optional.'
+                }),
                 InputValues: z.union([
                     z.record(z.string(), z.unknown()),
                     z.null()
@@ -2646,27 +4136,57 @@ export const zUserorderdetails = z.object({
                     z.record(z.string(), z.unknown()),
                     z.null()
                 ])
-            }))
-        }))
+            })).register(z.globalRegistry, {
+                description: 'Displays information about [assembly options](https://help.vtex.com/en/tutorial/assembly-options--5x5FhNr4f5RUGDEGWzV1nH) related to the item, if there are any.'
+            })
+        })).register(z.globalRegistry, {
+            description: 'Metadata items.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Metadata information about the order\'s items.'
     }),
     subscriptionData: z.union([
         z.object({
-            SubscriptionGroupId: z.string(),
+            SubscriptionGroupId: z.string().register(z.globalRegistry, {
+                description: 'ID of the subscription\'s group. If this field returns `null` and the `executionCount` is `0`, the order is the first one with subscriptions.'
+            }),
             Subscriptions: z.union([
                 z.array(z.object({
-                    ExecutionCount: z.int(),
-                    PriceAtSubscriptionDate: z.number(),
-                    ItemIndex: z.int(),
+                    ExecutionCount: z.int().register(z.globalRegistry, {
+                        description: 'Position of the order in the subscription cycle. The first order will have the value `0`, the second will have the value `1`, and so on.'
+                    }),
+                    PriceAtSubscriptionDate: z.number().register(z.globalRegistry, {
+                        description: 'Price of the order when the customer signed up for subscriptions. Subscriptions created from Admin UI or APIs do not have an original order, so the field returns `0.0`. This field was valid only for Subscriptions v2 and is deprecated in Subscriptions v3.'
+                    }),
+                    ItemIndex: z.int().register(z.globalRegistry, {
+                        description: 'Each item in the subscriptions\' order is identified by an index. The position starts in`0`, followed by `1`, `2`, and so on.'
+                    }),
                     Plan: z.object({
-                        type: z.string(),
+                        type: z.string().register(z.globalRegistry, {
+                            description: 'Type of plan.'
+                        }),
                         frequency: z.object({
-                            periodicity: z.string(),
-                            interval: z.int()
+                            periodicity: z.string().register(z.globalRegistry, {
+                                description: 'Defines the subscriptions recurrence period. The possible values are `DAILY`,`WEEKLY`, `MONTHLY` and `YEARLY`.'
+                            }),
+                            interval: z.int().register(z.globalRegistry, {
+                                description: 'Number of the time interval configured between subscription orders, which depends on the periodicity. For a `DAILY` periodicity, the field\'s value will correspond to days, for `MONTHLY` to months, and so on.'
+                            })
+                        }).register(z.globalRegistry, {
+                            description: 'Information about subscriptions\' recurrence.'
                         }),
                         validity: z.object({
-                            begin: z.string(),
-                            end: z.string()
+                            begin: z.string().register(z.globalRegistry, {
+                                description: 'Subscriptions\' beginning date with the format `yyyy-mm-ddThh:mm:ss`.'
+                            }),
+                            end: z.string().register(z.globalRegistry, {
+                                description: 'Subscriptions\' ending date with the format `yyyy-mm-ddThh:mm:ss`.'
+                            })
+                        }).register(z.globalRegistry, {
+                            description: 'Information about the period during which the subscription will be valid.'
                         })
+                    }).register(z.globalRegistry, {
+                        description: 'Information about the subscription\'s validility and frequency.'
                     })
                 })),
                 z.null()
@@ -2675,29 +4195,69 @@ export const zUserorderdetails = z.object({
         z.null()
     ]),
     taxData: z.object({
-        areTaxesDesignatedByMarketplace: z.boolean(),
+        areTaxesDesignatedByMarketplace: z.boolean().register(z.globalRegistry, {
+            description: 'If the taxes were designated by the marketplace (`true`) or not (`false`).'
+        }),
         taxInfoCollection: z.array(z.object({
-            itemIndex: z.int(),
-            sku: z.string(),
+            itemIndex: z.int().register(z.globalRegistry, {
+                description: 'Item\'s indexing number.'
+            }),
+            sku: z.string().register(z.globalRegistry, {
+                description: 'Alphanumeric sequence that identifies an SKU.'
+            }),
             priceTags: z.array(z.object({
-                isPercentual: z.boolean(),
-                name: z.string(),
-                rawValue: z.string()
-            }))
-        }))
+                isPercentual: z.boolean().register(z.globalRegistry, {
+                    description: 'If the tax is a percentage (`true`) or note (`false`).'
+                }),
+                name: z.string().register(z.globalRegistry, {
+                    description: 'Name that identifies the tax.'
+                }),
+                rawValue: z.string().register(z.globalRegistry, {
+                    description: 'The amount that corresponds to the tax.'
+                })
+            })).register(z.globalRegistry, {
+                description: 'Price tag information.'
+            })
+        })).register(z.globalRegistry, {
+            description: 'Array with taxes\' details.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Order\'s tax information.'
     }),
-    checkedInPickupPointId: z.string(),
+    checkedInPickupPointId: z.string().register(z.globalRegistry, {
+        description: 'If the field `isCheckedIn` is set as `true`, the `checkedInPickupPointId` will retrieve the ID of the physical store where the order was made.'
+    }),
     cancellationData: z.object({
-        RequestedByUser: z.boolean(),
-        RequestedBySystem: z.boolean(),
-        RequestedBySellerNotification: z.boolean(),
-        RequestedByPaymentNotification: z.boolean(),
-        Reason: z.string(),
-        CancellationDate: z.string()
+        RequestedByUser: z.boolean().register(z.globalRegistry, {
+            description: 'If the order cancellation was requested by the costumer (`true`) or not (`false`).'
+        }),
+        RequestedBySystem: z.boolean().register(z.globalRegistry, {
+            description: 'If the order cancellation was made by the system (`true`) or not (`false`). This type of order cancellation happens in [incomplete orders](https://help.vtex.com/en/tutorial/how-incomplete-orders-work--tutorials_294), for example.'
+        }),
+        RequestedBySellerNotification: z.boolean().register(z.globalRegistry, {
+            description: 'If the order cancellation was requested by the seller (`true`) or not (`false`).'
+        }),
+        RequestedByPaymentNotification: z.boolean().register(z.globalRegistry, {
+            description: 'If the order cancellation was requested by the payment gateway (`true`) or not (`false`).'
+        }),
+        Reason: z.string().register(z.globalRegistry, {
+            description: 'The reason why the order was cancelled.'
+        }),
+        CancellationDate: z.string().register(z.globalRegistry, {
+            description: 'The date when the order was cancelled.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Information about order cancellation, when it applies.'
     }),
     clientPreferencesData: z.object({
-        locale: z.string(),
-        optinNewsLetter: z.boolean()
+        locale: z.string().register(z.globalRegistry, {
+            description: 'Customer\'s prefered language while accessing the store.'
+        }),
+        optinNewsLetter: z.boolean().register(z.globalRegistry, {
+            description: 'When set as `true`, this field indicates customers opted to receive the newsletters, and when set as `false`, it means they did not.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Information about customer\'s preferences.'
     })
 });
 
@@ -2707,88 +4267,220 @@ export const zUserorderdetails = z.object({
 export const zReplace = z.object({
     from: z.object({
         items: z.array(z.object({
-            id: z.string(),
-            uniqueId: z.optional(z.string()),
-            quantity: z.int(),
-            price: z.optional(z.int())
-        })),
+            id: z.string().register(z.globalRegistry, {
+                description: 'SKU ID of the item that will be modified.'
+            }),
+            uniqueId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Unique ID of the item being modified. We recommend always using this field to avoid modification errors for items with the same `id`.'
+            })),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Quantity of the item being modified. Must be greater than 0.'
+            }),
+            price: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Price of the item being changed in cents. Must be 0 or greater.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Information about item being modified.'
+        })).register(z.globalRegistry, {
+            description: 'Array with information about the item to be replaced.'
+        }),
         customData: z.optional(z.object({
             customFields: z.optional(z.array(z.object({
                 linkedEntity: z.optional(z.object({
-                    type: z.optional(z.string()),
-                    id: z.optional(z.string())
+                    type: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Type of the linked entity such as `cart`, `item`, `address`.'
+                    })),
+                    id: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'ID of the linked entity.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object with information about the linked entity. If you wish to modify the linked entity `type` and `id`, you must first use this endpoint to `remove` the old `type` and `id`, then you call this same endpoint to `add` the new `type` and `id`.'
                 })),
                 fields: z.optional(z.array(z.object({
-                    name: z.optional(z.string()),
-                    value: z.optional(z.string())
-                })))
-            })))
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Name of the custom field.'
+                    })),
+                    value: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Value of the custom field.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object with information about the custom field\'s name and value. If you wish to modify the custom field\'s `name` and `value`, you must use the original `name` and `value` on the object `to` inside the `replace` array and use the updated `name` and `value` on the object `from` inside the `replace` array.'
+                })).register(z.globalRegistry, {
+                    description: 'Array with information about the custom field\'s name and value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object with information about the custom fields.'
+            })).register(z.globalRegistry, {
+                description: 'Array with information about the custom fields.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object with information about the custom data.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object with information about the items been replaced. If instead of an order `replace` you wish to `remove` items, you will use the same schema naming the object `remove` instead of `from`. For a complete example, see the description at the top of the page.'
     }),
     to: z.object({
         items: z.array(z.object({
-            id: z.string(),
-            uniqueId: z.optional(z.string()),
-            quantity: z.int(),
-            measurementUnit: z.optional(z.string()),
-            unitMultiplier: z.optional(z.number()),
-            manualDiscountValue: z.optional(z.int()),
-            manualIncrementValue: z.optional(z.int()),
+            id: z.string().register(z.globalRegistry, {
+                description: 'SKU ID of the item that will replace the previous one. If you only wish to replace the product weight, you will repeat the SKU ID used in `from`.'
+            }),
+            uniqueId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Unique ID of the item being modified. We recommend always using this field to avoid modification errors for items with the same `id`.'
+            })),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Updated quantity of the item being modified. Must be greater than 0.'
+            }),
+            measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Measurement unit of the new item. The values accepted are the measurement units registered in the store\'s catalog. For example, `kg` for kilograms or `un` for unitary items. When you don\'t specify a value, the request gets the information from the Catalog.'
+            })),
+            unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Unit multiplier for item update. For example, if you wish to increase an order with three times more items than a single one, you would fill in with `3.0`.'
+            })),
+            manualDiscountValue: z.optional(z.int().register(z.globalRegistry, {
+                description: 'This field shows if a manual price was applied to the total order amount. The value is in cents. Must be 0 or greater.'
+            })),
+            manualIncrementValue: z.optional(z.int().register(z.globalRegistry, {
+                description: 'This field shows if an increment value was applied to the total order amount. The value is in cents. Must be 0 or greater.'
+            })),
             clientProfileData: z.optional(z.array(z.object({
-                firstName: z.optional(z.string()),
-                lastName: z.optional(z.string()),
-                documentType: z.optional(z.string()),
-                document: z.optional(z.string()),
-                phone: z.optional(z.string()),
-                corporateName: z.optional(z.string()),
-                tradeName: z.optional(z.string()),
-                corporateDocument: z.optional(z.string()),
-                stateInscription: z.optional(z.string()),
-                corporatePhone: z.optional(z.string()),
-                isCorporate: z.optional(z.boolean())
+                firstName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Customer\'s first name.'
+                })),
+                lastName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Customer\'s last name.'
+                })),
+                documentType: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Type of the document informed by the customer.'
+                })),
+                document: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Document number informed by the customer.'
+                })),
+                phone: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Customer\'s phone number.'
+                })),
+                corporateName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'If it\'s a legal entity, here goes the company name.'
+                })),
+                tradeName: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'If it\'s a legal entity, here goes the trade name.'
+                })),
+                corporateDocument: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'If it\'s a legal entity, here goes the corporate document.'
+                })),
+                stateInscription: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'If it\'s a legal entity, here goes the state inscription.'
+                })),
+                corporatePhone: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'If it\'s a legal entity, here goes the company phone.'
+                })),
+                isCorporate: z.optional(z.boolean().register(z.globalRegistry, {
+                    description: 'It has the value `true` if it\'s a legal entity.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object with information on the client\'s profile.'
             })))
-        })),
+        }).register(z.globalRegistry, {
+            description: 'Replacing item details.'
+        })).register(z.globalRegistry, {
+            description: 'Array with information about the replacing items.'
+        }),
         customData: z.optional(z.object({
             customFields: z.optional(z.array(z.object({
                 linkedEntity: z.optional(z.object({
-                    type: z.optional(z.string()),
-                    id: z.optional(z.string())
+                    type: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Type of the linked entity such as `cart`, `item`, `address`.'
+                    })),
+                    id: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'ID of the linked entity.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object with information about the linked entity. If you wish to modify the linked entity `type` and `id`, you must first use this endpoint to `remove` the old `type` and `id`, then you call this same endpoint to `add` the new `type` and `id`.'
                 })),
                 fields: z.optional(z.array(z.object({
-                    name: z.optional(z.string()),
-                    value: z.optional(z.string())
-                })))
-            })))
+                    name: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Name of the custom field.'
+                    })),
+                    value: z.optional(z.string().register(z.globalRegistry, {
+                        description: 'Value of the custom field.'
+                    }))
+                }).register(z.globalRegistry, {
+                    description: 'Object with information about the custom field\'s name and value. If you wish to modify the custom field\'s `name` and `value`, you must use the original `name` and `value` on the object `to` inside the `replace` array and use the updated `name` and `value` on the object `from` inside the `replace` array.'
+                })).register(z.globalRegistry, {
+                    description: 'Array with information about the custom field\'s name and value.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object with information about the custom fields.'
+            })).register(z.globalRegistry, {
+                description: 'Array with information about the custom fields.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object with information about the custom data.'
         })),
         shippingData: z.optional(z.object({
             logisticsInfo: z.array(z.object({
-                itemIndex: z.int(),
-                selectedSla: z.string(),
-                selectedDeliveryChannel: z.enum(['delivery', 'pickup-in-point']),
-                addressId: z.string(),
-                price: z.int()
-            }))
+                itemIndex: z.int().register(z.globalRegistry, {
+                    description: 'Index that identifies the position of this item in the original array, starting from `0`.'
+                }),
+                selectedSla: z.string().register(z.globalRegistry, {
+                    description: 'Shipping method of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) used in the order.'
+                }),
+                selectedDeliveryChannel: z.enum(['delivery', 'pickup-in-point']).register(z.globalRegistry, {
+                    description: 'Order shipping type, which can be `pickup-in-point` for [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R), and `delivery` for delivery.'
+                }),
+                addressId: z.string().register(z.globalRegistry, {
+                    description: 'Shipping address ID.'
+                }),
+                price: z.int().register(z.globalRegistry, {
+                    description: 'Shipping price for the item in cents. Does not account for the whole order\'s shipping price.'
+                })
+            }).register(z.globalRegistry, {
+                description: 'Shipping details of the modified order.'
+            })).register(z.globalRegistry, {
+                description: 'Array containing information about the shipping address of the modified order. This field is optional, when you don\'t send it the request body, the system assumes there were no modifications in shipping.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Shipping data object.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object with information about the new replacing items. If instead of an order `replace` you wish to `add` items, you will use the same schema naming the object `add` instead of `to`. For a complete example, see the description at the top of the page.'
     })
+}).register(z.globalRegistry, {
+    description: 'Replacing operation object.'
 });
 
 export const zCreatechange = z.object({
-    reason: z.string(),
-    replace: z.optional(z.array(zReplace))
+    reason: z.string().register(z.globalRegistry, {
+        description: 'Reason why you wish to modify order. Since you can make several modifications to an order, filling this field with a clear explanation helps organize the order modifications history. The shopper can view this field value in [transactional emails](https://help.vtex.com/en/tutorial/order-transactional-email-templates--3g2S2kqBOoSGcCaqMYK2my) and [My Account](https://help.vtex.com/en/tutorial/how-my-account-works--2BQ3GiqhqGJTXsWVuio3Xh).'
+    }),
+    replace: z.optional(z.array(zReplace).register(z.globalRegistry, {
+        description: 'Array containing `replace` change information. Besides `replace`, you can `add` or `remove` items from an order.\r\n\r\n- `add`: the schema will correspond to the object `to` inside the `replace` array.\r\n\r\n- `remove`: the schema will correspond to the object `from` inside the `replace` array.\r\n\r\nYou will find request body examples of both cases in the endpoint description on the top of the page. The successful response `202 - Accepted` schema is the same for all three operations, whether they are used separately or combined in the same request.'
+    }))
 });
 
 /**
  * Payment data object.
  */
 export const zPaymentDataV2 = z.object({
-    transactions: z.array(z.string())
+    transactions: z.array(z.string().register(z.globalRegistry, {
+        description: 'Array containing financial information. This is an optional field.'
+    })).register(z.globalRegistry, {
+        description: 'Information about financial transactions.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment data object.'
 });
 
 /**
  * Shipping data object.
  */
 export const zShippingData1 = z.object({
-    logisticsInfo: z.array(z.string())
+    logisticsInfo: z.array(z.string().register(z.globalRegistry, {
+        description: 'Logistics details.'
+    })).register(z.globalRegistry, {
+        description: 'Array with logistics information about the order been replaced. If not sent in the original request, it will be an empty array in the response.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Shipping data object.'
 });
 
 /**
@@ -2831,14 +4523,20 @@ export const zAdditionalInfoV2 = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Additional information object.'
 });
 
 /**
  * Object with item details.
  */
 export const zItem3 = z.object({
-    uniqueId: z.string(),
-    id: z.string(),
+    uniqueId: z.string().register(z.globalRegistry, {
+        description: 'Item\'s unique ID in the order modifications request.'
+    }),
+    id: z.string().register(z.globalRegistry, {
+        description: 'SKU ID of the item replacing the previous one.'
+    }),
     productId: z.union([
         z.string(),
         z.null()
@@ -2876,14 +4574,18 @@ export const zItem3 = z.object({
         z.null()
     ]),
     assemblies: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Customization information.'
+        })),
         z.null()
     ]),
     priceValidUntil: z.union([
         z.string(),
         z.null()
     ]),
-    tax: z.int(),
+    tax: z.int().register(z.globalRegistry, {
+        description: 'Tax in cents of the item replacing the previous one, when applicable.'
+    }),
     price: z.union([
         z.int(),
         z.null()
@@ -2904,8 +4606,12 @@ export const zItem3 = z.object({
         z.int(),
         z.null()
     ]),
-    rewardValue: z.int(),
-    isGift: z.boolean(),
+    rewardValue: z.int().register(z.globalRegistry, {
+        description: 'Reward value of the item replacing the previous one. It is calculated in cents.'
+    }),
+    isGift: z.boolean().register(z.globalRegistry, {
+        description: 'This field is `true` when the replacing item is a gift in the order context and `false` when it is not.'
+    }),
     additionalInfo: zAdditionalInfoV2,
     preSaleDate: z.union([
         z.string(),
@@ -2915,8 +4621,12 @@ export const zItem3 = z.object({
         z.string(),
         z.null()
     ]),
-    productCategories: z.record(z.string(), z.unknown()),
-    quantity: z.int(),
+    productCategories: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Object containing product categories of the replacing item. Structure: `{CategoryID}: {CategoryName}`. Both the key and the value are strings.'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of replacing items.'
+    }),
     seller: z.union([
         z.string(),
         z.null()
@@ -2936,18 +4646,46 @@ export const zItem3 = z.object({
         z.string(),
         z.null()
     ]),
-    components: z.array(z.string()),
-    bundleItems: z.array(z.string()),
-    attachments: z.array(z.string()),
-    attachmentOfferings: z.array(z.string()),
-    offerings: z.array(z.string()),
-    priceTags: z.array(z.string()),
+    components: z.array(z.string().register(z.globalRegistry, {
+        description: 'Replacing item\'s component.'
+    })).register(z.globalRegistry, {
+        description: 'Array with information about replacing item\'s components.'
+    }),
+    bundleItems: z.array(z.string().register(z.globalRegistry, {
+        description: 'Service sold with the replacing item.'
+    })).register(z.globalRegistry, {
+        description: 'Array with information about services sold along with the replacing item, such as a gift package.'
+    }),
+    attachments: z.array(z.string().register(z.globalRegistry, {
+        description: 'Information about a given attachment.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information on attachments.'
+    }),
+    attachmentOfferings: z.array(z.string().register(z.globalRegistry, {
+        description: 'Information about a given offering.'
+    })).register(z.globalRegistry, {
+        description: 'Array with the properties of the content declared in the field `attachments`.'
+    }),
+    offerings: z.array(z.string().register(z.globalRegistry, {
+        description: 'Item\'s offering.'
+    })).register(z.globalRegistry, {
+        description: 'Array with replacing items Item\'s offerings.'
+    }),
+    priceTags: z.array(z.string().register(z.globalRegistry, {
+        description: 'Item modifier.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing objects with replacing item\'s price modifiers.'
+    }),
     availability: z.union([
         z.string(),
         z.null()
     ]),
-    measurementUnit: z.string(),
-    unitMultiplier: z.int(),
+    measurementUnit: z.string().register(z.globalRegistry, {
+        description: 'Replacing item\'s measurement unit.'
+    }),
+    unitMultiplier: z.int().register(z.globalRegistry, {
+        description: 'Replacing item\'s unit multiplier.'
+    }),
     manufacturerCode: z.union([
         z.string(),
         z.null()
@@ -2956,6 +4694,8 @@ export const zItem3 = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Object with item details.'
 });
 
 /**
@@ -2984,30 +4724,50 @@ export const zPickupStoreInfoV2 = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Information about a loading dock that was transformed into a [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R).'
 });
 
 /**
  * Object containing information about the order origin.
  */
 export const zOriginV2 = z.object({
-    account: z.string(),
-    orderId: z.string(),
-    component: z.string()
+    account: z.string().register(z.globalRegistry, {
+        description: 'Name of the account where the order was made.'
+    }),
+    orderId: z.string().register(z.globalRegistry, {
+        description: 'Order ID is a unique code that identifies an order.'
+    }),
+    component: z.string().register(z.globalRegistry, {
+        description: 'Component information.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object containing information about the order origin.'
 });
 
 /**
  * Object with account settings information, such as custom payment.
  */
 export const zSettings = z.object({
-    customPaymentSystemsAllowed: z.array(z.string())
+    customPaymentSystemsAllowed: z.array(z.string().register(z.globalRegistry, {
+        description: 'Custom payment code.'
+    })).register(z.globalRegistry, {
+        description: 'Store\'s [custom payment](https://help.vtex.com/tutorial/how-to-configure-a-custom-payment--tutorials_451) information. Applicable only for stores that configured custom payment options.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object with account settings information, such as custom payment.'
 });
 
 /**
  * Item4
  */
 export const zItem4 = z.object({
-    id: z.string(),
-    quantity: z.int(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'SKU ID of the item.'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of items been replaced.'
+    }),
     price: z.union([
         z.string(),
         z.null()
@@ -3016,8 +4776,12 @@ export const zItem4 = z.object({
         z.string(),
         z.null()
     ]),
-    unitMultiplier: z.int(),
-    sellingPrice: z.string(),
+    unitMultiplier: z.int().register(z.globalRegistry, {
+        description: 'Item\'s unit multiplier.'
+    }),
+    sellingPrice: z.string().register(z.globalRegistry, {
+        description: 'Item\'s selling price.'
+    }),
     name: z.union([
         z.string(),
         z.null()
@@ -3036,11 +4800,21 @@ export const zItem4 = z.object({
  * DeliveryIdV2
  */
 export const zDeliveryIdV2 = z.object({
-    courierId: z.string(),
-    warehouseId: z.string(),
-    dockId: z.string(),
-    courierName: z.string(),
-    quantity: z.int(),
+    courierId: z.string().register(z.globalRegistry, {
+        description: 'ID of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+    }),
+    warehouseId: z.string().register(z.globalRegistry, {
+        description: 'ID of the [warehouse](https://help.vtex.com/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
+    }),
+    dockId: z.string().register(z.globalRegistry, {
+        description: 'ID of the [loading dock](https://help.vtex.com/pt/tutorial/doca--5DY8xHEjOLYDVL41Urd5qj).'
+    }),
+    courierName: z.string().register(z.globalRegistry, {
+        description: 'Name of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+    }),
+    quantity: z.int().register(z.globalRegistry, {
+        description: 'Quantity of items.'
+    }),
     kitItemDetails: z.array(z.union([
         z.string(),
         z.null()
@@ -3055,10 +4829,18 @@ export const zDeliveryIdV2 = z.object({
  * Service Level Agreement (SLA) object.
  */
 export const zSlaV2 = z.object({
-    id: z.string(),
-    deliveryChannel: z.string(),
-    name: z.string(),
-    deliveryIds: z.array(zDeliveryIdV2),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Shipping method of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) used in the order delivery or pickup.'
+    }),
+    deliveryChannel: z.string().register(z.globalRegistry, {
+        description: 'Order shipping type, which can be `pickup-in-point` for [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R), and `delivery` for delivery.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Shipping method of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) used in the order delivery or pickup. It corresponds to the `id` value.'
+    }),
+    deliveryIds: z.array(zDeliveryIdV2).register(z.globalRegistry, {
+        description: 'Information about delivery IDs.'
+    }),
     shippingEstimate: z.union([
         z.string(),
         z.null()
@@ -3071,17 +4853,31 @@ export const zSlaV2 = z.object({
         z.string(),
         z.null()
     ]),
-    availableDeliveryWindows: z.array(z.string()),
+    availableDeliveryWindows: z.array(z.string().register(z.globalRegistry, {
+        description: 'Delivery window.'
+    })).register(z.globalRegistry, {
+        description: 'Available [scheduled delivery](https://help.vtex.com/en/tutorial/scheduled-delivery--22g3HAVCGLFiU7xugShOBi) information, for when the shipping policy has shipping windows configurations.'
+    }),
     deliveryWindow: z.union([
         z.object({
-            startDateUtc: z.optional(z.string()),
-            endDateUtc: z.optional(z.string())
+            startDateUtc: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Delivery window starting date and time in [UTC ISO 8601 format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+            })),
+            endDateUtc: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Delivery window ending date and time in [UTC ISO 8601 format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+            }))
         }),
         z.null()
     ]),
-    price: z.int(),
-    listPrice: z.int(),
-    tax: z.int(),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Shipping price for the item in cents. Does not account for the whole order\'s shipping price.'
+    }),
+    listPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s price list for a specific trade policy.'
+    }),
+    tax: z.int().register(z.globalRegistry, {
+        description: 'Tax in cents, when applicable.'
+    }),
     pickupStoreInfo: zPickupStoreInfoV2,
     pickupPointId: z.union([
         z.string(),
@@ -3099,28 +4895,52 @@ export const zSlaV2 = z.object({
         z.string(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Service Level Agreement (SLA) object.'
 });
 
 /**
  * DeliveryChannel
  */
 export const zDeliveryChannel = z.object({
-    id: z.string()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Order modifications shipping type, which can be `pickup-in-point` for [pickup point](https://help.vtex.com/en/tutorial/pickup-points--2fljn6wLjn8M4lJHA6HP3R), and `delivery` for delivery.'
+    })
 });
 
 /**
  * Logistics information object.
  */
 export const zLogisticsInfo1 = z.object({
-    itemIndex: z.int(),
-    selectedSla: z.string(),
-    addressId: z.string(),
-    slas: z.array(zSlaV2),
-    shipsTo: z.array(z.string()),
-    itemId: z.string(),
-    deliveryChannels: z.array(zDeliveryChannel),
-    price: z.int(),
-    listPrice: z.int(),
+    itemIndex: z.int().register(z.globalRegistry, {
+        description: 'Index that identifies the position of the replacing item in the array, starting from `0`.'
+    }),
+    selectedSla: z.string().register(z.globalRegistry, {
+        description: 'Shipping method of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) used in the replacing order.'
+    }),
+    addressId: z.string().register(z.globalRegistry, {
+        description: 'Shipping address ID of the replacing item.'
+    }),
+    slas: z.array(zSlaV2).register(z.globalRegistry, {
+        description: 'Information on Service Level Agreement (SLA) of the order modifications shipping policy.'
+    }),
+    shipsTo: z.array(z.string().register(z.globalRegistry, {
+        description: 'Country name represented in a three letters code ISO 3166 ALPHA-3.'
+    })).register(z.globalRegistry, {
+        description: 'List of countries of the order modification shipping address.'
+    }),
+    itemId: z.string().register(z.globalRegistry, {
+        description: 'Replacing item\'s SKU ID, which is a unique numerical identifier.'
+    }),
+    deliveryChannels: z.array(zDeliveryChannel).register(z.globalRegistry, {
+        description: 'Array with the delivery channels associated with the trade policy.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Replacing item\'s final price, calculated in cents.'
+    }),
+    listPrice: z.int().register(z.globalRegistry, {
+        description: 'Replacing item\'s price list, calculated in cents.'
+    }),
     shippingEstimate: z.union([
         z.string(),
         z.null()
@@ -3149,8 +4969,12 @@ export const zLogisticsInfo1 = z.object({
         z.string(),
         z.null()
     ]),
-    sellingPrice: z.int(),
-    deliveryIds: z.array(zDeliveryIdV2),
+    sellingPrice: z.int().register(z.globalRegistry, {
+        description: 'Change item\'s selling price.'
+    }),
+    deliveryIds: z.array(zDeliveryIdV2).register(z.globalRegistry, {
+        description: 'Array with delivery information.'
+    }),
     deliveryWindow: z.union([
         z.string(),
         z.null()
@@ -3164,6 +4988,8 @@ export const zLogisticsInfo1 = z.object({
         z.number(),
         z.null()
     ])
+}).register(z.globalRegistry, {
+    description: 'Logistics information object.'
 });
 
 /**
@@ -3173,8 +4999,12 @@ export const zReplace1 = z.object({
     from: z.object({
         paymentData: zPaymentDataV2,
         items: z.array(z.object({
-            id: z.string(),
-            quantity: z.int(),
+            id: z.string().register(z.globalRegistry, {
+                description: 'SKU ID of the item being replaced.'
+            }),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Quantity of items been replaced.'
+            }),
             price: z.union([
                 z.int(),
                 z.null()
@@ -3183,7 +5013,9 @@ export const zReplace1 = z.object({
                 z.string(),
                 z.null()
             ]),
-            unitMultiplier: z.int(),
+            unitMultiplier: z.int().register(z.globalRegistry, {
+                description: 'Unit multiplier for item being updated.'
+            }),
             sellingPrice: z.union([
                 z.string(),
                 z.null()
@@ -3200,56 +5032,118 @@ export const zReplace1 = z.object({
                 z.string(),
                 z.null()
             ])
-        })),
+        }).register(z.globalRegistry, {
+            description: 'Details about a given item.'
+        })).register(z.globalRegistry, {
+            description: 'Array with items information.'
+        }),
         shippingData: zShippingData1
+    }).register(z.globalRegistry, {
+        description: 'Information about what items were replaced.'
     }),
     to: z.object({
-        items: z.array(zItem3),
+        items: z.array(zItem3).register(z.globalRegistry, {
+            description: 'Array containing information about the item replacing the previous one.'
+        }),
         paymentData: zPaymentDataV2,
         receiptData: z.union([
             z.record(z.string(), z.unknown()),
             z.null()
         ]),
         shippingData: z.object({
-            logisticsInfo: z.array(zLogisticsInfo1)
+            logisticsInfo: z.array(zLogisticsInfo1).register(z.globalRegistry, {
+                description: 'Array with shipping information.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Shipping data object.'
         }),
         clientProfileData: z.optional(z.array(z.object({
-            firstName: z.optional(z.string()),
-            lastName: z.optional(z.string()),
-            documentType: z.optional(z.string()),
-            document: z.optional(z.string()),
-            phone: z.optional(z.string()),
-            corporateName: z.optional(z.string()),
-            tradeName: z.optional(z.string()),
-            corporateDocument: z.optional(z.string()),
-            stateInscription: z.optional(z.string()),
-            corporatePhone: z.optional(z.string()),
-            isCorporate: z.optional(z.boolean())
+            firstName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Customer\'s first name.'
+            })),
+            lastName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Customer\'s last name.'
+            })),
+            documentType: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Type of the document informed by the customer.'
+            })),
+            document: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Document number informed by the customer.'
+            })),
+            phone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Customer\'s phone number.'
+            })),
+            corporateName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'If it\'s a legal entity, here goes the company name.'
+            })),
+            tradeName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'If it\'s a legal entity, here goes the trade name.'
+            })),
+            corporateDocument: z.optional(z.string().register(z.globalRegistry, {
+                description: 'If it\'s a legal entity, here goes the corporate document.'
+            })),
+            stateInscription: z.optional(z.string().register(z.globalRegistry, {
+                description: 'If it\'s a legal entity, here goes the state inscription.'
+            })),
+            corporatePhone: z.optional(z.string().register(z.globalRegistry, {
+                description: 'If it\'s a legal entity, here goes the company phone.'
+            })),
+            isCorporate: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'It has the value `true` if it\'s a legal entity.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object with information on the client\'s profile.'
         })))
+    }).register(z.globalRegistry, {
+        description: 'Information about items that replaced the previous one.'
     })
+}).register(z.globalRegistry, {
+    description: 'Details about what will be replaced.'
 });
 
 export const zResponse202 = z.object({
-    requestId: z.string(),
-    workflowId: z.string(),
-    reason: z.string(),
-    manualDiscountValue: z.int(),
-    manualIncrementValue: z.int(),
-    totalChangeValue: z.int(),
-    totals: z.array(z.string()),
+    requestId: z.string().register(z.globalRegistry, {
+        description: 'Unique code that identifies an order modification request.'
+    }),
+    workflowId: z.string().register(z.globalRegistry, {
+        description: 'Code that identifies the transaction of modifying the orders in the [order flow](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196).'
+    }),
+    reason: z.string().register(z.globalRegistry, {
+        description: 'Reason that motivated the order modifications.'
+    }),
+    manualDiscountValue: z.int().register(z.globalRegistry, {
+        description: 'This field shows if a manual price was applied to the total order amount. The value is in cents.'
+    }),
+    manualIncrementValue: z.int().register(z.globalRegistry, {
+        description: 'This field shows if an increment value was applied to the total order amount. The value is in cents.'
+    }),
+    totalChangeValue: z.int().register(z.globalRegistry, {
+        description: 'This field shows how much the order total price is considering that price modifications might have been made. The value is in cents.'
+    }),
+    totals: z.array(z.string().register(z.globalRegistry, {
+        description: 'Item changing price details.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information about change prices per item.'
+    }),
     add: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Adding details.'
+        })),
         z.null()
     ]),
     remove: z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Removal details.'
+        })),
         z.null()
     ]),
     replace: z.union([
         z.array(zReplace1),
         z.null()
     ]),
-    date: z.string(),
+    date: z.string().register(z.globalRegistry, {
+        description: 'Date and time of the request. The value is in UTC ISO 8601 format `yyyy-mm-ddThh:mm:ss.sssZ`.'
+    }),
     origin: zOriginV2,
     settings: zSettings
 });
@@ -3258,15 +5152,35 @@ export const zResponse202 = z.object({
  * LogisticsInfo2
  */
 export const zLogisticsInfo2 = z.object({
-    itemIndex: z.int(),
-    selectedSla: z.string(),
-    addressId: z.string(),
-    slas: z.array(zSlaV2),
-    shipsTo: z.array(z.string()),
-    itemId: z.string(),
-    deliveryChannels: z.array(zDeliveryChannel),
-    price: z.int(),
-    listPrice: z.int(),
+    itemIndex: z.int().register(z.globalRegistry, {
+        description: 'Index that identifies the position of the replacing item in the array, starting from `0`.'
+    }),
+    selectedSla: z.string().register(z.globalRegistry, {
+        description: 'Shipping method of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140) used in the replacing order.'
+    }),
+    addressId: z.string().register(z.globalRegistry, {
+        description: 'Shipping address ID.'
+    }),
+    slas: z.array(zSlaV2).register(z.globalRegistry, {
+        description: 'Information on Service Level Agreement (SLA) of the order modifications.'
+    }),
+    shipsTo: z.array(z.string().register(z.globalRegistry, {
+        description: 'Country name represented in a three letters code ISO 3166 ALPHA-3.'
+    })).register(z.globalRegistry, {
+        description: 'List of countries of the order modifications shipping address.'
+    }),
+    itemId: z.string().register(z.globalRegistry, {
+        description: 'Replacing item\'s SKU ID, which is a unique numerical identifier.'
+    }),
+    deliveryChannels: z.array(zDeliveryChannel).register(z.globalRegistry, {
+        description: 'Array with the delivery channels associated with the trade policy.'
+    }),
+    price: z.int().register(z.globalRegistry, {
+        description: 'Item\'s final price, calculated in cents.'
+    }),
+    listPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s price list, calculated in cents.'
+    }),
     shippingEstimate: z.union([
         z.string(),
         z.null()
@@ -3295,8 +5209,12 @@ export const zLogisticsInfo2 = z.object({
         z.string(),
         z.null()
     ]),
-    sellingPrice: z.int(),
-    deliveryIds: z.array(zDeliveryIdV2),
+    sellingPrice: z.int().register(z.globalRegistry, {
+        description: 'Item\'s selling price.'
+    }),
+    deliveryIds: z.array(zDeliveryIdV2).register(z.globalRegistry, {
+        description: 'Array with delivery information.'
+    }),
     deliveryWindow: z.union([
         z.string(),
         z.null()
@@ -3316,7 +5234,9 @@ export const zLogisticsInfo2 = z.object({
  * ShippingData3
  */
 export const zShippingData3 = z.object({
-    logisticsInfo: z.array(zLogisticsInfo2)
+    logisticsInfo: z.array(zLogisticsInfo2).register(z.globalRegistry, {
+        description: 'Array with shipping information.'
+    })
 });
 
 /**
@@ -3324,15 +5244,21 @@ export const zShippingData3 = z.object({
  */
 export const zFrom2 = z.object({
     paymentData: zPaymentDataV2,
-    items: z.array(zItem4),
+    items: z.array(zItem4).register(z.globalRegistry, {
+        description: 'Items information from before the order change.'
+    }),
     shippingData: zShippingData3
+}).register(z.globalRegistry, {
+    description: 'What the order is changing from.'
 });
 
 /**
  * To2
  */
 export const zTo2 = z.object({
-    items: z.array(zItem3),
+    items: z.array(zItem3).register(z.globalRegistry, {
+        description: 'Array containing information about the item replacing the previous one.'
+    }),
     paymentData: zPaymentDataV2,
     receiptData: z.union([
         z.record(z.string(), z.unknown()),
@@ -3348,9 +5274,17 @@ export const zPriceDefinition = z.object({
     calculatedSellingPrice: z.int(),
     total: z.int(),
     sellingPrices: z.array(z.object({
-        value: z.int(),
-        quantity: z.int()
-    }))
+        value: z.int().register(z.globalRegistry, {
+            description: 'Selling price value in cents.'
+        }),
+        quantity: z.int().register(z.globalRegistry, {
+            description: 'Quantity of items related to selling price.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Selling price details.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing selling price information.'
+    })
 });
 
 /**
@@ -3358,22 +5292,54 @@ export const zPriceDefinition = z.object({
  */
 export const zChangeOrderSettingsResponse = z.object({
     paymentConfiguration: z.optional(z.object({
-        customPaymentSystemsAllowed: z.optional(z.array(z.string()))
+        customPaymentSystemsAllowed: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Payment system ID.'
+        })).register(z.globalRegistry, {
+            description: 'List of custom payment system IDs configured for the VTEX account.'
+        }))
+    }).register(z.globalRegistry, {
+        description: '[Order modifications](https://help.vtex.com/en/tutorial/how-change-order-works-beta--56TO0bOFXsfmpc7YZ3wIUZ) payment configurations.'
     })),
     rolloutConfiguration: z.optional(z.object({
-        usingDefaultBehavior: z.optional(z.boolean()).default(false),
-        enableApi: z.optional(z.boolean()).default(false),
+        usingDefaultBehavior: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the **Order modifications** configurations are the default behaviour (`true`) or if the account made customizations to it (`false`). Subaccounts will have the same configurations as the main account.'
+        })).default(false),
+        enableApi: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the account enabled the [Order modifications API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes) (`true`) or not (`false`). The account can only use the [Order modifications via VTEX Admin](https://help.vtex.com/en/tutorial/how-to-change-orders-beta--7btlG91rb6sHpW1dkd2kBw) or [via API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes) if this field is set to `true`.'
+        })).default(false),
         enableAdminOrders: z.optional(z.object({
-            enabledWorkspaces: z.optional(z.array(z.string()))
+            enabledWorkspaces: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Name of the workspace with **Order modifications** enabled via VTEX Admin. The asterisk `*` value includes all of the account\'s workspaces.'
+            })).register(z.globalRegistry, {
+                description: 'List with the workspaces\' names that have the **Order modifications** feature enabled via VTEX Admin.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object about enabling the [Order modifications feature via VTEX Admin](https://help.vtex.com/en/tutorial/how-to-change-orders-beta--7btlG91rb6sHpW1dkd2kBw).'
         })),
         enableMyOrders: z.optional(z.object({
-            enabledWorkspaces: z.optional(z.array(z.string()))
+            enabledWorkspaces: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Name of the workspace with **Order modifications** enabled via **My Account**. The asterisk `*` value includes all of the account\'s workspaces.'
+            })).register(z.globalRegistry, {
+                description: 'List with the workspace names that have the **Order modifications** feature enabled via **My Account**.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object about enabling the **Order modifications** feature via [My Account](https://help.vtex.com/en/tutorial/how-my-account-works--2BQ3GiqhqGJTXsWVuio3Xh).'
         }))
+    }).register(z.globalRegistry, {
+        description: '**Order modifications** settings regarding VTEX Admin, [Orders API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes?endpoint=patch-/api/order-system/orders/-changeOrderId-/changes) and **My Account** feature.'
     })),
     pipelineConfiguration: z.optional(z.object({
-        enableTaxHubRecalculation: z.optional(z.boolean()).default(false),
-        compensateShippingChanges: z.optional(z.boolean()).default(false)
+        enableTaxHubRecalculation: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the tax calculation is enabled for **Order modifications** (`true`) or not (`false`).'
+        })).default(false),
+        compensateShippingChanges: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if orders changed will have zero shipping cost (`true`) or not (`false`). Merchants usually enable this configuration to change only items and prices, without impacting the orders original freight costs.'
+        })).default(false)
+    }).register(z.globalRegistry, {
+        description: '**Order modifications** settings related to taxes and shipping calculation.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Object with all VTEX account settings related to the **Order modifications** feature.'
 });
 
 /**
@@ -3384,75 +5350,147 @@ export const zAuthorizationPolicyData = z.array(z.object({
         'accepted',
         'denied',
         'pending'
-    ])),
+    ]).register(z.globalRegistry, {
+        description: 'Status of the order\'s authorization policy.'
+    })),
     deniedPolicies: z.optional(z.array(z.object({
-        policyId: z.optional(z.string()),
-        policyName: z.optional(z.string()),
-        requireAllPoliciesAcceptance: z.optional(z.boolean()),
-        policyGroupId: z.optional(z.string()),
-        policyGroupName: z.optional(z.string()),
-        policyGroupUnitId: z.optional(z.string()),
+        policyId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the denied policy.'
+        })),
+        policyName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of denied policy.'
+        })),
+        requireAllPoliciesAcceptance: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether all listed policies in the policy group must be accepted.'
+        })),
+        policyGroupId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the policy group.'
+        })),
+        policyGroupName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the policy group.'
+        })),
+        policyGroupUnitId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Identifier of the business unit this policy group belongs to.'
+        })),
         authorizationData: z.optional(z.union([
             z.array(z.object({
-                requireAllApprovals: z.optional(z.boolean()),
+                requireAllApprovals: z.optional(z.boolean().register(z.globalRegistry, {
+                    description: 'Defines whether the policy requires approval by all authorizers.'
+                })),
                 authorizers: z.optional(z.union([
                     z.array(z.object({
-                        id: z.optional(z.string()),
-                        type: z.optional(z.enum(['User', 'Unit'])),
+                        id: z.optional(z.string().register(z.globalRegistry, {
+                            description: 'Unique identifier of the authorizer.'
+                        })),
+                        type: z.optional(z.enum(['User', 'Unit']).register(z.globalRegistry, {
+                            description: 'Type of the authorizer.'
+                        })),
                         authorizationDate: z.optional(z.union([
                             z.string(),
                             z.null()
                         ]))
+                    }).register(z.globalRegistry, {
+                        description: 'Details about the order\'s authorizers.'
                     })),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Details about the order\'s authorization data.'
             })),
             z.null()
         ]))
-    }))),
+    }).register(z.globalRegistry, {
+        description: 'Details about the order\'s denied policies.'
+    })).register(z.globalRegistry, {
+        description: 'Information about the order\'s denied policies.'
+    })),
     pendingPolicies: z.optional(z.array(z.object({
-        policyId: z.optional(z.string()),
-        policyName: z.optional(z.string()),
-        requireAllPoliciesAcceptance: z.optional(z.boolean()),
-        policyGroupId: z.optional(z.string()),
-        policyGroupName: z.optional(z.string()),
-        policyGroupUnitId: z.optional(z.string()),
+        policyId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the pending policy.'
+        })),
+        policyName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of pending policy.'
+        })),
+        requireAllPoliciesAcceptance: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether all listed policies must be accepted.'
+        })),
+        policyGroupId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the policy group.'
+        })),
+        policyGroupName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the policy group.'
+        })),
+        policyGroupUnitId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Identifier of the business unit this policy group belongs to.'
+        })),
         authorizationData: z.optional(z.union([
             z.array(z.object({
-                requireAllApprovals: z.optional(z.boolean()),
+                requireAllApprovals: z.optional(z.boolean().register(z.globalRegistry, {
+                    description: 'Defines whether the policy requires approval by all authorizers.'
+                })),
                 authorizers: z.optional(z.union([
                     z.array(z.object({
-                        id: z.optional(z.string()),
-                        type: z.optional(z.enum(['User', 'Unit'])),
+                        id: z.optional(z.string().register(z.globalRegistry, {
+                            description: 'Unique identifier of the authorizer.'
+                        })),
+                        type: z.optional(z.enum(['User', 'Unit']).register(z.globalRegistry, {
+                            description: 'Type of the authorizer.'
+                        })),
                         authorizationDate: z.optional(z.union([
                             z.string(),
                             z.null()
                         ]))
+                    }).register(z.globalRegistry, {
+                        description: 'Details about the order\'s authorizers.'
                     })),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Details about the order\'s authorization data.'
             })),
             z.null()
         ]))
-    })))
-}));
+    }).register(z.globalRegistry, {
+        description: 'Details about the order\'s pending policies.'
+    })).register(z.globalRegistry, {
+        description: 'Information about the order\'s pending policies.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Details about the order authorization policy'
+})).register(z.globalRegistry, {
+    description: 'Information about the order authorization policy. When the store doesn\'t have any policies, the status will always be `accepted`.'
+});
 
 /**
  * DeliveryIdResponse
  */
 export const zDeliveryIdResponse = z.object({
-    courierId: z.optional(z.string()),
-    warehouseId: z.optional(z.string()),
-    dockId: z.optional(z.string()),
-    courierName: z.optional(z.string()),
-    quantity: z.optional(z.int()),
+    courierId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+    })),
+    warehouseId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the [warehouse](https://help.vtex.com/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).'
+    })),
+    dockId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the [loading dock](https://help.vtex.com/pt/tutorial/doca--5DY8xHEjOLYDVL41Urd5qj).'
+    })),
+    courierName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the [shipping policy](https://help.vtex.com/en/tutorial/shipping-policy--tutorials_140).'
+    })),
+    quantity: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Quantity of items in the warehouse or dock.'
+    })),
     totalListPrice: z.optional(z.union([
         z.int(),
         z.null()
     ])),
-    accountCarrierName: z.optional(z.string()),
+    accountCarrierName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the account\'s [carrier](https://help.vtex.com/en/tutorial/carriers-on-vtex--7u9duMD5UQa2QQwukAWMcE).'
+    })),
     kitItemDetails: z.optional(z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Kit item information.'
+        })),
         z.null()
     ]))
 });
@@ -3462,41 +5500,83 @@ export const zDeliveryIdResponse = z.object({
  */
 export const zChangeSummary = z.object({
     original: z.optional(z.array(z.object({
-        totalQuantity: z.optional(z.int()),
-        quantity: z.optional(z.int()),
+        totalQuantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Total quantity of the item.'
+        })),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Quantity of the item.'
+        })),
         deliveryIds: z.optional(z.union([
             z.array(zDeliveryIdResponse),
             z.null()
         ])),
-        itemIndex: z.optional(z.int()),
-        uniqueId: z.optional(z.string()),
-        id: z.optional(z.string()),
-        productId: z.optional(z.string()),
-        lockId: z.optional(z.string()),
+        itemIndex: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Each item in the order is identified by an index. The position starts in `0`, followed by `1`, `2`, and so on.'
+        })),
+        uniqueId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Alphanumeric sequence that identifies an SKU in a given order.'
+        })),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the SKU.'
+        })),
+        productId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID of the product associated with the item.'
+        })),
+        lockId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Reservation ID.'
+        })),
         ean: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        seller: z.optional(z.string()),
-        sellerSku: z.optional(z.string()),
+        seller: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Seller related to the order.'
+        })),
+        sellerSku: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID from the seller perspective.'
+        })),
         priceValidUntil: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        name: z.optional(z.string()),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the item as displayed to customers in the storefront.'
+        })),
         additionalInfo: z.optional(z.object({
-            brandName: z.optional(z.string()),
-            brandId: z.optional(z.string()),
-            categoriesIds: z.optional(z.string()),
-            dimension: z.optional(z.object({
-                cubicweight: z.optional(z.number()),
-                height: z.optional(z.number()),
-                length: z.optional(z.number()),
-                weight: z.optional(z.number()),
-                width: z.optional(z.number())
+            brandName: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Item\'s brand name.'
             })),
-            productClusterId: z.optional(z.string()),
-            commercialConditionId: z.optional(z.string()),
+            brandId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Item\'s brand ID.'
+            })),
+            categoriesIds: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Item\'s category ID.'
+            })),
+            dimension: z.optional(z.object({
+                cubicweight: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Item\'s cubic weight.'
+                })),
+                height: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Item\'s height.'
+                })),
+                length: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Item\'s length.'
+                })),
+                weight: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Item\'s weight.'
+                })),
+                width: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Item\'s width.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Item\'s dimension.'
+            })),
+            productClusterId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'All product clusters related to the item.'
+            })),
+            commercialConditionId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Commercial conditions ID.'
+            })),
             offeringInfo: z.optional(z.union([
                 z.record(z.string(), z.unknown()),
                 z.null()
@@ -3505,13 +5585,29 @@ export const zChangeSummary = z.object({
                 z.string(),
                 z.null()
             ])),
-            offeringTypeId: z.optional(z.string()),
+            offeringTypeId: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Offering type ID.'
+            })),
             categories: z.optional(z.array(z.object({
-                id: z.optional(z.number()),
-                name: z.optional(z.string())
-            })))
+                id: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Category ID.'
+                })),
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Category name.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Category information.'
+            })).register(z.globalRegistry, {
+                description: 'Items categories information.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Additional information about the item.'
         })),
-        attachments: z.optional(z.array(z.string())),
+        attachments: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Attachments information.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing information on attachments.'
+        })),
         attachmentOfferings: z.optional(z.union([
             z.array(z.object({
                 name: z.optional(z.union([
@@ -3522,20 +5618,30 @@ export const zChangeSummary = z.object({
                     z.boolean(),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Attachments details.'
             })),
             z.null()
         ])),
         assemblies: z.optional(z.union([
-            z.array(z.string()),
+            z.array(z.string().register(z.globalRegistry, {
+                description: 'Customization information.'
+            })),
             z.null()
         ])),
-        refId: z.optional(z.string()),
+        refId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU reference ID.'
+        })),
         shippingPrice: z.optional(z.union([
             z.int(),
             z.null()
         ])),
-        price: z.optional(z.int()),
-        sellingPrice: z.optional(z.int()),
+        price: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item\'s price.'
+        })),
+        sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item\'s selling price.'
+        })),
         manualPrice: z.optional(z.union([
             z.int(),
             z.null()
@@ -3544,46 +5650,104 @@ export const zChangeSummary = z.object({
             z.string(),
             z.null()
         ])),
-        tax: z.optional(z.int()),
+        tax: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Tax in cents, when applicable.'
+        })),
         customTax: z.optional(z.union([
             z.number(),
             z.null()
         ])),
-        rewardValue: z.optional(z.int()),
-        freightCommission: z.optional(z.int()),
-        commission: z.optional(z.int()),
-        priceTags: z.optional(z.array(z.record(z.string(), z.unknown()))),
-        imageUrl: z.optional(z.string()),
-        detailUrl: z.optional(z.string()),
-        components: z.optional(z.array(z.string())),
+        rewardValue: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item\'s reward value.'
+        })),
+        freightCommission: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Value of the freight commission.'
+        })),
+        commission: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Commission value registered for the seller.'
+        })),
+        priceTags: z.optional(z.array(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+            description: 'Price modifiers.'
+        })).register(z.globalRegistry, {
+            description: 'List of objects with item\'s price modifiers.'
+        })),
+        imageUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU image URL.'
+        })),
+        detailUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU slug.'
+        })),
+        components: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Components.'
+        })).register(z.globalRegistry, {
+            description: 'Item\'s components.'
+        })),
         bundleItems: z.optional(z.array(z.object({
-            id: z.optional(z.int()),
-            quantity: z.optional(z.int())
-        }))),
-        offerings: z.optional(z.array(z.string())),
+            id: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Offering ID.'
+            })),
+            quantity: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Offering quantity.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Item\'s offering details.'
+        })).register(z.globalRegistry, {
+            description: 'This field groups offerings (services) related to the item and displays their ID and quantity. A gift package is an example of an offering.'
+        })),
+        offerings: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Service name related to the item.'
+        })).register(z.globalRegistry, {
+            description: 'Item\'s offerings, which are services related to the item. For example, guarantee or installation.'
+        })),
         preSaleDate: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        isGift: z.optional(z.boolean()),
+        isGift: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'This field is `true` when the item is a gift in order context and `false` when it is not.'
+        })),
         taxCode: z.optional(z.union([
             z.string(),
             z.null()
         ])),
-        measurementUnit: z.optional(z.string()),
-        unitMultiplier: z.optional(z.number()),
+        measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Item\'s measurement unit.'
+        })),
+        unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Item\'s unit multiplier.'
+        })),
         marketingData: z.optional(z.union([
             z.object({
-                id: z.optional(z.string()),
-                utmSource: z.optional(z.string()),
-                utmPartner: z.optional(z.string()),
-                utmMedium: z.optional(z.string()),
-                utmCampaign: z.optional(z.string()),
-                coupon: z.optional(z.string()),
-                utmiCampaign: z.optional(z.string()),
-                utmipage: z.optional(z.string()),
-                utmiPart: z.optional(z.string()),
-                marketingTags: z.optional(z.string())
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Object ID. The expected value is `marketingData`.'
+                })),
+                utmSource: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the `utm_source` parameter of the URL that led to the request.'
+                })),
+                utmPartner: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'UTM Source Parameters.'
+                })),
+                utmMedium: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the `utm_medium` parameter of the URL that led to the request.'
+                })),
+                utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the `utm_campaign` parameter of the URL that led to the request.'
+                })),
+                coupon: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Coupon code.'
+                })),
+                utmiCampaign: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Internal UTM value `utmi_cp`.'
+                })),
+                utmipage: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Internal UTM value `utmi_p`.'
+                })),
+                utmiPart: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Internal UTM value `utmi_pc`.'
+                })),
+                marketingTags: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Marketing tags information. This field can be used to register campaign data or informative tags regarding promotions.'
+                }))
             }),
             z.null()
         ])),
@@ -3600,84 +5764,196 @@ export const zChangeSummary = z.object({
             z.null()
         ])),
         priceDefinition: z.optional(z.object({
-            calculatedSellingPrice: z.optional(z.int()),
-            total: z.optional(z.int()),
+            calculatedSellingPrice: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Item\'s calculated unitary selling price in cents.'
+            })),
+            total: z.optional(z.int().register(z.globalRegistry, {
+                description: 'Total value of all item\'s units in cents.'
+            })),
             sellingPrices: z.optional(z.array(z.object({
-                value: z.optional(z.int()),
-                quantity: z.optional(z.int())
-            }))),
-            reason: z.optional(z.string())
+                value: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Total value of items in cents.'
+                })),
+                quantity: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Quantity of items.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Selling price.'
+            })).register(z.globalRegistry, {
+                description: 'Details on item\'s selling price.'
+            })),
+            reason: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Reason for the price change.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Item\'s price information.'
         })),
-        costPrice: z.optional(z.int())
-    }))),
+        costPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Item\'s cost price in cents.'
+        }))
+    })).register(z.globalRegistry, {
+        description: 'Summary of the original items in the order before modifications.'
+    })),
     added: z.optional(z.array(z.object({
-        id: z.optional(z.string()),
-        uniqueId: z.optional(z.string()),
-        totalQuantity: z.optional(z.int()),
-        quantity: z.optional(z.int()),
-        price: z.optional(z.int()),
-        measurementUnit: z.optional(z.string()),
-        unitMultiplier: z.optional(z.number()),
-        imageUrl: z.optional(z.string()),
-        sellingPrice: z.optional(z.int()),
-        priceTags: z.optional(z.array(z.string())),
-        detailUrl: z.optional(z.string()),
-        name: z.optional(z.string()),
-        refId: z.optional(z.string()),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID of the item being added.'
+        })),
+        uniqueId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique ID of the item being added.'
+        })),
+        totalQuantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Total quantity of the item being added.'
+        })),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Quantity of the item being added.'
+        })),
+        price: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Price of the item being added.'
+        })),
+        measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Measurement unit of the item being added.'
+        })),
+        unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Unit multiplier of the item being added.'
+        })),
+        imageUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Image URL of the item being added.'
+        })),
+        sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Selling price of the item being added.'
+        })),
+        priceTags: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Price modifiers.'
+        })).register(z.globalRegistry, {
+            description: 'List of objects with item\'s price modifiers.'
+        })),
+        detailUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Slug of the SKU being added.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the item being added.'
+        })),
+        refId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU reference ID of the item being added.'
+        })),
         deliveryIds: z.optional(z.union([
             z.array(zDeliveryIdResponse),
             z.null()
         ]))
-    }))),
+    }).register(z.globalRegistry, {
+        description: 'Information about added items.'
+    })).register(z.globalRegistry, {
+        description: 'Array containing information on added items of order modification.'
+    })),
     removed: z.optional(z.array(z.object({
-        id: z.optional(z.string()),
-        uniqueId: z.optional(z.string()),
-        quantity: z.optional(z.int()),
-        price: z.optional(z.int()),
-        measurementUnit: z.optional(z.string()),
-        unitMultiplier: z.optional(z.number()),
-        imageUrl: z.optional(z.string()),
-        sellingPrice: z.optional(z.int()),
-        priceTags: z.optional(z.array(z.string())),
-        detailUrl: z.optional(z.string()),
-        name: z.optional(z.string()),
-        refId: z.optional(z.string()),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID of the item being removed.'
+        })),
+        uniqueId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique ID of the item being removed.'
+        })),
+        quantity: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Quantity of the item being removed.'
+        })),
+        price: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Price of the item being removed.'
+        })),
+        measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Measurement unit of the item being removed.'
+        })),
+        unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Unit multiplier of the item being removed.'
+        })),
+        imageUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Image URL of the item being removed.'
+        })),
+        sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Selling price of the item being removed.'
+        })),
+        priceTags: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Price modifiers.'
+        })).register(z.globalRegistry, {
+            description: 'List of objects with item\'s price modifiers.'
+        })),
+        detailUrl: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Slug of the SKU being removed.'
+        })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the item being removed.'
+        })),
+        refId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU reference ID of the item being removed.'
+        })),
         deliveryIds: z.optional(z.union([
             z.array(zDeliveryIdResponse),
             z.null()
         ]))
-    }))),
+    })).register(z.globalRegistry, {
+        description: 'Array containing information on removed items of order modification.'
+    })),
     replaced: z.optional(z.array(z.object({
         replaceType: z.optional(z.enum([
             'ItemReplacement',
             'WeightChange',
             'PriceChange',
             'QuantityChange'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Type of replacement operation.'
+        })),
         userInputType: z.optional(z.enum([
             'ItemReplacement',
             'WeightChange',
             'PriceChange',
             'QuantityChange'
-        ])),
+        ]).register(z.globalRegistry, {
+            description: 'Type of replacement operation.'
+        })),
         from: z.optional(z.object({
             items: z.optional(z.array(z.object({
-                id: z.optional(z.string()),
-                uniqueId: z.optional(z.string()),
-                quantity: z.optional(z.int()),
-                price: z.optional(z.int()),
-                measurementUnit: z.optional(z.string()),
-                unitMultiplier: z.optional(z.number()),
-                imageUrl: z.optional(z.string()),
-                sellingPrice: z.optional(z.int()),
-                priceTags: z.optional(z.array(z.string())),
-                detailUrl: z.optional(z.string()),
-                name: z.optional(z.string()),
-                refId: z.optional(z.string()),
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'SKU ID of the item being replaced.'
+                })),
+                uniqueId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Unique ID of the item being replaced.'
+                })),
+                quantity: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Quantity of the item being replaced.'
+                })),
+                price: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Price of the item being replaced.'
+                })),
+                measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Measurement unit of the item being replaced.'
+                })),
+                unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Unit multiplier of the item being replaced.'
+                })),
+                imageUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Image URL of the item being replaced.'
+                })),
+                sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Selling price of the item being replaced.'
+                })),
+                priceTags: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Price modifiers.'
+                })).register(z.globalRegistry, {
+                    description: 'List of objects with item\'s price modifiers.'
+                })),
+                detailUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'URL slug of the item being replaced.'
+                })),
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name of the item being replaced.'
+                })),
+                refId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'SKU reference ID of the item being replaced.'
+                })),
                 deliveryIds: z.optional(z.union([
                     z.array(zDeliveryIdResponse),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Details about the item being replaced.'
             }))),
             shippingData: z.optional(z.union([
                 z.object({
@@ -3685,68 +5961,130 @@ export const zChangeSummary = z.object({
                 }),
                 z.null()
             ]))
+        }).register(z.globalRegistry, {
+            description: 'Information about item being replaced.'
         })),
         to: z.optional(z.object({
             items: z.optional(z.array(z.object({
-                id: z.optional(z.string()),
-                uniqueId: z.optional(z.string()),
-                quantity: z.optional(z.int()),
-                price: z.optional(z.int()),
-                measurementUnit: z.optional(z.string()),
-                unitMultiplier: z.optional(z.number()),
-                imageUrl: z.optional(z.string()),
-                sellingPrice: z.optional(z.int()),
-                priceTags: z.optional(z.array(z.string())),
-                detailUrl: z.optional(z.string()),
-                name: z.optional(z.string()),
-                refId: z.optional(z.string()),
+                id: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'SKU ID of the item being replaced.'
+                })),
+                uniqueId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Unique ID of the item replacing the previous one.'
+                })),
+                quantity: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Quantity of the item replacing the previous one.'
+                })),
+                price: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Price of the item replacing the previous one.'
+                })),
+                measurementUnit: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Measurement unit of the item replacing the previous one.'
+                })),
+                unitMultiplier: z.optional(z.number().register(z.globalRegistry, {
+                    description: 'Unit multiplier of the item replacing the previous one.'
+                })),
+                imageUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Image URL of the item replacing the previous one.'
+                })),
+                sellingPrice: z.optional(z.int().register(z.globalRegistry, {
+                    description: 'Selling price of the item replacing the previous one.'
+                })),
+                priceTags: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Price modifiers.'
+                })).register(z.globalRegistry, {
+                    description: 'List of objects with item\'s price modifiers.'
+                })),
+                detailUrl: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'URL slug of the item being replaced.'
+                })),
+                name: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Name of the item replacing the previous one.'
+                })),
+                refId: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'SKU reference ID of the item replacing the previous one.'
+                })),
                 deliveryIds: z.optional(z.union([
                     z.array(zDeliveryIdResponse),
                     z.null()
                 ]))
+            }).register(z.globalRegistry, {
+                description: 'Details about the item replacing the previous one.'
             }))),
             shippingData: z.optional(z.union([
                 z.object({
-                    logisticsInfo: z.optional(z.array(zLogisticsInfo1))
+                    logisticsInfo: z.optional(z.array(zLogisticsInfo1).register(z.globalRegistry, {
+                        description: 'Array with shipping information.'
+                    }))
                 }),
                 z.null()
             ]))
+        }).register(z.globalRegistry, {
+            description: 'Information about item replacing the previous one.'
         })),
-        type: z.optional(z.enum(['UserInput', 'System']))
-    }))),
-    manualDiscountValueAggregated: z.optional(z.int()),
-    manualIncrementValueAggregated: z.optional(z.int()),
-    totalChangeValueAggregated: z.optional(z.int()),
+        type: z.optional(z.enum(['UserInput', 'System']).register(z.globalRegistry, {
+            description: 'Type of replacement operation.'
+        }))
+    })).register(z.globalRegistry, {
+        description: 'Array containing information on replaced items of order modification.'
+    })),
+    manualDiscountValueAggregated: z.optional(z.int().register(z.globalRegistry, {
+        description: 'This field shows if a manual price was applied to the total order amount. The value is in cents.'
+    })),
+    manualIncrementValueAggregated: z.optional(z.int().register(z.globalRegistry, {
+        description: 'This field shows if an increment value was applied to the total order amount. The value is in cents.'
+    })),
+    totalChangeValueAggregated: z.optional(z.int().register(z.globalRegistry, {
+        description: 'This field shows how much the order total price is, considering that price modifications might have been made. The value is in cents.'
+    })),
     totals: z.optional(z.unknown()),
-    lastChange: z.optional(z.string())
+    lastChange: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Date and time of the last change in [ISO 8601 time zone offset format](https://learn.microsoft.com/en-us/rest/api/storageservices/formatting-datetime-values), as in `YYYY-MM-DDThh:mm:ssZ`.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Summary of modifications made to an order.'
 });
 
 /**
  * You can use this parameter to filter [incomplete orders](https://help.vtex.com/en/tutorial/understanding-incomplete-orders) by their situations, whether permanent (`perm`) or temporary (`temp`). When the situation is temporary, the order is still opened and has not being cancelled. To filter the total number of incomplete orders, use the value `all`.
  */
-export const zUnusedIncompleteOrders = z.string();
+export const zUnusedIncompleteOrders = z.string().register(z.globalRegistry, {
+    description: 'You can use this parameter to filter [incomplete orders](https://help.vtex.com/en/tutorial/understanding-incomplete-orders) by their situations, whether permanent (`perm`) or temporary (`temp`). When the situation is temporary, the order is still opened and has not being cancelled. To filter the total number of incomplete orders, use the value `all`.'
+});
 
 export const zGetOrderData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order. Instead of using `orderId`, you can also make the request using the sequence, a six-digit string that follows the order ID. For example, in order 1268540501456-01 (501456), the sequence is 501456. To use this parameter, replace the value between `{ }` keys in `seq{sequence-number}` with the sequence. For example: `seq501456`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zGetApiOmsPvtOrdersOrderGroupByOrderGroupData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderGroup: z.string()
+        orderGroup: z.string().register(z.globalRegistry, {
+            description: 'Order group ID is a part of the order ID that groups all orders related to the same purchase. For example, when an order is fullfilled by multiple sellers, each seller has its own order ID (`v71021570str-01` and `v71021570str-02`), but they share the same order group ID (`v71021570str`).'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
@@ -3754,25 +6092,63 @@ export const zListOrdersData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        orderBy: z.optional(z.string()),
-        page: z.optional(z.int()),
-        per_page: z.optional(z.int()),
-        f_hasInputInvoice: z.optional(z.boolean()),
-        q: z.optional(z.string()),
-        f_shippingEstimate: z.optional(z.string()),
-        f_invoicedDate: z.optional(z.string()),
-        f_creationDate: z.optional(z.string()),
-        f_authorizedDate: z.optional(z.string()),
-        f_UtmSource: z.optional(z.string()),
-        f_sellerNames: z.optional(z.string()),
-        f_callCenterOperatorName: z.optional(z.string()),
-        f_salesChannel: z.optional(z.string()),
-        salesChannelId: z.optional(z.string()),
-        f_affiliateId: z.optional(z.string()),
-        f_status: z.optional(z.string()),
-        incompleteOrders: z.optional(z.boolean()),
-        f_paymentNames: z.optional(z.string()),
-        f_RnB: z.optional(z.string()),
+        orderBy: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can retrieve orders lists filtering by an `OrderField` combined with an `OrderType`. To do so, you have to concatenate them: `orderBy={{OrderField}},{{OrderType}}`. \r\n- `OrderField` values accepted: `creationDate`, `orderId`, `items`, `totalValue` and `origin`. \r\n- `OrderType` values accepted: `asc` and `desc`.'
+        })),
+        page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Define the number of pages you wish to retrieve, restricted to the limit of 30 pages.'
+        })),
+        per_page: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Quantity of orders for each page, the default value is 15 and it goes up to 100 orders per page. Be aware that the limit of retrieval ofthis endpoint is 30 pages.'
+        })),
+        f_hasInputInvoice: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Filters list to return only orders with non `null` values for the `invoiceInput` field.'
+        })),
+        q: z.optional(z.string().register(z.globalRegistry, {
+            description: 'This parameter filters using Fulltext and accepts the values below. Be aware that the `+` caracter is not allowed in Fulltext Search. \r\n- Order Id \r\n- Client email \r\n- Client document \r\n- Client name \r\n\r\n B2B Buyer Portal users can search for contact information fields, which includes the values below: \r\n- User email. \r\n- User first name. \r\n- User last name. \r\n- User phone number. \r\n- User document ID. \r\n- User document type.'
+        })),
+        f_shippingEstimate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by shipping estimate time in days by concatenating the desired number of days with the sufix `.days`. For example: \r\n- Next 7 days: `7.days` \r\n- Tomorrow: `1.days` \r\n- Today: `0.days` \r\n- Late: `-1.days`'
+        })),
+        f_invoicedDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by invoiced date by concatenating the sufix `invoicedDate:` with the range date in Timestamp format. For example: \r\n- 1 Day: `invoicedDate:[2022-01-01T02:00:00.000Z TO 2022-01-02T01:59:59.999Z]`\r\n- 1 Month: `invoicedDate:[2022-01-01T02:00:00.000Z TO 2022-02-01T01:59:59.999Z]` \r\n- 1 Year: `invoicedDate:[2022-01-01T02:00:00.000Z TO 2022-01-01T01:59:59.999Z]`'
+        })),
+        f_creationDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by creation date by concatenating the sufix `creationDate:` with the range date in Timestamp format. For example: \r\n- 1 Day: `creationDate:[2022-01-01T02:00:00.000Z TO 2022-01-02T01:59:59.999Z]`\r\n- 1 Month: `creationDate:[2022-01-01T02:00:00.000Z TO 2022-02-01T01:59:59.999Z]` \r\n- 1 Year: `creationDate:[2022-01-01T02:00:00.000Z TO 2022-01-01T01:59:59.999Z]`'
+        })),
+        f_authorizedDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by creation date by concatenating the sufix `authorizedDate:` with the range date in Timestamp format. For example: \r\n- 1 Day: `authorizedDate:[2022-01-01T02:00:00.000Z TO 2022-01-02T01:59:59.999Z]`\r\n- 1 Month: `authorizedDate:[2022-01-01T02:00:00.000Z TO 2022-02-01T01:59:59.999Z]` \r\n- 1 Year: `authorizedDate:[2022-01-01T02:00:00.000Z TO 2022-01-01T01:59:59.999Z]`'
+        })),
+        f_UtmSource: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by Urchin Tracking Module (UTM) source.'
+        })),
+        f_sellerNames: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by using a seller\'s name.'
+        })),
+        f_callCenterOperatorName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by using a Call Center Operator\'s identification.'
+        })),
+        f_salesChannel: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by sales channel\'s ([or trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) name.'
+        })),
+        salesChannelId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by sales channel\'s ([or trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV)) ID.'
+        })),
+        f_affiliateId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by affiliate ID.'
+        })),
+        f_status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by the following [order status](https://help.vtex.com/en/tutorial/order-flow-and-status--tutorials_196): \r\n- `waiting-for-sellers-confirmation` \r\n- `payment-pending` \r\n- `payment-approved` \r\n- `ready-for-handling` \r\n- `handling` \r\n- `invoiced` \r\n- `canceled`'
+        })),
+        incompleteOrders: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'When set as `true`, you retrieve [incomplete orders](https://help.vtex.com/en/tutorial/understanding-incomplete-orders), when set as `false`, you retrieve orders that are not incomplete.'
+        })),
+        f_paymentNames: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by payment type.'
+        })),
+        f_RnB: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by rates and benefits (promotions).'
+        })),
         searchField: z.optional(z.enum([
             'sku_Ids',
             'listId',
@@ -3780,98 +6156,182 @@ export const zListOrdersData = z.object({
             'pci_tid',
             'paymentId',
             'nsu'
-        ])),
-        sku_Ids: z.optional(z.string()),
-        listId: z.optional(z.string()),
-        tid: z.optional(z.string()),
-        pci_tid: z.optional(z.string()),
-        paymentId: z.optional(z.string()),
-        nsu: z.optional(z.string()),
-        f_isInstore: z.optional(z.boolean())
+        ]).register(z.globalRegistry, {
+            description: 'Defines the search criteria for filtering orders. Must be used together with the corresponding query parameter that provides the search value. For example, to search by SKU ID: `?searchField=sku_Ids&sku_Ids=11223`.'
+        })),
+        sku_Ids: z.optional(z.string().register(z.globalRegistry, {
+            description: 'SKU ID to filter orders. Must be used with `searchField=sku_Ids`.'
+        })),
+        listId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Gift List ID to filter orders. Must be used with `searchField=listId`.'
+        })),
+        tid: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Transaction ID (TID) to filter orders. Must be used with `searchField=tid`.'
+        })),
+        pci_tid: z.optional(z.string().register(z.globalRegistry, {
+            description: 'PCI Connector\'s Transaction ID (TID) to filter orders. Must be used with `searchField=pci_tid`.'
+        })),
+        paymentId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Payment ID (PID) to filter orders. Must be used with `searchField=paymentId`.'
+        })),
+        nsu: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Connector\'s NSU to filter orders. Must be used with `searchField=nsu`.'
+        })),
+        f_isInstore: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'When set as `true`, this parameter filters orders made via [inStore](https://help.vtex.com/en/tracks/what-is-instore--zav76TFEZlAjnyBVL5tRc), and when set as `false`, it filters orders that were not made via inStore.'
+        }))
     })),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zStartHandlingData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zCancelOrderData = z.object({
     body: z.optional(z.object({
-        reason: z.optional(z.string())
+        reason: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Reason for cancelling the order.'
+        }))
     })),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the order in the seller.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zRegisterChangeData = z.object({
     body: z.optional(z.object({
-        requestId: z.string(),
-        reason: z.string(),
-        discountValue: z.int(),
-        incrementValue: z.int(),
+        requestId: z.string().register(z.globalRegistry, {
+            description: 'Request identification of the modification. Only the first modification made with each `requestId` will be effective on a given order. Use different IDs for different modifications to the same order.'
+        }),
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for order modification. This may be shown to the shopper in the UI or transactional emails.'
+        }),
+        discountValue: z.int().register(z.globalRegistry, {
+            description: 'This field can be used to apply a discount to the total value of the order. Value in cents.'
+        }),
+        incrementValue: z.int().register(z.globalRegistry, {
+            description: 'This field can be used to increment the total value of the order. Value in cents.'
+        }),
         itemsRemoved: z.optional(z.array(z.object({
-            id: z.string(),
-            price: z.int(),
-            quantity: z.int()
-        }))),
+            id: z.string().register(z.globalRegistry, {
+                description: 'SKU ID of the item being removed.'
+            }),
+            price: z.int().register(z.globalRegistry, {
+                description: 'Price of the item being removed in cents.'
+            }),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Amount of items to be removed.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Removed items\' details.'
+        })).register(z.globalRegistry, {
+            description: 'List of items that should be removed from the order.'
+        })),
         itemsAdded: z.optional(z.array(z.object({
-            id: z.string(),
-            price: z.int(),
-            quantity: z.int()
-        })))
+            id: z.string().register(z.globalRegistry, {
+                description: 'SKU ID of the item being added.'
+            }),
+            price: z.int().register(z.globalRegistry, {
+                description: 'Price of the item being added in cents.'
+            }),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Amount of items to be added.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Added items\' details.'
+        })).register(z.globalRegistry, {
+            description: 'List of items that should be added to the order.'
+        }))
     })),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'ID that identifies the order in the seller.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zAddLogData = z.object({
     body: z.optional(z.object({
-        source: z.string(),
-        message: z.string()
+        source: z.string().register(z.globalRegistry, {
+            description: 'Source information.'
+        }),
+        message: z.string().register(z.globalRegistry, {
+            description: 'Interactions message.'
+        })
     })),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Unique code that identifies an order.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zInvoiceNotificationData = z.object({
     body: z.optional(z.object({
-        type: z.enum(['Output', 'Input']),
-        issuanceDate: z.string(),
+        type: z.enum(['Output', 'Input']).register(z.globalRegistry, {
+            description: 'The type of invoice. There are two possible values: **Output** and **Input**. The Output type should be used when the invoice you are sending is a selling invoice. The Input type should be used when you send a return invoice.'
+        }),
+        issuanceDate: z.string().register(z.globalRegistry, {
+            description: 'The invoice date is when the order was [invoiced](https://help.vtex.com/en/tracks/orders--2xkTisx4SXOWXQel8Jg8sa/2WgQrlHTyVo4hLjhUs1LMT) in the VTEX platform, and the `IssuanceDate` is the date when the merchant registers the order\'s invoice in the store\'s system. The `IssuanceDate` can be different from the invoice date, because the merchant can register the invoice days or even months after order invoicing. You must add date and time in this field.'
+        }),
         invoiceNumber: z.union([
             z.string(),
             z.null()
         ]),
-        invoiceValue: z.string(),
+        invoiceValue: z.string().register(z.globalRegistry, {
+            description: 'Total amount being invoiced in cents. Must be greater than 0. Do not use any decimal separator. For instance, `$24.99` should be represented as `2499`.'
+        }),
         invoiceKey: z.optional(z.union([
             z.string(),
             z.null()
@@ -3884,7 +6344,9 @@ export const zInvoiceNotificationData = z.object({
             z.string(),
             z.null()
         ])),
-        courier: z.optional(z.string()),
+        courier: z.optional(z.string().register(z.globalRegistry, {
+            description: 'The name of the carrier responsible for delivering the order.'
+        })),
         trackingNumber: z.optional(z.union([
             z.string(),
             z.null()
@@ -3898,82 +6360,136 @@ export const zInvoiceNotificationData = z.object({
             z.null()
         ])),
         items: z.array(z.object({
-            id: z.string(),
-            price: z.int(),
-            description: z.optional(z.string()),
-            quantity: z.int()
-        }))
+            id: z.string().register(z.globalRegistry, {
+                description: 'ID of the SKU being invoiced.'
+            }),
+            price: z.int().register(z.globalRegistry, {
+                description: 'Price in cents of the SKU being invoiced. Do not use a decimal separator, for example, the price $24.99 corresponds to `2499`. You must insert the SKU unitary price because the VTEX system will multiply the price over the quantity.'
+            }),
+            description: z.optional(z.string().register(z.globalRegistry, {
+                description: 'You can use this field for additional information about the SKU being invoiced.'
+            })),
+            quantity: z.int().register(z.globalRegistry, {
+                description: 'Quantity currently in inventory of the SKU being invoiced.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Information about a SKU being invoiced.'
+        })).register(z.globalRegistry, {
+            description: 'Array containing the SKUs that are being invoiced.'
+        })
     })),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Unique code that identifies the order whose invoice is being sent.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zUpdatepartialinvoiceSendTrackingNumberData = z.object({
     body: z.optional(zUpdatepartialinvoiceSendTrackingNumberRequest),
     path: z.object({
-        orderId: z.string(),
-        invoiceNumber: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Unique code that identifies the order whose invoice is being sent.'
+        }),
+        invoiceNumber: z.string().register(z.globalRegistry, {
+            description: 'Number that identifies the invoice.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zUpdateTrackingStatusData = z.object({
     body: z.optional(zUpdateTrackingStatusRequest),
     path: z.object({
-        orderId: z.string(),
-        invoiceNumber: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        }),
+        invoiceNumber: z.string().register(z.globalRegistry, {
+            description: 'Number that identifies the invoice.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetConversationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zGetPaymenttransactionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zSendPaymentNotificationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string(),
-        paymentId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        }),
+        paymentId: z.string().register(z.globalRegistry, {
+            description: 'VTEX payment identifier.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -3981,11 +6497,17 @@ export const zGetfeedorderstatusData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        maxLot: z.string()
+        maxLot: z.string().register(z.globalRegistry, {
+            description: 'Maximum lot.'
+        })
     }),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -3994,8 +6516,12 @@ export const zFeedConfigurationDeleteData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -4004,29 +6530,55 @@ export const zGetFeedConfigurationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zFeedConfigurationData = z.object({
     body: z.optional(z.object({
         filter: z.object({
-            type: z.string(),
-            status: z.optional(z.array(z.string())),
-            expression: z.optional(z.string()),
-            disableSingleFire: z.optional(z.boolean())
+            type: z.string().register(z.globalRegistry, {
+                description: 'Determines what orders appear in the feed and how they are filtered. There are two possible values:\n\r\n\r-`FromWorkflow`: the feed will receive order updates only when order\'s statuses change and orders can be filtered by status, using the `status` field described below.\n\r\n\r-`FromOrders`: the feed gets updates whenever any change is made to an order. In this case, orders can be filtered by any property, according to JSONata expressions passed in the `expression` field described below.'
+            }),
+            status: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Order status included in the feed.'
+            })).register(z.globalRegistry, {
+                description: 'List of order statuses that should be included in the feed. This should only be used in case `type` is set to `FromWorkflow`. The status event will be removed, if it can\'t deliver a message more than 100 times, 4 days progressively. \r\n\r\n**Status available to filter** \r\n\r\n- order-created \n\r\n- on-order-completed \n\r\n- on-order-completed-ffm \n\r\n- payment-pending \n\r\n- waiting-for-order-authorization \n\r\n- approve-payment \n\r\n- payment-approved \n\r\n- request-cancel \n\r\n- waiting-for-seller-decision \n\r\n- waiting-ffmt-authorization \n\r\n- waiting-for-authorization \n\r\n- waiting-for-manual-authorization \n\r\n- authorize-fulfillment \n\r\n- order-create-error \n\r\n- order-creation-error \n\r\n- window-to-cancel \n\r\n- window-to-change-seller \n\r\n- waiting-for-mkt-authorization \n\r\n- waiting-seller-handling \n\r\n- ready-for-handling \n\r\n- start-handling \n\r\n- handling \n\r\n- invoice-after-cancellation-deny \n\r\n- order-accepted \n\r\n- invoice \n\r\n- invoiced \n\r\n- replaced \n\r\n- cancellation-requested \n\r\n- cancel \n\r\n- canceled.'
+            })),
+            expression: z.optional(z.string().register(z.globalRegistry, {
+                description: 'JSONata query expression that defines what conditions must be met for an order to be included in the feed. This should only be used in case `type` is set to `FromOrders`.'
+            })),
+            disableSingleFire: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Sets a limit to how many times a specific order shows on the feed, after it first meets filtering conditions. Using the `FromOrders` type configuration with JSONata filtering expressions might cause orders to appear more than once on a feed, whenever changes are made to that order. If this field is `false` orders will appear in the feed only once.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object with type and status that will filter feed orders.'
         }),
         queue: z.object({
-            visibilityTimeoutInSeconds: z.int(),
-            MessageRetentionPeriodInSeconds: z.int()
+            visibilityTimeoutInSeconds: z.int().register(z.globalRegistry, {
+                description: 'Period of time for which an item becomes invisible after it has been [retrieved](https://developers.vtex.com/vtex-rest-api/reference/feed-v3#getfeedorderstatus1). Measured in seconds.'
+            }),
+            MessageRetentionPeriodInSeconds: z.int().register(z.globalRegistry, {
+                description: 'Maximum life span of an order update in the feed. When a feed item is on the feed for this period of time, it is removed from the feed. Measured in seconds. The maximum number accepted in this field is `1209600` seconds.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Object with information about timeout and message retention.'
         })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -4034,23 +6586,37 @@ export const zGetfeedorderstatus1Data = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        maxlot: z.string()
+        maxlot: z.string().register(z.globalRegistry, {
+            description: 'Lot quantity to retrieve. Maximum accepted value is 10.'
+        })
     }),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
 export const zCommititemfeedorderstatusData = z.object({
     body: z.optional(z.object({
-        handles: z.array(z.string())
+        handles: z.array(z.string().register(z.globalRegistry, {
+            description: 'Item handles.'
+        })).register(z.globalRegistry, {
+            description: 'List of item handles to commit.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -4059,8 +6625,12 @@ export const zDeleteHookConfigurationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -4068,13 +6638,23 @@ export const zGetHookConfigurationData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        clientEmail: z.optional(z.string()),
-        page: z.optional(z.string()),
-        per_page: z.optional(z.string())
+        clientEmail: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Customer email.'
+        })),
+        page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Page number for result pagination.'
+        })),
+        per_page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Page quantity for result pagination.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -4083,20 +6663,30 @@ export const zHookConfigurationData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetChangeSummaryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -4104,50 +6694,96 @@ export const zUserorderslistData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        clientEmail: z.optional(z.string()),
-        page: z.optional(z.string()),
-        per_page: z.optional(z.string()),
-        text: z.optional(z.string()),
-        status: z.optional(z.string()),
-        creation_date: z.optional(z.string()),
-        purchase_agent_id: z.optional(z.string()),
-        my_pending_approvals: z.optional(z.boolean())
+        clientEmail: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Customer email. This field is exclusive for B2C users.'
+        })),
+        page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Page number for result pagination.'
+        })),
+        per_page: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Page quantity for result pagination.'
+        })),
+        text: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filter by text in existing order fields, custom fields, and contact information fields. This field is exclusive for B2B Buyer Portal users.'
+        })),
+        status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Order status. You can provide multiple values by repeating the query parameter. For example: \r\n\r\n - `status=payment-pending&status=handling` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        creation_date: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by creation date by concatenating the sufix `creationDate` with the range date in Timestamp format. This field accepts the value `*` for open ranges. For example: \r\n\r\n - `creationDate:[* TO 2025-04-08T23:59:59.999Z]` \r\n - `creationDate:[2025-01-01T02:00:00.000Z TO *]` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        purchase_agent_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID of the purchase agent. You can provide multiple values by repeating the query parameter. For example: \r\n\r\n - `purchase_agent_id=848a994a-1b6b-4dbd-5555-0455af24e0f2&purchase_agent_id=848a994a-1b6b-4444-8498-0455af24e0f2` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        my_pending_approvals: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'You can filter orders that are pending approval by the current user or by an organizational unit associated with the current user if it has `ViewMyOrgUnitOrders` permission. This field is exclusive for B2B Buyer Portal users.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zUserorderdetailsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        orderId: z.string()
+        orderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID is a unique code that identifies an order.'
+        })
     }),
     query: z.optional(z.object({
-        clientEmail: z.optional(z.string()),
-        text: z.optional(z.string()),
-        status: z.optional(z.string()),
-        creation_date: z.optional(z.string()),
-        purchase_agent_id: z.optional(z.string()),
-        my_pending_approvals: z.optional(z.boolean())
+        clientEmail: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Customer email. This field is exclusive for B2C users.'
+        })),
+        text: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Filter by text in existing order fields, custom fields, and contact information fields. This field is exclusive for B2B Buyer Portal users.'
+        })),
+        status: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Order status. You can provide multiple values by repeating the query parameter. For example: \r\n\r\n - `status=payment-pending&status=handling` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        creation_date: z.optional(z.string().register(z.globalRegistry, {
+            description: 'You can filter orders by creation date by concatenating the sufix `creationDate` with the range date in Timestamp format. This field accepts the value `*` for open ranges. For example: \r\n\r\n - `creationDate:[* TO 2025-04-08T23:59:59.999Z]` \r\n - `creationDate:[2025-01-01T02:00:00.000Z TO *]` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        purchase_agent_id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID of the purchase agent. You can provide multiple values by repeating the query parameter. For example: \r\n\r\n - `purchase_agent_id=848a994a-1b6b-4dbd-5555-0455af24e0f2&purchase_agent_id=848a994a-1b6b-4444-8498-0455af24e0f2` \r\n\r\n This field is exclusive for B2B Buyer Portal users.'
+        })),
+        my_pending_approvals: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'You can filter orders that are pending approval by the current user or by an organizational unit associated with the current user if it has `ViewMyOrgUnitOrders` permission. This field is exclusive for B2B Buyer Portal users.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zTestJsoNataExpressionData = z.object({
     body: z.optional(z.object({
-        Expression: z.string(),
-        Document: z.string()
+        Expression: z.string().register(z.globalRegistry, {
+            description: 'JSONata expression to be tested.'
+        }),
+        Document: z.string().register(z.globalRegistry, {
+            description: 'JSON document to be evaluated by the expression.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string().default('application/json'),
-        'Content-Type': z.string().default('application/json')
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json'),
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json')
     })
 });
 
@@ -4156,112 +6792,182 @@ export const zGetWindowToChangeSellerData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zUpdateWindowToChangeSellerData = z.object({
     body: z.optional(z.object({
-        waitingTime: z.int()
+        waitingTime: z.int().register(z.globalRegistry, {
+            description: 'Number of days after order cancelation by a seller, during which another seller may be assigned to fulfill the order.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetChangeHistoryData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        changeOrderId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order you wish to get the modifications history.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zCreatechangeData = z.object({
     body: z.optional(zCreatechange),
     path: z.object({
-        changeOrderId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order you wish to modify.'
+        })
     }),
     query: z.object({
-        accountName: z.string()
+        accountName: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetChangeDetailData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        changeOrderId: z.string(),
-        changeRequestId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order you wish to get the modification detail.'
+        }),
+        changeRequestId: z.string().register(z.globalRegistry, {
+            description: 'Once you make an order modification, you generate a `requestId` code that identifies the modifications made to that order. This field should be filled with that code. There are no limits to modifications you can perform using the same `changeRequestId`, and we recommend keeping all modifications of a given order grouped by the same `changeRequestId`, so you will have a unified modification history.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zPreviewChangeData = z.object({
     body: z.optional(z.object({
-        reason: z.string(),
-        replace: z.array(zReplace)
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason why you wish to modify the order. Since you can make several modifications to an order, filling this field with a clear explanation helps organize the order modifications history. The shopper can view this field value in [transactional emails](https://help.vtex.com/en/tutorial/order-transactional-email-templates--3g2S2kqBOoSGcCaqMYK2my) and [My Account](https://help.vtex.com/en/tutorial/how-my-account-works--2BQ3GiqhqGJTXsWVuio3Xh).'
+        }),
+        replace: z.array(zReplace).register(z.globalRegistry, {
+            description: 'Name of the change operation you are performing, which can be `replace`, `add` or `remove`. If you want, you can combine all change operations in a single request.'
+        })
     })),
     path: z.object({
-        changeOrderId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order you wish to preview modification.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zRetryChangeData = z.object({
     body: z.optional(zCreatechange),
     path: z.object({
-        changeOrderId: z.string(),
-        changeRequestId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order you wish to retry modification.'
+        }),
+        changeRequestId: z.string().register(z.globalRegistry, {
+            description: 'Once you make an order modification, you generate a `requestId` code that identifies the modifications made to that order. This field should be filled with that code.\r\n\r\nThere are no limits to modifications you can perform using the same `changeRequestId`, and we recommend keeping all modifications of a given order grouped by the same `changeRequestId`, so you will have a unified modification history.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zCancelChangeStoppedonErrorData = z.object({
     body: z.optional(z.object({
-        reason: z.string()
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason why you wish to cancel the order modification. The customer will not view the value inserted in this field.'
+        })
     })),
     path: z.object({
-        changeOrderId: z.string(),
-        changeRequestId: z.string()
+        changeOrderId: z.string().register(z.globalRegistry, {
+            description: 'Order ID of the order with the modifications you wish to cancel.'
+        }),
+        changeRequestId: z.string().register(z.globalRegistry, {
+            description: 'Once you make an order modification, you generate a `requestId` code that identifies the modifications made to that order. This field should be filled with that code. After cancelling an order modification, the `changeRequestId` will no longer be valid.'
+        })
     }),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'Name of the VTEX account that created the order.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation Accept Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -4269,39 +6975,79 @@ export const zGetApiOrderSystemOrdersChangesSettingsData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX [account name](https://help.vtex.com/en/tutorial/what-is-an-account-name--i0mIGLcg3QyEy8OCicEoC).'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPutApiOrderSystemOrdersChangesSettingsData = z.object({
     body: z.optional(z.object({
         paymentConfiguration: z.optional(z.object({
-            customPaymentSystemsAllowed: z.optional(z.array(z.string()))
+            customPaymentSystemsAllowed: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Payment system ID.'
+            })).register(z.globalRegistry, {
+                description: 'List of custom payment system IDs configured for the VTEX account.'
+            }))
+        }).register(z.globalRegistry, {
+            description: '[Order modifications](https://help.vtex.com/en/tutorial/how-change-order-works-beta--56TO0bOFXsfmpc7YZ3wIUZ) payment configurations.'
         })),
         rolloutConfiguration: z.optional(z.object({
-            enableApi: z.optional(z.boolean()).default(false),
+            enableApi: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines if the account enabled the [Order modifications API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes) (`true`) or not (`false`). The account can only use the [Order modifications via VTEX Admin](https://help.vtex.com/en/tutorial/how-to-change-orders-beta--7btlG91rb6sHpW1dkd2kBw) or [via API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes) if this field is set to `true`.'
+            })).default(false),
             enableAdminOrders: z.optional(z.object({
-                enabledWorkspaces: z.optional(z.array(z.string()))
+                enabledWorkspaces: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Name of the workspace with **Order modifications** enabled via VTEX Admin. The asterisk `*` value includes all of the account\'s workspaces.'
+                })).register(z.globalRegistry, {
+                    description: 'List with the workspaces\' names that have the **Order modifications** feature enabled via VTEX Admin.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object about enabling the [Order modifications feature via VTEX Admin](https://help.vtex.com/en/tutorial/how-to-change-orders-beta--7btlG91rb6sHpW1dkd2kBw).'
             })),
             enableMyOrders: z.optional(z.object({
-                enabledWorkspaces: z.optional(z.array(z.string()))
+                enabledWorkspaces: z.optional(z.array(z.string().register(z.globalRegistry, {
+                    description: 'Name of the workspace with **Order modifications** enabled via **My Account**. The asterisk `*` value includes all of the account\'s workspaces.'
+                })).register(z.globalRegistry, {
+                    description: 'List with the workspaces\' names that have the **Order modifications** feature enabled via **My Account**.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object about enabling the **Order modifications** feature via [My Account](https://help.vtex.com/en/tutorial/how-my-account-works--2BQ3GiqhqGJTXsWVuio3Xh).'
             }))
+        }).register(z.globalRegistry, {
+            description: '**Order modifications** settings regarding VTEX Admin, [Orders API](https://developers.vtex.com/docs/api-reference/orders-api#patch-/api/order-system/orders/-changeOrderId-/changes?endpoint=patch-/api/order-system/orders/-changeOrderId-/changes) and **My Account** feature.'
         })),
         pipelineConfiguration: z.optional(z.object({
-            enableTaxHubRecalculation: z.optional(z.boolean()).default(false),
-            compensateShippingChanges: z.optional(z.boolean()).default(false)
+            enableTaxHubRecalculation: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines if the tax calculation is enabled for **Order modifications** (`true`) or not (`false`).'
+            })).default(false),
+            compensateShippingChanges: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Defines if the orders modified will have zero shipping cost (`true`) or not (`false`). Merchants can enable this configuration to modify only items and prices, without impacting the orders\' original freight costs.'
+            })).default(false)
+        }).register(z.globalRegistry, {
+            description: '**Order modifications** settings related to taxes and shipping calculation.'
         }))
     })),
     path: z.optional(z.never()),
     query: z.object({
-        an: z.string()
+        an: z.string().register(z.globalRegistry, {
+            description: 'VTEX [account name](https://help.vtex.com/en/tutorial/what-is-an-account-name--i0mIGLcg3QyEy8OCicEoC).'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

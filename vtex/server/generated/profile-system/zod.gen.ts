@@ -8,13 +8,29 @@ import * as z from 'zod';
  * Profile schema.
  */
 export const zProfile = z.object({
-    firstName: z.string(),
-    lastName: z.string(),
-    email: z.string(),
-    birthDate: z.optional(z.string()),
-    document: z.string(),
-    documentType: z.string(),
-    '{customField}': z.optional(z.string())
+    firstName: z.string().register(z.globalRegistry, {
+        description: 'Client\'s first name.'
+    }),
+    lastName: z.string().register(z.globalRegistry, {
+        description: 'Client\'s last name.'
+    }),
+    email: z.string().register(z.globalRegistry, {
+        description: 'Client\'s email address.'
+    }),
+    birthDate: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Client\'s birth date in ISO 8601 format.'
+    })),
+    document: z.string().register(z.globalRegistry, {
+        description: 'Client\'s document.'
+    }),
+    documentType: z.string().register(z.globalRegistry, {
+        description: 'Type of document informed in `document`.'
+    }),
+    '{customField}': z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of custom field defined in [Create or delete custom fields](https://developers.vtex.com/docs/api-reference/profile-system#put-/api/storage/profile-system/schemas/profileSystem/custom). Can be of any type: string, number, boolean, array or object.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Profile schema.'
 });
 
 /**
@@ -23,10 +39,20 @@ export const zProfile = z.object({
  * Profile metadata.
  */
 export const zProfileMeta = z.object({
-    version: z.string(),
-    author: z.string(),
-    creationDate: z.string(),
-    lastUpdate: z.string()
+    version: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the profile version.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the user who created the profile.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the profile was created in ISO 8601 format.'
+    }),
+    lastUpdate: z.string().register(z.globalRegistry, {
+        description: 'Date when the profile was last updated in ISO 8601 format.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Profile metadata.'
 });
 
 /**
@@ -34,7 +60,9 @@ export const zProfileMeta = z.object({
  *
  * ID of the client's profile.
  */
-export const zProfileId = z.string();
+export const zProfileId = z.string().register(z.globalRegistry, {
+    description: 'ID of the client\'s profile.'
+});
 
 /**
  * Masked profile response
@@ -45,7 +73,11 @@ export const zMaskedProfileResponse = z.array(z.object({
     id: z.optional(zProfileId),
     meta: z.optional(zProfileMeta),
     document: z.optional(zProfile)
-}));
+}).register(z.globalRegistry, {
+    description: 'Masked profile information.'
+})).register(z.globalRegistry, {
+    description: 'Array containing masked profile information.'
+});
 
 /**
  * Masked profile response
@@ -56,7 +88,11 @@ export const zMaskedProfileResponseByVersion = z.array(z.object({
     id: z.optional(zProfileId),
     document: z.optional(zProfile),
     meta: z.optional(zProfileMeta)
-}));
+}).register(z.globalRegistry, {
+    description: 'Masked profile information.'
+})).register(z.globalRegistry, {
+    description: 'Array containing masked profile information.'
+});
 
 /**
  * Unmasked profile response
@@ -67,6 +103,8 @@ export const zUnmaskedProfileResponse = z.object({
     id: z.optional(zProfileId),
     document: z.optional(zProfile),
     meta: z.optional(zProfileMeta)
+}).register(z.globalRegistry, {
+    description: 'Unmasked profile response.'
 });
 
 /**
@@ -75,15 +113,35 @@ export const zUnmaskedProfileResponse = z.object({
  * Address request body.
  */
 export const zCreateAddress = z.object({
-    postalCode: z.string(),
-    countryName: z.string(),
-    countryCode: z.optional(z.string()),
-    administrativeAreaLevel1: z.string(),
-    locality: z.string(),
-    localityAreaLevel1: z.string(),
-    route: z.string(),
-    streetNumber: z.string(),
-    contactId: z.optional(z.string())
+    postalCode: z.string().register(z.globalRegistry, {
+        description: 'Address postal code.'
+    }),
+    countryName: z.string().register(z.globalRegistry, {
+        description: 'Name of the address country.'
+    }),
+    countryCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Two letter country code.'
+    })),
+    administrativeAreaLevel1: z.string().register(z.globalRegistry, {
+        description: 'Name of administrative area, such as the state or province.'
+    }),
+    locality: z.string().register(z.globalRegistry, {
+        description: 'Name of address locality, such as the city.'
+    }),
+    localityAreaLevel1: z.string().register(z.globalRegistry, {
+        description: 'Name of the address locality area, such as the neighborhood or district.'
+    }),
+    route: z.string().register(z.globalRegistry, {
+        description: 'Address route or street name.'
+    }),
+    streetNumber: z.string().register(z.globalRegistry, {
+        description: 'Address street number.'
+    }),
+    contactId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Contact unique identifier.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Address request body.'
 });
 
 /**
@@ -92,16 +150,36 @@ export const zCreateAddress = z.object({
  * Address information.
  */
 export const zAddress = z.object({
-    postalCode: z.string(),
-    countryName: z.string(),
-    countryCode: z.optional(z.string()),
-    administrativeAreaLevel1: z.string(),
-    locality: z.string(),
-    localityAreaLevel1: z.string(),
-    route: z.string(),
-    streetNumber: z.string(),
+    postalCode: z.string().register(z.globalRegistry, {
+        description: 'Address postal code.'
+    }),
+    countryName: z.string().register(z.globalRegistry, {
+        description: 'Name of the address country.'
+    }),
+    countryCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Two letter country code.'
+    })),
+    administrativeAreaLevel1: z.string().register(z.globalRegistry, {
+        description: 'Name of administrative area, such as the state or province.'
+    }),
+    locality: z.string().register(z.globalRegistry, {
+        description: 'Name of address locality, such as the city.'
+    }),
+    localityAreaLevel1: z.string().register(z.globalRegistry, {
+        description: 'Name of the address locality area, such as the neighborhood or district.'
+    }),
+    route: z.string().register(z.globalRegistry, {
+        description: 'Address route or street name.'
+    }),
+    streetNumber: z.string().register(z.globalRegistry, {
+        description: 'Address street number.'
+    }),
     profileId: zProfileId,
-    contactId: z.optional(z.string())
+    contactId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Contact unique identifier.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Address information.'
 });
 
 /**
@@ -109,7 +187,9 @@ export const zAddress = z.object({
  *
  * ID of a client's address.
  */
-export const zAddressId = z.string();
+export const zAddressId = z.string().register(z.globalRegistry, {
+    description: 'ID of a client\'s address.'
+});
 
 /**
  * Address metadata
@@ -117,10 +197,20 @@ export const zAddressId = z.string();
  * Address metadata.
  */
 export const zAddressMeta = z.object({
-    version: z.string(),
-    author: z.string(),
-    creationDate: z.string(),
-    lastUpdateDate: z.string()
+    version: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the address version.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the user who created the address.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the address was created in ISO 8601 format.'
+    }),
+    lastUpdateDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the address was last updated in ISO 8601 format.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Address metadata.'
 });
 
 /**
@@ -132,6 +222,8 @@ export const zUnmaskedAddressResponse = z.object({
     id: z.optional(zAddressId),
     document: z.optional(zAddress),
     meta: z.optional(zAddressMeta)
+}).register(z.globalRegistry, {
+    description: 'Unmasked address information.'
 });
 
 /**
@@ -143,6 +235,8 @@ export const zMaskedAddressResponse = z.object({
     id: z.optional(zAddressId),
     document: z.optional(zAddress),
     meta: z.optional(zAddressMeta)
+}).register(z.globalRegistry, {
+    description: 'Masked address information.'
 });
 
 /**
@@ -150,7 +244,9 @@ export const zMaskedAddressResponse = z.object({
  *
  * ID of purchase information.
  */
-export const zPurchaseInfoId = z.string();
+export const zPurchaseInfoId = z.string().register(z.globalRegistry, {
+    description: 'ID of purchase information.'
+});
 
 /**
  * Purchase information metadata.
@@ -158,14 +254,24 @@ export const zPurchaseInfoId = z.string();
  * Purchase information metadata.
  */
 export const zPurchaseInfoMeta = z.object({
-    version: z.string(),
-    author: z.string(),
-    creationDate: z.string(),
-    lastUpdateDate: z.string(),
+    version: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the purchase information version.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the user who created the purchase information.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the purchase information was created in ISO 8601 format.'
+    }),
+    lastUpdateDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the purchase information was last updated in ISO 8601 format.'
+    }),
     expirationDate: z.optional(z.union([
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Purchase information metadata.'
 });
 
 /**
@@ -174,12 +280,24 @@ export const zPurchaseInfoMeta = z.object({
  * Payment information.
  */
 export const zPayment = z.object({
-    id: z.string(),
-    paymentSystem: z.string(),
-    paymentSystemName: z.string(),
-    value: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    installments: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    referenceValue: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Payment ID.'
+    }),
+    paymentSystem: z.string().register(z.globalRegistry, {
+        description: 'Payment system.'
+    }),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system name.'
+    }),
+    value: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Payment value in cents.'
+    }),
+    installments: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Payment installments.'
+    }),
+    referenceValue: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Reference value for interest calculation in cents.'
+    }),
     cardHolder: z.union([
         z.string(),
         z.null()
@@ -208,7 +326,9 @@ export const zPayment = z.object({
         z.string(),
         z.null()
     ]),
-    url: z.string(),
+    url: z.string().register(z.globalRegistry, {
+        description: 'Payment URL.'
+    }),
     giftCardId: z.union([
         z.string(),
         z.null()
@@ -225,13 +345,21 @@ export const zPayment = z.object({
         z.string(),
         z.null()
     ]),
-    group: z.string(),
+    group: z.string().register(z.globalRegistry, {
+        description: 'Payment group.'
+    }),
     tid: z.union([
         z.string(),
         z.null()
     ]),
-    dueDate: z.string(),
-    connectorResponses: z.record(z.string(), z.unknown())
+    dueDate: z.string().register(z.globalRegistry, {
+        description: 'Due date.'
+    }),
+    connectorResponses: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Connector responses.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Payment information.'
 });
 
 /**
@@ -241,37 +369,87 @@ export const zPayment = z.object({
  */
 export const zPaymentData = z.object({
     availableAccounts: z.optional(z.array(z.object({
-        accountId: z.optional(z.string()),
-        paymentSystem: z.optional(z.string()),
-        paymentSystemName: z.optional(z.string()),
-        cardNumber: z.optional(z.string()),
-        bin: z.optional(z.string()),
-        availableAddresses: z.optional(z.array(z.string())),
-        expirationDate: z.optional(z.string()),
-        isExpired: z.optional(z.boolean()),
+        accountId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Payment account ID.'
+        })),
+        paymentSystem: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Payment system code.'
+        })),
+        paymentSystemName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Payment system name.'
+        })),
+        cardNumber: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Masked card number.'
+        })),
+        bin: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Card bin.'
+        })),
+        availableAddresses: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Available address ID.'
+        })).register(z.globalRegistry, {
+            description: 'List of available addresses.'
+        })),
+        expirationDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Card expiration date, in `MM/YYYY` format.'
+        })),
+        isExpired: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines if the card is expired (`true`) or not (`false`).'
+        })),
         accountStatus: z.optional(z.union([
             z.string(),
             z.null()
         ]))
-    }))),
-    availableTokens: z.optional(z.array(z.string())),
+    }).register(z.globalRegistry, {
+        description: 'Information about an available payment account.'
+    })).register(z.globalRegistry, {
+        description: 'List of available payment accounts.'
+    })),
+    availableTokens: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Available token.'
+    })).register(z.globalRegistry, {
+        description: 'Available tokens.'
+    })),
     transactions: z.optional(z.union([
         z.array(z.object({
-            isActive: z.boolean(),
-            transactionId: z.string(),
-            merchantName: z.string(),
-            payments: z.array(zPayment)
+            isActive: z.boolean().register(z.globalRegistry, {
+                description: 'Indicates whether the transaction is active (`true`) or not (`false`).'
+            }),
+            transactionId: z.string().register(z.globalRegistry, {
+                description: 'Transaction ID.'
+            }),
+            merchantName: z.string().register(z.globalRegistry, {
+                description: 'Merchant name.'
+            }),
+            payments: z.array(zPayment).register(z.globalRegistry, {
+                description: 'List of payments information.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Transaction information.'
         })),
         z.null()
     ])),
-    giftCards: z.optional(z.array(z.string())),
-    giftCardMessages: z.optional(z.array(z.string())),
-    numberOfPaymentErrors: z.optional(z.number()),
-    numberOfDeniedTransactions: z.optional(z.number()),
+    giftCards: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Gift card ID.'
+    })).register(z.globalRegistry, {
+        description: 'Gift card IDs.'
+    })),
+    giftCardMessages: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Gift card message.'
+    })).register(z.globalRegistry, {
+        description: 'Gift card messages.'
+    })),
+    numberOfPaymentErrors: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Amount of payment errors.'
+    })),
+    numberOfDeniedTransactions: z.optional(z.number().register(z.globalRegistry, {
+        description: 'Amount of denied transactions.'
+    })),
     lastDeniedTransaction: z.optional(z.union([
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Payment data.'
 });
 
 /**
@@ -281,15 +459,35 @@ export const zPaymentData = z.object({
  */
 export const zPurchaseInfo = z.object({
     paymentData: z.optional(zPaymentData),
-    clientPreferences: z.optional(z.record(z.string(), z.unknown())),
-    isToSavePersonalData: z.optional(z.boolean()),
+    clientPreferences: z.optional(z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Client preferences.'
+    })),
+    isToSavePersonalData: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if personal data will be saved (`true`) or not (`false`).'
+    })),
     lastUserPurchases: z.optional(z.array(z.object({
-        creationDate: z.optional(z.string()),
-        orderId: z.optional(z.string()),
-        orderGroup: z.optional(z.string()),
-        value: z.optional(z.number())
-    }))),
-    lastPurchasesAddressId: z.optional(z.string())
+        creationDate: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Purchase date in the ISO 8601 format.'
+        })),
+        orderId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the order.'
+        })),
+        orderGroup: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the order group.'
+        })),
+        value: z.optional(z.number().register(z.globalRegistry, {
+            description: 'Purchase value.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Purchase information.'
+    })).register(z.globalRegistry, {
+        description: 'Array with latest purchases from the client.'
+    })),
+    lastPurchasesAddressId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the client address.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Purchase information object.'
 });
 
 /**
@@ -301,6 +499,8 @@ export const zMaskedPurchaseInfoResponse = z.object({
     id: z.optional(zPurchaseInfoId),
     document: z.optional(zPurchaseInfo),
     meta: z.optional(zPurchaseInfoMeta)
+}).register(z.globalRegistry, {
+    description: 'Masked purchase information.'
 });
 
 /**
@@ -310,41 +510,113 @@ export const zMaskedPurchaseInfoResponse = z.object({
  */
 export const zProspect = z.object({
     availableAddresses: z.optional(z.array(z.object({
-        disposable: z.optional(z.boolean()),
-        userId: z.optional(z.string()),
-        addressName: z.optional(z.string()),
-        addressType: z.optional(z.string()),
-        postalCode: z.optional(z.string()),
-        city: z.optional(z.string()),
-        country: z.optional(z.string()),
-        street: z.optional(z.string()),
-        number: z.optional(z.string()),
-        complement: z.optional(z.string()),
-        geoCoordinate: z.optional(z.array(z.string()))
-    }))),
+        disposable: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'Defines whether the address is deleted after use (`true`) or not (`false`).'
+        })),
+        userId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'User unique identifier.'
+        })),
+        addressName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Address name.'
+        })),
+        addressType: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Address type.'
+        })),
+        postalCode: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Postal code.'
+        })),
+        city: z.optional(z.string().register(z.globalRegistry, {
+            description: 'City.'
+        })),
+        country: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Country code.'
+        })),
+        street: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Street name.'
+        })),
+        number: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Street number.'
+        })),
+        complement: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Complement information.'
+        })),
+        geoCoordinate: z.optional(z.array(z.string().register(z.globalRegistry, {
+            description: 'Geocoordinate.'
+        })).register(z.globalRegistry, {
+            description: 'Array with two strings that represent geocoordinates: first latitude, then longitude.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Available address information.'
+    })).register(z.globalRegistry, {
+        description: 'Available addresses.'
+    })),
     paymentData: z.optional(zPaymentData),
     contacts: z.optional(z.array(z.object({
-        contactId: z.optional(z.string()),
-        email: z.optional(z.string()),
-        firstName: z.optional(z.string()),
-        lastName: z.optional(z.string()),
-        phone: z.optional(z.string()),
-        document: z.optional(z.string())
-    }))),
-    invoiceSubject: z.optional(z.object({
-        invoiceSubjectId: z.optional(z.string()),
-        email: z.optional(z.string()),
-        firstName: z.optional(z.string()),
-        lastName: z.optional(z.string()),
-        phone: z.optional(z.string())
+        contactId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s unique identifier.'
+        })),
+        email: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s email address.'
+        })),
+        firstName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s first name.'
+        })),
+        lastName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s last name.'
+        })),
+        phone: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s phone number.'
+        })),
+        document: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Contact\'s document.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Contact information.'
+    })).register(z.globalRegistry, {
+        description: 'List of contacts.'
     })),
-    email: z.optional(z.string()),
-    firstName: z.optional(z.string()),
-    lastName: z.optional(z.string()),
-    document: z.optional(z.string()),
-    cellPhone: z.optional(z.string()),
-    isPJ: z.optional(z.boolean()),
-    customerCode: z.optional(z.string())
+    invoiceSubject: z.optional(z.object({
+        invoiceSubjectId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Invoice subject ID.'
+        })),
+        email: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Invoice subject\'s email address.'
+        })),
+        firstName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Invoice subject\'s first name.'
+        })),
+        lastName: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Invoice subject\'s last name.'
+        })),
+        phone: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Invoice subject\'s phone number.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Information about the invoice subject.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s email address.'
+    })),
+    firstName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s first name.'
+    })),
+    lastName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s last name.'
+    })),
+    document: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s document.'
+    })),
+    cellPhone: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s cellphone number.'
+    })),
+    isPJ: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines if a prospect is corporate (`true`) or not (`false`).'
+    })),
+    customerCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Prospect\'s customer code.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Prospect information.'
 });
 
 /**
@@ -352,7 +624,9 @@ export const zProspect = z.object({
  *
  * ID of the prospect.
  */
-export const zProspectId = z.string();
+export const zProspectId = z.string().register(z.globalRegistry, {
+    description: 'ID of the prospect.'
+});
 
 /**
  * Prospect information metadata.
@@ -360,14 +634,24 @@ export const zProspectId = z.string();
  * Prospect information metadata.
  */
 export const zProspectMeta = z.object({
-    version: z.string(),
-    author: z.string(),
-    creationDate: z.string(),
-    lastUpdateDate: z.string(),
+    version: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the prospect version.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the user who created the prospect.'
+    }),
+    creationDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the prospect information was created in ISO 8601 format.'
+    }),
+    lastUpdateDate: z.string().register(z.globalRegistry, {
+        description: 'Date when the prospect information was last updated in ISO 8601 format.'
+    }),
     expirationDate: z.optional(z.union([
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Prospect information metadata.'
 });
 
 /**
@@ -379,6 +663,8 @@ export const zUnmaskedProspectResponse = z.object({
     id: z.optional(zProspectId),
     document: z.optional(zProspect),
     meta: z.optional(zProspectMeta)
+}).register(z.globalRegistry, {
+    description: 'Unmasked prospect information.'
 });
 
 /**
@@ -390,6 +676,8 @@ export const zMaskedProspectResponse = z.object({
     id: z.optional(zProspectId),
     document: z.optional(zProspect),
     meta: z.optional(zProspectMeta)
+}).register(z.globalRegistry, {
+    description: 'Masked prospect information.'
 });
 
 /**
@@ -398,35 +686,77 @@ export const zMaskedProspectResponse = z.object({
  * Schema information.
  */
 export const zSchema = z.object({
-    title: z.string(),
-    type: z.string(),
-    description: z.string(),
-    required: z.array(z.string()),
+    title: z.string().register(z.globalRegistry, {
+        description: 'Schema title.'
+    }),
+    type: z.string().register(z.globalRegistry, {
+        description: 'Schema type.'
+    }),
+    description: z.string().register(z.globalRegistry, {
+        description: 'Schema\'s human readable description.'
+    }),
+    required: z.array(z.string().register(z.globalRegistry, {
+        description: 'Key of a field that is required in the schema.'
+    })).register(z.globalRegistry, {
+        description: 'Schema required fields.'
+    }),
     properties: z.object({
         additionalProperties: z.optional(z.object({
-            type: z.string(),
-            sensitive: z.boolean(),
-            pii: z.boolean(),
+            type: z.string().register(z.globalRegistry, {
+                description: 'Schema property type.'
+            }),
+            sensitive: z.boolean().register(z.globalRegistry, {
+                description: 'Indicates whether the property is sensitive data. Set to `true` if `pii` is `true` and set to `false` if `pii` is `false`.'
+            }),
+            pii: z.boolean().register(z.globalRegistry, {
+                description: 'Indicates whether the property is Personal Identifiable Information (PII).'
+            }),
             items: z.optional(z.object({
-                type: z.optional(z.string())
+                type: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Field type.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Object containing the type of the items if the field is an array. Typically, arrays will contain strings and will be used for fields such as `email`.'
             }))
+        }).register(z.globalRegistry, {
+            description: 'Schema of any given field described in the `properties` field.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object describing each field in your desired schema. In this object, each property is a new object, describing the field according to: `type` (string); `sensitive` (boolean); `pii` (boolean) and `items.type` (if field is array).'
     }),
-    documentTTL: z.optional(z.int()),
-    version: z.optional(z.int()),
-    'v-indexed': z.optional(z.array(z.string())),
-    'v-unique': z.optional(z.array(z.string()))
+    documentTTL: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Document time to live, in days. After this many days from its creation or update, any document cerated from this schema will be deleted.'
+    })),
+    version: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Schema version.'
+    })),
+    'v-indexed': z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Field to be indexed.'
+    })).register(z.globalRegistry, {
+        description: 'List of fields to be indexed.'
+    })),
+    'v-unique': z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Field that must be unique.'
+    })).register(z.globalRegistry, {
+        description: 'List of fields that must be unique.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Schema information.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * There are two value options for this field:
@@ -435,32 +765,44 @@ export const zAccept = z.string();
  *
  * 2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.
  */
-export const zProfileId2 = z.string();
+export const zProfileId2 = z.string().register(z.globalRegistry, {
+    description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+});
 
 /**
  * ID of a client's specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint's response, in the `id` field.
  */
-export const zAddressId2 = z.string();
+export const zAddressId2 = z.string().register(z.globalRegistry, {
+    description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+});
 
 /**
  * ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint's response, in the `id` field.
  */
-export const zProspectId2 = z.string();
+export const zProspectId2 = z.string().register(z.globalRegistry, {
+    description: 'ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint\'s response, in the `id` field.'
+});
 
 /**
  * ID of the version of the client's profile as returned by endpoints that create or update profile information in the `version` field.
  */
-export const zProfileVersionId = z.string();
+export const zProfileVersionId = z.string().register(z.globalRegistry, {
+    description: 'ID of the version of the client\'s profile as returned by endpoints that create or update profile information in the `version` field.'
+});
 
 /**
  * ID of the version of a given client's address as returned by endpoints that create or update address information in the `version` field.
  */
-export const zAddressVersionId = z.string();
+export const zAddressVersionId = z.string().register(z.globalRegistry, {
+    description: 'ID of the version of a given client\'s address as returned by endpoints that create or update address information in the `version` field.'
+});
 
 /**
  * When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.
  */
-export const zAlternativeKey = z.enum(['email', 'document']);
+export const zAlternativeKey = z.enum(['email', 'document']).register(z.globalRegistry, {
+    description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+});
 
 /**
  * This parameter sets the the Time To Live (TTL), in days, of the specific document being created or updated with this request. After this period of time from the moment of the request, the document is deleted. By sending this parameter you override the TTL set for the schema.
@@ -468,248 +810,406 @@ export const zAlternativeKey = z.enum(['email', 'document']);
  *
  * > Currently, the available default document schemas have no TTL. This means that documents are stored indefinitely, unless a TTL is sent when creating or updating.
  */
-export const zTtl = z.int();
+export const zTtl = z.int().register(z.globalRegistry, {
+    description: 'This parameter sets the the Time To Live (TTL), in days, of the specific document being created or updated with this request. After this period of time from the moment of the request, the document is deleted. By sending this parameter you override the TTL set for the schema.\n\r\n\r> Currently, the available default document schemas have no TTL. This means that documents are stored indefinitely, unless a TTL is sent when creating or updating.'
+});
 
 /**
  * Reason for requesting unmasked data.
  */
-export const zReason = z.string();
+export const zReason = z.string().register(z.globalRegistry, {
+    description: 'Reason for requesting unmasked data.'
+});
 
 /**
  * Identification of the unmasked information requester.
  */
-export const zOnBehalfOf = z.string();
+export const zOnBehalfOf = z.string().register(z.globalRegistry, {
+    description: 'Identification of the unmasked information requester.'
+});
 
 export const zCreateClientProfileData = z.object({
     body: z.optional(zProfile),
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        ttl: z.optional(z.int())
+        ttl: z.optional(z.int().register(z.globalRegistry, {
+            description: 'This parameter sets the the Time To Live (TTL), in days, of the specific document being created or updated with this request. After this period of time from the moment of the request, the document is deleted. By sending this parameter you override the TTL set for the schema.\n\r\n\r> Currently, the available default document schemas have no TTL. This means that documents are stored indefinitely, unless a TTL is sent when creating or updating.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteClientProfileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetProfileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateClientProfileData = z.object({
     body: z.optional(zProfile),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document'])),
-        ttl: z.optional(z.int())
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        })),
+        ttl: z.optional(z.int().register(z.globalRegistry, {
+            description: 'This parameter sets the the Time To Live (TTL), in days, of the specific document being created or updated with this request. After this period of time from the moment of the request, the document is deleted. By sending this parameter you override the TTL set for the schema.\n\r\n\r> Currently, the available default document schemas have no TTL. This means that documents are stored indefinitely, unless a TTL is sent when creating or updating.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedProfileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.object({
-        reason: z.string(),
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        }),
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetProfileByVersionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        profileVersionId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        profileVersionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version of the client\'s profile as returned by endpoints that create or update profile information in the `version` field.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedProfileByVersionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        profileVersionId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        profileVersionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version of the client\'s profile as returned by endpoints that create or update profile information in the `version` field.'
+        })
     }),
     query: z.object({
-        reason: z.string()
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetClientAddressesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zCreateClientAddressData = z.object({
     body: z.optional(zCreateAddress),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedClientAddressesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteAddressData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetAddressData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateClientAddressData = z.object({
     body: z.optional(zCreateAddress),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedAddressData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.object({
-        reason: z.string(),
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        }),
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetAddressByVersionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string(),
-        addressVersionId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        }),
+        addressVersionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version of a given client\'s address as returned by endpoints that create or update address information in the `version` field.'
+        })
     }),
     query: z.object({
-        reason: z.string(),
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        }),
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedAddressByVersionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string(),
-        addressId: z.string(),
-        addressVersionId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        }),
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of a client\'s specific address as returned in the [Create client address](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles/-profileId-/addresses) endpoint\'s response, in the `id` field.'
+        }),
+        addressVersionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version of a given client\'s address as returned by endpoints that create or update address information in the `version` field.'
+        })
     }),
     query: z.object({
-        reason: z.string(),
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        }),
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -718,8 +1218,12 @@ export const zGetProspectsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -728,8 +1232,12 @@ export const zCreateProspectData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -738,128 +1246,198 @@ export const zGetUnmaskedProspectsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteProspectData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        prospectId: z.string()
+        prospectId: z.string().register(z.globalRegistry, {
+            description: 'ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetProspectData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        prospectId: z.string()
+        prospectId: z.string().register(z.globalRegistry, {
+            description: 'ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateProspectData = z.object({
     body: z.optional(zProspect),
     path: z.object({
-        prospectId: z.string()
+        prospectId: z.string().register(z.globalRegistry, {
+            description: 'ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedProspectData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        prospectId: z.string()
+        prospectId: z.string().register(z.globalRegistry, {
+            description: 'ID of the prospect as returned by the [Create prospect](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/prospects) endpoint\'s response, in the `id` field.'
+        })
     }),
     query: z.object({
-        reason: z.string()
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeletePurchaseInformationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetPurchaseInformationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdatePurchaseInformationData = z.object({
     body: z.optional(zPurchaseInfo),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zCreatePurchaseInformationData = z.object({
     body: z.optional(zPurchaseInfo),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.optional(z.object({
-        alternativeKey: z.optional(z.enum(['email', 'document']))
+        alternativeKey: z.optional(z.enum(['email', 'document']).register(z.globalRegistry, {
+            description: 'When using an alternative key as `profileId` value, fill this parameter with the key you wish to use as `profileId`. There are two possible values: `email` and `document`.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetUnmaskedPurchaseInformationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        profileId: z.string()
+        profileId: z.string().register(z.globalRegistry, {
+            description: 'There are two value options for this field: \n\n1. ID of the client\'s profile, as in the `id` field returned by the [Create profile](https://developers.vtex.com/docs/api-reference/profile-system#post-/api/storage/profile-system/profiles) endpoint.\n\r\n2. The value of an alternative key (`email` or `document`). When using this option, the `alternativeKey` query parameter is required, to inform which key is being used.'
+        })
     }),
     query: z.object({
-        reason: z.string()
+        reason: z.string().register(z.globalRegistry, {
+            description: 'Reason for requesting unmasked data.'
+        })
     }),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -868,8 +1446,12 @@ export const zGetApiStorageProfileSystemSchemasProfileSystemData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -878,8 +1460,12 @@ export const zGetApiStorageProfileSystemSchemasProfileSystemCustomData = z.objec
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
@@ -888,7 +1474,11 @@ export const zCreateOrUpdateProfileSchemaData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

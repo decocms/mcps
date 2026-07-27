@@ -8,10 +8,20 @@ import * as z from 'zod';
  * Data entity information.
  */
 export const zListdataentity = z.object({
-    acronym: z.string(),
-    name: z.string(),
-    primaryKeyType: z.string(),
-    allowGetAll: z.boolean()
+    acronym: z.string().register(z.globalRegistry, {
+        description: 'Two-letter string that identifies the data entity.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Data entity name.'
+    }),
+    primaryKeyType: z.string().register(z.globalRegistry, {
+        description: 'Primary key type.'
+    }),
+    allowGetAll: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if it will be allowed to retrieve all fields from documents from this data entity at once using the [Get document](https://developers.vtex.com/docs/api-reference/masterdata-api#get-/api/dataentities/-acronym-/documents/-id-) endpoint (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Data entity information.'
 });
 
 /**
@@ -20,13 +30,29 @@ export const zListdataentity = z.object({
  * Field information.
  */
 export const zField = z.object({
-    name: z.string(),
-    type: z.string(),
-    displayName: z.string(),
-    isNullable: z.boolean(),
-    isSearchable: z.boolean(),
-    isFilter: z.boolean(),
-    isInternal: z.boolean()
+    name: z.string().register(z.globalRegistry, {
+        description: 'Field name.'
+    }),
+    type: z.string().register(z.globalRegistry, {
+        description: 'Field type.'
+    }),
+    displayName: z.string().register(z.globalRegistry, {
+        description: 'Field display name.'
+    }),
+    isNullable: z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the field is nullable (`true`) or not (`false`).'
+    }),
+    isSearchable: z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the field is searchable (`true`) or not (`false`).'
+    }),
+    isFilter: z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the field is a filter (`true`) or not (`false`).'
+    }),
+    isInternal: z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the field is for internal use only (`true`) or not (`false`).'
+    })
+}).register(z.globalRegistry, {
+    description: 'Field information.'
 });
 
 /**
@@ -35,20 +61,40 @@ export const zField = z.object({
  * Data entity structure.
  */
 export const zGetdataentityfields = z.object({
-    acronym: z.string(),
-    name: z.string(),
-    primaryKeyType: z.string(),
-    allowGetAll: z.boolean(),
-    fields: z.array(zField)
+    acronym: z.string().register(z.globalRegistry, {
+        description: 'Two-letter string that identifies the data entity.'
+    }),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Data entity name.'
+    }),
+    primaryKeyType: z.string().register(z.globalRegistry, {
+        description: 'Primary key type.'
+    }),
+    allowGetAll: z.boolean().register(z.globalRegistry, {
+        description: 'Defines if it will be allowed to retrieve all fields from documents from this data entity at once using the [Get document](https://developers.vtex.com/docs/api-reference/masterdata-api#get-/api/dataentities/-acronym-/documents/-id-) endpoint (`true`) or not (`false`).'
+    }),
+    fields: z.array(zField).register(z.globalRegistry, {
+        description: 'List of fields that documents from the given data entity have.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Data entity structure.'
 });
 
 /**
  * Document information.
  */
 export const zIdHrefDocumentId = z.object({
-    id: z.optional(z.string()),
-    href: z.optional(z.string()),
-    documentId: z.optional(z.string())
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created, with data entity prefix.'
+    })),
+    href: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Document reference URL.'
+    })),
+    documentId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the document.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Document information.'
 });
 
 /**
@@ -57,8 +103,14 @@ export const zIdHrefDocumentId = z.object({
  * Document information.
  */
 export const zIdHref = z.object({
-    Id: z.string(),
-    Href: z.string()
+    Id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created, with data entity prefix.'
+    }),
+    Href: z.string().register(z.globalRegistry, {
+        description: 'Document reference URL.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Document information.'
 });
 
 /**
@@ -67,10 +119,20 @@ export const zIdHref = z.object({
  * Score information.
  */
 export const zPutscoresRequest = z.object({
-    field: z.string(),
-    key: z.string(),
-    point: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    until: z.string()
+    field: z.string().register(z.globalRegistry, {
+        description: 'Field name.'
+    }),
+    key: z.string().register(z.globalRegistry, {
+        description: 'Key name.'
+    }),
+    point: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Amount of points to be added to the score.'
+    }),
+    until: z.string().register(z.globalRegistry, {
+        description: 'Amount of time the added points will be valid for.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Score information.'
 });
 
 /**
@@ -79,9 +141,17 @@ export const zPutscoresRequest = z.object({
  * Request body object to update score.
  */
 export const zPutscorebyfieldRequest = z.object({
-    key: z.string(),
-    point: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    until: z.string()
+    key: z.string().register(z.globalRegistry, {
+        description: 'Key name.'
+    }),
+    point: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).register(z.globalRegistry, {
+        description: 'Amount of points to be added to the score.'
+    }),
+    until: z.string().register(z.globalRegistry, {
+        description: 'Amount of time the added points will be valid for.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body object to update score.'
 });
 
 /**
@@ -90,7 +160,11 @@ export const zPutscorebyfieldRequest = z.object({
  * Request body object to delete score.
  */
 export const zDeletescorebyfieldRequest = z.object({
-    key: z.string()
+    key: z.string().register(z.globalRegistry, {
+        description: 'Key name.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body object to delete score.'
 });
 
 /**
@@ -99,8 +173,14 @@ export const zDeletescorebyfieldRequest = z.object({
  * Version information.
  */
 export const zListversion = z.object({
-    id: z.string(),
-    date: z.string()
+    id: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the version.'
+    }),
+    date: z.string().register(z.globalRegistry, {
+        description: 'Date when the version was created, in  ISO 8601 format.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Version information.'
 });
 
 /**
@@ -109,11 +189,23 @@ export const zListversion = z.object({
  * Object representing each document.
  */
 export const zDocument = z.object({
-    '{customProperty}': z.optional(z.string()),
-    id: z.string(),
-    accountId: z.string(),
-    accountName: z.string(),
-    dataEntityId: z.string()
+    '{customProperty}': z.optional(z.string().register(z.globalRegistry, {
+        description: 'Custom property.'
+    })),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the document.'
+    }),
+    accountId: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the account.'
+    }),
+    accountName: z.string().register(z.globalRegistry, {
+        description: 'Account name.'
+    }),
+    dataEntityId: z.string().register(z.globalRegistry, {
+        description: 'Two-letter string that identifies the data entity.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Object representing each document.'
 });
 
 /**
@@ -122,9 +214,15 @@ export const zDocument = z.object({
  * Version information.
  */
 export const zGetversion = z.object({
-    id: z.string(),
-    author: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the version.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'Unique identifier of the user who created the version.'
+    }),
     document: zDocument
+}).register(z.globalRegistry, {
+    description: 'Version information.'
 });
 
 /**
@@ -167,25 +265,63 @@ export const zCreateUpdateProfileRequests = z.object({
         z.string(),
         z.null()
     ])),
-    corporateDocument: z.optional(z.string().max(300)),
-    homePhone: z.optional(z.string().max(300)),
-    cellPhone: z.optional(z.string().max(300)),
-    corporateName: z.optional(z.string().max(300)),
-    tradeName: z.optional(z.string().max(300)),
-    stateRegistration: z.optional(z.string().max(300)),
-    isFreeStateRegistration: z.optional(z.boolean()),
-    priceTables: z.optional(z.string().max(50)),
+    corporateDocument: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The business document of the contract. This field is recommended for B2B Buyer Portal.'
+    })),
+    homePhone: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The home phone number of the contract. This field is recommended for B2B Buyer Portal.'
+    })),
+    cellPhone: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The cell phone number of the contract. This field is recommended for B2B Buyer Portal.'
+    })),
+    corporateName: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The corporate name of the contract. This field is required for B2B Buyer Portal.'
+    })),
+    tradeName: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The trade name ("doing business as") of the contract. This field is recommended for B2B Buyer Portal.'
+    })),
+    stateRegistration: z.optional(z.string().max(300).register(z.globalRegistry, {
+        description: 'The state registration of the contract. This field is recommended for B2B Buyer Portal.'
+    })),
+    isFreeStateRegistration: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Indicates if the state registration is free. This field is recommended for B2B Buyer Portal.'
+    })),
+    priceTables: z.optional(z.string().max(50).register(z.globalRegistry, {
+        description: 'Price tables associated with the contract, separated by commas. This field is recommended for B2B Buyer Portal.'
+    })),
     restrictions: z.optional(z.object({
         'vtex.catalog': z.optional(z.object({
-            collectionIds: z.optional(z.array(z.string()))
+            collectionIds: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Collection ID. This field is recommended for B2B Buyer Portal.'
+            })).register(z.globalRegistry, {
+                description: 'A list of collection IDs that define which product collections (sets of SKUs) the B2B customer can view or purchase from. These IDs are internal catalog entities used to group products logically. This field is recommended for B2B Buyer Portal.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object containing restrictions regarding catalog. This field is recommended for B2B Buyer Portal.'
         })),
         'vtex.checkout': z.optional(z.object({
-            creditCards: z.optional(z.array(z.string()))
+            creditCards: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Credit card ID. This field is recommended for B2B Buyer Portal.'
+            })).register(z.globalRegistry, {
+                description: 'A list of credit card IDs that the customer is allowed to use during checkout. These IDs reference cards stored in the BK entity, managed by the VTEX Checkout system. This field is recommended for B2B Buyer Portal.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object containing restrictions regarding checkout. This field is recommended for B2B Buyer Portal.'
         })),
         'vtex.payments': z.optional(z.object({
-            paymentSystemIds: z.optional(z.array(z.string()))
+            paymentSystemIds: z.optional(z.array(z.string().register(z.globalRegistry, {
+                description: 'Payment system ID. This field is recommended for B2B Buyer Portal.'
+            })).register(z.globalRegistry, {
+                description: 'A list of numeric IDs that represent the allowed payment systems (e.g., credit card processors) for the customer. These IDs are predefined and globally recognized by VTEX. This field is recommended for B2B Buyer Portal.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Contains restrictions regarding payments. This field is recommended for B2B Buyer Portal.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object with restriction definitions for `vtex.catalog`, `vtex.checkout`, and `vtex.payments`. This field is recommended for B2B Buyer Portal.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Request body object.'
 });
 
 /**
@@ -200,7 +336,9 @@ export const zCreateUpdateAddressRequests = z.object({
         z.string(),
         z.null()
     ])),
-    addressType: z.optional(z.enum(['commercial', 'invoice'])),
+    addressType: z.optional(z.enum(['commercial', 'invoice']).register(z.globalRegistry, {
+        description: 'Type of address. For example, `Residential` or `Pickup`, among others. For B2B Buyer Portal, this field is required and its possible values are `commercial` for shipping or `invoice` for billing.'
+    })),
     receiverName: z.optional(z.union([
         z.string(),
         z.null()
@@ -249,23 +387,39 @@ export const zCreateUpdateAddressRequests = z.object({
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Request body object.'
 });
 
 /**
  * Response body object.
  */
 export const zDocumentResponse = z.object({
-    Id: z.string(),
-    Href: z.string()
+    Id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created or updated.'
+    }),
+    Href: z.string().register(z.globalRegistry, {
+        description: 'Document reference URL.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
  * Response body for a created address.
  */
 export const zCreateAddressResponse = z.object({
-    Id: z.optional(z.string()),
-    Href: z.optional(z.string()),
-    DocumentId: z.optional(z.string())
+    Id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'The prefixed ID of the document.'
+    })),
+    Href: z.optional(z.string().register(z.globalRegistry, {
+        description: 'The URL to access the created document.'
+    })),
+    DocumentId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'The actual document ID ([UUID](https://en.wikipedia.org/wiki/Universally_unique_identifier)) within the entity.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response body for a created address.'
 });
 
 /**
@@ -276,7 +430,9 @@ export const zAddressResponse = z.object({
         z.string(),
         z.null()
     ])),
-    addressType: z.optional(z.enum(['commercial', 'invoice'])),
+    addressType: z.optional(z.enum(['commercial', 'invoice']).register(z.globalRegistry, {
+        description: 'The type of address: `commercial` for shipping, `invoice` for billing.'
+    })),
     city: z.optional(z.union([
         z.string(),
         z.null()
@@ -370,322 +526,540 @@ export const zAddressResponse = z.object({
         z.null()
     ])),
     followers: z.optional(z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'User ID.'
+        })),
         z.null()
     ])),
     tags: z.optional(z.union([
-        z.array(z.string()),
+        z.array(z.string().register(z.globalRegistry, {
+            description: 'Tag value.'
+        })),
         z.null()
     ])),
     auto_filter: z.optional(z.union([
         z.string(),
         z.null()
     ]))
+}).register(z.globalRegistry, {
+    description: 'Response body for an address document.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string().default('application/json');
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+}).default('application/json');
 
 /**
  * Type of the content being sent. If you are uploading an image, use `image/jpg` or `image/png`. When using JavaScript, use `multipart/form-data`.
  */
-export const zContentTypeImg = z.string();
+export const zContentTypeImg = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent. If you are uploading an image, use `image/jpg` or `image/png`. When using JavaScript, use `multipart/form-data`.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string().default('application/vnd.vtex.ds.v10+json');
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+}).default('application/vnd.vtex.ds.v10+json');
 
 /**
  * Two-letter string that identifies the data entity.
  */
-export const zAcronym = z.string();
+export const zAcronym = z.string().register(z.globalRegistry, {
+    description: 'Two-letter string that identifies the data entity.'
+});
 
 /**
  * Unique identifier of the document.
  */
-export const zId = z.string();
+export const zId = z.string().register(z.globalRegistry, {
+    description: 'Unique identifier of the document.'
+});
 
 /**
  * Names of the fields that will be returned per document, separated by a comma `,`. It is possible to fetch all fields using `_all` as the value of this query parameter. However, in order to avoid permission errors, we strongly recommend informing only the names of the exact fields that will be used.
  */
-export const zFields = z.string();
+export const zFields = z.string().register(z.globalRegistry, {
+    description: 'Names of the fields that will be returned per document, separated by a comma `,`. It is possible to fetch all fields using `_all` as the value of this query parameter. However, in order to avoid permission errors, we strongly recommend informing only the names of the exact fields that will be used.'
+});
 
 /**
  * Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.
  */
-export const zSchema = z.string();
+export const zSchema = z.string().register(z.globalRegistry, {
+    description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.'
+});
 
 export const zListdataentitiesData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zGetdataentitystructureData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Data entity acronym.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zCreateorupdatepartialdocumentData = z.object({
     body: z.object({
-        id: z.optional(z.string()),
-        '{fieldName}': z.optional(z.string())
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document to be created.'
+        })),
+        '{fieldName}': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Field(s) to be filled in and its respective value(s).'
+        }))
     }),
     path: z.object({
-        acronym: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zCreatenewdocumentData = z.object({
     body: z.object({
-        '{fieldName}': z.optional(z.string())
+        '{fieldName}': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Field name.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Object with document fields and their respective values.'
     }),
     path: z.object({
-        acronym: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zDeletedocumentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zGetdocumentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string())
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Names of the fields that will be returned per document, separated by a comma `,`. It is possible to fetch all fields using `_all` as the value of this query parameter. However, in order to avoid permission errors, we strongly recommend informing only the names of the exact fields that will be used.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zUpdatepartialdocumentData = z.object({
-    body: z.record(z.string(), z.unknown()),
+    body: z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+        description: 'Object with the fields to be updated and their respective values.'
+    }),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zUpdateentiredocumentData = z.object({
     body: z.object({
-        '{fieldName}': z.optional(z.string())
+        '{fieldName}': z.optional(z.string().register(z.globalRegistry, {
+            description: 'Field name and value.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Object with document fields and their respective values.'
     }),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zListversionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zGetversionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        versionId: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        versionId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the version to retrieve.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zPutversionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        versionId: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        versionId: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the version to update.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zScrolldocumentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string()),
-        _where: z.optional(z.string()),
-        _sort: z.optional(z.string()),
-        _size: z.optional(z.string()),
-        _token: z.optional(z.string())
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Names of the fields that will be returned per document, separated by a comma `,`. It is possible to fetch all fields using `_all` as the value of this query parameter. However, in order to avoid permission errors, we strongly recommend informing only the names of the exact fields that will be used.'
+        })),
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.'
+        })),
+        _size: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Maximum amount of documents returned per request. The maximum value you can set is `1000`.'
+        })),
+        _token: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Value of the `X-VTEX-MD-TOKEN` token obtained in the response header of the first request, necessary on subsequent requests to continue scrolling through documents. The token expires after 20 minutes of inactivity, and each request made with the token during this time resets the expiration timer.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zSearchdocumentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string()),
-        _where: z.optional(z.string()),
-        _sort: z.optional(z.string())
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Names of the fields that will be returned per document, separated by a comma `,`. It is possible to fetch all fields using `_all` as the value of this query parameter. However, in order to avoid permission errors, we strongly recommend informing only the names of the exact fields that will be used.'
+        })),
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json'),
-        'REST-Range': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json'),
+        'REST-Range': z.string().register(z.globalRegistry, {
+            description: 'Specifies the range of documents to be returned in the response. The value should follow the format `resources={x}-{y}`, where:\n* `x`: Index of the first document in the returned array.\n* `y`: Index of the last document in the returned array + 1.\n\nThis field controls pagination by defining the subset of documents to be retrieved. The maximum number of documents returned per query is limited to 100.\nFor example, `resources=0-10` returns the first 10 documents.'
+        })
     })
 });
 
 export const zRetrieveattachmentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        field: z.string(),
-        'file-name': z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        field: z.string().register(z.globalRegistry, {
+            description: 'Name of the field where the file is saved, as it appears on VTEX Admin.'
+        }),
+        'file-name': z.string().register(z.globalRegistry, {
+            description: 'File name and extension.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zSaveattachmentData = z.object({
     body: z.optional(z.object({
-        file: z.array(z.string())
+        file: z.array(z.string().register(z.globalRegistry, {
+            description: 'File to be uploaded.'
+        })).register(z.globalRegistry, {
+            description: 'Files to be uploaded.'
+        })
     })),
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        field: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        field: z.string().register(z.globalRegistry, {
+            description: 'Name of the field to attach the file to, as it appears in VTEX Admin.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent. If you are uploading an image, use `image/jpg` or `image/png`. When using JavaScript, use `multipart/form-data`.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zValidateDocumentbyClustersData = z.object({
     body: z.array(z.object({
-        name: z.optional(z.string()),
-        rule: z.optional(z.string())
-    })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster validation rule name.'
+        })),
+        rule: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster validation rule.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Cluster information.'
+    })).register(z.globalRegistry, {
+        description: 'Array of clusters.'
+    }),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zPutscoresData = z.object({
     body: z.array(zPutscoresRequest),
     path: z.object({
-        acronym: z.string(),
-        id: z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zDeletescorebyfieldData = z.object({
     body: zDeletescorebyfieldRequest,
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        'field-name': z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        'field-name': z.string().register(z.globalRegistry, {
+            description: 'Name of the field to remove a key from.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zPutscorebyfieldData = z.object({
     body: zPutscorebyfieldRequest,
     path: z.object({
-        acronym: z.string(),
-        id: z.string(),
-        'field-name': z.string()
+        acronym: z.string().register(z.globalRegistry, {
+            description: 'Two-letter string that identifies the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        }),
+        'field-name': z.string().register(z.globalRegistry, {
+            description: 'Name of the field to score.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
@@ -693,37 +1067,57 @@ export const zCreateNewCustomerProfilev2Data = z.object({
     body: zCreateUpdateProfileRequests,
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zDeleteCustomerProfileData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zUpdateCustomerProfileData = z.object({
     body: zCreateUpdateProfileRequests,
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Unique identifier of the document.'
+        })
     }),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
@@ -731,50 +1125,78 @@ export const zCreateNewCustomerAddressData = z.object({
     body: zCreateUpdateAddressRequests,
     path: z.optional(z.never()),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zDeleteCustomerAdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        addressId: z.string()
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of the address to be deleted.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zGetApiDataentitiesAdDocumentsByAddressIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        addressId: z.string()
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of the address to retrieve.'
+        })
     }),
     query: z.object({
-        _fields: z.string().default('_all')
+        _fields: z.string().register(z.globalRegistry, {
+            description: 'Specifies that all fields of the document should be included in the response.'
+        }).default('_all')
     }),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });
 
 export const zUpdateCustomerAddressData = z.object({
     body: zCreateUpdateAddressRequests,
     path: z.object({
-        addressId: z.string()
+        addressId: z.string().register(z.globalRegistry, {
+            description: 'ID of the address to update.'
+        })
     }),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with.  This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/vnd.vtex.ds.v10+json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/vnd.vtex.ds.v10+json')
     })
 });

@@ -40,7 +40,15 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getautoApprovevaluefromconfig = <ThrowOnError extends boolean = false>(options: Options<GetautoApprovevaluefromconfigData, ThrowOnError>) => (options.client ?? client).get<GetautoApprovevaluefromconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/autoapproval/toggle', ...options });
+export const getautoApprovevaluefromconfig = <ThrowOnError extends boolean = false>(options: Options<GetautoApprovevaluefromconfigData, ThrowOnError>) => (options.client ?? client).get<GetautoApprovevaluefromconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/autoapproval/toggle',
+    ...options
+});
 
 /**
  * Activate autoApprove in marketplace's account
@@ -64,7 +72,15 @@ export const getautoApprovevaluefromconfig = <ThrowOnError extends boolean = fal
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const saveautoapproveforaccount = <ThrowOnError extends boolean = false>(options: Options<SaveautoapproveforaccountData, ThrowOnError>) => (options.client ?? client).put<SaveautoapproveforaccountResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/autoapproval/toggle', ...options });
+export const saveautoapproveforaccount = <ThrowOnError extends boolean = false>(options: Options<SaveautoapproveforaccountData, ThrowOnError>) => (options.client ?? client).put<SaveautoapproveforaccountResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/autoapproval/toggle',
+    ...options
+});
 
 /**
  * Get account's approval settings
@@ -102,7 +118,15 @@ export const saveautoapproveforaccount = <ThrowOnError extends boolean = false>(
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getaccountconfig = <ThrowOnError extends boolean = false>(options: Options<GetaccountconfigData, ThrowOnError>) => (options.client ?? client).get<GetaccountconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration', ...options });
+export const getaccountconfig = <ThrowOnError extends boolean = false>(options: Options<GetaccountconfigData, ThrowOnError>) => (options.client ?? client).get<GetaccountconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration',
+    ...options
+});
 
 /**
  * Save account's approval settings
@@ -126,7 +150,15 @@ export const getaccountconfig = <ThrowOnError extends boolean = false>(options: 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const saveaccountconfig = <ThrowOnError extends boolean = false>(options: Options<SaveaccountconfigData, ThrowOnError>) => (options.client ?? client).put<SaveaccountconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration', ...options });
+export const saveaccountconfig = <ThrowOnError extends boolean = false>(options: Options<SaveaccountconfigData, ThrowOnError>) => (options.client ?? client).put<SaveaccountconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration',
+    ...options
+});
 
 /**
  * Get account's matcher settings
@@ -152,7 +184,15 @@ export const saveaccountconfig = <ThrowOnError extends boolean = false>(options:
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getmatchconfig = <ThrowOnError extends boolean = false>(options: Options<GetmatchconfigData, ThrowOnError>) => (options.client ?? client).get<GetmatchconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/account/config', ...options });
+export const getmatchconfig = <ThrowOnError extends boolean = false>(options: Options<GetmatchconfigData, ThrowOnError>) => (options.client ?? client).get<GetmatchconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/account/config',
+    ...options
+});
 
 /**
  * Get seller's approval settings
@@ -193,7 +233,15 @@ export const getmatchconfig = <ThrowOnError extends boolean = false>(options: Op
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getselleraccountconfig = <ThrowOnError extends boolean = false>(options: Options<GetselleraccountconfigData, ThrowOnError>) => (options.client ?? client).get<GetselleraccountconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/seller/{sellerId}', ...options });
+export const getselleraccountconfig = <ThrowOnError extends boolean = false>(options: Options<GetselleraccountconfigData, ThrowOnError>) => (options.client ?? client).get<GetselleraccountconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/seller/{sellerId}',
+    ...options
+});
 
 /**
  * Save seller's approval settings
@@ -217,7 +265,15 @@ export const getselleraccountconfig = <ThrowOnError extends boolean = false>(opt
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const putselleraccountconfig = <ThrowOnError extends boolean = false>(options: Options<PutselleraccountconfigData, ThrowOnError>) => (options.client ?? client).put<PutselleraccountconfigResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/seller/{sellerId}', ...options });
+export const putselleraccountconfig = <ThrowOnError extends boolean = false>(options: Options<PutselleraccountconfigData, ThrowOnError>) => (options.client ?? client).put<PutselleraccountconfigResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/seller/{sellerId}',
+    ...options
+});
 
 /**
  * Activate autoApprove setting for a seller
@@ -239,7 +295,15 @@ export const putselleraccountconfig = <ThrowOnError extends boolean = false>(opt
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const saveautoapproveforaccountseller = <ThrowOnError extends boolean = false>(options: Options<SaveautoapproveforaccountsellerData, ThrowOnError>) => (options.client ?? client).put<SaveautoapproveforaccountsellerResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/autoapproval/toggle/seller/{sellerId}', ...options });
+export const saveautoapproveforaccountseller = <ThrowOnError extends boolean = false>(options: Options<SaveautoapproveforaccountsellerData, ThrowOnError>) => (options.client ?? client).put<SaveautoapproveforaccountsellerResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/autoapproval/toggle/seller/{sellerId}',
+    ...options
+});
 
 /**
  * Get all SKU suggestions
@@ -273,7 +337,15 @@ export const saveautoapproveforaccountseller = <ThrowOnError extends boolean = f
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getsuggestions = <ThrowOnError extends boolean = false>(options: Options<GetsuggestionsData, ThrowOnError>) => (options.client ?? client).get<GetsuggestionsResponses, unknown, ThrowOnError>({ url: '/suggestions', ...options });
+export const getsuggestions = <ThrowOnError extends boolean = false>(options: Options<GetsuggestionsData, ThrowOnError>) => (options.client ?? client).get<GetsuggestionsResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions',
+    ...options
+});
 
 /**
  * Delete SKU suggestion
@@ -296,7 +368,15 @@ export const getsuggestions = <ThrowOnError extends boolean = false>(options: Op
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const deleteSuggestion = <ThrowOnError extends boolean = false>(options: Options<DeleteSuggestionData, ThrowOnError>) => (options.client ?? client).delete<DeleteSuggestionResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerSkuId}', ...options });
+export const deleteSuggestion = <ThrowOnError extends boolean = false>(options: Options<DeleteSuggestionData, ThrowOnError>) => (options.client ?? client).delete<DeleteSuggestionResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerSkuId}',
+    ...options
+});
 
 /**
  * Get SKU suggestion by ID
@@ -332,7 +412,15 @@ export const deleteSuggestion = <ThrowOnError extends boolean = false>(options: 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getSuggestion = <ThrowOnError extends boolean = false>(options: Options<GetSuggestionData, ThrowOnError>) => (options.client ?? client).get<GetSuggestionResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerSkuId}', ...options });
+export const getSuggestion = <ThrowOnError extends boolean = false>(options: Options<GetSuggestionData, ThrowOnError>) => (options.client ?? client).get<GetSuggestionResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerSkuId}',
+    ...options
+});
 
 /**
  * Send SKU suggestion
@@ -357,7 +445,15 @@ export const getSuggestion = <ThrowOnError extends boolean = false>(options: Opt
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const saveSuggestion = <ThrowOnError extends boolean = false>(options: Options<SaveSuggestionData, ThrowOnError>) => (options.client ?? client).put<SaveSuggestionResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerSkuId}', ...options });
+export const saveSuggestion = <ThrowOnError extends boolean = false>(options: Options<SaveSuggestionData, ThrowOnError>) => (options.client ?? client).put<SaveSuggestionResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerSkuId}',
+    ...options
+});
 
 /**
  * Get all versions
@@ -384,7 +480,15 @@ export const saveSuggestion = <ThrowOnError extends boolean = false>(options: Op
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getVersions = <ThrowOnError extends boolean = false>(options: Options<GetVersionsData, ThrowOnError>) => (options.client ?? client).get<GetVersionsResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerskuid}/versions', ...options });
+export const getVersions = <ThrowOnError extends boolean = false>(options: Options<GetVersionsData, ThrowOnError>) => (options.client ?? client).get<GetVersionsResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerskuid}/versions',
+    ...options
+});
 
 /**
  * Get version by ID
@@ -409,7 +513,15 @@ export const getVersions = <ThrowOnError extends boolean = false>(options: Optio
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const getSuggestionbyversion = <ThrowOnError extends boolean = false>(options: Options<GetSuggestionbyversionData, ThrowOnError>) => (options.client ?? client).get<GetSuggestionbyversionResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerskuid}/versions/{version}', ...options });
+export const getSuggestionbyversion = <ThrowOnError extends boolean = false>(options: Options<GetSuggestionbyversionData, ThrowOnError>) => (options.client ?? client).get<GetSuggestionbyversionResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerskuid}/versions/{version}',
+    ...options
+});
 
 /**
  * Match received SKUs individually
@@ -448,7 +560,15 @@ export const getSuggestionbyversion = <ThrowOnError extends boolean = false>(opt
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const match = <ThrowOnError extends boolean = false>(options: Options<MatchData, ThrowOnError>) => (options.client ?? client).put<MatchResponses, unknown, ThrowOnError>({ url: '/suggestions/{sellerId}/{sellerskuid}/versions/{version}/matches/{matchid}', ...options });
+export const match = <ThrowOnError extends boolean = false>(options: Options<MatchData, ThrowOnError>) => (options.client ?? client).put<MatchResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/{sellerId}/{sellerskuid}/versions/{version}/matches/{matchid}',
+    ...options
+});
 
 /**
  * Match multiple received SKUs
@@ -481,7 +601,15 @@ export const match = <ThrowOnError extends boolean = false>(options: Options<Mat
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const matchMultiple = <ThrowOnError extends boolean = false>(options: Options<MatchMultipleData, ThrowOnError>) => (options.client ?? client).put<MatchMultipleResponses, unknown, ThrowOnError>({ url: '/suggestions/matches/action/{actionName}', ...options });
+export const matchMultiple = <ThrowOnError extends boolean = false>(options: Options<MatchMultipleData, ThrowOnError>) => (options.client ?? client).put<MatchMultipleResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/matches/action/{actionName}',
+    ...options
+});
 
 /**
  * Map seller specifications to marketplace catalog
@@ -507,4 +635,12 @@ export const matchMultiple = <ThrowOnError extends boolean = false>(options: Opt
  *
  * >ℹ️ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const putSuggestionsConfigurationBySellerIdSpecifications = <ThrowOnError extends boolean = false>(options: Options<PutSuggestionsConfigurationBySellerIdSpecificationsData, ThrowOnError>) => (options.client ?? client).put<PutSuggestionsConfigurationBySellerIdSpecificationsResponses, unknown, ThrowOnError>({ url: '/suggestions/configuration/{sellerID}/specifications', ...options });
+export const putSuggestionsConfigurationBySellerIdSpecifications = <ThrowOnError extends boolean = false>(options: Options<PutSuggestionsConfigurationBySellerIdSpecificationsData, ThrowOnError>) => (options.client ?? client).put<PutSuggestionsConfigurationBySellerIdSpecificationsResponses, unknown, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/suggestions/configuration/{sellerID}/specifications',
+    ...options
+});

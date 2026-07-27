@@ -5,34 +5,52 @@ import * as z from 'zod';
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 export const zChangeentireaccountAllwebsitesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        protocol: z.string()
+        protocol: z.string().register(z.globalRegistry, {
+            description: 'Internet communication protocol, it can be `HTTP` or `HTTPS`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zChangespecificwebsiteData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        websiteId: z.string(),
-        protocol: z.string()
+        websiteId: z.string().register(z.globalRegistry, {
+            description: 'Specific website ID.'
+        }),
+        protocol: z.string().register(z.globalRegistry, {
+            description: 'Internet communication protocol, it can be `HTTP` or `HTTPS`.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

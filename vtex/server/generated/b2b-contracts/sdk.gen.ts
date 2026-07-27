@@ -29,9 +29,9 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Authentication requires the `VtexIdclientAutCookie` header.
  *
- * **Note**: Only the following restriction fields are accepted:
+ * **Note**: The following restriction fields are accepted:
  *
- * - `vtex.catalog.collectionIds`
+ * - `vtex.catalog.assortmentIds`
  * - `vtex.checkout.creditCards`
  * - `vtex.payments.paymentSystemIds`
  *
@@ -124,11 +124,17 @@ export const getApiDataentitiesClDocumentsByContractId = <ThrowOnError extends b
 /**
  * Update contract by ID
  *
- * This endpoint allows you to update an existing contract by its unique identifier.
+ * Updates an existing contract by its unique identifier. When updating `restrictions`, send the complete object for the fields you are changing.
  *
  * > ⚠️ When updating contracts you must send each field according to the specifications provided. Otherwise, the Checkout module will not be able to autofill data during the shopping flow, which can block the purchase. Learn more about [SmartCheckout - Customer information automatic fill-in](https://help.vtex.com/en/tutorial/smartcheckout-preenchimento-automatico-de-dados-do-cliente--2Nuu3xAFzdhIzJIldAdtan#).
  *
  * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
+ *
+ * **Note**: The following restriction fields are accepted:
+ *
+ * - `vtex.catalog.assortmentIds`
+ * - `vtex.checkout.creditCards`
+ * - `vtex.payments.paymentSystemIds`
  *
  * ## Permissions
  *

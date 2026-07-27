@@ -9,7 +9,7 @@ export type ClientOptions = {
  */
 export type DefaultValuesRequest = {
     /**
-     * Unique identifier of the default values document.
+     * Unique identifier of the organizational unit. This value is used as the default values document ID.
      */
     id: string;
     /**

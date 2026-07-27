@@ -33,7 +33,7 @@ export type CreateUpdateDimensionRequestBody = {
          */
         name: string;
         /**
-         * Rule priority controls which policy type is checked first within the org unit. Lower numbers are evaluated first. You can have bypass rules and immediately approve orders by matching effect types with fixed priorities: `1` = bypass (effectType: 0), `2` = deny (effectType: 1), `3` = sequential workflow (effectType: 2).
+         * Sequential evaluation priority for the rule. Lower numbers are evaluated first. Rules must be ordered: bypass (`effectType: 0`) first, then deny (`effectType: 1`), then sequential workflow (`effectType: 2`). Priorities are assigned sequentially across all rules.
          */
         priority: number;
         /**
@@ -109,7 +109,7 @@ export type CreateUpdateRuleRequestBody = {
      */
     name: string;
     /**
-     * Rule priority controls which policy type is checked first within the org unit. Lower numbers are evaluated first. You can have bypass rules and immediately approve orders by matching effect types with fixed priorities: `1` = bypass (effectType: 0), `2` = deny (effectType: 1), `3` = sequential workflow (effectType: 2).
+     * Sequential evaluation priority for the rule. Lower numbers are evaluated first. Rules must be ordered: bypass (`effectType: 0`) first, then deny (`effectType: 1`), then sequential workflow (`effectType: 2`). Priorities are assigned sequentially across all rules.
      */
     priority: number;
     /**
@@ -448,7 +448,7 @@ export type GetByAccountNameAuthorizationDimensionsResponses = {
              */
             status?: null | 'accepted' | 'denied' | 'pending';
             /**
-             * Evaluation priority for the rule.
+             * Sequential evaluation priority for the rule. Lower numbers are evaluated first. Rules must be ordered: bypass (`effectType: 0`) first, then deny (`effectType: 1`), then sequential workflow (`effectType: 2`).
              */
             priority?: number;
             /**
@@ -1092,7 +1092,7 @@ export type PostCommercialAuthorizationsByOrderAuthIdCallbackResponses = {
                  */
                 score?: number;
                 /**
-                 * Rule priority (lower = higher priority).
+                 * Sequential evaluation priority for the rule. Lower numbers are evaluated first. Rules must be ordered: bypass, then deny, then sequential workflow.
                  */
                 priority?: number;
                 /**

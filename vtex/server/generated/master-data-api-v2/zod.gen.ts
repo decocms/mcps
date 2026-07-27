@@ -7,7 +7,9 @@ import * as z from 'zod';
  *
  * This can be any pure JSON document. Add new _Key-Value_ pairs to test.
  */
-export const zDocumentRequest = z.record(z.string(), z.unknown());
+export const zDocumentRequest = z.record(z.string(), z.unknown()).register(z.globalRegistry, {
+    description: 'This can be any pure JSON document. Add new _Key-Value_ pairs to test.'
+});
 
 /**
  * Using_fields=_all
@@ -15,10 +17,20 @@ export const zDocumentRequest = z.record(z.string(), z.unknown());
  * Document information.
  */
 export const zUsingFieldsAll = z.object({
-    id: z.string(),
-    accountId: z.string(),
-    accountName: z.string(),
-    dataEntityId: z.string()
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document.'
+    }),
+    accountId: z.string().register(z.globalRegistry, {
+        description: 'ID of the VTEX account.'
+    }),
+    accountName: z.string().register(z.globalRegistry, {
+        description: 'Name of the VTEX account.'
+    }),
+    dataEntityId: z.string().register(z.globalRegistry, {
+        description: 'Data entity name.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Document information.'
 });
 
 /**
@@ -36,10 +48,20 @@ export const zSaveschemabynameRequest = z.object({
                 'number',
                 'object',
                 'string'
-            ])
+            ]).register(z.globalRegistry, {
+                description: 'Type of property.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Property name.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object containing schema properties.'
     }),
-    'v-indexed': z.optional(z.array(z.string()))
+    'v-indexed': z.optional(z.array(z.string()).register(z.globalRegistry, {
+        description: 'Names of properties to index for /search, /scroll, and _sort. Required for reliable filtering (e.g. _where=field=value) and sorting (_sort=field ASC). Indexing is asynchronous after schema save.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'JSON Schema of the data entity. Add `v-indexed` with an array of property names to make those fields filterable and sortable in /search and /scroll.'
 });
 
 /**
@@ -48,7 +70,9 @@ export const zSaveschemabynameRequest = z.object({
  * Schema.
  */
 export const zGetSchemasResponse = z.object({
-    name: z.string(),
+    name: z.string().register(z.globalRegistry, {
+        description: 'Schema name.'
+    }),
     schema: z.object({
         properties: z.optional(z.object({
             name: z.optional(z.object({
@@ -59,10 +83,20 @@ export const zGetSchemasResponse = z.object({
                     'number',
                     'object',
                     'string'
-                ])
+                ]).register(z.globalRegistry, {
+                    description: 'Type of property.'
+                })
+            }).register(z.globalRegistry, {
+                description: 'Property name.'
             }))
+        }).register(z.globalRegistry, {
+            description: 'Object containing schema properties.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object with schema properties.'
     })
+}).register(z.globalRegistry, {
+    description: 'Schema.'
 });
 
 /**
@@ -78,7 +112,11 @@ export const zName = z.object({
         'number',
         'object',
         'string'
-    ])
+    ]).register(z.globalRegistry, {
+        description: 'Type of property.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Property name.'
 });
 
 /**
@@ -88,6 +126,8 @@ export const zName = z.object({
  */
 export const zProperties = z.object({
     name: zName
+}).register(z.globalRegistry, {
+    description: 'Object containing schema properties.'
 });
 
 /**
@@ -96,20 +136,40 @@ export const zProperties = z.object({
  * Request body object.
  */
 export const zPutindicesRequest = z.object({
-    name: z.string(),
-    multiple: z.boolean(),
-    fields: z.string()
+    name: z.string().register(z.globalRegistry, {
+        description: 'Name to identify the index.'
+    }),
+    multiple: z.boolean().register(z.globalRegistry, {
+        description: 'Determines whether the values need to be unique. If false, values must be unique.'
+    }),
+    fields: z.string().register(z.globalRegistry, {
+        description: 'Comma-separated fields of the index.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Request body object.'
 });
 
 /**
  * Index information.
  */
 export const zIndex = z.object({
-    name: z.optional(z.string()),
-    acronym: z.optional(z.string()),
-    isGlobal: z.optional(z.boolean()),
-    multiple: z.optional(z.boolean()),
-    fields: z.optional(z.string())
+    name: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Index name.'
+    })),
+    acronym: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Data entity name.'
+    })),
+    isGlobal: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Defines whether the index is global (`true`) or not (`false`).'
+    })),
+    multiple: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Determines whether the values need to be unique. If `false`, values must be unique.'
+    })),
+    fields: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Comma-separated fields of the index.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Index information.'
 });
 
 /**
@@ -118,17 +178,31 @@ export const zIndex = z.object({
  * Version information.
  */
 export const zListversion = z.object({
-    id: z.string(),
-    date: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Version ID.'
+    }),
+    date: z.string().register(z.globalRegistry, {
+        description: 'Date when the version was created in ISO 8601 format.'
+    }),
     document: z.optional(z.object({
-        id: z.optional(z.string()),
-        dataEntityId: z.optional(z.string()),
+        id: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Document ID.'
+        })),
+        dataEntityId: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Data entity name.'
+        })),
         isNewsletterOptIn: z.optional(z.union([
             z.boolean(),
             z.null()
         ])),
-        createdBy: z.optional(z.string())
+        createdBy: z.optional(z.string().register(z.globalRegistry, {
+            description: 'ID of the user who created the document.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Information about the document.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Version information.'
 });
 
 /**
@@ -137,13 +211,33 @@ export const zListversion = z.object({
  * Document information.
  */
 export const zDocument = z.object({
-    id: z.string(),
-    dataEntityId: z.string(),
-    accountId: z.string(),
-    accountName: z.string(),
-    followers: z.array(z.string()),
-    schemas: z.optional(z.array(z.string())),
-    email: z.optional(z.string())
+    id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document.'
+    }),
+    dataEntityId: z.string().register(z.globalRegistry, {
+        description: 'Data entity name.'
+    }),
+    accountId: z.string().register(z.globalRegistry, {
+        description: 'ID of the VTEX account.'
+    }),
+    accountName: z.string().register(z.globalRegistry, {
+        description: 'Name of the VTEX account.'
+    }),
+    followers: z.array(z.string().register(z.globalRegistry, {
+        description: 'Follower.'
+    })).register(z.globalRegistry, {
+        description: 'Followers.'
+    }),
+    schemas: z.optional(z.array(z.string().register(z.globalRegistry, {
+        description: 'Schema name.'
+    })).register(z.globalRegistry, {
+        description: 'Schemas which the document is compliant with.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'User email.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Document information.'
 });
 
 /**
@@ -152,72 +246,110 @@ export const zDocument = z.object({
  * Request body object.
  */
 export const zGetversion = z.object({
-    id: z.string(),
-    author: z.string(),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Version ID.'
+    }),
+    author: z.string().register(z.globalRegistry, {
+        description: 'ID of the user who created the version.'
+    }),
     document: zDocument
+}).register(z.globalRegistry, {
+    description: 'Request body object.'
 });
 
 /**
  * Response body object.
  */
 export const zCreateDocumentResponse = z.object({
-    Id: z.string(),
-    Href: z.string(),
-    DocumentId: z.string()
+    Id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created, with data entity prefix.'
+    }),
+    Href: z.string().register(z.globalRegistry, {
+        description: 'Document reference URL.'
+    }),
+    DocumentId: z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
  * Response body object.
  */
 export const zDocumentResponse = z.object({
-    Id: z.string(),
-    Href: z.string()
+    Id: z.string().register(z.globalRegistry, {
+        description: 'ID of the document that was created or updated.'
+    }),
+    Href: z.string().register(z.globalRegistry, {
+        description: 'Document reference URL.'
+    })
+}).register(z.globalRegistry, {
+    description: 'Response body object.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Name of the data entity.
  */
-export const zDataEntityName = z.string();
+export const zDataEntityName = z.string().register(z.globalRegistry, {
+    description: 'Name of the data entity.'
+});
 
 /**
  * Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.
  */
-export const zSchema = z.string();
+export const zSchema = z.string().register(z.globalRegistry, {
+    description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+});
 
 /**
  * ID of the Document.
  */
-export const zId = z.string();
+export const zId = z.string().register(z.globalRegistry, {
+    description: 'ID of the Document.'
+});
 
 /**
  * ID of the version to update.
  */
-export const zVersionId = z.string();
+export const zVersionId = z.string().register(z.globalRegistry, {
+    description: 'ID of the version to update.'
+});
 
 /**
  * Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).
  */
-export const zWhere = z.string();
+export const zWhere = z.string().register(z.globalRegistry, {
+    description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+});
 
 /**
  * Name of the index.
  */
-export const zIndexName = z.string();
+export const zIndexName = z.string().register(z.globalRegistry, {
+    description: 'Name of the index.'
+});
 
 /**
  * Name of the schema.
  */
-export const zSchemaName = z.string();
+export const zSchemaName = z.string().register(z.globalRegistry, {
+    description: 'Name of the schema.'
+});
 
 /**
  * Specifies the range of documents to be returned in the response. The value should follow the format `resources={x}-{y}`, where:
@@ -227,192 +359,312 @@ export const zSchemaName = z.string();
  * This field controls pagination by defining the subset of documents to be retrieved. The maximum number of documents returned per query is limited to 100.
  * For example, `resources=0-10` returns the first 10 documents.
  */
-export const zRestRange = z.string();
+export const zRestRange = z.string().register(z.globalRegistry, {
+    description: 'Specifies the range of documents to be returned in the response. The value should follow the format `resources={x}-{y}`, where:\n* `x`: Index of the first document in the returned array.\n* `y`: Index of the last document in the returned array + 1.\n\nThis field controls pagination by defining the subset of documents to be retrieved. The maximum number of documents returned per query is limited to 100.\nFor example, `resources=0-10` returns the first 10 documents.'
+});
 
 /**
  * Fields that should be returned by document. Separate fields' names with commas. For example `_fields=email,firstName,document`. You can also use `_fields=_all` to fetch all fields.
  */
-export const zFields = z.string();
+export const zFields = z.string().register(z.globalRegistry, {
+    description: 'Fields that should be returned by document. Separate fields\' names with commas. For example `_fields=email,firstName,document`. You can also use `_fields=_all` to fetch all fields.'
+});
 
 /**
  * Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.
  */
-export const zSort = z.string();
+export const zSort = z.string().register(z.globalRegistry, {
+    description: 'Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.'
+});
 
 /**
  * Value of the `X-VTEX-MD-TOKEN` token obtained in the response header of the first request, necessary on subsequent requests to continue scrolling through documents. The token expires after 20 minutes of inactivity, and each request made with the token during this time resets the expiration timer.
  */
-export const zToken = z.string();
+export const zToken = z.string().register(z.globalRegistry, {
+    description: 'Value of the `X-VTEX-MD-TOKEN` token obtained in the response header of the first request, necessary on subsequent requests to continue scrolling through documents. The token expires after 20 minutes of inactivity, and each request made with the token during this time resets the expiration timer.'
+});
 
 /**
  * Inform the number of documents per request. Maximum value of `1000`.
  */
-export const zSize = z.int().default(100);
+export const zSize = z.int().register(z.globalRegistry, {
+    description: 'Inform the number of documents per request. Maximum value of `1000`.'
+}).default(100);
 
 export const zCreateorupdatepartialdocumentData = z.object({
     body: zDocumentRequest,
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zCreatenewdocumentData = z.object({
     body: zDocumentRequest,
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _schema: z.optional(z.string())
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeletedocumentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetdocumentData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        })
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string()),
-        _schema: z.optional(z.string())
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Fields that should be returned by document. Separate fields\' names with commas. For example `_fields=email,firstName,document`. You can also use `_fields=_all` to fetch all fields.'
+        })),
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdatepartialdocumentData = z.object({
     body: zDocumentRequest,
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        })
     }),
     query: z.optional(z.object({
-        _where: z.optional(z.string()),
-        _schema: z.optional(z.string())
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateentiredocumentData = z.object({
     body: zDocumentRequest,
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the document. If you inform an **unused ID**, this endpoint will create a new document with the informed custom ID, differently from the [Create new document](https://developers.vtex.com/docs/api-reference/master-data-api-v2#post-/api/dataentities/-dataEntityName-/documents) endpoint, which automatically generates the ID. If you inform an **existing ID**, this endpoint will update the entire document associated with the informed ID.'
+        })
     }),
     query: z.optional(z.object({
-        _where: z.optional(z.string()),
-        _schema: z.optional(z.string())
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        }))
     })),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zSearchdocumentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _fields: z.optional(z.string()),
-        _where: z.optional(z.string()),
-        _schema: z.optional(z.string()),
-        _sort: z.optional(z.string())
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Fields that should be returned by document. Separate fields\' names with commas. For example `_fields=email,firstName,document`. You can also use `_fields=_all` to fetch all fields.'
+        })),
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        })),
+        _sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string(),
-        'REST-Range': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }),
+        'REST-Range': z.string().register(z.globalRegistry, {
+            description: 'Specifies the range of documents to be returned in the response. The value should follow the format `resources={x}-{y}`, where:\n* `x`: Index of the first document in the returned array.\n* `y`: Index of the last document in the returned array + 1.\n\nThis field controls pagination by defining the subset of documents to be retrieved. The maximum number of documents returned per query is limited to 100.\nFor example, `resources=0-10` returns the first 10 documents.'
+        })
     })
 });
 
 export const zScrolldocumentsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.object({
-        _token: z.optional(z.string()),
-        _size: z.optional(z.int()).default(100),
-        _fields: z.optional(z.string()),
-        _where: z.optional(z.string()),
-        _schema: z.optional(z.string()),
-        _sort: z.optional(z.string())
+        _token: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Value of the `X-VTEX-MD-TOKEN` token obtained in the response header of the first request, necessary on subsequent requests to continue scrolling through documents. The token expires after 20 minutes of inactivity, and each request made with the token during this time resets the expiration timer.'
+        })),
+        _size: z.optional(z.int().register(z.globalRegistry, {
+            description: 'Inform the number of documents per request. Maximum value of `1000`.'
+        })).default(100),
+        _fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Fields that should be returned by document. Separate fields\' names with commas. For example `_fields=email,firstName,document`. You can also use `_fields=_all` to fetch all fields.'
+        })),
+        _where: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines a condition the document must comply with. When referring to fields, you can use a nested field up to the first level (e.g. `wishlistProduct.productName`).'
+        })),
+        _schema: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Name of the [schema](https://developers.vtex.com/docs/guides/master-data-schema-lifecycle) that the document complies with. This field is required when using `_where` or `_fields` query parameters.'
+        })),
+        _sort: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Defines sorting mode in two parts. The first part is the name of the field you want to sort by. It can be a nested field up to the first level (e.g. `wishlistProduct.productName`). In the second part, use `ASC` for ascending order or `DESC` for descending order.'
+        }))
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetschemasData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zDeleteschemabynameData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        schemaName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        schemaName: z.string().register(z.globalRegistry, {
+            description: 'Name of the schema.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zGetschemabynameData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        schemaName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        schemaName: z.string().register(z.globalRegistry, {
+            description: 'Name of the schema.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zSaveschemabynameData = z.object({
     body: zSaveschemabynameRequest,
     path: z.object({
-        dataEntityName: z.string(),
-        schemaName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        schemaName: z.string().register(z.globalRegistry, {
+            description: 'Name of the schema.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -420,18 +672,24 @@ export const zSaveschemabynameData = z.object({
 export const zGetindicesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zPutindicesData = z.object({
     body: zPutindicesRequest,
     path: z.object({
-        dataEntityName: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        })
     }),
     query: z.optional(z.never())
 });
@@ -439,82 +697,140 @@ export const zPutindicesData = z.object({
 export const zDeleteindexbynameData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        index_name: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        index_name: z.string().register(z.globalRegistry, {
+            description: 'Name of the index.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zGetindexbynameData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        index_name: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        index_name: z.string().register(z.globalRegistry, {
+            description: 'Name of the index.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        })
     })
 });
 
 export const zValidatedocumentbyclustersData = z.object({
     body: z.array(z.object({
-        name: z.optional(z.string()),
-        rule: z.optional(z.string())
-    })),
+        name: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster name.'
+        })),
+        rule: z.optional(z.string().register(z.globalRegistry, {
+            description: 'Cluster validation rule.'
+        }))
+    }).register(z.globalRegistry, {
+        description: 'Cluster validation rule information.'
+    })).register(z.globalRegistry, {
+        description: 'List of cluster validation rule information.'
+    }),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        Accept: z.string()
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zListversionsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        })
     }),
     query: z.optional(z.object({
-        load: z.optional(z.boolean()).default(true),
-        fields: z.optional(z.string()).default('id,dataEntityId,isNewsletterOptIn,createdBy')
+        load: z.optional(z.boolean().register(z.globalRegistry, {
+            description: 'If true, return all the fields in each version of the document.'
+        })).default(true),
+        fields: z.optional(z.string().register(z.globalRegistry, {
+            description: 'If `load` is true, the response will return only these specific fields.'
+        })).default('id,dataEntityId,isNewsletterOptIn,createdBy')
     })),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetversionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string(),
-        versionId: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        }),
+        versionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version to update.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zPutversionData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        dataEntityName: z.string(),
-        id: z.string(),
-        versionId: z.string()
+        dataEntityName: z.string().register(z.globalRegistry, {
+            description: 'Name of the data entity.'
+        }),
+        id: z.string().register(z.globalRegistry, {
+            description: 'ID of the Document.'
+        }),
+        versionId: z.string().register(z.globalRegistry, {
+            description: 'ID of the version to update'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

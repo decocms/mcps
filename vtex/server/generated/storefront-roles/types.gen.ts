@@ -10,6 +10,11 @@ export type ClientOptions = {
 export type ContentType = string;
 
 /**
+ * VTEX account name.
+ */
+export type AccountName = string;
+
+/**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
 export type Accept = string;
@@ -985,3 +990,875 @@ export type GetApiLicenseManagerStorefrontUsersByUserIdResponses = {
 };
 
 export type GetApiLicenseManagerStorefrontUsersByUserIdResponse = GetApiLicenseManagerStorefrontUsersByUserIdResponses[keyof GetApiLicenseManagerStorefrontUsersByUserIdResponses];
+
+export type GetApiLicenseManagerStorefrontRoleData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/role';
+};
+
+export type GetApiLicenseManagerStorefrontRoleErrors = {
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type GetApiLicenseManagerStorefrontRoleError = GetApiLicenseManagerStorefrontRoleErrors[keyof GetApiLicenseManagerStorefrontRoleErrors];
+
+export type GetApiLicenseManagerStorefrontRoleResponses = {
+    /**
+     * List of all roles visible to the account.
+     */
+    200: Array<{
+        /**
+         * Role identifier.
+         */
+        Id?: number;
+        /**
+         * Role name.
+         */
+        Name?: string;
+        /**
+         * Set to `true` for account-defined roles or `false` for native VTEX roles.
+         */
+        IsCustom?: boolean;
+        /**
+         * Resources assigned to the role.
+         */
+        Resources?: Array<{
+            /**
+             * Resource identifier.
+             */
+            Id?: number;
+            /**
+             * Stable permission key.
+             */
+            Key?: string;
+            /**
+             * Set to `true` when custom or `false` for native.
+             */
+            IsCustom?: boolean;
+        }>;
+    }>;
+};
+
+export type GetApiLicenseManagerStorefrontRoleResponse = GetApiLicenseManagerStorefrontRoleResponses[keyof GetApiLicenseManagerStorefrontRoleResponses];
+
+export type PostApiLicenseManagerStorefrontRoleData = {
+    body?: {
+        /**
+         * Role name. Must be 1–100 characters, unique within the account, and must not match any native VTEX role name. See the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide for a list of native role names.
+         */
+        Name: string;
+        /**
+         * List of resource IDs to assign to the role. Must contain at least one ID. Refer to the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide for a list of available resource IDs.
+         */
+        Resources: Array<number>;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/role';
+};
+
+export type PostApiLicenseManagerStorefrontRoleErrors = {
+    /**
+     * Bad Request
+     *
+     * Invalid request body.
+     */
+    400: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error code. Present only for structured errors such as `CANNOT_MODIFY`.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Conflict
+     *
+     * A role with the same name already exists in the account.
+     */
+    409: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type PostApiLicenseManagerStorefrontRoleError = PostApiLicenseManagerStorefrontRoleErrors[keyof PostApiLicenseManagerStorefrontRoleErrors];
+
+export type PostApiLicenseManagerStorefrontRoleResponses = {
+    /**
+     * Newly created role.
+     */
+    201: {
+        /**
+         * Role identifier.
+         */
+        Id?: number;
+        /**
+         * Role name.
+         */
+        Name?: string;
+        /**
+         * Resources assigned to the role.
+         */
+        Resources?: Array<{
+            /**
+             * Resource identifier.
+             */
+            Id?: number;
+            /**
+             * Stable permission key.
+             */
+            Key?: string;
+            /**
+             * Set to `true` when custom or `false` for native.
+             */
+            IsCustom?: boolean;
+        }>;
+    };
+};
+
+export type PostApiLicenseManagerStorefrontRoleResponse = PostApiLicenseManagerStorefrontRoleResponses[keyof PostApiLicenseManagerStorefrontRoleResponses];
+
+export type DeleteApiLicenseManagerStorefrontRoleByRoleIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Numeric identifier of the role to delete.
+         */
+        roleId: number;
+    };
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/role/{roleId}';
+};
+
+export type DeleteApiLicenseManagerStorefrontRoleByRoleIdErrors = {
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error code. Present only for structured errors such as `CANNOT_MODIFY`.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Not Found
+     *
+     * Role does not exist or is not available to this account.
+     */
+    404: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Conflict
+     *
+     * Role has active user assignments and cannot be deleted.
+     */
+    409: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type DeleteApiLicenseManagerStorefrontRoleByRoleIdError = DeleteApiLicenseManagerStorefrontRoleByRoleIdErrors[keyof DeleteApiLicenseManagerStorefrontRoleByRoleIdErrors];
+
+export type DeleteApiLicenseManagerStorefrontRoleByRoleIdResponses = {
+    /**
+     * No Content
+     *
+     * Role successfully deleted.
+     */
+    204: void;
+};
+
+export type DeleteApiLicenseManagerStorefrontRoleByRoleIdResponse = DeleteApiLicenseManagerStorefrontRoleByRoleIdResponses[keyof DeleteApiLicenseManagerStorefrontRoleByRoleIdResponses];
+
+export type GetApiLicenseManagerStorefrontRoleByRoleIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Numeric identifier of the role to retrieve.
+         */
+        roleId: number;
+    };
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/role/{roleId}';
+};
+
+export type GetApiLicenseManagerStorefrontRoleByRoleIdErrors = {
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Not Found
+     *
+     * Role does not exist or is not available to this account.
+     */
+    404: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type GetApiLicenseManagerStorefrontRoleByRoleIdError = GetApiLicenseManagerStorefrontRoleByRoleIdErrors[keyof GetApiLicenseManagerStorefrontRoleByRoleIdErrors];
+
+export type GetApiLicenseManagerStorefrontRoleByRoleIdResponses = {
+    /**
+     * Role information.
+     */
+    200: {
+        /**
+         * Role identifier.
+         */
+        Id?: number;
+        /**
+         * Role name.
+         */
+        Name?: string;
+        /**
+         * Set to `true` for account-defined roles or `false` for native VTEX roles.
+         */
+        IsCustom?: boolean;
+        /**
+         * Resources assigned to the role.
+         */
+        Resources?: Array<{
+            /**
+             * Resource identifier.
+             */
+            Id?: number;
+            /**
+             * Stable permission key.
+             */
+            Key?: string;
+            /**
+             * Set to `true` when custom or `false` for native.
+             */
+            IsCustom?: boolean;
+        }>;
+    };
+};
+
+export type GetApiLicenseManagerStorefrontRoleByRoleIdResponse = GetApiLicenseManagerStorefrontRoleByRoleIdResponses[keyof GetApiLicenseManagerStorefrontRoleByRoleIdResponses];
+
+export type PutApiLicenseManagerStorefrontRoleByRoleIdData = {
+    body?: {
+        /**
+         * Complete list of resource IDs the role should have after the update. Must contain at least one ID. Refer to the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide for a list of available resource IDs.
+         */
+        Resources: Array<number>;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Numeric identifier of the role to update.
+         */
+        roleId: number;
+    };
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/role/{roleId}';
+};
+
+export type PutApiLicenseManagerStorefrontRoleByRoleIdErrors = {
+    /**
+     * Bad Request
+     *
+     * Invalid request body.
+     */
+    400: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error code. Present only for structured errors such as `CANNOT_MODIFY`.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Not Found
+     *
+     * Role does not exist or is not available to this account.
+     */
+    404: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type PutApiLicenseManagerStorefrontRoleByRoleIdError = PutApiLicenseManagerStorefrontRoleByRoleIdErrors[keyof PutApiLicenseManagerStorefrontRoleByRoleIdErrors];
+
+export type PutApiLicenseManagerStorefrontRoleByRoleIdResponses = {
+    /**
+     * Updated role.
+     */
+    200: {
+        /**
+         * Role identifier.
+         */
+        Id?: number;
+        /**
+         * Role name.
+         */
+        Name?: string;
+        /**
+         * Updated list of resources assigned to the role.
+         */
+        Resources?: Array<{
+            /**
+             * Resource identifier.
+             */
+            Id?: number;
+            /**
+             * Stable permission key.
+             */
+            Key?: string;
+            /**
+             * Set to `true` when custom or `false` for native.
+             */
+            IsCustom?: boolean;
+        }>;
+    };
+};
+
+export type PutApiLicenseManagerStorefrontRoleByRoleIdResponse = PutApiLicenseManagerStorefrontRoleByRoleIdResponses[keyof PutApiLicenseManagerStorefrontRoleByRoleIdResponses];
+
+export type GetApiLicenseManagerStorefrontResourceData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/resource';
+};
+
+export type GetApiLicenseManagerStorefrontResourceErrors = {
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type GetApiLicenseManagerStorefrontResourceError = GetApiLicenseManagerStorefrontResourceErrors[keyof GetApiLicenseManagerStorefrontResourceErrors];
+
+export type GetApiLicenseManagerStorefrontResourceResponses = {
+    /**
+     * List of all resources visible to the account.
+     */
+    200: Array<{
+        /**
+         * Resource identifier. Use this value when building custom roles.
+         */
+        Id?: number;
+        /**
+         * Stable permission key checked at runtime.
+         */
+        Key?: string;
+        /**
+         * Human-readable label. May be `null` for native resources.
+         */
+        Name?: string | null;
+        /**
+         * Optional description.
+         */
+        Description?: string | null;
+        /**
+         * Set to `true` when the resource belongs to the account or `false` for native VTEX resources.
+         */
+        IsCustom?: boolean;
+    }>;
+};
+
+export type GetApiLicenseManagerStorefrontResourceResponse = GetApiLicenseManagerStorefrontResourceResponses[keyof GetApiLicenseManagerStorefrontResourceResponses];
+
+export type PostApiLicenseManagerStorefrontResourceData = {
+    body?: {
+        /**
+         * Permission key. Must be 5–80 characters, unique within the account, and must not match any native VTEX resource key. Keys are treated as case-insensitive. Immutable after creation. See the [Storefront Roles](https://developers.vtex.com/docs/guides/storefront-roles) guide for a list of native resource keys.
+         */
+        Key: string;
+        /**
+         * Human-readable label. Maximum 100 characters.
+         */
+        Name?: string;
+        /**
+         * Optional description. Maximum 500 characters.
+         */
+        Description?: string;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/resource';
+};
+
+export type PostApiLicenseManagerStorefrontResourceErrors = {
+    /**
+     * Bad Request
+     *
+     * Invalid request body.
+     */
+    400: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error code. Present only for structured errors such as `CANNOT_CREATE_NATIVE_RESOURCE`.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Conflict
+     *
+     * A resource with the same key already exists in the account.
+     */
+    409: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Unprocessable Entity
+     *
+     * This account already has the maximum of 10 custom resources.
+     */
+    422: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type PostApiLicenseManagerStorefrontResourceError = PostApiLicenseManagerStorefrontResourceErrors[keyof PostApiLicenseManagerStorefrontResourceErrors];
+
+export type PostApiLicenseManagerStorefrontResourceResponses = {
+    /**
+     * Newly created custom resource.
+     */
+    201: {
+        /**
+         * Resource identifier.
+         */
+        Id?: number;
+        /**
+         * Stable permission key.
+         */
+        Key?: string;
+        /**
+         * Human-readable label.
+         */
+        Name?: string;
+        /**
+         * Resource description.
+         */
+        Description?: string;
+    };
+};
+
+export type PostApiLicenseManagerStorefrontResourceResponse = PostApiLicenseManagerStorefrontResourceResponses[keyof PostApiLicenseManagerStorefrontResourceResponses];
+
+export type DeleteApiLicenseManagerStorefrontResourceByIdData = {
+    body?: never;
+    headers: {
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * Numeric ID of the custom resource to delete.
+         */
+        id: number;
+    };
+    query: {
+        /**
+         * VTEX account name.
+         */
+        an: string;
+    };
+    url: '/api/license-manager/storefront/resource/{id}';
+};
+
+export type DeleteApiLicenseManagerStorefrontResourceByIdErrors = {
+    /**
+     * Bad Request
+     *
+     * Resource ID is zero or negative.
+     */
+    400: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Forbidden
+     *
+     * Feature not enabled for this account or insufficient permissions.
+     */
+    403: {
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Not Found
+     *
+     * Resource does not exist or is not available to this account.
+     */
+    404: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Conflict
+     *
+     * Resource is assigned to one or more roles and cannot be deleted.
+     */
+    409: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+    /**
+     * Internal Server Error
+     */
+    500: {
+        /**
+         * Error code.
+         */
+        Code?: string;
+        /**
+         * Error message.
+         */
+        Message?: string;
+    };
+};
+
+export type DeleteApiLicenseManagerStorefrontResourceByIdError = DeleteApiLicenseManagerStorefrontResourceByIdErrors[keyof DeleteApiLicenseManagerStorefrontResourceByIdErrors];
+
+export type DeleteApiLicenseManagerStorefrontResourceByIdResponses = {
+    /**
+     * No Content
+     *
+     * Resource successfully deleted.
+     */
+    204: void;
+};
+
+export type DeleteApiLicenseManagerStorefrontResourceByIdResponse = DeleteApiLicenseManagerStorefrontResourceByIdResponses[keyof DeleteApiLicenseManagerStorefrontResourceByIdResponses];

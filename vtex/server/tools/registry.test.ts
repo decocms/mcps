@@ -1,5 +1,10 @@
 import { describe, test, expect, mock } from "bun:test";
-import { createToolFromOperation } from "../lib/tool-adapter.ts";
+import { z } from "zod";
+import {
+  createToolFromOperation,
+  flattenRequestSchema,
+} from "../lib/tool-adapter.ts";
+import { applyParamDescriptions } from "../lib/param-descriptions.ts";
 
 // ── Zod schemas ────────────────────────────────────────────────────────────────
 import * as catalogZod from "../generated/catalog/zod.gen.ts";
@@ -1137,6 +1142,59 @@ describe("VTEX_LIST_ORDERS", () => {
     await expect(
       tool.execute({ runtimeContext: mockRuntimeContext, context: {} }),
     ).rejects.toThrow();
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Generated param descriptions (Zod metadata)
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("generated param descriptions", () => {
+  // Guards against `metadata: false` silently returning in openapi-ts.config.ts,
+  // which would strip every param description from the agent-facing JSON Schema.
+  test("generated field descriptions reach the agent-facing JSON Schema", () => {
+    const flat = flattenRequestSchema(ordersZod.zListOrdersData as any);
+    const json: any = z.toJSONSchema(flat, {
+      io: "input",
+      unrepresentable: "any",
+    });
+    // f_RnB and f_status carry non-empty descriptions straight from the schema.
+    expect(json.properties?.f_RnB?.description?.length).toBeGreaterThan(0);
+    expect(json.properties?.f_status?.description?.length).toBeGreaterThan(0);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Curated param descriptions
+// ──────────────────────────────────────────────────────────────────────────────
+
+describe("param descriptions", () => {
+  test("VTEX_LIST_ORDERS: curated descriptions reach the agent-facing JSON Schema", () => {
+    const flat = applyParamDescriptions(
+      "VTEX_LIST_ORDERS",
+      flattenRequestSchema(ordersZod.zListOrdersData as any),
+    );
+    const json: any = z.toJSONSchema(flat, {
+      io: "input",
+      unrepresentable: "any",
+    });
+
+    // f_RnB must explain the coupon → promotion-id lookup (the reported gap).
+    expect(json.properties?.f_RnB?.description).toMatch(/promotion id/i);
+    expect(json.properties?.f_RnB?.description).toMatch(/coupon/i);
+    // Value-format hints for date filters.
+    expect(json.properties?.f_creationDate?.description).toMatch(
+      /creationDate:\[/,
+    );
+    // Overriding a field must not make it required.
+    expect((json.required ?? []).includes("f_RnB")).toBe(false);
+  });
+
+  test("tools without curated overrides are returned unchanged", () => {
+    const schema = flattenRequestSchema(
+      catalogZod.zGetApiCatalogPvtBrandByBrandIdData as any,
+    );
+    expect(applyParamDescriptions("VTEX_GET_BRAND", schema)).toBe(schema);
   });
 });
 

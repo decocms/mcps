@@ -8,21 +8,53 @@ import * as z from 'zod';
 export const zGetcoupons = z.object({
     items: z.optional(z.array(z.object({
         grouping: z.optional(z.object({
-            key: z.optional(z.string()),
-            amount: z.optional(z.number())
+            key: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+            })),
+            amount: z.optional(z.number().register(z.globalRegistry, {
+                description: 'Amount of codes in the coupon batch.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Coupon batch.'
         })),
         configuration: z.optional(z.object({
-            lastModifiedUtc: z.optional(z.string()),
-            utmSource: z.optional(z.string()),
-            utmCampaign: z.optional(z.string()),
-            couponCode: z.optional(z.string()),
-            isArchived: z.optional(z.boolean()),
-            maxItemsPerClient: z.optional(z.number()),
-            expirationIntervalPerUse: z.optional(z.string()),
-            maxUsage: z.optional(z.number()),
-            groupingKey: z.optional(z.string())
+            lastModifiedUtc: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Date when the coupon was modified for the last time, in the UTC format.'
+            })),
+            utmSource: z.optional(z.string().register(z.globalRegistry, {
+                description: 'UTM source related to the coupon, which indicates the source of the traffic, that is, from which site, advertiser, or publication the user came from.'
+            })),
+            utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+                description: 'UTM campaign related to the coupon, which indicates the campaign that defines a particular marketing context.'
+            })),
+            couponCode: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Single coupon code.'
+            })),
+            isArchived: z.optional(z.boolean().register(z.globalRegistry, {
+                description: 'Determines whether the coupon is archived (`true`) or not (`false`).'
+            })),
+            maxItemsPerClient: z.optional(z.number().register(z.globalRegistry, {
+                description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of Coupons. When enabled, it determines the maximum amount of products to which the coupon can be applied. The defined quantity is valid for one or more purchases by the same customer.'
+            })),
+            expirationIntervalPerUse: z.optional(z.string().register(z.globalRegistry, {
+                description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of the Coupons module. When enabled, it determines how many days after purchase the coupon will be available for use again.'
+            })),
+            maxUsage: z.optional(z.number().register(z.globalRegistry, {
+                description: 'The maximum number of times the coupon can be used, if the coupon has limited usage.'
+            })),
+            groupingKey: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Object containing the coupon\'s properties.'
         }))
-    })))
+    }).register(z.globalRegistry, {
+        description: 'Object containing each coupon batch and its configuration information.'
+    })).register(z.globalRegistry, {
+        description: 'Array of objects.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'List of coupons.'
 });
 
 export const zGetgroupedcouponsData = z.object({
@@ -30,8 +62,12 @@ export const zGetgroupedcouponsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
@@ -40,118 +76,202 @@ export const zGetgroupedarchivedcouponsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetcoupongroupinformationData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zEditcoupongroupconfigurationData = z.object({
     body: z.object({
-        utmSource: z.optional(z.string()),
-        utmCampaign: z.optional(z.string()),
-        isArchived: z.boolean(),
-        maxItemsPerClient: z.optional(z.number()),
-        expirationIntervalPerUse: z.optional(z.string()),
-        maxUsage: z.number()
+        utmSource: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM source related to the coupon, which indicates the source of the traffic, that is, from which site, advertiser, or publication the user came from. It is mandatory to provide either `utmSource` or `utmCampaign`.'
+        })),
+        utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+            description: 'UTM campaign related to the coupon, which indicates the campaign that defines a particular marketing context. It is mandatory to provide either `utmSource` or `utmCampaign`.'
+        })),
+        isArchived: z.boolean().register(z.globalRegistry, {
+            description: 'Determines whether the coupon is archived (`true`) or not (`false`).'
+        }),
+        maxItemsPerClient: z.optional(z.number().register(z.globalRegistry, {
+            description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of Coupons. When enabled, it determines the maximum amount of products to which the coupon can be applied. The defined quantity is valid for one or more purchases by the same customer.'
+        })),
+        expirationIntervalPerUse: z.optional(z.string().register(z.globalRegistry, {
+            description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of the Coupons module. When enabled, it determines how many days after purchase the coupon will be available for use again.'
+        })),
+        maxUsage: z.number().register(z.globalRegistry, {
+            description: 'The maximum number of times the coupon can be used, if the coupon has limited usage.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Request body to edit coupon batch configuration information.'
     }),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetcoupongroupcodesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zArchivedcoupongroupData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zCreategroupsofcouponsData = z.object({
     body: z.array(z.object({
         couponConfiguration: z.object({
-            utmSource: z.optional(z.string()),
-            utmCampaign: z.optional(z.string()),
-            couponCode: z.string(),
-            expirationIntervalPerUse: z.optional(z.string()),
-            maxItemsPerClient: z.optional(z.number()),
-            maxUsage: z.number()
+            utmSource: z.optional(z.string().register(z.globalRegistry, {
+                description: 'UTM source related to the coupon, which indicates the source of the traffic, that is, from which site, advertiser, or publication the user came from. It is mandatory to provide either `utmSource` or `utmCampaign`.'
+            })),
+            utmCampaign: z.optional(z.string().register(z.globalRegistry, {
+                description: 'UTM campaign related to the coupon, which indicates the campaign that defines a particular marketing context. It is mandatory to provide either `utmSource` or `utmCampaign`.'
+            })),
+            couponCode: z.string().register(z.globalRegistry, {
+                description: 'Coupon batch prefix.'
+            }),
+            expirationIntervalPerUse: z.optional(z.string().register(z.globalRegistry, {
+                description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of the Coupons module. When enabled, it determines how many days after purchase the coupon will be available for use again.'
+            })),
+            maxItemsPerClient: z.optional(z.number().register(z.globalRegistry, {
+                description: 'This option is non-editable and visible only for existing coupons configured with this limitation in previous versions of Coupons. When enabled, it determines the maximum amount of products to which the coupon can be applied. The defined quantity is valid for one or more purchases by the same customer.'
+            })),
+            maxUsage: z.number().register(z.globalRegistry, {
+                description: 'The maximum number of times the coupon can be used, if the coupon has limited usage.'
+            })
+        }).register(z.globalRegistry, {
+            description: 'Object containing the coupon\'s properties.'
         }),
-        quantity: z.string()
-    })),
+        quantity: z.string().register(z.globalRegistry, {
+            description: 'Number of codes to be generated for the coupon batch.'
+        })
+    }).register(z.globalRegistry, {
+        description: 'Object containing coupon batch information.'
+    })).register(z.globalRegistry, {
+        description: 'Array of objects containing coupon batches information.'
+    }),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zUnarchivedcoupongroupData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetnumberofusagesofasinglecouponData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        couponCode: z.string()
+        couponCode: z.string().register(z.globalRegistry, {
+            description: 'Single coupon code.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });
 
 export const zGetnumberofusagesofacouponbatchData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        groupingKey: z.string()
+        groupingKey: z.string().register(z.globalRegistry, {
+            description: 'Coupon grouping key, which is the prefix for the coupon batch\'s generated codes.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Describes the type of the content being sent.'
+        }).default('application/json'),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        }).default('application/json')
     })
 });

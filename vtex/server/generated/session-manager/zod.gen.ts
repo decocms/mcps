@@ -10,63 +10,133 @@ import * as z from 'zod';
 export const zCreateEditSessionRequest = z.object({
     public: z.object({
         additionalProperties: z.optional(z.object({
-            value: z.optional(z.string())
+            value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Value of the custom property.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Custom property.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Public information.'
     })
+}).register(z.globalRegistry, {
+    description: 'Session information.'
 });
 
 /**
  * Object containing session token and segment token.
  */
 export const zCreateEditSessionResponse = z.object({
-    sessionToken: z.optional(z.string()),
-    segmentToken: z.optional(z.string())
+    sessionToken: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Token that identifies the user\'s individual session.'
+    })),
+    segmentToken: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Token that identifies the user\'s segment, shared with other users with similar navigation parameters.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object containing session token and segment token.'
 });
 
 /**
  * Session information.
  */
 export const zGetSessionResponse = z.object({
-    id: z.optional(z.string()),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Session ID.'
+    })),
     namespaces: z.optional(z.object({
         account: z.optional(z.object({
             id: z.optional(z.object({
-                value: z.optional(z.string()),
-                keepAlive: z.optional(z.boolean())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the VTEX account ID.'
+                })),
+                keepAlive: z.optional(z.boolean().register(z.globalRegistry, {
+                    description: 'Determines whether or not the connection should be kept alive.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'VTEX account ID.'
             })),
             accountName: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the VTEX account name.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'VTEX account name.'
             }))
+        }).register(z.globalRegistry, {
+            description: 'Account information related to the session.'
         })),
         store: z.optional(z.object({
             channel: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the [Trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV) ID.'
+                }))
+            }).register(z.globalRegistry, {
+                description: '[Trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV) ID.'
             })),
             countryCode: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the country code.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Country code.'
             })),
             cultureInfo: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the `cultureInfo` property.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Locale that provides culture-specific information, such as the language, sublanguage, country/region, calendar, and conventions associated with a particular culture. Read [this documentation](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo?view=net-7.0#culture-names-and-identifiers) for more details.'
             })),
             currencyCode: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the currency code.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Currency code.'
             })),
             currencySymbol: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the currency symbol.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Currency symbol.'
             })),
             channelPrivacy: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value containing the channel\'s privacy option.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'Defines whether or not the channel is private.'
             }))
+        }).register(z.globalRegistry, {
+            description: 'Store information related to the session.'
         })),
         public: z.optional(z.record(z.string(), z.object({
-            value: z.optional(z.string())
-        }))),
+            value: z.optional(z.string().register(z.globalRegistry, {
+                description: 'Value of the custom property.'
+            }))
+        }).register(z.globalRegistry, {
+            description: 'Custom property.'
+        })).register(z.globalRegistry, {
+            description: 'Public and editable information related to the session.'
+        })),
         checkout: z.optional(z.object({
             regionId: z.optional(z.object({
-                value: z.optional(z.string())
+                value: z.optional(z.string().register(z.globalRegistry, {
+                    description: 'Value of the Region ID.'
+                }))
+            }).register(z.globalRegistry, {
+                description: 'ID of the session\'s region.'
             }))
+        }).register(z.globalRegistry, {
+            description: 'Checkout information related to the session.'
         }))
+    }).register(z.globalRegistry, {
+        description: 'Object with namespaces, each containing a set of information about the session.'
     }))
+}).register(z.globalRegistry, {
+    description: 'Session information.'
 });
 
 /**
@@ -77,12 +147,16 @@ export const zSegment = z.object({
         z.string(),
         z.null()
     ])),
-    channel: z.optional(z.string()),
+    channel: z.optional(z.string().register(z.globalRegistry, {
+        description: '[Trade policy](https://help.vtex.com/en/tutorial/how-trade-policies-work--6Xef8PZiFm40kg2STrMkMV) ID.'
+    })),
     priceTables: z.optional(z.union([
         z.string(),
         z.null()
     ])),
-    regionId: z.optional(z.string()),
+    regionId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'ID of the session\'s region.'
+    })),
     utm_campaign: z.optional(z.union([
         z.string(),
         z.null()
@@ -95,18 +169,32 @@ export const zSegment = z.object({
         z.string(),
         z.null()
     ])),
-    currencyCode: z.optional(z.string()),
-    currencySymbol: z.optional(z.string()),
-    countryCode: z.optional(z.string()),
-    cultureInfo: z.optional(z.string()),
-    channelPrivacy: z.optional(z.string())
+    currencyCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Currency code.'
+    })),
+    currencySymbol: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Currency symbol.'
+    })),
+    countryCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Country code.'
+    })),
+    cultureInfo: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Locale that provides culture-specific information, such as the language, sublanguage, country/region, calendar, and conventions associated with a particular culture. Read [this documentation](https://learn.microsoft.com/en-us/dotnet/api/system.globalization.cultureinfo?view=net-7.0#culture-names-and-identifiers) for more details.'
+    })),
+    channelPrivacy: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Defines whether or not the channel is private.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Object containing information about the segment.'
 });
 
 export const zGetSessionData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({
-        items: z.string()
+        items: z.string().register(z.globalRegistry, {
+            description: 'Items are the keys of the values you wish to get. They follow the format `namespace1.key1,namespace2.key2`.\n\r\n\rIf you wish to recover the data sent on [Create new session](https://developers.vtex.com/docs/api-reference/session-manager-api#post-/api/sessions), it should be `public.{key}`, replacing `{key}` with the name of the custom property you created. Following the example request presented in [Create new session](https://developers.vtex.com/docs/api-reference/session-manager-api#post-/api/sessions), it would be `public.variable1,public.variable2`.\n\r\n\rIf you want to retrieve all keys from Session Manager, you can use the wildcard operator (`*`) as a value for this query parameter.'
+        })
     })
 });
 

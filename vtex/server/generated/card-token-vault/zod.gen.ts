@@ -6,28 +6,62 @@ import * as z from 'zod';
  * Billing address associated with the card token.
  */
 export const zCardTokenAddress = z.object({
-    addressType: z.optional(z.string()),
-    addressId: z.optional(z.string()),
-    postalCode: z.optional(z.string()),
-    street: z.optional(z.string()),
-    neighborhood: z.optional(z.string()),
-    city: z.optional(z.string()),
-    state: z.optional(z.string()),
-    country: z.optional(z.string()),
-    number: z.optional(z.string()),
-    complement: z.optional(z.string())
+    addressType: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Address type. Example: `Residential`.'
+    })),
+    addressId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier for the address.'
+    })),
+    postalCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Postal code (ZIP/CEP).'
+    })),
+    street: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Street name.'
+    })),
+    neighborhood: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Neighborhood name.'
+    })),
+    city: z.optional(z.string().register(z.globalRegistry, {
+        description: 'City name.'
+    })),
+    state: z.optional(z.string().register(z.globalRegistry, {
+        description: 'State or province.'
+    })),
+    country: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Billing address country code (ISO 3166 alpha-3).'
+    })),
+    number: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Street number.'
+    })),
+    complement: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Address complement (e.g., apartment, building).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Billing address associated with the card token.'
 });
 
 /**
  * Card information persisted with the token.
  */
 export const zCardTokenCard = z.object({
-    paymentSystemId: z.optional(z.string()),
-    paymentSystemName: z.string(),
-    firstDigits: z.string(),
-    lastDigits: z.string(),
+    paymentSystemId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Payment system ID in the Payment Gateway.'
+    })),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system name (card brand).'
+    }),
+    firstDigits: z.string().register(z.globalRegistry, {
+        description: 'First six digits (BIN) of the card.'
+    }),
+    lastDigits: z.string().register(z.globalRegistry, {
+        description: 'Last four digits of the card.'
+    }),
     address: z.optional(zCardTokenAddress),
-    holderName: z.optional(z.string())
+    holderName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the cardholder as printed on the card.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Card information persisted with the token.'
 });
 
 /**
@@ -38,41 +72,91 @@ export const zCardTokenDataResponse = z.object({
         'FILE',
         'TOKEN_CLIENT_ID',
         'TOKEN_VALUE'
-    ]),
-    value: z.optional(z.string()),
-    expiration: z.string(),
-    label: z.optional(z.string()),
-    providerCardTokenId: z.optional(z.string()),
-    useCvvForAuthorization: z.optional(z.boolean()).default(false),
-    href: z.optional(z.string())
+    ]).register(z.globalRegistry, {
+        description: 'Token type stored in the vault.'
+    }),
+    value: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Token value to be used in transactions. Required when `type` is TOKEN_VALUE.'
+    })),
+    expiration: z.string().register(z.globalRegistry, {
+        description: 'Token expiration date in `YYYY-MM` format.'
+    }),
+    label: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Token alias (an alternative name to simplify token identification).'
+    })),
+    providerCardTokenId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Client ID used to retrieve the token from the provider. This field is required if the `type` is TOKEN_CLIENT_ID.'
+    })),
+    useCvvForAuthorization: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Flag indicating if CVV is required (`true`) or not (`false`).'
+    })).default(false),
+    href: z.optional(z.string().register(z.globalRegistry, {
+        description: 'URL of the token file stored by the provider. This field is required if the `type` is FILE.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Token-specific metadata used by the card token vault.'
 });
 
 /**
  * Card address object.
  */
 export const zCardTokenAddressInput = z.object({
-    addressType: z.optional(z.string()),
-    addressId: z.optional(z.string()),
-    postalCode: z.optional(z.string()),
-    street: z.optional(z.string()),
-    neighborhood: z.optional(z.string()),
-    city: z.optional(z.string()),
-    state: z.optional(z.string()),
-    country: z.optional(z.string()),
-    number: z.optional(z.string()),
-    complement: z.optional(z.string())
+    addressType: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Address type. Example: `Residential`.'
+    })),
+    addressId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Unique identifier for the address.'
+    })),
+    postalCode: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Postal code (ZIP/CEP).'
+    })),
+    street: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Street name.'
+    })),
+    neighborhood: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Neighborhood name.'
+    })),
+    city: z.optional(z.string().register(z.globalRegistry, {
+        description: 'City name.'
+    })),
+    state: z.optional(z.string().register(z.globalRegistry, {
+        description: 'State or province.'
+    })),
+    country: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Billing address country code (ISO 3166 alpha-3).'
+    })),
+    number: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Street number.'
+    })),
+    complement: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Address complement (e.g., apartment, building).'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Card address object.'
 });
 
 /**
  * Card information sent when creating or updating a token.
  */
 export const zCardTokenCardInput = z.object({
-    paymentSystemId: z.optional(z.string()),
-    paymentSystemName: z.string(),
-    firstDigits: z.string(),
-    lastDigits: z.string(),
+    paymentSystemId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Payment system ID in the Payment Gateway.'
+    })),
+    paymentSystemName: z.string().register(z.globalRegistry, {
+        description: 'Payment system name (card brand).'
+    }),
+    firstDigits: z.string().register(z.globalRegistry, {
+        description: 'First six digits (BIN) of the card.'
+    }),
+    lastDigits: z.string().register(z.globalRegistry, {
+        description: 'Last four digits of the card.'
+    }),
     address: z.optional(zCardTokenAddressInput),
-    holderName: z.optional(z.string())
+    holderName: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Name of the cardholder as printed on the card.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Card information sent when creating or updating a token.'
 });
 
 /**
@@ -83,62 +167,132 @@ export const zCardTokenData = z.object({
         'FILE',
         'TOKEN_CLIENT_ID',
         'TOKEN_VALUE'
-    ]),
-    value: z.optional(z.string()),
-    expiration: z.string(),
-    label: z.optional(z.string()),
-    providerCardTokenId: z.optional(z.string()),
-    useCvvForAuthorization: z.optional(z.boolean()),
-    href: z.optional(z.string())
+    ]).register(z.globalRegistry, {
+        description: 'Token type stored in the vault.'
+    }),
+    value: z.optional(z.string().register(z.globalRegistry, {
+        description: 'The token value to be used in transactions. This field is required if the `type` is TOKEN_VALUE.'
+    })),
+    expiration: z.string().register(z.globalRegistry, {
+        description: 'Token expiration date in `YYYY-MM` format.'
+    }),
+    label: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Token alias (an alternative name to simplify token identification).'
+    })),
+    providerCardTokenId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Client ID used to retrieve the token from the provider. This field is required if the `type` is TOKEN_CLIENT_ID.'
+    })),
+    useCvvForAuthorization: z.optional(z.boolean().register(z.globalRegistry, {
+        description: 'Flag indicating if CVV is required (`true`) or not (`false`).'
+    })),
+    href: z.optional(z.string().register(z.globalRegistry, {
+        description: 'URL of the token file stored by the provider. This field is required if the `type` is FILE.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Token metadata sent when creating or updating a token.'
 });
 
 /**
  * Card token payload returned by the API.
  */
 export const zCardToken = z.object({
-    id: z.string(),
-    providerId: z.string(),
-    orderGroup: z.optional(z.string()),
-    profileId: z.optional(z.string()),
-    shopperId: z.optional(z.string()),
-    email: z.optional(z.string()),
+    id: z.string().register(z.globalRegistry, {
+        description: 'Token ID (unique identifier automatically generated during token creation and stored in the system).'
+    }),
+    providerId: z.string().register(z.globalRegistry, {
+        description: 'Name of the payment provider responsible for the tokenized card.'
+    }),
+    orderGroup: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Order group ID, a segment of the order ID that groups all orders related to the same purchase. For example, in the order ID `v71021570str-02`, the order group ID is `v71021570str`.'
+    })),
+    profileId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Profile ID in the Profile System (used for contract identification).'
+    })),
+    shopperId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Shopper identification.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Email is used only if neither `profileId` nor `orderGroup` are provided.'
+    })),
     card: z.optional(zCardTokenCard),
     cardTokenData: zCardTokenDataResponse,
-    extraData: z.optional(z.record(z.string(), z.string()))
+    extraData: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
+        description: 'Additional metadata value.'
+    })).register(z.globalRegistry, {
+        description: 'Additional metadata stored with the token.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Card token payload returned by the API.'
 });
 
 /**
  * Payload sent to create a new card token.
  */
 export const zCreateCardTokenRequest = z.object({
-    providerId: z.string(),
-    profileId: z.optional(z.string()),
-    shopperId: z.optional(z.string()),
-    email: z.optional(z.string()),
-    orderGroup: z.optional(z.string()),
+    providerId: z.string().register(z.globalRegistry, {
+        description: 'Name of the payment provider responsible for the tokenized card.'
+    }),
+    profileId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Profile ID in the Profile System (used for contract identification). This field is optional if `email` or `orderGroup` exists.'
+    })),
+    shopperId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Shopper identification. This field is optional and only applicable if a personal card is used.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Email is used only if neither `profileId` nor `orderGroup` are provided.'
+    })),
+    orderGroup: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Order group ID, a segment of the order ID that groups all orders related to the same purchase. For example, in the order ID `v71021570str-02`, the order group ID is `v71021570str`. This field is optional if `email` or `profileId` exists.'
+    })),
     card: zCardTokenCardInput,
     cardTokenData: zCardTokenData,
-    extraData: z.optional(z.record(z.string(), z.string()))
+    extraData: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
+        description: 'Additional metadata value.'
+    })).register(z.globalRegistry, {
+        description: 'Additional key/value pairs to persist with the token.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Payload sent to create a new card token.'
 });
 
 /**
  * Payload sent to update an existing card token.
  */
 export const zUpdateCardTokenRequest = z.object({
-    providerId: z.string(),
-    profileId: z.optional(z.string()),
-    shopperId: z.optional(z.string()),
-    email: z.optional(z.string()),
-    orderGroup: z.optional(z.string()),
+    providerId: z.string().register(z.globalRegistry, {
+        description: 'Name of the payment provider responsible for the tokenized card.'
+    }),
+    profileId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Profile ID in the Profile System (used for contract identification). This field is optional if `email` or `orderGroup` exists.'
+    })),
+    shopperId: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Shopper identification. This field is optional and only applicable if a personal card is used.'
+    })),
+    email: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Email is used only if neither profileId nor orderGroup are provided.'
+    })),
+    orderGroup: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Order group ID, a segment of the order ID that groups all orders related to the same purchase. For example, in the order ID `v71021570str-02`, the order group ID is `v71021570str`. This field is optional if `email` or `profileId` exists.'
+    })),
     cardTokenData: zCardTokenData,
-    extraData: z.optional(z.record(z.string(), z.string()))
+    extraData: z.optional(z.record(z.string(), z.string().register(z.globalRegistry, {
+        description: 'Additional metadata value.'
+    })).register(z.globalRegistry, {
+        description: 'Additional key/value pairs to persist with the token.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Payload sent to update an existing card token.'
 });
 
 /**
  * Response payload returned after a card token import submission.
  */
 export const zImportCardTokensResponse = z.object({
-    id: z.optional(z.string())
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Import ID.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Response payload returned after a card token import submission.'
 });
 
 /**
@@ -150,112 +304,174 @@ export const zImportStatus = z.object({
         'RUNNING',
         'CREATED',
         'FAILED'
-    ])),
-    id: z.optional(z.string()),
-    completionPercentage: z.optional(z.int()),
-    createdDate: z.optional(z.string()),
-    updatedDate: z.optional(z.string()),
-    reportUrl: z.optional(z.string())
+    ]).register(z.globalRegistry, {
+        description: 'Import status value.'
+    })),
+    id: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Import ID.'
+    })),
+    completionPercentage: z.optional(z.int().register(z.globalRegistry, {
+        description: 'Importing completion percentage.'
+    })),
+    createdDate: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Creation date.'
+    })),
+    updatedDate: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Last update date.'
+    })),
+    reportUrl: z.optional(z.string().register(z.globalRegistry, {
+        description: 'Report URL. This field is optional if the import process had an error.'
+    }))
+}).register(z.globalRegistry, {
+    description: 'Status details for a submitted card token import.'
 });
 
 /**
  * Type of the content being sent.
  */
-export const zContentType = z.string();
+export const zContentType = z.string().register(z.globalRegistry, {
+    description: 'Type of the content being sent.'
+});
 
 /**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
-export const zAccept = z.string();
+export const zAccept = z.string().register(z.globalRegistry, {
+    description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+});
 
 /**
  * Token ID (unique identifier automatically generated during token creation and stored in the system).
  */
-export const zCardTokenId = z.string();
+export const zCardTokenId = z.string().register(z.globalRegistry, {
+    description: 'Token ID (unique identifier automatically generated during token creation and stored in the system).'
+});
 
 /**
  * Import ID.
  */
-export const zImportId = z.string();
+export const zImportId = z.string().register(z.globalRegistry, {
+    description: 'Import ID.'
+});
 
 export const zCreateCardTokenData = z.object({
     body: z.optional(zCreateCardTokenRequest),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zUpdateCardTokenData = z.object({
     body: z.optional(zUpdateCardTokenRequest),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Token ID (unique identifier automatically generated during token creation and stored in the system).'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zDeleteCardTokenData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Token ID (unique identifier automatically generated during token creation and stored in the system).'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetCardTokenByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        id: z.string()
+        id: z.string().register(z.globalRegistry, {
+            description: 'Token ID (unique identifier automatically generated during token creation and stored in the system).'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zImportCardTokensData = z.object({
     body: z.optional(z.object({
-        file: z.string()
+        file: z.string().register(z.globalRegistry, {
+            description: 'XLSX file with the card tokens to import.'
+        })
     })),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetCardTokenImportStatusData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        importId: z.string()
+        importId: z.string().register(z.globalRegistry, {
+            description: 'Import ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });
 
 export const zGetCardTokenImportReportData = z.object({
     body: z.optional(z.never()),
     path: z.object({
-        importId: z.string()
+        importId: z.string().register(z.globalRegistry, {
+            description: 'Import ID.'
+        })
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string(),
-        Accept: z.string()
+        'Content-Type': z.string().register(z.globalRegistry, {
+            description: 'Type of the content being sent.'
+        }),
+        Accept: z.string().register(z.globalRegistry, {
+            description: 'HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.'
+        })
     })
 });

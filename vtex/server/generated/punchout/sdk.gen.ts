@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetApiAuthenticatorPunchoutFinishData, GetApiAuthenticatorPunchoutFinishErrors, PostApiAuthenticatorPunchoutAuthenticatedStartData, PostApiAuthenticatorPunchoutAuthenticatedStartErrors, PostApiAuthenticatorPunchoutAuthenticatedStartResponses, PostApiAuthenticatorPunchoutStartData, PostApiAuthenticatorPunchoutStartErrors, PostApiAuthenticatorPunchoutStartResponses } from './types.gen';
+import type { GetApiAuthenticatorV1PunchoutFinishData, GetApiAuthenticatorV1PunchoutFinishErrors, PostApiAuthenticatorV1PunchoutAuthenticatedStartData, PostApiAuthenticatorV1PunchoutAuthenticatedStartErrors, PostApiAuthenticatorV1PunchoutAuthenticatedStartResponses, PostApiAuthenticatorV1PunchoutStartData, PostApiAuthenticatorV1PunchoutStartErrors, PostApiAuthenticatorV1PunchoutStartResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -29,7 +29,7 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
  */
-export const postApiAuthenticatorPunchoutStart = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorPunchoutStartData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorPunchoutStartResponses, PostApiAuthenticatorPunchoutStartErrors, ThrowOnError>({ url: '/api/authenticator/punchout/start', ...options });
+export const postApiAuthenticatorV1PunchoutStart = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorV1PunchoutStartData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorV1PunchoutStartResponses, PostApiAuthenticatorV1PunchoutStartErrors, ThrowOnError>({ url: '/api/authenticator/v1/punchout/start', ...options });
 
 /**
  * Start pre-authenticated user punchout flow
@@ -50,9 +50,9 @@ export const postApiAuthenticatorPunchoutStart = <ThrowOnError extends boolean =
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const postApiAuthenticatorPunchoutAuthenticatedStart = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorPunchoutAuthenticatedStartData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorPunchoutAuthenticatedStartResponses, PostApiAuthenticatorPunchoutAuthenticatedStartErrors, ThrowOnError>({
+export const postApiAuthenticatorV1PunchoutAuthenticatedStart = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorV1PunchoutAuthenticatedStartData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorV1PunchoutAuthenticatedStartResponses, PostApiAuthenticatorV1PunchoutAuthenticatedStartErrors, ThrowOnError>({
     security: [{ name: 'X-VTEX-API-AppKey', type: 'apiKey' }, { name: 'X-VTEX-API-AppToken', type: 'apiKey' }],
-    url: '/api/authenticator/punchout/authenticated/start',
+    url: '/api/authenticator/v1/punchout/authenticated/start',
     ...options
 });
 
@@ -76,4 +76,4 @@ export const postApiAuthenticatorPunchoutAuthenticatedStart = <ThrowOnError exte
  *
  * This endpoint does not require [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
  */
-export const getApiAuthenticatorPunchoutFinish = <ThrowOnError extends boolean = false>(options: Options<GetApiAuthenticatorPunchoutFinishData, ThrowOnError>) => (options.client ?? client).get<unknown, GetApiAuthenticatorPunchoutFinishErrors, ThrowOnError>({ url: '/api/authenticator/punchout/finish', ...options });
+export const getApiAuthenticatorV1PunchoutFinish = <ThrowOnError extends boolean = false>(options: Options<GetApiAuthenticatorV1PunchoutFinishData, ThrowOnError>) => (options.client ?? client).get<unknown, GetApiAuthenticatorV1PunchoutFinishErrors, ThrowOnError>({ url: '/api/authenticator/v1/punchout/finish', ...options });
