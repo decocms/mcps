@@ -10,6 +10,7 @@ import {
   createVtexClient,
   resolveCredentials,
 } from "./client-factory.ts";
+import { applyParamDescriptions } from "./param-descriptions.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Schema introspection helpers
@@ -295,7 +296,13 @@ export interface ToolFromOperationConfig {
  * `createTool` definition that the MCP runtime can register.
  */
 export function createToolFromOperation(config: ToolFromOperationConfig) {
-  const flatInput = flattenRequestSchema(config.requestSchema);
+  // Generated schemas carry no field descriptions (metadata: false), so layer
+  // curated ones onto the flattened input before it becomes the agent-facing
+  // inputSchema.
+  const flatInput = applyParamDescriptions(
+    config.id,
+    flattenRequestSchema(config.requestSchema),
+  );
 
   // The factory's `env` is captured ONCE when the runtime resolves tool
   // registrations on the first request, then cached for the process lifetime
