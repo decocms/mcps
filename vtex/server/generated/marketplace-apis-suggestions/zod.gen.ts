@@ -155,20 +155,6 @@ export const zProduct = z.object({
 });
 
 /**
- * An object that represents a single SKU image with a filename as the key and the image URL as the value.
- */
-export const zImages = z.object({
-    'imagem1.jpg': z.optional(z.string())
-});
-
-/**
- * Object representing the specifications of a product, including details related to its packaging and other relevant attributes.
- */
-export const zSpecifications = z.object({
-    Packaging: z.string()
-});
-
-/**
  * Represents the SKU (Stock Keeping Unit) details for a product. The SKU is a unique identifier that contains specific attributes such as dimensions, weight, and other product specific information. This object is crucial for defining and managing the individual variations of a product in the catalog.
  */
 export const zSku = z.object({
@@ -185,13 +171,17 @@ export const zSku = z.object({
     width: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     length: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
     weight: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
-    images: zImages,
+    images: z.object({
+        'imagem1.jpg': z.optional(z.string())
+    }),
     unitMultiplier: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }).default(1),
     measurementUnit: z.union([
         z.string().default('un'),
         z.null()
     ]).default('un'),
-    specifications: zSpecifications
+    specifications: z.object({
+        Packaging: z.string()
+    })
 });
 
 /**
@@ -211,6 +201,20 @@ export const zMatchRequest = z.object({
     ])),
     product: z.optional(zProduct),
     sku: z.optional(zSku)
+});
+
+/**
+ * An object that represents a single SKU image with a filename as the key and the image URL as the value.
+ */
+export const zImages = z.object({
+    'imagem1.jpg': z.optional(z.string())
+});
+
+/**
+ * Object representing the specifications of a product, including details related to its packaging and other relevant attributes.
+ */
+export const zSpecifications = z.object({
+    Packaging: z.string()
 });
 
 /**
@@ -515,7 +519,7 @@ export const zMatchData = z.object({
 });
 
 export const zMatchMultipleData = z.object({
-    body: z.unknown(),
+    body: zMatchMultiple,
     path: z.object({
         accountName: z.string(),
         actionName: z.enum([

@@ -3,24 +3,48 @@
 import * as z from 'zod';
 
 /**
- * Request body for starting a user session.
+ * Request body for starting a user session. Requirements vary by platform:
+ * - **Web storefronts**: `orderFormId` is optional when the `checkout.vtex.com` cookie is sent. The API extracts the order form from the cookie.
+ * - **Mobile apps**: Both `userId` and `orderFormId` are required in the request body.
  */
 export const zStartSessionV2Request = z.object({
-    orderFormId: z.string()
+    orderFormId: z.optional(z.string()),
+    userId: z.optional(z.string())
 });
 
 /**
- * Response body for starting a user session.
+ * Response body for starting a user session. The returned ID is also stored in the `vtex-rec-user-id` cookie.
  */
 export const zStartSessionV2Response = z.object({
     recommendationsUserId: z.string()
 });
 
 /**
- * Response containing recommended products and campaign information.
+ * Response containing recommended products with full product details and campaign information.
  */
 export const zRecommendationsV2Response = z.object({
-    products: z.array(z.string()),
+    products: z.array(z.object({
+        brand: z.optional(z.string()),
+        productId: z.optional(z.string()),
+        productName: z.optional(z.string()),
+        link: z.optional(z.string()),
+        tags: z.optional(z.array(z.string())),
+        items: z.optional(z.array(z.object({
+            itemId: z.optional(z.string()),
+            nameComplete: z.optional(z.string()),
+            images: z.optional(z.array(z.object({
+                imageUrl: z.optional(z.string())
+            }))),
+            sellers: z.optional(z.array(z.object({
+                sellerId: z.optional(z.string()),
+                commertialOffer: z.optional(z.object({
+                    Price: z.optional(z.number()),
+                    ListPrice: z.optional(z.number()),
+                    AvailableQuantity: z.optional(z.number())
+                }))
+            })))
+        })))
+    })),
     correlationId: z.string(),
     campaign: z.object({
         id: z.string(),
@@ -41,25 +65,27 @@ export const zRecommendationsV2Response = z.object({
 });
 
 /**
- * Request body for recording a recommendation view event.
+ * Request body for recording a recommendation view event when a shelf enters the viewport.
  */
 export const zRecommendationViewEventV2Request = z.object({
     userId: z.string(),
     correlationId: z.string(),
-    products: z.array(z.string())
+    products: z.array(z.string()),
+    campaignId: z.optional(z.string())
 });
 
 /**
- * Request body for recording a recommendation click event.
+ * Request body for recording a recommendation click event when a user clicks on a recommended product.
  */
 export const zRecommendationClickEventV2Request = z.object({
     userId: z.string(),
     product: z.string(),
-    correlationId: z.string()
+    correlationId: z.string(),
+    campaignId: z.optional(z.string())
 });
 
 /**
- * Request body for recording a product view event.
+ * Request body for recording a product view event when a user views a product detail page.
  */
 export const zProductViewEventV2Request = z.object({
     userId: z.string(),
@@ -67,10 +93,11 @@ export const zProductViewEventV2Request = z.object({
     source: z.optional(z.enum([
         'WEB_DESKTOP',
         'WEB_MOBILE',
-        'MOBILE_APP',
-        'MOBILE',
-        'DESKTOP'
-    ]))
+        'MOBILE_APP'
+    ])),
+    name: z.optional(z.string()),
+    category: z.optional(z.string()),
+    url: z.optional(z.string())
 });
 
 export const zPostApiRecommendBffV2EventsRecommendationViewData = z.object({

@@ -39,7 +39,7 @@ export type OrderForm = {
     /**
      * Unique ID associated with the customer profile.
      */
-    userProfileId?: string;
+    userProfileId?: string | null;
     /**
      * Profile provider.
      */
@@ -65,7 +65,15 @@ export type OrderForm = {
          */
         addressId?: string | null;
         /**
-         * Indicates whether address is disposable.
+         * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+         *
+         * Behavior by address type:
+         * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+         * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+         * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+         * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+         *
+         * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
          */
         isDisposable?: boolean;
         /**
@@ -144,7 +152,7 @@ export type OrderForm = {
         /**
          * Ref ID.
          */
-        refId?: string;
+        refId?: string | null;
         /**
          * European Article Number.
          */
@@ -299,7 +307,18 @@ export type OrderForm = {
         /**
          * Array containing information on attachments.
          */
-        attachments?: Array<string>;
+        attachments?: Array<{
+            /**
+             * Attachment name.
+             */
+            name?: string;
+            /**
+             * Object containing the attachment content as key-value pairs.
+             */
+            content?: {
+                [key: string]: unknown;
+            };
+        }>;
         /**
          * Array of price tags, each of which, modifies the price in some way, like discounts or taxes that apply to the item in the context of the order.
          */
@@ -397,13 +416,21 @@ export type OrderForm = {
             /**
              * Name of the person who is going to receive the order.
              */
-            receiverName?: string;
+            receiverName?: string | null;
             /**
              * Address ID.
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -456,7 +483,7 @@ export type OrderForm = {
              */
             itemIndex?: number;
             /**
-             * SLA selected by the customer. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+             * SLA selected by the customer. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
              */
             selectedSla?: string | null;
             /**
@@ -472,7 +499,7 @@ export type OrderForm = {
              */
             slas?: Array<{
                 /**
-                 * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                 * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                  */
                 id?: string;
                 /**
@@ -480,7 +507,7 @@ export type OrderForm = {
                  */
                 deliveryChannel?: string;
                 /**
-                 * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                 * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                  */
                 name?: string;
                 /**
@@ -528,7 +555,7 @@ export type OrderForm = {
                     } | null;
                 }> | null;
                 /**
-                 * Shipping estimate. For instance, "three business days" will be represented as `3bd`.
+                 * Shipping estimate. For instance, "three business days" will be represented as `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                  */
                 shippingEstimate?: string;
                 /**
@@ -671,13 +698,21 @@ export type OrderForm = {
             /**
              * Name of the person who is going to receive the order.
              */
-            receiverName?: string;
+            receiverName?: string | null;
             /**
              * Address ID.
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -732,13 +767,21 @@ export type OrderForm = {
             /**
              * Name of the person who is going to receive the order.
              */
-            receiverName?: string;
+            receiverName?: string | null;
             /**
              * Address ID.
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` are saved.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -985,6 +1028,10 @@ export type OrderForm = {
          * Seller logo.
          */
         logo?: string | null;
+        /**
+         * Minimum order value configured at the seller, in cents.
+         */
+        minimumOrderValue?: number | null;
     }>;
     /**
      * Object containing preferences from the client who placed the order.
@@ -1148,7 +1195,7 @@ export type OrderForm = {
             /**
              * Ref ID.
              */
-            refId?: string;
+            refId?: string | null;
             /**
              * European Article Number.
              */
@@ -1200,7 +1247,7 @@ export type OrderForm = {
          * Indicates whether the ordering is ascending.
          */
         ascending?: boolean;
-    };
+    } | null;
 };
 
 /**
@@ -1865,7 +1912,7 @@ export type CartSimulationResponses = {
              */
             addressId?: string | null;
             /**
-             * Selected SLA. For example, `"normal"` or `"express"`. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+             * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
              */
             selectedSla?: string | null;
             /**
@@ -1885,7 +1932,7 @@ export type CartSimulationResponses = {
              */
             slas?: Array<{
                 /**
-                 * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                 * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                  */
                 id?: string;
                 /**
@@ -1893,7 +1940,7 @@ export type CartSimulationResponses = {
                  */
                 deliveryChannel?: string;
                 /**
-                 * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                 * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                  */
                 name?: string;
                 /**
@@ -1941,7 +1988,7 @@ export type CartSimulationResponses = {
                     } | null;
                 }> | null;
                 /**
-                 * Shipping estimate. For instance, "three business days" will be represented as `3bd`.
+                 * Shipping estimate. For instance, "three business days" will be represented as `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                  */
                 shippingEstimate?: string;
                 /**
@@ -2100,7 +2147,7 @@ export type CartSimulationResponses = {
                      */
                     slas?: Array<{
                         /**
-                         * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                         * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                          */
                         id?: string;
                         /**
@@ -2108,7 +2155,7 @@ export type CartSimulationResponses = {
                          */
                         deliveryChannel?: string;
                         /**
-                         * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                         * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                          */
                         name?: string;
                         /**
@@ -2156,7 +2203,7 @@ export type CartSimulationResponses = {
                             } | null;
                         }> | null;
                         /**
-                         * Shipping estimate. For instance, "three business days" will be represented as `3bd`.
+                         * Shipping estimate. For instance, "three business days" will be represented as `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                          */
                         shippingEstimate?: string;
                         /**
@@ -2710,6 +2757,48 @@ export type ItemsResponses = {
 
 export type ItemsResponse = ItemsResponses[keyof ItemsResponses];
 
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * ID of the orderForm corresponding to the cart whose item will have the manual price deleted.
+         */
+        orderFormId: string;
+        /**
+         * The index of the item in the cart. Each cart item is identified by an index, starting in 0.
+         */
+        itemIndex: string;
+    };
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/price';
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponses = {
+    /**
+     * This object is empty.
+     */
+    200: {
+        [key: string]: unknown;
+    };
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponse = DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponses[keyof DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceResponses];
+
 export type PriceChangeData = {
     body: PriceChangeRequest;
     headers: {
@@ -2855,7 +2944,15 @@ export type GetClientProfileByEmailResponses = {
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -3133,7 +3230,7 @@ export type AddShippingAddressData = {
              */
             selectedDeliveryChannel?: string | null;
             /**
-             * Selected SLA. For example, `"normal"` or `"express"`. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+             * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, for example, `1223d5b4-52a4-442f-ab23-01345b60be48`. If this field is `null` or omitted, the API automatically selects the best delivery option available, excluding pickup and scheduled delivery options. To select a pickup option or a scheduled delivery option, it must be explicitly sent in this field. For more information, see the [Add shipping address and select delivery option](https://developers.vtex.com/docs/guides/checkout-api#tag/Cart-attachments/operation/AddShippingAddress) endpoint description.
              */
             selectedSla?: string | null;
         }>;
@@ -3366,6 +3463,225 @@ export type AddPaymentDataResponses = {
 };
 
 export type AddPaymentDataResponse = AddPaymentDataResponses[keyof AddPaymentDataResponses];
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData = {
+    body?: never;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * ID of the orderForm corresponding to the cart whose item will have the attachment removed.
+         */
+        orderFormId: string;
+        /**
+         * The index of the item in the cart that will have the attachment removed. Each cart item is identified by an index, starting in 0.
+         */
+        itemIndex: string;
+        /**
+         * Name of the attachment that will be removed from the item. It must match one of the attachment schemas available for the item, listed in the `attachmentOfferings` field of the orderForm.
+         */
+        attachmentName: string;
+    };
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/attachments/{attachmentName}';
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses = {
+    /**
+     * OK
+     */
+    200: OrderForm;
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponse = DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses[keyof DeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses];
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData = {
+    body: {
+        /**
+         * Object containing the attachment's key-value pairs, where each key is a field defined by the attachment schema and each value is the content to be set for that field.
+         */
+        content: {
+            [key: string]: unknown;
+        };
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * ID of the orderForm corresponding to the cart whose item will receive the attachment.
+         */
+        orderFormId: string;
+        /**
+         * The index of the item in the cart that will receive the attachment. Each cart item is identified by an index, starting in 0.
+         */
+        itemIndex: string;
+        /**
+         * Name of the attachment that will be added to the item. It must match one of the attachment schemas available for the item, listed in the `attachmentOfferings` field of the orderForm.
+         */
+        attachmentName: string;
+    };
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pub/orderForm/{orderFormId}/items/{itemIndex}/attachments/{attachmentName}';
+};
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses = {
+    /**
+     * OK
+     */
+    200: OrderForm;
+};
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponse = PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses[keyof PostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameResponses];
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData = {
+    body: {
+        /**
+         * List of the item subscriptions in the cart. To remove all subscription information from the cart, send an empty array.
+         */
+        subscriptions: Array<{
+            [key: string]: unknown;
+        }>;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * ID of the orderForm corresponding to the cart that will have the subscription information removed.
+         */
+        orderFormId: string;
+    };
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pub/orderForm/{orderFormId}/attachments/subscriptionData';
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses = {
+    /**
+     * OK
+     */
+    200: OrderForm;
+};
+
+export type DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponse = DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses[keyof DeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses];
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData = {
+    body: {
+        /**
+         * List of the item subscriptions to be attached to the cart.
+         */
+        subscriptions: Array<{
+            /**
+             * Index that identifies the cart item the subscription refers to. Each cart item is identified by an index, starting in 0.
+             */
+            itemIndex: number;
+            /**
+             * Object containing the subscription plan information.
+             */
+            plan: {
+                /**
+                 * Object containing the frequency in which the subscription order will be placed.
+                 */
+                frequency: {
+                    /**
+                     * Numerical interval between each subscription order, according to the chosen `periodicity`.
+                     */
+                    interval: number;
+                    /**
+                     * Time unit for the subscription frequency. Possible values are `DAY`, `WEEK`, `MONTH`, and `YEAR`.
+                     */
+                    periodicity: string;
+                };
+                /**
+                 * Object containing the period in which the subscription is valid.
+                 */
+                validity?: {
+                    /**
+                     * Date when the subscription becomes valid, in the `YYYY-MM-DD` format.
+                     */
+                    begin?: string;
+                    /**
+                     * Date when the subscription expires, in the `YYYY-MM-DD` format.
+                     */
+                    end?: string;
+                };
+                /**
+                 * Type of the subscription plan.
+                 */
+                type: string;
+            };
+        }>;
+    };
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path: {
+        /**
+         * ID of the orderForm corresponding to the cart that will receive the subscription information.
+         */
+        orderFormId: string;
+    };
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pub/orderForm/{orderFormId}/attachments/subscriptionData';
+};
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses = {
+    /**
+     * OK
+     */
+    200: OrderForm;
+};
+
+export type PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponse = PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses[keyof PostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataResponses];
 
 export type AddMerchantContextDataData = {
     body: {
@@ -4060,6 +4376,37 @@ export type UpdateorderFormconfigurationResponses = {
 
 export type UpdateorderFormconfigurationResponse = UpdateorderFormconfigurationResponses[keyof UpdateorderFormconfigurationResponses];
 
+export type CreateorderFormconfigurationData = {
+    body: UpdateorderFormconfigurationRequest;
+    headers: {
+        /**
+         * Type of the content being sent.
+         */
+        'Content-Type': string;
+        /**
+         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
+         */
+        Accept: string;
+    };
+    path?: never;
+    query?: {
+        /**
+         * Shows the product's estimated shipping date in the `shippingEstimate` field from the `orderForm`.
+         */
+        individualShippingEstimates?: boolean;
+    };
+    url: '/api/checkout/pvt/configuration/orderForm';
+};
+
+export type CreateorderFormconfigurationResponses = {
+    /**
+     * No Content
+     */
+    204: void;
+};
+
+export type CreateorderFormconfigurationResponse = CreateorderFormconfigurationResponses[keyof CreateorderFormconfigurationResponses];
+
 export type GetWindowToChangeSellerData = {
     body?: never;
     headers: {
@@ -4214,7 +4561,15 @@ export type ClearorderFormMessagesResponses = {
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -4548,7 +4903,15 @@ export type ClearorderFormMessagesResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -4601,7 +4964,7 @@ export type ClearorderFormMessagesResponses = {
                  */
                 itemIndex?: number;
                 /**
-                 * SLA selected by the customer.  If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                 * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, for example, `1223d5b4-52a4-442f-ab23-01345b60be48`. If this field is `null` or omitted, the API automatically selects the best delivery option available, excluding pickup and scheduled delivery options. To select a pickup option or a scheduled delivery option, it must be explicitly sent in this field. For more information, see the [Add shipping address and select delivery option](https://developers.vtex.com/docs/guides/checkout-api#tag/Cart-attachments/operation/AddShippingAddress) endpoint description.
                  */
                 selectedSla?: string | null;
                 /**
@@ -4617,7 +4980,7 @@ export type ClearorderFormMessagesResponses = {
                  */
                 slas?: Array<{
                     /**
-                     * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                     * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                      */
                     id?: string;
                     /**
@@ -4625,7 +4988,7 @@ export type ClearorderFormMessagesResponses = {
                      */
                     deliveryChannel?: string;
                     /**
-                     * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                     * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                      */
                     name?: string;
                     /**
@@ -4673,7 +5036,7 @@ export type ClearorderFormMessagesResponses = {
                         } | null;
                     }> | null;
                     /**
-                     * Shipping estimate. For instance, Three business days will be represented `3bd`.
+                     * Shipping estimate. For instance, Three business days will be represented `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                      */
                     shippingEstimate?: string;
                     /**
@@ -4822,7 +5185,15 @@ export type ClearorderFormMessagesResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -4883,7 +5254,15 @@ export type ClearorderFormMessagesResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -5130,6 +5509,10 @@ export type ClearorderFormMessagesResponses = {
              * Seller logo.
              */
             logo?: string | null;
+            /**
+             * Minimum order value configured at the seller, in cents.
+             */
+            minimumOrderValue?: number | null;
         }>;
         /**
          * Object containing preferences from the client who placed the order.
@@ -5476,7 +5859,15 @@ export type AddCouponsResponses = {
              */
             addressId?: string | null;
             /**
-             * Indicates whether address is disposable.
+             * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+             *
+             * Behavior by address type:
+             * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+             * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+             * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+             * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+             *
+             * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
              */
             isDisposable?: boolean;
             /**
@@ -5810,7 +6201,15 @@ export type AddCouponsResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -5863,7 +6262,7 @@ export type AddCouponsResponses = {
                  */
                 itemIndex?: number;
                 /**
-                 * SLA selected by the customer.  If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                 * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, for example, `1223d5b4-52a4-442f-ab23-01345b60be48`. If this field is `null` or omitted, the API automatically selects the best delivery option available, excluding pickup and scheduled delivery options. To select a pickup option or a scheduled delivery option, it must be explicitly sent in this field. For more information, see the [Add shipping address and select delivery option](https://developers.vtex.com/docs/guides/checkout-api#tag/Cart-attachments/operation/AddShippingAddress) endpoint description.
                  */
                 selectedSla?: string | null;
                 /**
@@ -5879,7 +6278,7 @@ export type AddCouponsResponses = {
                  */
                 slas?: Array<{
                     /**
-                     * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                     * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                      */
                     id?: string;
                     /**
@@ -5887,7 +6286,7 @@ export type AddCouponsResponses = {
                      */
                     deliveryChannel?: string;
                     /**
-                     * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                     * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                      */
                     name?: string;
                     /**
@@ -5916,7 +6315,7 @@ export type AddCouponsResponses = {
                         quantity?: number;
                     }>;
                     /**
-                     * Shipping estimate. For instance, Three business days will be represented `3bd`.
+                     * Shipping estimate. For instance, Three business days will be represented `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                      */
                     shippingEstimate?: string;
                     /**
@@ -6065,7 +6464,15 @@ export type AddCouponsResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -6126,7 +6533,15 @@ export type AddCouponsResponses = {
                  */
                 addressId?: string | null;
                 /**
-                 * Indicates whether address is disposable.
+                 * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                 *
+                 * Behavior by address type:
+                 * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                 * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                 * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                 * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                 *
+                 * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                  */
                 isDisposable?: boolean;
                 /**
@@ -6647,7 +7062,15 @@ export type ListPickupPpointsByLocationResponses = {
                      */
                     addressId?: string | null;
                     /**
-                     * Is disposable.
+                     * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                     *
+                     * Behavior by address type:
+                     * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                     * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                     * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                     * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                     *
+                     * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                      */
                     isDisposable?: boolean;
                     /**
@@ -7113,7 +7536,7 @@ export type PlaceOrderData = {
                  */
                 itemIndex: number;
                 /**
-                 * Selected shipping option. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                 * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, for example, `1223d5b4-52a4-442f-ab23-01345b60be48`. If this field is `null` or omitted, the API automatically selects the best delivery option available, excluding pickup and scheduled delivery options. To select a pickup option or a scheduled delivery option, it must be explicitly sent in this field. For more information, see the [Add shipping address and select delivery option](https://developers.vtex.com/docs/guides/checkout-api#tag/Cart-attachments/operation/AddShippingAddress) endpoint description.
                  */
                 selectedSla: string | null;
                 /**
@@ -7129,7 +7552,7 @@ export type PlaceOrderData = {
                  */
                 lockTTL?: string | null;
                 /**
-                 * Estimated time until delivery for the item.
+                 * Estimated time until delivery for the item. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                  */
                 shippingEstimate?: string;
                 /**
@@ -7758,6 +8181,10 @@ export type PlaceOrderResponses = {
                  * Seller logo.
                  */
                 logo?: string | null;
+                /**
+                 * Minimum order value configured at the seller, in cents.
+                 */
+                minimumOrderValue?: number | null;
             }>;
             /**
              * Information on order totals.
@@ -7875,7 +8302,15 @@ export type PlaceOrderResponses = {
                      */
                     addressId?: string | null;
                     /**
-                     * Indicates whether address is disposable.
+                     * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                     *
+                     * Behavior by address type:
+                     * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                     * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                     * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                     * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                     *
+                     * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                      */
                     isDisposable?: boolean;
                     /**
@@ -7928,7 +8363,7 @@ export type PlaceOrderResponses = {
                      */
                     itemIndex?: number;
                     /**
-                     * SLA selected by the customer. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                     * Selected SLA. For example, `normal` or `express`. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, for example, `1223d5b4-52a4-442f-ab23-01345b60be48`. If this field is `null` or omitted, the API automatically selects the best delivery option available, excluding pickup and scheduled delivery options. To select a pickup option or a scheduled delivery option, it must be explicitly sent in this field. For more information, see the [Add shipping address and select delivery option](https://developers.vtex.com/docs/guides/checkout-api#tag/Cart-attachments/operation/AddShippingAddress) endpoint description.
                      */
                     selectedSla?: string | null;
                     /**
@@ -7944,7 +8379,7 @@ export type PlaceOrderResponses = {
                      */
                     slas?: Array<{
                         /**
-                         * SLA ID. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
+                         * SLA ID. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, this field returns the delivery option ID selected for this SLA, as the example `1223d5b4-52a4-442f-ab23-01345b60be48`.
                          */
                         id?: string;
                         /**
@@ -7952,7 +8387,7 @@ export type PlaceOrderResponses = {
                          */
                         deliveryChannel?: string;
                         /**
-                         * SLA name. If the store uses the [Delivery Option](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
+                         * SLA name. If the store uses the [Delivery Options](https://help.vtex.com/en/docs/tutorials/delivery-options-beta) feature, the value of this field will show the specific delivery option name selected for this SLA, as the example `Delivery | BRA | Up to 30 hours`.
                          */
                         name?: string;
                         /**
@@ -7981,7 +8416,7 @@ export type PlaceOrderResponses = {
                             quantity?: number;
                         }>;
                         /**
-                         * Shipping estimate. For instance, Three business days will be represented `3bd`.
+                         * Shipping estimate. For instance, Three business days will be represented `3bd`. The unit can be `bd` for business days, `d` for days, `h` for hours, or `m` for minutes.
                          */
                         shippingEstimate?: string;
                         /**
@@ -8130,7 +8565,15 @@ export type PlaceOrderResponses = {
                      */
                     addressId?: string | null;
                     /**
-                     * Indicates whether address is disposable.
+                     * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                     *
+                     * Behavior by address type:
+                     * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                     * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                     * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                     * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                     *
+                     * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                      */
                     isDisposable?: boolean;
                     /**
@@ -8191,7 +8634,15 @@ export type PlaceOrderResponses = {
                      */
                     addressId?: string | null;
                     /**
-                     * Indicates whether address is disposable.
+                     * Indicates whether the address is disposable. Addresses marked as `isDisposable = true` are not saved to the shopper's profile when the order is completed, while addresses with `isDisposable = false` definitely belong to the shopper.
+                     *
+                     * Behavior by address type:
+                     * - `giftRegistry`, `pickup`, `search`, and `inStore`: always disposable, as they do not belong to the shopper navigating the cart.
+                     * - `residential`: may be disposable. Addresses from a complete shopper profile, or entered by an authenticated shopper with a complete profile, are not disposable. All other residential addresses are disposable, including those from first-time purchases, since no complete profile exists yet.
+                     * - `invoice`: does not have the `isDisposable` flag, since invoice addresses are of type `Address` rather than `ShippingAddress`. In practice, only authenticated shoppers can add invoice attachments to the cart, so they are never treated as disposable.
+                     * - `commercial`: corresponds to company addresses used in B2B contexts and follows the same logic as residential addresses.
+                     *
+                     * When a residential address is marked as disposable and the profile is complete, authentication is required to complete the order. Additionally, when a disposable residential address is used to complete a purchase, saved cards cannot be used.
                      */
                     isDisposable?: boolean;
                     /**

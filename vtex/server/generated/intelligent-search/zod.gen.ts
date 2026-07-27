@@ -294,6 +294,16 @@ export const zProductSearch = z.object({
     fuzzy: z.optional(z.string()),
     operator: z.optional(z.enum(['and', 'or'])),
     translated: z.optional(z.boolean()),
+    redirect: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    options: z.optional(z.object({
+        sorts: z.optional(z.array(z.record(z.string(), z.unknown()))),
+        counts: z.optional(z.array(z.record(z.string(), z.unknown()))),
+        deliveryPromisesEnabled: z.optional(z.boolean())
+    })),
+    searchId: z.optional(z.string()),
     pagination: z.optional(z.object({
         count: z.optional(z.number()),
         current: z.optional(z.object({
@@ -339,7 +349,11 @@ export const zFacets = z.object({
             selected: z.optional(z.boolean()),
             href: z.optional(z.string())
         }))),
-        type: z.optional(z.enum(['TEXT', 'PRICERANGE'])),
+        type: z.optional(z.enum([
+            'TEXT',
+            'PRICERANGE',
+            'DELIVERY'
+        ])),
         name: z.optional(z.string()),
         hidden: z.optional(z.boolean()),
         key: z.optional(z.string()),
@@ -362,6 +376,34 @@ export const zFacets = z.object({
 
 /**
  * Search term. It can contain any character.
+ *
+ * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+ *
+ * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+ *
+ * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+ * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+ *
+ * >⚠️ All searched IDs should be of the same type.
+ *
+ * ## Search by ID
+ *
+ * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+ *
+ * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+ * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+ *
+ * ## Supported ID types
+ *
+ * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+ *
+ * | ID Type | Query format | Example |
+ * | - | - | - |
+ * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+ * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+ * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+ * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+ * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
  */
 export const zQuery = z.string();
 
@@ -376,17 +418,31 @@ export const zQuery = z.string();
  *
  * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
  *
+ * ## Filter combinations
+ *
+ * When shoppers apply filters, the API combines them according to the following rules:
+ *
+ * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+ * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+ *
+ * ## Negative filters (NOT operator)
+ *
+ * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+ *
+ * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+ *
  * ## Available filters
  *
  * The `facets` parameter allows the following filters:
  *
  * | `facetKey` | Description | Example |
  * | - | - | - |
- * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
- * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
- * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
- * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
- *
+ * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+ * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+ * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+ * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+ * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+ * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
  */
 export const zFacetsPath = z.union([
     z.string().default('/'),
@@ -394,12 +450,12 @@ export const zFacetsPath = z.union([
 ]).default('/');
 
 /**
- * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export const zSponsoredCount = z.string();
 
 /**
- * Advertisement placement. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export const zAdvertisementPlacement = z.enum([
     'top_search',
@@ -412,7 +468,7 @@ export const zAdvertisementPlacement = z.enum([
 ]);
 
 /**
- * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export const zRepeatSponsoredProducts = z.boolean();
 
@@ -429,12 +485,16 @@ export const zLocale = z.union([
  *
  * * `default` - Calls the simulation for every single seller.
  * * `skip` - Never calls the simulation.
- * * `only1P` - Only calls the simulation for first party sellers.
+ * * `only1P` - Only calls the simulation for first-party sellers.
+ * * `only3P` - Only calls the simulation for third-party sellers.
+ * * `regionalize1p` - Calls regionalized simulation for first-party sellers only.
  */
 export const zSimulationBehavior = z.enum([
     'default',
     'skip',
-    'only1P'
+    'only1P',
+    'only3P',
+    'regionalize1p'
 ]);
 
 /**
@@ -526,6 +586,39 @@ export const zGetProductSearchByFacetsData = z.object({
     }),
     query: z.optional(z.object({
         query: z.optional(z.string()),
+        count: z.optional(z.union([
+            z.number().default(24),
+            z.null()
+        ])).default(24),
+        page: z.optional(z.union([
+            z.number().default(1),
+            z.null()
+        ])).default(1),
+        sort: z.optional(z.nullable(z.enum([
+            'price:desc',
+            'price:asc',
+            'orders:desc',
+            'name:desc',
+            'name:asc',
+            'release:desc',
+            'discount:desc'
+        ]))),
+        locale: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        hideUnavailableItems: z.optional(z.boolean()).default(false),
+        simulationBehavior: z.optional(z.enum([
+            'default',
+            'skip',
+            'only1P',
+            'only3P',
+            'regionalize1p'
+        ])),
+        showSponsored: z.optional(z.union([
+            z.boolean().default(false),
+            z.null()
+        ])).default(false),
         sponsoredCount: z.optional(z.string()),
         advertisementPlacement: z.optional(z.enum([
             'top_search',
@@ -536,38 +629,7 @@ export const zGetProductSearchByFacetsData = z.object({
             'autocomplete',
             'homepage'
         ])),
-        repeatSponsoredProducts: z.optional(z.boolean()),
-        simulationBehavior: z.optional(z.enum([
-            'default',
-            'skip',
-            'only1P'
-        ])),
-        count: z.optional(z.union([
-            z.number().default(24),
-            z.null()
-        ])).default(24),
-        page: z.optional(z.union([
-            z.number().default(1),
-            z.null()
-        ])).default(1),
-        showSponsored: z.optional(z.union([
-            z.boolean().default(false),
-            z.null()
-        ])).default(false),
-        sort: z.optional(z.enum([
-            'price:desc',
-            'price:asc',
-            'orders:desc',
-            'name:desc',
-            'name:asc',
-            'release:desc',
-            'discount:desc'
-        ])),
-        locale: z.optional(z.union([
-            z.string(),
-            z.null()
-        ])),
-        hideUnavailableItems: z.optional(z.boolean()).default(false)
+        repeatSponsoredProducts: z.optional(z.boolean())
     }))
 });
 
@@ -585,7 +647,8 @@ export const zGetFacetsByFacetsData = z.object({
             z.string(),
             z.null()
         ])),
-        hideUnavailableItems: z.optional(z.boolean()).default(false)
+        hideUnavailableItems: z.optional(z.boolean()).default(false),
+        removeHiddenFacets: z.optional(z.boolean())
     }))
 });
 
@@ -599,11 +662,16 @@ export const zGetPickupPointAvailabilityByFacetsData = z.object({
     }),
     query: z.object({
         query: z.optional(z.string()),
+        locale: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        pickupPoint: z.optional(z.string()),
         an: z.string(),
         coordinates: z.optional(z.string()),
         'zip-code': z.optional(z.string()),
         country: z.optional(z.string()),
         deliveryZonesHash: z.optional(z.string()),
-        pickupsHash: z.optional(z.string())
+        pickupPointsHash: z.optional(z.string())
     })
 });

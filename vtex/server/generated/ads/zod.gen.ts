@@ -12,6 +12,46 @@ export const zContentType = z.string();
  */
 export const zAccept = z.string();
 
+/**
+ * Start date for metrics in `YYYY-MM-DD` format.
+ */
+export const zStartDate = z.iso.date();
+
+/**
+ * End date for metrics in `YYYY-MM-DD` format.
+ */
+export const zEndDate = z.iso.date();
+
+/**
+ * Page number of the results.
+ */
+export const zPage = z.int().default(1);
+
+/**
+ * Number of items per page. When `download=true`, the BFF requests up to `20000` rows for XLSX generation.
+ */
+export const zQuantity = z.int().default(100);
+
+/**
+ * If `true`, returns the total number of available records.
+ */
+export const zCount = z.boolean().default(false);
+
+/**
+ * If `true`, includes detailed account information in the result.
+ */
+export const zAccountInfo = z.boolean().default(false);
+
+/**
+ * If `true`, returns an XLSX file buffer for download instead of JSON.
+ */
+export const zDownload = z.boolean().default(false);
+
+/**
+ * Sort direction.
+ */
+export const zOrderDirection = z.enum(['asc', 'desc']);
+
 export const zPostProductBulkProductsData = z.object({
     body: z.optional(z.array(z.object({
         product_sku: z.string(),
@@ -40,7 +80,8 @@ export const zPostProductBulkInventoriesData = z.object({
         store_id: z.optional(z.string()),
         price: z.number(),
         promotional_price: z.number(),
-        is_available: z.boolean()
+        is_available: z.boolean(),
+        metadata: z.optional(z.record(z.string(), z.unknown()))
     })).max(500)),
     path: z.optional(z.never()),
     query: z.optional(z.never()),
@@ -51,10 +92,13 @@ export const zPostProductBulkInventoriesData = z.object({
 });
 
 export const zPostV1BeaconImpressionByAdIdData = z.object({
-    body: z.optional(z.object({
+    body: z.optional(z.intersection(z.union([
+        z.record(z.string(), z.unknown()),
+        z.record(z.string(), z.unknown())
+    ]), z.object({
         user_id: z.optional(z.string()),
-        session_id: z.string()
-    })),
+        session_id: z.optional(z.string())
+    }))),
     path: z.object({
         ad_id: z.string()
     }),
@@ -68,10 +112,13 @@ export const zPostV1BeaconImpressionByAdIdData = z.object({
 });
 
 export const zPostV1BeaconClickByAdIdData = z.object({
-    body: z.optional(z.object({
+    body: z.optional(z.intersection(z.union([
+        z.record(z.string(), z.unknown()),
+        z.record(z.string(), z.unknown())
+    ]), z.object({
         user_id: z.optional(z.string()),
-        session_id: z.string()
-    })),
+        session_id: z.optional(z.string())
+    }))),
     path: z.object({
         ad_id: z.string()
     }),
@@ -85,10 +132,13 @@ export const zPostV1BeaconClickByAdIdData = z.object({
 });
 
 export const zPostV1BeaconViewByAdIdData = z.object({
-    body: z.optional(z.object({
+    body: z.optional(z.intersection(z.union([
+        z.record(z.string(), z.unknown()),
+        z.record(z.string(), z.unknown())
+    ]), z.object({
         user_id: z.optional(z.string()),
-        session_id: z.string()
-    })),
+        session_id: z.optional(z.string())
+    }))),
     path: z.object({
         ad_id: z.string()
     }),
@@ -103,7 +153,8 @@ export const zPostV1BeaconViewByAdIdData = z.object({
 
 export const zPostV1BeaconConversionData = z.object({
     body: z.optional(z.object({
-        channel: z.optional(z.string()),
+        channel: z.string(),
+        brand: z.optional(z.string()),
         publisher_id: z.string(),
         user_id: z.string(),
         session_id: z.string(),
@@ -168,7 +219,7 @@ export const zPostV1RmaByPublisherIdData = z.object({
                 'sponsored_brand',
                 'digital_signage'
             ])),
-            asset_types: z.optional(z.array(z.enum(['image', 'video']))),
+            assets_type: z.optional(z.array(z.enum(['image', 'video']))),
             allow_sku_duplications: z.optional(z.boolean())
         })),
         product_attributes: z.optional(z.object({
@@ -203,6 +254,361 @@ export const zPostV1RmaByPublisherIdData = z.object({
     path: z.object({
         publisher_id: z.string()
     }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetReportV2AdvertisersData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        account_info: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(false),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetReportV2PublishersData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        publisher_name: z.optional(z.string()),
+        account_info: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(false),
+        order_by: z.optional(z.enum([
+            'name',
+            'balance',
+            'total_daily_budget',
+            'total_campaigns',
+            'impressions',
+            'clicks',
+            'ctr',
+            'total_spent',
+            'conversions',
+            'conversion_rate',
+            'income',
+            'roas'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetReportNetworkPublishersData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        publisher_name: z.optional(z.string()),
+        account_info: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(false),
+        order_by: z.optional(z.enum([
+            'name',
+            'impressions',
+            'clicks',
+            'ctr',
+            'conversions',
+            'conversion_rate',
+            'income',
+            'roas',
+            'requests'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetCampaignV2Data = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        status: z.optional(z.string()),
+        advertiser_id: z.optional(z.string()),
+        ad_type: z.optional(z.enum([
+            'banner',
+            'product',
+            'sponsored_brand',
+            'digital_signage'
+        ])),
+        name: z.optional(z.string()),
+        account_info: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(false),
+        order_by: z.optional(z.enum([
+            'name',
+            'impressions',
+            'clicks',
+            'ctr',
+            'conversions',
+            'conversion_rate',
+            'income',
+            'roas',
+            'created_at',
+            'start_at',
+            'daily_budget',
+            'ad_type',
+            'advertiser_name',
+            'status'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetCampaignByCampaignIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        campaign_id: z.string()
+    }),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date()
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetReportAdvertisersCampaignsDetailedData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        campaign_id: z.optional(z.string()),
+        campaign_status: z.optional(z.string()),
+        publisher_id: z.optional(z.string()),
+        publisher_name: z.optional(z.string()),
+        ad_type: z.optional(z.enum([
+            'banner',
+            'product',
+            'sponsored_brand',
+            'digital_signage'
+        ])),
+        ad_status: z.optional(z.enum([
+            'enabled',
+            'paused',
+            'rejected',
+            'pending_review',
+            'stock_out',
+            'invalid_cost'
+        ])),
+        seller_id: z.optional(z.string()),
+        tag_id: z.optional(z.string()),
+        targeting_type: z.optional(z.string()),
+        sub_publisher_id: z.optional(z.string()),
+        sub_publisher_name: z.optional(z.string()),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(true),
+        order_by: z.optional(z.enum([
+            'advertiser_name',
+            'name',
+            'ad_type',
+            'status',
+            'sub_publisher_name',
+            'daily_budget',
+            'impressions',
+            'views',
+            'clicks',
+            'ctr',
+            'total_spent',
+            'conversions',
+            'conversion_rate',
+            'income',
+            'roas',
+            'created_at',
+            'start_at'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetReportAdvertisersAdsDetailedData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        campaign_name: z.optional(z.string()),
+        campaign_id: z.optional(z.string()),
+        publisher_id: z.optional(z.string()),
+        advertiser_id: z.optional(z.string()),
+        product_sku: z.optional(z.string()),
+        ad_status: z.optional(z.enum([
+            'enabled',
+            'paused',
+            'rejected',
+            'pending_review',
+            'stock_out',
+            'invalid_cost'
+        ])),
+        ad_type: z.optional(z.enum([
+            'banner',
+            'product',
+            'sponsored_brand',
+            'digital_signage'
+        ])),
+        targeting_type: z.optional(z.string()),
+        tag_id: z.optional(z.string()),
+        sub_publisher_id: z.optional(z.string()),
+        sub_publisher_name: z.optional(z.string()),
+        show_inactive: z.optional(z.boolean()).default(false),
+        hide_pending_rejected: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(true),
+        order_by: z.optional(z.enum([
+            'ad_type',
+            'ad_status',
+            'impressions',
+            'conversion_rate',
+            'ctr',
+            'income',
+            'total_spent',
+            'roas',
+            'conversions',
+            'total_conversions_items_quantity',
+            'advertiser_name',
+            'campaign_name',
+            'clicks',
+            'adcost',
+            'created_at',
+            'sub_publisher_name'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetAdResultsV2Data = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        start_date: z.iso.date(),
+        end_date: z.iso.date(),
+        campaign_name: z.optional(z.string()),
+        campaign_id: z.optional(z.string()),
+        advertiser_id: z.optional(z.string()),
+        product_sku: z.optional(z.string()),
+        ad_status: z.optional(z.enum([
+            'enabled',
+            'paused',
+            'rejected',
+            'pending_review',
+            'stock_out',
+            'invalid_cost'
+        ])),
+        ad_type: z.optional(z.enum([
+            'banner',
+            'product',
+            'sponsored_brand',
+            'digital_signage'
+        ])),
+        targeting_type: z.optional(z.string()),
+        show_inactive: z.optional(z.boolean()).default(false),
+        account_info: z.optional(z.boolean()).default(false),
+        page: z.optional(z.int()).default(1),
+        quantity: z.optional(z.int()).default(100),
+        count: z.optional(z.boolean()).default(false),
+        order_by: z.optional(z.enum([
+            'ad_type',
+            'ad_status',
+            'impressions',
+            'conversion_rate',
+            'ctr',
+            'income',
+            'total_spent',
+            'roas',
+            'conversions',
+            'total_conversions_item_quantity'
+        ])),
+        order_direction: z.optional(z.enum(['asc', 'desc'])),
+        download: z.optional(z.boolean()).default(false)
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zPostWebhookMarketplaceTransfersByPublisherIdData = z.object({
+    body: z.optional(z.object({
+        transaction_id: z.string(),
+        status: z.enum(['success', 'failure']),
+        message: z.optional(z.string())
+    })),
+    path: z.object({
+        publisher_id: z.string()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zPostAudienceUploadUrlData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPostSsoMarketplaceData = z.object({
+    body: z.optional(z.object({
+        sso_token: z.string(),
+        email: z.string(),
+        user_id: z.string(),
+        name: z.string(),
+        marketplace_name: z.string()
+    })),
+    path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
         'Content-Type': z.string(),

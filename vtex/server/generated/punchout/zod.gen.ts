@@ -12,7 +12,7 @@ export const zContentType = z.string();
  */
 export const zAccept = z.string();
 
-export const zPostApiAuthenticatorPunchoutStartData = z.object({
+export const zPostApiAuthenticatorV1PunchoutStartData = z.object({
     body: z.optional(z.object({
         username: z.string(),
         password: z.string()
@@ -27,7 +27,7 @@ export const zPostApiAuthenticatorPunchoutStartData = z.object({
     })
 });
 
-export const zPostApiAuthenticatorPunchoutAuthenticatedStartData = z.object({
+export const zPostApiAuthenticatorV1PunchoutAuthenticatedStartData = z.object({
     body: z.optional(z.object({
         username: z.string()
     })),
@@ -41,7 +41,7 @@ export const zPostApiAuthenticatorPunchoutAuthenticatedStartData = z.object({
     })
 });
 
-export const zGetApiAuthenticatorPunchoutFinishData = z.object({
+export const zGetApiAuthenticatorV1PunchoutFinishData = z.object({
     body: z.optional(z.never()),
     path: z.optional(z.never()),
     query: z.object({

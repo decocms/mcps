@@ -943,52 +943,6 @@ export type PutRolesinUserResponses = {
 
 export type PutRolesinUserResponse = PutRolesinUserResponses[keyof PutRolesinUserResponses];
 
-export type GetRolesbyUser2Data = {
-    body?: never;
-    headers: {
-        /**
-         * Type of the content being sent.
-         */
-        'Content-Type': string;
-        /**
-         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
-         */
-        Accept: string;
-    };
-    path: {
-        /**
-         * Email of the user.
-         */
-        userEmail: string;
-    };
-    query?: never;
-    url: '/api/license-manager/users/{userEmail}/roles';
-};
-
-export type GetRolesbyUser2Responses = {
-    200: {
-        /**
-         * ID of the user.
-         */
-        UserId?: string;
-        /**
-         * Email of the user.
-         */
-        Email?: string;
-        /**
-         * Array of role objects.
-         */
-        Roles?: Array<{
-            /**
-             * Name of the role.
-             */
-            name?: string;
-        }>;
-    };
-};
-
-export type GetRolesbyUser2Response = GetRolesbyUser2Responses[keyof GetRolesbyUser2Responses];
-
 export type RemoveRolefromUserData = {
     body?: never;
     headers: {

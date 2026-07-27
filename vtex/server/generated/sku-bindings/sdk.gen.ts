@@ -27,7 +27,15 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **View Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getbySkuId = <ThrowOnError extends boolean = false>(options: Options<GetbySkuIdData, ThrowOnError>) => (options.client ?? client).get<GetbySkuIdResponses, unknown, ThrowOnError>({
     security: [
@@ -48,7 +56,15 @@ export const getbySkuId = <ThrowOnError extends boolean = false>(options: Option
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **View Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getpagedadmin = <ThrowOnError extends boolean = false>(options: Options<GetpagedadminData, ThrowOnError>) => (options.client ?? client).get<GetpagedadminResponses, unknown, ThrowOnError>({
     security: [
@@ -69,7 +85,15 @@ export const getpagedadmin = <ThrowOnError extends boolean = false>(options: Opt
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **View Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getSkUseller = <ThrowOnError extends boolean = false>(options: Options<GetSkUsellerData, ThrowOnError>) => (options.client ?? client).get<GetSkUsellerResponses, unknown, ThrowOnError>({
     security: [
@@ -90,7 +114,15 @@ export const getSkUseller = <ThrowOnError extends boolean = false>(options: Opti
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const bindtoanothersku = <ThrowOnError extends boolean = false>(options: Options<BindtoanotherskuData, ThrowOnError>) => (options.client ?? client).put<BindtoanotherskuResponses, unknown, ThrowOnError>({
     security: [
@@ -111,7 +143,15 @@ export const bindtoanothersku = <ThrowOnError extends boolean = false>(options: 
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **View Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getallbySellerId = <ThrowOnError extends boolean = false>(options: Options<GetallbySellerIdData, ThrowOnError>) => (options.client ?? client).get<GetallbySellerIdResponses, unknown, ThrowOnError>({
     security: [
@@ -132,7 +172,15 @@ export const getallbySellerId = <ThrowOnError extends boolean = false>(options: 
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **View Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const getpagedbySellerId = <ThrowOnError extends boolean = false>(options: Options<GetpagedbySellerIdData, ThrowOnError>) => (options.client ?? client).get<GetpagedbySellerIdResponses, unknown, ThrowOnError>({
     security: [
@@ -155,7 +203,15 @@ export const getpagedbySellerId = <ThrowOnError extends boolean = false>(options
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const changeNotification = <ThrowOnError extends boolean = false>(options: Options<ChangeNotificationData, ThrowOnError>) => (options.client ?? client).post<ChangeNotificationResponses, ChangeNotificationErrors, ThrowOnError>({
     security: [
@@ -196,7 +252,15 @@ export const changeNotification = <ThrowOnError extends boolean = false>(options
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const postSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuId = <ThrowOnError extends boolean = false>(options: Options<PostSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuIdData, ThrowOnError>) => (options.client ?? client).post<PostSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuIdResponses, PostSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuIdErrors, ThrowOnError>({
     security: [
@@ -217,7 +281,15 @@ export const postSkuBindingPvtSkusellerChangenotificationBySellerIdBySellerSkuId
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const insertSkuBinding = <ThrowOnError extends boolean = false>(options: Options<InsertSkuBindingData, ThrowOnError>) => (options.client ?? client).post<InsertSkuBindingResponses, InsertSkuBindingErrors, ThrowOnError>({
     security: [
@@ -238,7 +310,15 @@ export const insertSkuBinding = <ThrowOnError extends boolean = false>(options: 
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const activateSkuBinding = <ThrowOnError extends boolean = false>(options: Options<ActivateSkuBindingData, ThrowOnError>) => (options.client ?? client).post<ActivateSkuBindingResponses, unknown, ThrowOnError>({
     security: [
@@ -259,7 +339,15 @@ export const activateSkuBinding = <ThrowOnError extends boolean = false>(options
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const deactivateSkuBinding = <ThrowOnError extends boolean = false>(options: Options<DeactivateSkuBindingData, ThrowOnError>) => (options.client ?? client).post<DeactivateSkuBindingResponses, unknown, ThrowOnError>({
     security: [
@@ -280,7 +368,15 @@ export const deactivateSkuBinding = <ThrowOnError extends boolean = false>(optio
  *
  * ## Permissions
  *
- * This endpoint does not require [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Catalog API | General | **Edit Product** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
 export const deleteSkUsellerassociation = <ThrowOnError extends boolean = false>(options: Options<DeleteSkUsellerassociationData, ThrowOnError>) => (options.client ?? client).post<DeleteSkUsellerassociationResponses, unknown, ThrowOnError>({
     security: [

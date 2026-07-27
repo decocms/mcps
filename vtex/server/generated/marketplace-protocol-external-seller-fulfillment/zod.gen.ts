@@ -335,6 +335,53 @@ export const zResponseFulfillmentSimulation = z.object({
 });
 
 /**
+ * Details related to an order, including the order approval date, marketplace order ID, order number, and order receipt code.
+ */
+export const zRepsonseOrderId = z.object({
+    date: z.optional(z.string()),
+    marketplaceOrderId: z.optional(z.string()),
+    orderId: z.optional(z.string()),
+    receipt: z.optional(z.string())
+});
+
+/**
+ * Payment provider (connector) responses. The fields within this object can vary according to the order payment provider.
+ */
+export const zConnectorResponses = z.object({
+    Message: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    tid: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    authorizationId: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    status: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    delayToAutoSettle: z.optional(z.union([
+        z.int(),
+        z.null()
+    ])),
+    ReturnCode: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
+    nsu: z.optional(z.string()),
+    code: z.optional(z.string()),
+    message: z.optional(z.string()),
+    acquirer: z.optional(z.string()),
+    authId: z.optional(z.string()),
+    paymentId: z.optional(z.string()),
+    delayToAutoSettleAfterAntifraud: z.optional(z.string())
+});
+
+/**
  * Details related to a request for an order ID, which is used to trigger the fulfillment process of the corresponding order.
  */
 export const zRequestOrderId = z.object({
@@ -343,17 +390,25 @@ export const zRequestOrderId = z.object({
     cancellationRequestId: z.string(),
     cancellationRequestDate: z.string(),
     reason: z.string(),
-    requestedByUser: z.boolean()
-});
-
-/**
- * Details related to an order, including the order approval date, marketplace order ID, order number, and order receipt code.
- */
-export const zRepsonseOrderId = z.object({
-    date: z.optional(z.string()),
-    marketplaceOrderId: z.optional(z.string()),
-    orderId: z.optional(z.string()),
-    receipt: z.optional(z.string())
+    requestedByUser: z.boolean(),
+    paymentData: z.optional(z.object({
+        payments: z.optional(z.array(z.object({
+            paymentSystem: z.optional(z.string()),
+            paymentSystemName: z.optional(z.string()),
+            value: z.optional(z.int()),
+            installments: z.optional(z.int()),
+            referenceValue: z.optional(z.int()),
+            group: z.optional(z.enum([
+                'creditCard',
+                'debitCard',
+                'bankInvoice',
+                'promissory',
+                'giftCard',
+                'instantPayment'
+            ]))
+        }))),
+        connectorResponses: z.optional(zConnectorResponses)
+    }))
 });
 
 /**

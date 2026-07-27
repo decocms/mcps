@@ -585,7 +585,7 @@ export type DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
         organizationUnitId: string;
     };
     query?: never;
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users';
 };
 
 export type DeleteApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {
@@ -614,7 +614,7 @@ export type GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
         organizationUnitId: string;
     };
     query?: never;
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users';
 };
 
 export type GetApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {
@@ -662,7 +662,7 @@ export type PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersData = {
          */
         force: boolean;
     };
-    url: '/api//vtexid/organization-units/{organizationUnitId}/users';
+    url: '/api/vtexid/organization-units/{organizationUnitId}/users';
 };
 
 export type PostApiVtexidOrganizationUnitsByOrganizationUnitIdUsersResponses = {

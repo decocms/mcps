@@ -43,7 +43,7 @@ export const zClientProfileData = z.object({
 });
 
 /**
- * List of delivery IDs, used for orders where the marketplace is responsible for the fulfillment of the order, including keeping inventory at a warehouse as well as the delivery.
+ * Object with the delivery ID information for orders where the marketplace is responsible for the fulfillment of the order, including keeping inventory at a warehouse as well as the delivery.
  */
 export const zDeliveryIds = z.object({
     warehouseId: z.string()
@@ -62,15 +62,15 @@ export const zLogisticsInfo = z.object({
     selectedSla: z.string(),
     lockTTL: z.string(),
     shippingEstimate: z.string(),
-    deliveryIds: zDeliveryIds
+    deliveryIds: z.array(zDeliveryIds)
 });
 
 /**
  * Structure with the address geocoordinates. Optional for `delivery` orders, required for `pickup-in-point` orders.
  */
 export const zGeoCoordinates = z.object({
-    latitude: z.string(),
-    longitude: z.string()
+    latitude: z.number(),
+    longitude: z.number()
 });
 
 /**
@@ -89,16 +89,6 @@ export const zSelectedAddress = z.object({
     neighborhood: z.optional(z.string()),
     complement: z.optional(z.string()),
     geoCoordinates: z.optional(zGeoCoordinates)
-});
-
-/**
- * Object containing shipping information for the order.
- */
-export const zShippingData = z.object({
-    logisticsInfo: z.array(zLogisticsInfo),
-    selectedAddresses: z.array(zSelectedAddress),
-    isFob: z.boolean(),
-    isMarketplaceFulfillment: z.boolean()
 });
 
 /**
@@ -139,24 +129,6 @@ export const zCustomData = z.object({
 });
 
 /**
- * Object for enqueueing a new order.
- */
-export const zEnqueueNewOrderRequest = z.object({
-    marketplaceOrderId: z.string(),
-    marketplaceOrderStatus: z.string(),
-    marketplacePaymentValue: z.int(),
-    connectorName: z.optional(z.string()),
-    connectorEndpoint: z.optional(z.string()),
-    allowFranchises: z.boolean(),
-    pickupAccountName: z.optional(z.string()),
-    items: z.array(zItem),
-    clientProfileData: zClientProfileData,
-    shippingData: zShippingData,
-    invoiceData: zInvoiceData,
-    customData: z.optional(zCustomData)
-});
-
-/**
  * Object for delivery by seller integration.
  */
 export const zDeliverybyseller = z.object({
@@ -188,10 +160,8 @@ export const zDeliverybyseller = z.object({
     ]),
     fields: z.union([
         z.object({
-            fields: z.optional(z.object({
-                mainOrderId: z.string(),
-                franchiseOrderId: z.optional(z.string())
-            }))
+            mainOrderId: z.string(),
+            franchiseOrderId: z.optional(z.string())
         }),
         z.null()
     ]),
@@ -224,10 +194,8 @@ export const zDeliverybyfranchiseseller = z.object({
     ]),
     fields: z.union([
         z.object({
-            fields: z.optional(z.object({
-                mainOrderId: z.string(),
-                franchiseOrderId: z.optional(z.string())
-            }))
+            mainOrderId: z.string(),
+            franchiseOrderId: z.optional(z.string())
         }),
         z.null()
     ]),
@@ -516,6 +484,57 @@ export const zPlaceFulfillmentOrderResponse = z.object({
         })),
         openTextField: z.optional(z.string())
     }))
+});
+
+/**
+ * Object with tax information for a specific SKU in the order.
+ */
+export const zTaxData = z.object({
+    skuId: z.string(),
+    value: z.int()
+});
+
+/**
+ * Object with tracking information hints for the order's shipment.
+ */
+export const zTrackingHint = z.object({
+    trackingId: z.string(),
+    courierName: z.string(),
+    trackingUrl: z.optional(z.url()),
+    trackingLabel: z.optional(z.string())
+});
+
+/**
+ * Object containing shipping information for the order.
+ */
+export const zShippingData = z.object({
+    logisticsInfo: z.array(zLogisticsInfo),
+    selectedAddresses: z.array(zSelectedAddress),
+    isFob: z.boolean(),
+    isMarketplaceFulfillment: z.boolean(),
+    trackingHints: z.optional(z.array(zTrackingHint))
+});
+
+/**
+ * Object for enqueueing a new order.
+ */
+export const zEnqueueNewOrderRequest = z.object({
+    marketplaceOrderId: z.string(),
+    connectorName: z.optional(z.string()),
+    connectorEndpoint: z.optional(z.string()),
+    marketplaceOrderStatus: z.string(),
+    marketplacePaymentValue: z.int(),
+    marketplaceInterestValue: z.optional(z.int()),
+    priceDivergenceAllowanceRate: z.optional(z.number()),
+    allowFranchises: z.boolean(),
+    pickupAccountName: z.optional(z.string()),
+    items: z.array(zItem),
+    clientProfileData: zClientProfileData,
+    shippingData: zShippingData,
+    invoiceData: zInvoiceData,
+    customData: z.optional(zCustomData),
+    taxData: z.optional(z.array(zTaxData)),
+    openTextField: z.optional(z.string())
 });
 
 export const zPlaceFulfillmentOrderData = z.object({

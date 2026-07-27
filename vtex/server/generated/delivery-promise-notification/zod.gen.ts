@@ -12,8 +12,8 @@ export const zContentType = z.string().default('application/json');
  */
 export const zAccept = z.string().default('application/json');
 
-export const zPutDeliveryPromisesExternalSellersBySellerIdProductsData = z.object({
-    body: z.object({
+export const zPutApiDeliveryPromisesExternalSellersBySellerIdProductsData = z.object({
+    body: z.array(z.object({
         itemId: z.string(),
         productId: z.optional(z.string()),
         availability: z.int(),
@@ -160,7 +160,7 @@ export const zPutDeliveryPromisesExternalSellersBySellerIdProductsData = z.objec
                 deliveryTime: z.optional(z.string())
             }))
         }))
-    }),
+    })),
     path: z.object({
         sellerId: z.string()
     }),
@@ -173,12 +173,12 @@ export const zPutDeliveryPromisesExternalSellersBySellerIdProductsData = z.objec
     })
 });
 
-export const zPatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData = z.object({
+export const zPatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData = z.object({
     body: z.object({
         availability: z.int(),
         promises: z.array(z.object({
             availability: z.int(),
-            deliveryChannel: z.optional(z.string()),
+            deliveryChannel: z.optional(z.enum(['delivery', 'pickup-in-point'])),
             deliveryZoneIds: z.array(z.enum([
                 'BRA_COUNTRY',
                 'BRA_REGION_NORTE',

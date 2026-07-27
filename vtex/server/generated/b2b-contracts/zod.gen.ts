@@ -22,7 +22,7 @@ export const zUpdateContractRequest = z.object({
     priceTables: z.optional(z.string()),
     restrictions: z.optional(z.object({
         'vtex.catalog': z.optional(z.object({
-            collectionIds: z.optional(z.array(z.string()))
+            assortmentIds: z.optional(z.array(z.string()))
         })),
         'vtex.checkout': z.optional(z.object({
             creditCards: z.optional(z.array(z.string()))
@@ -145,7 +145,7 @@ export const zContractResponse = z.object({
     restrictions: z.optional(z.union([
         z.object({
             'vtex.catalog': z.optional(z.object({
-                collectionIds: z.optional(z.array(z.string()))
+                assortmentIds: z.optional(z.array(z.string()))
             })),
             'vtex.checkout': z.optional(z.object({
                 creditCards: z.optional(z.array(z.string()))

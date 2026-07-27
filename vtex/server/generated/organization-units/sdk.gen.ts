@@ -102,7 +102,7 @@ export const getApiOrganizationUnitsV1 = <ThrowOnError extends boolean = false>(
 /**
  * Create organization unit
  *
- * Creates a new organization unit at the root level of the organizational hierarchy.
+ * Creates a new organization unit at the root level of the organizational hierarchy. After creation, you can move the organization unit to a desired parent using the `PUT` [Move organization unit](https://developers.vtex.com/docs/api-reference/organization-units-api#put-/api/organization-units/v1/-organizationUnitId-/path) endpoint.
  *
  * >⚠️ This feature is only available for stores using B2B Buyer Portal, which is currently available to select accounts.
  *

@@ -2,7 +2,7 @@
 
 import { type Client, formDataBodySerializer, type Options as Options2, type TDataShape } from './client';
 import { client } from './client.gen';
-import type { GetApiVtexidPubAuthenticationStartData, GetApiVtexidPubAuthenticationStartResponses, GetApiVtexidPvtUserIdData, GetApiVtexidPvtUserIdErrors, GetApiVtexidPvtUserIdResponses, GetApiVtexidPvtUserInfoData, GetApiVtexidPvtUserInfoErrors, GetApiVtexidPvtUserInfoResponses, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalData, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalErrors, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalResponses, PatchApiVtexidApikeyByApiKeyApitokenRenewData, PatchApiVtexidApikeyByApiKeyApitokenRenewErrors, PatchApiVtexidApikeyByApiKeyApitokenRenewResponses, PostApiAuthenticatorStorefrontUsersData, PostApiAuthenticatorStorefrontUsersErrors, PostApiAuthenticatorStorefrontUsersResponses, PostApiVtexidApptokenLoginData, PostApiVtexidApptokenLoginResponses, PostApiVtexidAudienceWebstoreProviderOauthExchangeData, PostApiVtexidAudienceWebstoreProviderOauthExchangeResponses, PostApiVtexidCredentialValidateData, PostApiVtexidCredentialValidateErrors, PostApiVtexidCredentialValidateResponses, PostApiVtexidPasswordExpireData, PostApiVtexidPasswordExpireResponses, PostApiVtexidPubAuthenticationAccesskeySendData, PostApiVtexidPubAuthenticationAccesskeySendErrors, PostApiVtexidPubAuthenticationAccesskeySendResponses, PostApiVtexidPubAuthenticationAccesskeyValidateData, PostApiVtexidPubAuthenticationAccesskeyValidateErrors, PostApiVtexidPubAuthenticationAccesskeyValidateResponses, PostApiVtexidPubProvidersSetupPasswordWebstorePasswordData, PostApiVtexidPubProvidersSetupPasswordWebstorePasswordResponses, PostApiVtexidRefreshtokenWebstoreData, PostApiVtexidRefreshtokenWebstoreResponses } from './types.gen';
+import type { DeleteApiAuthenticatorV1TenantsFeaturesByNameData, DeleteApiAuthenticatorV1TenantsFeaturesByNameErrors, DeleteApiAuthenticatorV1TenantsFeaturesByNameResponses, DeleteApiVtexidOrganizationUnitsByUnitIdSettingsData, DeleteApiVtexidOrganizationUnitsByUnitIdSettingsErrors, DeleteApiVtexidOrganizationUnitsByUnitIdSettingsResponses, GetApiVtexidOrganizationUnitsByUnitIdSettingsData, GetApiVtexidOrganizationUnitsByUnitIdSettingsErrors, GetApiVtexidOrganizationUnitsByUnitIdSettingsResponses, GetApiVtexidPubAuthenticationStartData, GetApiVtexidPubAuthenticationStartResponses, GetApiVtexidPvtUserIdData, GetApiVtexidPvtUserIdErrors, GetApiVtexidPvtUserIdResponses, GetApiVtexidPvtUserInfoData, GetApiVtexidPvtUserInfoErrors, GetApiVtexidPvtUserInfoResponses, PatchApiAuthenticatorV1TenantsFeaturesByNameData, PatchApiAuthenticatorV1TenantsFeaturesByNameErrors, PatchApiAuthenticatorV1TenantsFeaturesByNameResponses, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalData, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalErrors, PatchApiVtexidApikeyByApiKeyApitokenFinishRenewalResponses, PatchApiVtexidApikeyByApiKeyApitokenRenewData, PatchApiVtexidApikeyByApiKeyApitokenRenewErrors, PatchApiVtexidApikeyByApiKeyApitokenRenewResponses, PatchApiVtexidOrganizationUnitsByUnitIdSettingsData, PatchApiVtexidOrganizationUnitsByUnitIdSettingsErrors, PatchApiVtexidOrganizationUnitsByUnitIdSettingsResponses, PostApiAuthenticatorV1StorefrontUsersData, PostApiAuthenticatorV1StorefrontUsersErrors, PostApiAuthenticatorV1StorefrontUsersResponses, PostApiVtexidApptokenLoginData, PostApiVtexidApptokenLoginResponses, PostApiVtexidAudienceWebstoreProviderOauthExchangeData, PostApiVtexidAudienceWebstoreProviderOauthExchangeResponses, PostApiVtexidCredentialValidateData, PostApiVtexidCredentialValidateErrors, PostApiVtexidCredentialValidateResponses, PostApiVtexidOrganizationUnitsByUnitIdSettingsData, PostApiVtexidOrganizationUnitsByUnitIdSettingsErrors, PostApiVtexidOrganizationUnitsByUnitIdSettingsResponses, PostApiVtexidPasswordExpireData, PostApiVtexidPasswordExpireResponses, PostApiVtexidPubAuthenticationAccesskeySendData, PostApiVtexidPubAuthenticationAccesskeySendErrors, PostApiVtexidPubAuthenticationAccesskeySendResponses, PostApiVtexidPubAuthenticationAccesskeyValidateData, PostApiVtexidPubAuthenticationAccesskeyValidateErrors, PostApiVtexidPubAuthenticationAccesskeyValidateResponses, PostApiVtexidPubProvidersSetupPasswordWebstorePasswordData, PostApiVtexidPubProvidersSetupPasswordWebstorePasswordResponses, PostApiVtexidRefreshtokenWebstoreData, PostApiVtexidRefreshtokenWebstoreResponses, PutApiAuthenticatorV1TenantsFeaturesByNameData, PutApiAuthenticatorV1TenantsFeaturesByNameErrors, PutApiAuthenticatorV1TenantsFeaturesByNameResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -23,7 +23,9 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * Creates a new storefront user in VTEX ID with one or more authentication identifiers (username, email, or phone number).
  *
- * The created user is not linked to any Organization Unit and does not have storefront permissions.
+ * The created user is not linked to any Organization Unit and does not have storefront permissions. For more information on how to provision B2B users, see the [B2B user provisioning guide](https://developers.vtex.com/docs/guides/b2b-user-provisioning).
+ *
+ * > ⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), which is currently available to selected accounts.
  *
  * ## Notes and limitations
  *
@@ -44,9 +46,88 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
  *
  * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
  */
-export const postApiAuthenticatorStorefrontUsers = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorStorefrontUsersData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorStorefrontUsersResponses, PostApiAuthenticatorStorefrontUsersErrors, ThrowOnError>({
+export const postApiAuthenticatorV1StorefrontUsers = <ThrowOnError extends boolean = false>(options: Options<PostApiAuthenticatorV1StorefrontUsersData, ThrowOnError>) => (options.client ?? client).post<PostApiAuthenticatorV1StorefrontUsersResponses, PostApiAuthenticatorV1StorefrontUsersErrors, ThrowOnError>({
     security: [{ name: 'X-VTEX-API-AppKey', type: 'apiKey' }, { name: 'X-VTEX-API-AppToken', type: 'apiKey' }],
-    url: '/api/authenticator/storefront/users',
+    url: '/api/authenticator/v1/storefront/users',
+    ...options
+});
+
+/**
+ * Delete password migration configuration
+ *
+ * Removes the B2B password migration configuration from your account entirely, including all middleware endpoint settings and HMAC credentials. After deletion, legacy password validation will no longer be available.
+ *
+ * For more information, see the [B2B password migration guide](https://developers.vtex.com/docs/guides/b2b-password-migration).
+ *
+ * > ⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), which is currently available to selected accounts.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ */
+export const deleteApiAuthenticatorV1TenantsFeaturesByName = <ThrowOnError extends boolean = false>(options: Options<DeleteApiAuthenticatorV1TenantsFeaturesByNameData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiAuthenticatorV1TenantsFeaturesByNameResponses, DeleteApiAuthenticatorV1TenantsFeaturesByNameErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/authenticator/v1/tenants/features/{name}',
+    ...options
+});
+
+/**
+ * Enable or disable password migration
+ *
+ * Enables or disables the B2B password migration feature for your account without removing the configuration. When disabled, legacy password validation will not be performed, even for users with `isLegacyPassword=true`.
+ *
+ * For more information, see the [B2B password migration guide](https://developers.vtex.com/docs/guides/b2b-password-migration).
+ *
+ * > ⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), which is currently available to selected accounts.
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ */
+export const patchApiAuthenticatorV1TenantsFeaturesByName = <ThrowOnError extends boolean = false>(options: Options<PatchApiAuthenticatorV1TenantsFeaturesByNameData, ThrowOnError>) => (options.client ?? client).patch<PatchApiAuthenticatorV1TenantsFeaturesByNameResponses, PatchApiAuthenticatorV1TenantsFeaturesByNameErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/authenticator/v1/tenants/features/{name}',
+    ...options
+});
+
+/**
+ * Upsert password migration configuration
+ *
+ * Configures or updates the external authentication middleware settings for B2B password migration. This endpoint registers the middleware URL and HMAC credentials that VTEX will use to validate legacy user credentials during their first login.
+ *
+ * Once configured, users with the `isLegacyPassword` flag set to `true` will have their credentials validated against the configured middleware endpoint on their first login attempt.
+ *
+ * For more information, see the [B2B password migration guide](https://developers.vtex.com/docs/guides/b2b-password-migration).
+ *
+ * > ⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/docs/tutorials/b2b-buyer-portal), which is currently available to selected accounts.
+ *
+ * ## Notes and limitations
+ *
+ * - The middleware endpoint must be accessible via HTTPS with a valid TLS certificate.
+ * - The middleware must respond within 3 seconds (p95 ≤ 1s, p99 ≤ 2.5s recommended).
+ * - The `clientId` and `secret` are used for HMAC-SHA256 request signing.
+ * - The `secret` is treated as a sensitive credential and should not be logged or shared.
+ * - Don't reuse secrets across environments (for example, staging vs. production).
+ *
+ * ## Permissions
+ *
+ * This endpoint does not require [authentication](https://developers.vtex.com/docs/guides/authentication) or [permissions](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3).
+ */
+export const putApiAuthenticatorV1TenantsFeaturesByName = <ThrowOnError extends boolean = false>(options: Options<PutApiAuthenticatorV1TenantsFeaturesByNameData, ThrowOnError>) => (options.client ?? client).put<PutApiAuthenticatorV1TenantsFeaturesByNameResponses, PutApiAuthenticatorV1TenantsFeaturesByNameErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/authenticator/v1/tenants/features/{name}',
     ...options
 });
 
@@ -357,5 +438,146 @@ export const postApiVtexidRefreshtokenWebstore = <ThrowOnError extends boolean =
         { name: 'VtexIdclientAutCookie', type: 'apiKey' }
     ],
     url: '/api/vtexid/refreshtoken/webstore',
+    ...options
+});
+
+/**
+ * Delete organization unit authentication setting
+ *
+ * Deletes only the authentication configuration entries listed in the request body `settings` array (each entry is identified by `type`, for example `OAuth`). Other organization unit authentication configuration is not removed. Use with care when deleting unit-specific SSO configuration.
+ *
+ * >⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/en/docs/tutorials/b2b-buyer-portal), which is currently available to select accounts.
+ *
+ * >ℹ️ These endpoints configure authentication methods for an organization unit (for example password or SSO). To manage unit hierarchy and membership, use the [Organization Units API](https://developers.vtex.com/docs/api-reference/organization-units-api). For more information about organization units, see [Organization units](https://help.vtex.com/docs/tutorials/organizational-units). Send the `VtexIdclientAutCookie` user token header, or the `X-VTEX-API-AppKey` and `X-VTEX-API-AppToken` headers.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Organization Units | units | **Edit_Organization_Unit** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const deleteApiVtexidOrganizationUnitsByUnitIdSettings = <ThrowOnError extends boolean = false>(options: Options<DeleteApiVtexidOrganizationUnitsByUnitIdSettingsData, ThrowOnError>) => (options.client ?? client).delete<DeleteApiVtexidOrganizationUnitsByUnitIdSettingsResponses, DeleteApiVtexidOrganizationUnitsByUnitIdSettingsErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/vtexid/organization-units/{unitId}/settings',
+    ...options
+});
+
+/**
+ * Get organization unit authentication settings
+ *
+ * Returns the authentication methods configured for an organization unit, such as password login and external identity provider (SSO), including whether each method is enabled.
+ *
+ * >⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/en/docs/tutorials/b2b-buyer-portal), which is currently available to select accounts.
+ *
+ * >ℹ️ These endpoints configure authentication methods for an organization unit (for example password or SSO). To manage unit hierarchy and membership, use the [Organization Units API](https://developers.vtex.com/docs/api-reference/organization-units-api). For more information about organization units, see [Organization units](https://help.vtex.com/docs/tutorials/organizational-units). Send the `VtexIdclientAutCookie` user token header, or the `X-VTEX-API-AppKey` and `X-VTEX-API-AppToken` headers.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Organization Units | units | **View_Organization_Unit** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const getApiVtexidOrganizationUnitsByUnitIdSettings = <ThrowOnError extends boolean = false>(options: Options<GetApiVtexidOrganizationUnitsByUnitIdSettingsData, ThrowOnError>) => (options.client ?? client).get<GetApiVtexidOrganizationUnitsByUnitIdSettingsResponses, GetApiVtexidOrganizationUnitsByUnitIdSettingsErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/vtexid/organization-units/{unitId}/settings',
+    ...options
+});
+
+/**
+ * Update organization unit authentication settings
+ *
+ * Partially updates authentication configurations that already exist for the organization unit (for example changing `status`). This endpoint doesn't create new authentication methods; use `POST` [Set organization unit authentication settings](https://developers.vtex.com/docs/api-reference/vtex-id-api#post-/api/vtexid/organization-units/-unitId-/settings) to define or add them.
+ *
+ * Send a `settings` array in which each object specifies the configuration `type` (for example `OAuth`) and the desired `status` for that existing configuration.
+ *
+ * >⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/en/docs/tutorials/b2b-buyer-portal), which is currently available to select accounts.
+ *
+ * >ℹ️ These endpoints configure authentication methods for an organization unit (for example password or SSO). To manage unit hierarchy and membership, use the [Organization Units API](https://developers.vtex.com/docs/api-reference/organization-units-api). For more information about organization units, see [Organization units](https://help.vtex.com/docs/tutorials/organizational-units). Send the `VtexIdclientAutCookie` user token header, or the `X-VTEX-API-AppKey` and `X-VTEX-API-AppToken` headers.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Organization Units | units | **Edit_Organization_Unit** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const patchApiVtexidOrganizationUnitsByUnitIdSettings = <ThrowOnError extends boolean = false>(options: Options<PatchApiVtexidOrganizationUnitsByUnitIdSettingsData, ThrowOnError>) => (options.client ?? client).patch<PatchApiVtexidOrganizationUnitsByUnitIdSettingsResponses, PatchApiVtexidOrganizationUnitsByUnitIdSettingsErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/vtexid/organization-units/{unitId}/settings',
+    ...options
+});
+
+/**
+ * Set organization unit authentication settings
+ *
+ * Defines authentication settings for an organization unit, for example enabling or disabling SSO for a configured external identity provider. Send each method to change using its display `name` and desired `status`.
+ *
+ * >⚠️ This feature is only available for stores using [B2B Buyer Portal](https://help.vtex.com/en/docs/tutorials/b2b-buyer-portal), which is currently available to select accounts.
+ *
+ * >ℹ️ These endpoints configure authentication methods for an organization unit (for example password or SSO). To manage unit hierarchy and membership, use the [Organization Units API](https://developers.vtex.com/docs/api-reference/organization-units-api). For more information about organization units, see [Organization units](https://help.vtex.com/docs/tutorials/organizational-units). Send the `VtexIdclientAutCookie` user token header, or the `X-VTEX-API-AppKey` and `X-VTEX-API-AppToken` headers.
+ *
+ * ## Prerequisites
+ *
+ * Before enabling login via external IdP, ensure the following requirements are met:
+ *
+ * - The identity provider must be previously configured in the VTEX Admin. Learn more in [Login (SSO)](https://developers.vtex.com/docs/guides/login-integration-guide) and [Webstore (OAuth 2.0)](https://developers.vtex.com/docs/guides/login-integration-guide-webstore-oauth2).
+ * - The [vtex.login-alternative-key](https://developers.vtex.com/docs/apps/vtex.login-alternative-key) app must be installed in the store.
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Organization Units | units | **Edit_Organization_Unit** |
+ *
+ * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint.
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ *
+ * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
+ */
+export const postApiVtexidOrganizationUnitsByUnitIdSettings = <ThrowOnError extends boolean = false>(options: Options<PostApiVtexidOrganizationUnitsByUnitIdSettingsData, ThrowOnError>) => (options.client ?? client).post<PostApiVtexidOrganizationUnitsByUnitIdSettingsResponses, PostApiVtexidOrganizationUnitsByUnitIdSettingsErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/api/vtexid/organization-units/{unitId}/settings',
     ...options
 });

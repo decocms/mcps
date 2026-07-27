@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { CreatenewappkeyData, CreatenewappkeyResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DeleteApiLicenseManagerUsersByUserIdData, DeleteApiLicenseManagerUsersByUserIdErrors, DeleteApiLicenseManagerUsersByUserIdResponses, GetAccountData, GetAccountResponses, GetappkeysfromaccountData, GetappkeysfromaccountResponses, GetByAccountData, GetByAccountResponses, GetListRolesData, GetListRolesResponses, GetListUsersData, GetListUsersResponses, GetRolesbyUser2Data, GetRolesbyUser2Responses, GetRolesbyUserData, GetRolesbyUserResponses, GetUserData, GetUserErrors, GetUserResponses, PutRolesinUserData, PutRolesinUserErrors, PutRolesinUserResponses, RemoveRolefromUserData, RemoveRolefromUserErrors, RemoveRolefromUserResponses, UpdateappkeyData, UpdateappkeyErrors, UpdateappkeyResponses } from './types.gen';
+import type { CreatenewappkeyData, CreatenewappkeyResponses, CreateUserData, CreateUserErrors, CreateUserResponses, DeleteApiLicenseManagerUsersByUserIdData, DeleteApiLicenseManagerUsersByUserIdErrors, DeleteApiLicenseManagerUsersByUserIdResponses, GetAccountData, GetAccountResponses, GetappkeysfromaccountData, GetappkeysfromaccountResponses, GetByAccountData, GetByAccountResponses, GetListRolesData, GetListRolesResponses, GetListUsersData, GetListUsersResponses, GetRolesbyUserData, GetRolesbyUserResponses, GetUserData, GetUserErrors, GetUserResponses, PutRolesinUserData, PutRolesinUserErrors, PutRolesinUserResponses, RemoveRolefromUserData, RemoveRolefromUserErrors, RemoveRolefromUserResponses, UpdateappkeyData, UpdateappkeyErrors, UpdateappkeyResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -19,9 +19,9 @@ export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends 
 };
 
 /**
- * Delete user
+ * Delete admin user
  *
- * Allows you to delete a user from the database, using the `userId` as the identifier.
+ * Allows you to delete an admin user from the database, using the `userId` as the identifier.
  *
  * ## Permissions
  *
@@ -53,9 +53,9 @@ export const deleteApiLicenseManagerUsersByUserId = <ThrowOnError extends boolea
 });
 
 /**
- * Get user information by user ID
+ * Get admin user information by user ID
  *
- * Allows you to get a user from the database, using the `userId` as the identifier.
+ * Allows you to obtain information about an admin user, using the `userId` as the identifier.
  *
  * ## Permissions
  *
@@ -88,9 +88,9 @@ export const getUser = <ThrowOnError extends boolean = false>(options: Options<G
 });
 
 /**
- * Create user
+ * Create admin user
  *
- * Allows you to create a user by providing an email (mandatory) and name (optional). The email must be in a valid format. The success response will contain the generated `userId` for that user.
+ * Allows you to create an admin user by providing an email (mandatory) and name (optional). The email must be in a valid format. The success response will contain the generated `userId` for that user.
  *
  * ## Permissions
  *
@@ -125,9 +125,9 @@ export const createUser = <ThrowOnError extends boolean = false>(options: Option
 });
 
 /**
- * Get list of users
+ * Get list of admin users
  *
- * Returns a list of registered users. The response is divided in pages. The query parameter `numItems` defines the number of items in each page, and consequently the amount of pages for the whole list.
+ * Returns a list of registered admin users. The response is divided in pages. The query parameter `numItems` defines the number of items in each page, and consequently the amount of pages for the whole list.
  *
  * ## Permissions
  *
@@ -152,9 +152,9 @@ export const getListUsers = <ThrowOnError extends boolean = false>(options: Opti
 });
 
 /**
- * Get roles by user ID or API Key
+ * Get roles by admin user ID or API Key
  *
- * Retrieves License Manager [roles](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) of a particular user or API key.
+ * Retrieves License Manager [roles](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) of a particular admin user or API key.
  *
  * ## Permissions
  *
@@ -179,9 +179,9 @@ export const getRolesbyUser = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
- * Add roles to user or API Key
+ * Add roles to admin user or API Key
  *
- * Allows you to add License Manager [roles](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) to a particular user or API key by specifying the list of role IDs on the request body.
+ * Allows you to add License Manager [roles](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) to a particular admin user or API key by specifying the list of role IDs on the request body.
  *
  * ## Permissions
  *
@@ -216,36 +216,9 @@ export const putRolesinUser = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
- * Get user information by user email
+ * Remove role from admin user or API Key
  *
- * Retrieves user ID and License Manager [roles](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) of a particular user.
- *
- * ## Permissions
- *
- * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
- *
- * | **Product** | **Category** | **Resource** |
- * | --------------- | ----------------- | ----------------- |
- * | License Manager | Services access control | **View_Storefront_User_Permissions** |
- *
- * There are no applicable [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) for this resource list. You must [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) and add at least one of the resources above in order to use this endpoint. To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication).
- *
- * >❗ To prevent integrations from having excessive permissions, consider the [best practices for managing app keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm) when assigning License Manager roles to integrations.
- */
-export const getRolesbyUser2 = <ThrowOnError extends boolean = false>(options: Options<GetRolesbyUser2Data, ThrowOnError>) => (options.client ?? client).get<GetRolesbyUser2Responses, unknown, ThrowOnError>({
-    security: [
-        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
-        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
-        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
-    ],
-    url: '/api/license-manager/users/{userEmail}/roles',
-    ...options
-});
-
-/**
- * Remove role from user or API Key
- *
- * Allows you to remove a License Manager [role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) from a specific user or API key. This method only allows the removal of one role per request. The role's ID must be specified on the request path, not on the request body.
+ * Allows you to remove a License Manager [role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc) from a specific admin user or API key. This method only allows the removal of one role per request. The role's ID must be specified on the request path, not on the request body.
  *
  *
  * > Note that a successful response returns a `204` response with an empty body. A deletion on a role or user that does not exist will also return a `204`. Thus, this method should not be used to verify the existence of a specific user or role.

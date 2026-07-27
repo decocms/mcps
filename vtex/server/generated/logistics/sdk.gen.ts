@@ -2,7 +2,7 @@
 
 import type { Client, Options as Options2, TDataShape } from './client';
 import { client } from './client.gen';
-import type { AcknowledgmentReservationData, AcknowledgmentReservationResponses, ActivateDockData, ActivateDockResponses, ActivateWarehouseData, ActivateWarehouseResponses, AddBlockedDeliveryWindowsData, AddBlockedDeliveryWindowsResponses, AllDocksData, AllDocksResponses, AllHolidaysData, AllHolidaysResponses, AllWarehousesData, AllWarehousesResponses, CalculateSlaData, CalculateSlaResponses, CancelReservationData, CancelReservationResponses, ConfirmReservationData, ConfirmReservationResponses, CreateReservationData, CreateReservationResponses, CreateUpdateDockData, CreateUpdateDockResponses, CreateUpdateFreightValuesData, CreateUpdateFreightValuesResponses, CreateUpdateHolidayData, CreateUpdateHolidayResponses, CreateUpdatePickupPointData, CreateUpdatePickupPointResponses, CreateUpdatePolygonData, CreateUpdatePolygonErrors, CreateUpdatePolygonResponses, CreateUpdateWarehouseData, CreateUpdateWarehouseResponses, DeactivateDockData, DeactivateDockResponses, DeactivateWarehouseData, DeactivateWarehouseResponses, DeleteApiLogisticsPvtShippingPoliciesByIdData, DeleteApiLogisticsPvtShippingPoliciesByIdResponses, DeleteData, DeletePolygonData, DeletePolygonResponses, DeleteResponses, DockByIdData, DockByIdResponses, DockData, DockResponses, FreightValuesData, FreightValuesResponses, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesByWindowDayFbyWindowStartTimeTbyWindowEndTimeData, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesByWindowDayFbyWindowStartTimeTbyWindowEndTimeResponses, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesData, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesResponses, GetApiLogisticsPvtShippingPoliciesByIdData, GetApiLogisticsPvtShippingPoliciesByIdResponses, GetApiLogisticsPvtShippingPoliciesData, GetApiLogisticsPvtShippingPoliciesResponses, GetByIdData, GetByIdResponses, GetinventorywithdispatchedreservationsData, GetinventorywithdispatchedreservationsResponses, GetpagedData, GetpagedResponses, GetSupplyLotsData, GetSupplyLotsResponses, HolidayByIdData, HolidayByIdResponses, HolidayData, HolidayResponses, InventoryBySkuData, InventoryBySkuResponses, InventoryperdockandwarehouseData, InventoryperdockandwarehouseResponses, InventoryperdockData, InventoryperdockResponses, InventoryperwarehouseData, InventoryperwarehouseResponses, ListAllPickupPpointsData, ListAllPickupPpointsResponses, PagedPolygonsData, PagedPolygonsResponses, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeData, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeErrors, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeResponses, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityData, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityErrors, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityResponses, PolygonbyIdData, PolygonbyIdResponses, PostApiLogisticsPvtShippingPoliciesData, PostApiLogisticsPvtShippingPoliciesResponses, PutApiLogisticsPvtShippingPoliciesByIdData, PutApiLogisticsPvtShippingPoliciesByIdResponses, RemoveBlockedDeliveryWindowsData, RemoveBlockedDeliveryWindowsResponses, RemoveWarehouseData, RemoveWarehouseResponses, ReservationByIdData, ReservationByIdResponses, ReservationbyWarehouseandSkuData, ReservationbyWarehouseandSkuResponses, RetrieveBlockedDeliveryWindowsData, RetrieveBlockedDeliveryWindowsResponses, SaveSupplyLotData, SaveSupplyLotResponses, TransferSupplyLotData, TransferSupplyLotResponses, UpdateInventoryBySkuandWarehouseData, UpdateInventoryBySkuandWarehouseErrors, UpdateInventoryBySkuandWarehouseResponses, WarehouseByIdData, WarehouseByIdResponses } from './types.gen';
+import type { AcknowledgmentReservationData, AcknowledgmentReservationResponses, ActivateDockData, ActivateDockResponses, ActivateWarehouseData, ActivateWarehouseResponses, AddBlockedDeliveryWindowsData, AddBlockedDeliveryWindowsResponses, AllDocksData, AllDocksResponses, AllHolidaysData, AllHolidaysResponses, AllWarehousesData, AllWarehousesResponses, CalculateSlaData, CalculateSlaResponses, CancelReservationData, CancelReservationResponses, ConfirmReservationData, ConfirmReservationResponses, CreateReservationData, CreateReservationResponses, CreateUpdateDockData, CreateUpdateDockResponses, CreateUpdateFreightValuesData, CreateUpdateFreightValuesResponses, CreateUpdateHolidayData, CreateUpdateHolidayResponses, CreateUpdatePickupPointData, CreateUpdatePickupPointResponses, CreateUpdatePolygonData, CreateUpdatePolygonErrors, CreateUpdatePolygonResponses, CreateUpdateWarehouseData, CreateUpdateWarehouseResponses, DeactivateDockData, DeactivateDockResponses, DeactivateWarehouseData, DeactivateWarehouseResponses, DeleteApiLogisticsPvtShippingPoliciesByIdData, DeleteApiLogisticsPvtShippingPoliciesByIdResponses, DeleteData, DeletePolygonData, DeletePolygonResponses, DeleteResponses, DockByIdData, DockByIdResponses, DockData, DockResponses, FreightValuesData, FreightValuesResponses, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesByWindowDayFbyWindowStartTimeTbyWindowEndTimeData, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesByWindowDayFbyWindowStartTimeTbyWindowEndTimeResponses, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesData, GetApiLogisticsCapacityResourcesCarrier_byCapacityType_byShippingPolicyIdTimeFramesResponses, GetApiLogisticsPvtShippingPoliciesByIdData, GetApiLogisticsPvtShippingPoliciesByIdResponses, GetApiLogisticsPvtShippingPoliciesData, GetApiLogisticsPvtShippingPoliciesResponses, GetAvailabilityV1InventoryBatchByBatchIdErrorsData, GetAvailabilityV1InventoryBatchByBatchIdErrorsErrors, GetAvailabilityV1InventoryBatchByBatchIdErrorsResponses, GetAvailabilityV1InventoryBatchByBatchIdStatusData, GetAvailabilityV1InventoryBatchByBatchIdStatusErrors, GetAvailabilityV1InventoryBatchByBatchIdStatusResponses, GetByIdData, GetByIdResponses, GetinventorywithdispatchedreservationsData, GetinventorywithdispatchedreservationsResponses, GetpagedData, GetpagedResponses, GetSupplyLotsData, GetSupplyLotsResponses, HolidayByIdData, HolidayByIdResponses, HolidayData, HolidayResponses, InventoryBySkuData, InventoryBySkuResponses, InventoryperdockandwarehouseData, InventoryperdockandwarehouseResponses, InventoryperdockData, InventoryperdockResponses, InventoryperwarehouseData, InventoryperwarehouseResponses, ListAllPickupPpointsData, ListAllPickupPpointsResponses, PagedPolygonsData, PagedPolygonsResponses, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeData, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeErrors, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdLeadTimeResponses, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityData, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityErrors, PatchApiLogisticsPvtInventorySkusBySkuIdWarehousesByWarehouseIdQuantityResponses, PolygonbyIdData, PolygonbyIdResponses, PostApiLogisticsPvtShippingPoliciesData, PostApiLogisticsPvtShippingPoliciesResponses, PostAvailabilityV1InventoryBatchByBatchIdConfirmData, PostAvailabilityV1InventoryBatchByBatchIdConfirmErrors, PostAvailabilityV1InventoryBatchByBatchIdConfirmResponses, PostAvailabilityV1InventoryBatchData, PostAvailabilityV1InventoryBatchErrors, PostAvailabilityV1InventoryBatchResponses, PutApiLogisticsPvtShippingPoliciesByIdData, PutApiLogisticsPvtShippingPoliciesByIdResponses, RemoveBlockedDeliveryWindowsData, RemoveBlockedDeliveryWindowsResponses, RemoveWarehouseData, RemoveWarehouseResponses, ReservationByIdData, ReservationByIdResponses, ReservationbyWarehouseandSkuData, ReservationbyWarehouseandSkuResponses, RetrieveBlockedDeliveryWindowsData, RetrieveBlockedDeliveryWindowsResponses, SaveSupplyLotData, SaveSupplyLotResponses, TransferSupplyLotData, TransferSupplyLotResponses, UpdateInventoryBySkuandWarehouseData, UpdateInventoryBySkuandWarehouseErrors, UpdateInventoryBySkuandWarehouseResponses, WarehouseByIdData, WarehouseByIdResponses } from './types.gen';
 
 export type Options<TData extends TDataShape = TDataShape, ThrowOnError extends boolean = boolean> = Options2<TData, ThrowOnError> & {
     /**
@@ -278,7 +278,7 @@ export const freightValues = <ThrowOnError extends boolean = false>(options: Opt
         { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
         { name: 'VtexIdclientAutCookie', type: 'apiKey' }
     ],
-    url: '/api/logistics/pvt/configuration/freights/{carrierId}/{cep}/values',
+    url: '/api/logistics/pvt/configuration/freights/{carrierId}/{postalcode}/values',
     ...options
 });
 
@@ -839,7 +839,7 @@ export const inventoryBySku = <ThrowOnError extends boolean = false>(options: Op
 });
 
 /**
- * List inventory per warehouse
+ * List inventory by SKU per warehouse
  *
  * Lists [inventory](https://help.vtex.com/en/tutorial/inventory-management--tutorials_139) information, searching by [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb) ID.
  *
@@ -1138,6 +1138,10 @@ export const getinventorywithdispatchedreservations = <ThrowOnError extends bool
  *
  * Lists supply lots of a SKU in a given [warehouse](https://help.vtex.com/en/tutorial/warehouse--6oIxvsVDTtGpO7y6zwhGpb).
  *
+ * In architectures with franchise accounts or multiple sellers, the scheduled lead time of supply lots is not considered during seller selection or SLA calculation, so this feature may not behave as expected in these scenarios.
+ *
+ * In architectures that use Delivery Promise, supply lots are not considered in the SLA calculation, which may cause divergences between the lead time configured in the supply lot and the lead time displayed to the shopper.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -1179,6 +1183,10 @@ export const getSupplyLots = <ThrowOnError extends boolean = false>(options: Opt
  *
  * Creates a new supply lot, which allows you to sell a SKU that is currently _out-of-stock_ in your [inventory](https://help.vtex.com/en/tutorial/inventory-management--tutorials_139) and unavailable for sales. Creating a supply lot is useful when you know the date of when the SKU will have quantity and availability for sales again.
  *
+ * In architectures with franchise accounts or multiple sellers, the scheduled lead time of supply lots is not considered during seller selection or SLA calculation, so this feature may not behave as expected in these scenarios.
+ *
+ * In architectures that use Delivery Promise, supply lots are not considered in the SLA calculation, which may cause divergences between the lead time configured in the supply lot and the lead time displayed to the shopper.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -1214,6 +1222,10 @@ export const saveSupplyLot = <ThrowOnError extends boolean = false>(options: Opt
  *
  * Transfers a SKU from a supply lot to the currently available inventory.
  *
+ * In architectures with franchise accounts or multiple sellers, the scheduled lead time of supply lots is not considered during seller selection or SLA calculation, so this feature may not behave as expected in these scenarios.
+ *
+ * In architectures that use Delivery Promise, supply lots are not considered in the SLA calculation, which may cause divergences between the lead time configured in the supply lot and the lead time displayed to the shopper.
+ *
  * ## Permissions
  *
  * Any user or [API key](https://developers.vtex.com/docs/guides/api-authentication-using-api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise they will receive a status code `403` error. These are the applicable resources for this endpoint:
@@ -1241,6 +1253,204 @@ export const transferSupplyLot = <ThrowOnError extends boolean = false>(options:
         { name: 'VtexIdclientAutCookie', type: 'apiKey' }
     ],
     url: '/api/logistics/pvt/inventory/items/{skuId}/warehouses/{warehouseId}/supplyLots/{supplyLotId}/transfer',
+    ...options
+});
+
+/**
+ * Create batch inventory job
+ *
+ * Creates a new batch inventory job and returns a pre-signed URL for uploading the CSV file. The batch will be in `AWAITING_UPLOAD` status until the CSV is uploaded and committed.
+ *
+ * >ℹ️ This feature is in early access, which means that we are working to improve it. If you want to use this feature, please contact our [Support Center](https://support.vtex.com/hc/en-us/requests).
+ *
+ * This endpoint is part of the Batch operations section for high-throughput [inventory updates](https://help.vtex.com/en/docs/tutorials/updating-the-quantity-of-items-in-inventory). Learn more about [inventory management at VTEX](https://help.vtex.com/en/docs/tutorials/managing-stock-items).
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Logistics | Logistics access | **Logistics - Full access** |
+ *
+ * You can [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) with that resource or use one of the following [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy):
+ *
+ * | **Role** | **Resource** |
+ * | --------------- | ----------------- |
+ * | Logistics - Full access | Logistics - Full access |
+ * | OMS - Full access | Logistics - Full access |
+ *
+ * >❗ Assigning a [predefined role](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) to users or API keys usually grants permission to multiple [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3). If some of these permissions are not necessary, consider creating a custom role instead. For more information regarding security, see [Best practices for using API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm).
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ */
+export const postAvailabilityV1InventoryBatch = <ThrowOnError extends boolean = false>(options: Options<PostAvailabilityV1InventoryBatchData, ThrowOnError>) => (options.client ?? client).post<PostAvailabilityV1InventoryBatchResponses, PostAvailabilityV1InventoryBatchErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/availability/v1/inventory/batch',
+    ...options
+});
+
+/**
+ * Confirm batch inventory
+ *
+ * Confirms that the CSV upload is complete and triggers asynchronous processing of the batch inventory. The batch status will transition to `QUEUED`.
+ *
+ * >ℹ️ This feature is in early access, which means that we are working to improve it. If you want to use this feature, please contact our [Support Center](https://support.vtex.com/hc/en-us/requests).
+ *
+ * This endpoint is part of the Batch operations section for high-throughput [inventory updates](https://help.vtex.com/en/docs/tutorials/updating-the-quantity-of-items-in-inventory). Learn more about [inventory management at VTEX](https://help.vtex.com/en/docs/tutorials/managing-stock-items).
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Logistics | Logistics access | **Logistics - Full access** |
+ *
+ * You can [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) with that resource or use one of the following [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy):
+ *
+ * | **Role** | **Resource** |
+ * | --------------- | ----------------- |
+ * | Logistics - Full access | Logistics - Full access |
+ * | OMS - Full access | Logistics - Full access |
+ *
+ * >❗ Assigning a [predefined role](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) to users or API keys usually grants permission to multiple [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3). If some of these permissions are not necessary, consider creating a custom role instead. For more information regarding security, see [Best practices for using API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm).
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ */
+export const postAvailabilityV1InventoryBatchByBatchIdConfirm = <ThrowOnError extends boolean = false>(options: Options<PostAvailabilityV1InventoryBatchByBatchIdConfirmData, ThrowOnError>) => (options.client ?? client).post<PostAvailabilityV1InventoryBatchByBatchIdConfirmResponses, PostAvailabilityV1InventoryBatchByBatchIdConfirmErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/availability/v1/inventory/batch/{batchId}/confirm',
+    ...options
+});
+
+/**
+ * Get batch inventory status
+ *
+ * Retrieves the current processing status and progress information for a batch inventory job. Use this endpoint to poll the batch status and track processing progress.
+ *
+ * >ℹ️ This feature is in early access, which means that we are working to improve it. If you want to use this feature, please contact our [Support Center](https://support.vtex.com/hc/en-us/requests).
+ *
+ * This endpoint is part of the Batch operations section for high-throughput [inventory updates](https://help.vtex.com/en/docs/tutorials/updating-the-quantity-of-items-in-inventory). Learn more about [inventory management at VTEX](https://help.vtex.com/en/docs/tutorials/managing-stock-items).
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Logistics | Logistics access | **Logistics - Full access** |
+ *
+ * You can [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) with that resource or use one of the following [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy):
+ *
+ * | **Role** | **Resource** |
+ * | --------------- | ----------------- |
+ * | Logistics - Full access | Logistics - Full access |
+ * | OMS - Full access | Logistics - Full access |
+ *
+ * >❗ Assigning a [predefined role](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) to users or API keys usually grants permission to multiple [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3). If some of these permissions are not necessary, consider creating a custom role instead. For more information regarding security, see [Best practices for using API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm).
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ */
+export const getAvailabilityV1InventoryBatchByBatchIdStatus = <ThrowOnError extends boolean = false>(options: Options<GetAvailabilityV1InventoryBatchByBatchIdStatusData, ThrowOnError>) => (options.client ?? client).get<GetAvailabilityV1InventoryBatchByBatchIdStatusResponses, GetAvailabilityV1InventoryBatchByBatchIdStatusErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/availability/v1/inventory/batch/{batchId}/status',
+    ...options
+});
+
+/**
+ * Get batch inventory errors
+ *
+ * Returns a pre-signed URL to download a CSV file containing all rows that failed processing, along with error codes and messages. The error reports are available until the batch metadata expires (7 days after batch completion).
+ *
+ * >ℹ️ This feature is in early access, which means that we are working to improve it. If you want to use this feature, please contact our [Support Center](https://support.vtex.com/hc/en-us/requests).
+ *
+ * This endpoint is part of the Batch operations section for high-throughput [inventory updates](https://help.vtex.com/en/docs/tutorials/updating-the-quantity-of-items-in-inventory). Learn more about [inventory management at VTEX](https://help.vtex.com/en/docs/tutorials/managing-stock-items).
+ *
+ * ## Endpoint Availability
+ *
+ * The Get batch inventory errors endpoint is available when:
+ * - `errorCount > 0` in the status response
+ * - [Status](https://developers.vtex.com/docs/api-reference/logistics-api#get-/availability/v1/inventory/batch/-batchId-/status) is one of: `PROCESSING`, `COMPLETED`, `COMPLETED_WITH_ERRORS`, or `FAILED`
+ *
+ * If these conditions are not met, the endpoint response will be `204 No Content`.
+ *
+ * ## Error Types
+ *
+ * **Deterministic Errors**: Errors caused by invalid or incomplete data in the submitted file, for example a missing required fields or invalid values. These errors are detected during the file ingestion from S3 and will cause the affected records to fail. The system doesn't retry these operations automatically. The user must fix the data in the CSV file and resubmit a new batch.
+ *
+ * **Non-Deterministic Errors**: Errors caused by infrastructure or system issues. The system will automatically retry the operation up to 3 times. If the operation still fails after these attempts, the message will be sent to a Dead Letter Queue (DLQ) for further investigation. These errors will show `UPDATE_FAILED` in the error CSV.
+ *
+ * ## Error CSV Schema
+ *
+ * The downloaded CSV file contains the following fields:
+ *
+ * | **Field** | **Type** | **Description** |
+ * | --------------- | ----------------- | ----------------- |
+ * | `line_number` | integer | Original line number in the uploaded CSV. |
+ * | `item_id` | string | SKU identifier from the failed row. |
+ * | `container_id` | string | Warehouse ID from the failed row. |
+ * | `error_code` | string | Machine-readable error code. |
+ * | `error_message` | string | Human-readable error description. |
+ *
+ * ## Error Codes
+ *
+ * - `INVALID_QUANTITY`: Quantity value is invalid (negative, non-numeric)
+ * - `MISSING_REQUIRED_FIELD`: Required field is empty or missing
+ * - `INVALID_DATE_FORMAT`: Date/time field has invalid format
+ * - `UPDATE_FAILED`: Database update failed after retries (non-deterministic error)
+ * - `INSERT_CONFLICT`: Insert conflicted with a concurrent operation
+ * - `INVALID_FORMAT`: Row format is invalid (e.g., wrong number of columns)
+ * - `CONFLICT`: Compare-And-Set conflict or per-item routing conflict
+ * - `UNKNOWN`: Unclassified error
+ *
+ * ## Error CSV Example
+ *
+ * ```csv
+ * line_number,item_id,container_id,error_code,error_message
+ * 1523,SKU-12345,WH-01,INVALID_QUANTITY,"quantity cannot be negative: -50"
+ * 4892,SKU-67890,WH-01,MISSING_REQUIRED_FIELD,"container_id is required"
+ * 10234,SKU-11111,WH-01,INVALID_DATE_FORMAT,"supply_date is not valid"
+ * ```
+ *
+ * ## Permissions
+ *
+ * Any user or [API key](https://developers.vtex.com/docs/guides/authentication-overview#api-keys) must have at least one of the appropriate [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3) to be able to successfully run this request. Otherwise, they will receive a status code `403` error. These are the applicable resources for this endpoint:
+ *
+ * | **Product** | **Category** | **Resource** |
+ * | --------------- | ----------------- | ----------------- |
+ * | Logistics | Logistics access | **Logistics - Full access** |
+ *
+ * You can [create a custom role](https://help.vtex.com/en/tutorial/roles--7HKK5Uau2H6wxE1rH5oRbc#creating-a-role) with that resource or use one of the following [predefined roles](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy):
+ *
+ * | **Role** | **Resource** |
+ * | --------------- | ----------------- |
+ * | Logistics - Full access | Logistics - Full access |
+ * | OMS - Full access | Logistics - Full access |
+ *
+ * >❗ Assigning a [predefined role](https://help.vtex.com/en/tutorial/predefined-roles--jGDurZKJHvHJS13LnO7Dy) to users or API keys usually grants permission to multiple [License Manager resources](https://help.vtex.com/en/tutorial/license-manager-resources--3q6ztrC8YynQf6rdc6euk3). If some of these permissions are not necessary, consider creating a custom role instead. For more information regarding security, see [Best practices for using API keys](https://help.vtex.com/en/tutorial/best-practices-api-keys--7b6nD1VMHa49aI5brlOvJm).
+ *
+ * To learn more about machine authentication at VTEX, see [Authentication overview](https://developers.vtex.com/docs/guides/authentication-overview#machine-authentication).
+ */
+export const getAvailabilityV1InventoryBatchByBatchIdErrors = <ThrowOnError extends boolean = false>(options: Options<GetAvailabilityV1InventoryBatchByBatchIdErrorsData, ThrowOnError>) => (options.client ?? client).get<GetAvailabilityV1InventoryBatchByBatchIdErrorsResponses, GetAvailabilityV1InventoryBatchByBatchIdErrorsErrors, ThrowOnError>({
+    security: [
+        { name: 'X-VTEX-API-AppKey', type: 'apiKey' },
+        { name: 'X-VTEX-API-AppToken', type: 'apiKey' },
+        { name: 'VtexIdclientAutCookie', type: 'apiKey' }
+    ],
+    url: '/availability/v1/inventory/batch/{batchId}/errors',
     ...options
 });
 

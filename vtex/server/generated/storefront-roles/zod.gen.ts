@@ -8,6 +8,11 @@ import * as z from 'zod';
 export const zContentType = z.string();
 
 /**
+ * VTEX account name.
+ */
+export const zAccountName = z.string();
+
+/**
  * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
  */
 export const zAccept = z.string();
@@ -107,6 +112,114 @@ export const zGetApiLicenseManagerStorefrontUsersByUserIdData = z.object({
     query: z.optional(z.never()),
     headers: z.object({
         'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetApiLicenseManagerStorefrontRoleData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPostApiLicenseManagerStorefrontRoleData = z.object({
+    body: z.optional(z.object({
+        Name: z.string(),
+        Resources: z.array(z.int())
+    })),
+    path: z.optional(z.never()),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zDeleteApiLicenseManagerStorefrontRoleByRoleIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        roleId: z.int()
+    }),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zGetApiLicenseManagerStorefrontRoleByRoleIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        roleId: z.int()
+    }),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPutApiLicenseManagerStorefrontRoleByRoleIdData = z.object({
+    body: z.optional(z.object({
+        Resources: z.array(z.int())
+    })),
+    path: z.object({
+        roleId: z.int()
+    }),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetApiLicenseManagerStorefrontResourceData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPostApiLicenseManagerStorefrontResourceData = z.object({
+    body: z.optional(z.object({
+        Key: z.string(),
+        Name: z.optional(z.string()),
+        Description: z.optional(z.string())
+    })),
+    path: z.optional(z.never()),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zDeleteApiLicenseManagerStorefrontResourceByIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        id: z.int()
+    }),
+    query: z.object({
+        an: z.string()
+    }),
+    headers: z.object({
         Accept: z.string()
     })
 });

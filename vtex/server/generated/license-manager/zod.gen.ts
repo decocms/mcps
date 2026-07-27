@@ -422,18 +422,6 @@ export const zPutRolesinUserData = z.object({
     query: z.optional(z.never())
 });
 
-export const zGetRolesbyUser2Data = z.object({
-    body: z.optional(z.never()),
-    path: z.object({
-        userEmail: z.string()
-    }),
-    query: z.optional(z.never()),
-    headers: z.object({
-        'Content-Type': z.string().default('application/json'),
-        Accept: z.string().default('application/json')
-    })
-});
-
 export const zRemoveRolefromUserData = z.object({
     body: z.optional(z.never()),
     path: z.object({

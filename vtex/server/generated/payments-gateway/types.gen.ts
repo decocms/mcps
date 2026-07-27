@@ -15,14 +15,86 @@ export type ValidRequest = {
     /**
      * Installments information.
      */
-    installments: Array<Installment>;
+    installments: Array<{
+        /**
+         * Payment system information.
+         */
+        payment: {
+            /**
+             * Payment system identification.
+             */
+            id: number;
+            /**
+             * Payment system name.
+             */
+            name: string | null;
+            /**
+             * First six digits of the card number.
+             */
+            bin: string | null;
+            /**
+             * Value to be paid in installments.
+             */
+            value: number;
+            /**
+             * Indicates whether the payment system is automatically applied by default.
+             */
+            isDefault: boolean;
+            /**
+             * Object containing the payment system reference route.
+             */
+            self: {
+                /**
+                 * Payment system reference route.
+                 */
+                href: string;
+            };
+        };
+        /**
+         * Array containing information about installment options.
+         */
+        options: Array<Option>;
+    }>;
 };
 
 /**
  * Installment options information.
  */
 export type Installment = {
-    payment: Payment;
+    /**
+     * Payment system information.
+     */
+    payment: {
+        /**
+         * Payment system identification.
+         */
+        id: number;
+        /**
+         * Payment system name.
+         */
+        name: string | null;
+        /**
+         * First six digits of the card number.
+         */
+        bin: string | null;
+        /**
+         * Value to be paid in installments.
+         */
+        value: number;
+        /**
+         * Indicates whether the payment system is automatically applied by default.
+         */
+        isDefault: boolean;
+        /**
+         * Object containing the payment system reference route.
+         */
+        self: {
+            /**
+             * Payment system reference route.
+             */
+            href: string;
+        };
+    };
     /**
      * Array containing information about installment options.
      */
@@ -1357,9 +1429,9 @@ export type Fields = {
      */
     accountId: string | null;
     /**
-     * Array containing customer address information.
+     * Customer address information.
      */
-    address: Array<{
+    address: {
         /**
          * Address type.
          */
@@ -1408,7 +1480,7 @@ export type Fields = {
          * Array containing two floats with geocoordinates, first longitude, then latitude.
          */
         geoCoordinates?: Array<number>;
-    }>;
+    };
     /**
      * Callback URL information.
      */
@@ -1892,9 +1964,9 @@ export type PaymentDetailsResponse = {
      */
     connector: string | null;
     /**
-     * Array containing connector responses information.
+     * Connector responses information.
      */
-    ConnectorResponses: Array<{
+    ConnectorResponses: {
         /**
          * Provider's unique identifier for the transaction.
          */
@@ -1915,11 +1987,11 @@ export type PaymentDetailsResponse = {
          * Provider's unique sequential number for the transaction.
          */
         nsu?: string;
-    }> | null;
+    };
     /**
-     * Array containing connector response information.
+     * Connector response information.
      */
-    connectorResponse: Array<{
+    connectorResponse: {
         /**
          * Provider's unique identifier for the transaction.
          */
@@ -1940,7 +2012,7 @@ export type PaymentDetailsResponse = {
          * Provider's unique sequential number for the transaction.
          */
         nsu?: string;
-    }> | null;
+    };
     /**
      * Indicates whether to display connector responses.
      */
@@ -2010,7 +2082,37 @@ export type TransactionSettlementDetails = {
     /**
      * Array containing actions information.
      */
-    actions: Array<Action>;
+    actions: Array<{
+        /**
+         * Payment identification.
+         */
+        paymentId: string;
+        /**
+         * Object containing the transaction settlement reference route.
+         */
+        payment: {
+            /**
+             * Transaction reference settlement route.
+             */
+            href: string;
+        };
+        /**
+         * Transaction settlement date.
+         */
+        date: string;
+        /**
+         * Settlement action date.
+         */
+        type: string;
+        /**
+         * Transaction settlement value.
+         */
+        value: number;
+        /**
+         * Connector transaction response information. This object can return different fields according to the internal configuration of each connector (payment provider), for example, `Tid`, `ReturnCode`, `authId`, among others).
+         */
+        connectorResponse: string | null;
+    }>;
 };
 
 /**
@@ -2490,7 +2592,9 @@ export type RuleData = {
 
 export type RuleResponses = {
     /**
-     * OK. This endpoint does not return any data in the response body.
+     * OK
+     *
+     * This endpoint does not return a response body.
      */
     200: unknown;
 };
@@ -2630,7 +2734,9 @@ export type GetCardTokenByIdErrors = {
         };
     };
     /**
-     * Internal Server Error - Payment system not found for the card.
+     * Internal Server Error
+     *
+     * Payment system not found for the card.
      */
     500: {
         /**
@@ -2846,7 +2952,9 @@ export type SendPaymentsPublicData = {
 
 export type SendPaymentsPublicResponses = {
     /**
-     * Created. This endpoint does not return any data in the response body.
+     * Created
+     *
+     * This endpoint does not return a response body.
      */
     201: unknown;
 };
@@ -2887,7 +2995,9 @@ export type UpdateAdditionalDataData = {
 
 export type UpdateAdditionalDataResponses = {
     /**
-     * OK. This endpoint does not return any data in the response body.
+     * OK
+     *
+     * This endpoint does not return a response body.
      */
     200: unknown;
 };
@@ -2928,7 +3038,9 @@ export type SendAdditionalDataData = {
 
 export type SendAdditionalDataResponses = {
     /**
-     * OK. This endpoint does not return any data in the response body.
+     * OK
+     *
+     * This endpoint does not return a response body.
      */
     200: unknown;
 };
@@ -3015,7 +3127,7 @@ export type PaymentDetailsData = {
         /**
          * Payment identification.
          */
-        paymentId: string;
+        paymentId?: string;
     };
     query?: never;
     url: '/api/pvt/transactions/{transactionId}/payments/{paymentId}';

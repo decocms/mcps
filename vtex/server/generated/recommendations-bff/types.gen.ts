@@ -5,43 +5,118 @@ export type ClientOptions = {
 };
 
 /**
- * Request body for starting a user session.
+ * Request body for starting a user session. Requirements vary by platform:
+ * - **Web storefronts**: `orderFormId` is optional when the `checkout.vtex.com` cookie is sent. The API extracts the order form from the cookie.
+ * - **Mobile apps**: Both `userId` and `orderFormId` are required in the request body.
  */
 export type StartSessionV2Request = {
     /**
-     * Order form ID associated with the session.
+     * Order form ID associated with the session. Optional for web storefronts when `checkout.vtex.com` cookie is present. Required for mobile apps.
      */
-    orderFormId: string;
+    orderFormId?: string;
+    /**
+     * User ID for the session. Required for mobile apps. Optional for web storefronts.
+     */
+    userId?: string;
 };
 
 /**
- * Response body for starting a user session.
+ * Response body for starting a user session. The returned ID is also stored in the `vtex-rec-user-id` cookie.
  */
 export type StartSessionV2Response = {
     /**
-     * The recommendations user ID.
+     * The recommendations user ID to use in subsequent API calls. This value is also stored in the `vtex-rec-user-id` cookie and saved in the orderForm custom data for purchase attribution.
      */
     recommendationsUserId: string;
 };
 
 /**
- * Response containing recommended products and campaign information.
+ * Response containing recommended products with full product details and campaign information.
  */
 export type RecommendationsV2Response = {
     /**
-     * List of recommended SKU IDs.
+     * List of recommended products with full details including brand, name, images, and pricing.
      */
-    products: Array<string>;
+    products: Array<{
+        /**
+         * Product brand name.
+         */
+        brand?: string;
+        /**
+         * Product ID.
+         */
+        productId?: string;
+        /**
+         * Product name.
+         */
+        productName?: string;
+        /**
+         * Product page URL path.
+         */
+        link?: string;
+        /**
+         * Product tags. When `advertisement` tag is present, the product is sponsored and should display a sponsored label.
+         */
+        tags?: Array<string>;
+        /**
+         * List of SKUs for this product.
+         */
+        items?: Array<{
+            /**
+             * SKU ID.
+             */
+            itemId?: string;
+            /**
+             * Complete SKU name including variant information.
+             */
+            nameComplete?: string;
+            /**
+             * SKU images.
+             */
+            images?: Array<{
+                /**
+                 * Image URL.
+                 */
+                imageUrl?: string;
+            }>;
+            /**
+             * List of sellers offering this SKU.
+             */
+            sellers?: Array<{
+                /**
+                 * Seller ID.
+                 */
+                sellerId?: string;
+                /**
+                 * Commercial offer details.
+                 */
+                commertialOffer?: {
+                    /**
+                     * Selling price.
+                     */
+                    Price?: number;
+                    /**
+                     * List price (before discount).
+                     */
+                    ListPrice?: number;
+                    /**
+                     * Available stock quantity.
+                     */
+                    AvailableQuantity?: number;
+                };
+            }>;
+        }>;
+    }>;
     /**
-     * Correlation ID for the recommendation request.
+     * Correlation ID for the recommendation request. Must be included when tracking recommendation view and click events.
      */
     correlationId: string;
     /**
-     * Campaign information, if applicable.
+     * Campaign information.
      */
     campaign: {
         /**
-         * Campaign ID.
+         * Campaign ID. Should be included when tracking recommendation view and click events.
          */
         id: string;
         /**
@@ -49,47 +124,51 @@ export type RecommendationsV2Response = {
          */
         title?: string;
         /**
-         * Type of campaign. Supported campaign types:**
+         * Campaign type. Supported types:
          *
-         * - **TOP_ITEMS**: Returns the top selling or most popular items in the store.
-         * - **PERSONALIZED**: Provides recommendations tailored to the user's profile and behavior.
-         * - **SIMILAR_ITEMS**: Requires `products` with only **one product ID**. Returns items similar to the specified product.
-         * - **CROSS_SELL**: Requires `products` with only **one product ID**. Suggests complementary items to the specified product.
-         * - **CART_RECOMMENDATIONS**: Requires `products` with **all items currently in the user's cart**. Returns recommendations based on the cart contents.
-         * - **LAST_SEEN**: Returns the most recently viewed products for the given user.
-         * - **RECENT_INTERACTIONS**: Returns products the user has recently interacted with.
-         * - **VISUAL_SIMILARITY**: Returns visually similar items to the specified product.
-         * - **SEARCH_BASED**: Returns recommendations based on search behavior and patterns.
-         * - **NEXT_INTERACTION**: Predicts and suggests products the user is likely to interact with next.
+         * - **TOP_ITEMS**: Most popular - products with the highest number of views.
+         * - **PERSONALIZED**: Recommended for you - custom recommendations based on user profile and behavior.
+         * - **SIMILAR_ITEMS**: Similar products - products similar to a specific one.
+         * - **CROSS_SELL**: Frequently bought together - complementary products commonly purchased together.
+         * - **CART_RECOMMENDATIONS**: Cart recommendations based on cart contents.
+         * - **LAST_SEEN**: Recently viewed - products recently viewed by the user.
+         * - **RECENT_INTERACTIONS**: Products the user recently interacted with.
+         * - **VISUAL_SIMILARITY**: Visually similar products - products visually similar to a specific one.
+         * - **SEARCH_BASED**: Manual collection - recommendations from a manually created collection.
+         * - **NEXT_INTERACTION**: Recent interactions - products most likely to engage the user in the future.
          */
         type: 'TOP_ITEMS' | 'PERSONALIZED' | 'SIMILAR_ITEMS' | 'CROSS_SELL' | 'CART_RECOMMENDATIONS' | 'LAST_SEEN' | 'RECENT_INTERACTIONS' | 'VISUAL_SIMILARITY' | 'SEARCH_BASED' | 'NEXT_INTERACTION';
     };
 };
 
 /**
- * Request body for recording a recommendation view event.
+ * Request body for recording a recommendation view event when a shelf enters the viewport.
  */
 export type RecommendationViewEventV2Request = {
     /**
-     * User ID.
+     * The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user's session.
      */
     userId: string;
     /**
-     * Correlation ID for the recommendation request.
+     * Correlation ID returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Used to track which recommendation request generated this view.
      */
     correlationId: string;
     /**
-     * List of SKU IDs viewed.
+     * List of product IDs that were rendered in the recommendation shelf.
      */
     products: Array<string>;
+    /**
+     * Campaign ID from the `campaign.id` field in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Include when available.
+     */
+    campaignId?: string;
 };
 
 /**
- * Request body for recording a recommendation click event.
+ * Request body for recording a recommendation click event when a user clicks on a recommended product.
  */
 export type RecommendationClickEventV2Request = {
     /**
-     * User ID.
+     * The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user's session.
      */
     userId: string;
     /**
@@ -97,27 +176,43 @@ export type RecommendationClickEventV2Request = {
      */
     product: string;
     /**
-     * Correlation ID for the recommendation request.
+     * Correlation ID returned in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Used to track which recommendation request generated this click.
      */
     correlationId: string;
+    /**
+     * Campaign ID from the `campaign.id` field in the [Fetch recommendations](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#get-/api/recommend-bff/v2/recommendations) response. Include when available.
+     */
+    campaignId?: string;
 };
 
 /**
- * Request body for recording a product view event.
+ * Request body for recording a product view event when a user views a product detail page.
  */
 export type ProductViewEventV2Request = {
     /**
-     * User ID.
+     * The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Must be the same session ID used throughout the user's session.
      */
     userId: string;
     /**
-     * Product ID viewed.
+     * Product ID that was viewed.
      */
     product: string;
     /**
-     * Source of the view event.
+     * Source of the view event. When not provided, the API attempts to infer from the `user-agent` header. Use `WEB_DESKTOP` or `WEB_MOBILE` for web storefronts, and `WEB_MOBILE` or `MOBILE_APP` for mobile apps.
      */
-    source?: 'WEB_DESKTOP' | 'WEB_MOBILE' | 'MOBILE_APP' | 'MOBILE' | 'DESKTOP';
+    source?: 'WEB_DESKTOP' | 'WEB_MOBILE' | 'MOBILE_APP';
+    /**
+     * Display name of the product. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.
+     */
+    name?: string;
+    /**
+     * Category of the product. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.
+     */
+    category?: string;
+    /**
+     * URL of the product page. Optional. When provided, enriches the product view event with additional product information. We recommend sending it whenever available.
+     */
+    url?: string;
 };
 
 export type PostApiRecommendBffV2EventsRecommendationViewData = {
@@ -140,38 +235,52 @@ export type PostApiRecommendBffV2EventsRecommendationViewData = {
 
 export type PostApiRecommendBffV2EventsRecommendationViewErrors = {
     /**
-     * Bad Request - Invalid payload or missing fields.
+     * Bad Request
+     *
+     * Invalid payload or missing fields.
      */
     400: unknown;
     /**
-     * Unauthorized - Missing or invalid credentials.
+     * Unauthorized
+     *
+     * Missing or invalid credentials.
      */
     401: unknown;
     /**
-     * Forbidden - Request origin not allowed.
+     * Forbidden
+     *
+     * Request origin not allowed.
      */
     403: unknown;
     /**
-     * Not Found - Referenced resources were not found.
+     * Not Found
+     *
+     * Referenced resources were not found.
      */
     404: unknown;
     /**
-     * Unprocessable Entity - Validation failed.
+     * Unprocessable Entity
+     *
+     * Validation failed.
      */
     422: unknown;
     /**
-     * Too Many Requests - Rate limit exceeded.
+     * Too Many Requests
+     *
+     * Rate limit exceeded.
      */
     429: unknown;
     /**
-     * Internal Server Error.
+     * Internal Server Error
      */
     500: unknown;
 };
 
 export type PostApiRecommendBffV2EventsRecommendationViewResponses = {
     /**
-     * Accepted - Event queued for processing.
+     * Accepted
+     *
+     * Event queued for processing.
      */
     202: unknown;
 };
@@ -196,38 +305,52 @@ export type PostApiRecommendBffV2EventsRecommendationClickData = {
 
 export type PostApiRecommendBffV2EventsRecommendationClickErrors = {
     /**
-     * Bad Request - Invalid payload or missing fields.
+     * Bad Request
+     *
+     * Invalid payload or missing fields.
      */
     400: unknown;
     /**
-     * Unauthorized - Missing or invalid credentials.
+     * Unauthorized
+     *
+     * Missing or invalid credentials.
      */
     401: unknown;
     /**
-     * Forbidden - Request origin not allowed.
+     * Forbidden
+     *
+     * Request origin not allowed.
      */
     403: unknown;
     /**
-     * Not Found - Referenced resources were not found.
+     * Not Found
+     *
+     * Referenced resources were not found.
      */
     404: unknown;
     /**
-     * Unprocessable Entity - Validation failed.
+     * Unprocessable Entity
+     *
+     * Validation failed.
      */
     422: unknown;
     /**
-     * Too Many Requests - Rate limit exceeded.
+     * Too Many Requests
+     *
+     * Rate limit exceeded.
      */
     429: unknown;
     /**
-     * Internal Server Error.
+     * Internal Server Error
      */
     500: unknown;
 };
 
 export type PostApiRecommendBffV2EventsRecommendationClickResponses = {
     /**
-     * Accepted - Event queued for processing.
+     * Accepted
+     *
+     * Event queued for processing.
      */
     202: unknown;
 };
@@ -250,23 +373,23 @@ export type GetApiRecommendBffV2RecommendationsData = {
          * VRN identifier for an existing campaign, following the pattern: `vrn:recommendations:{store-name}:{campaignType}:{campaignId}`.
          *
          * Available campaign types:
-         * - `rec-top-items-v2`: Top selling or most popular items
-         * - `rec-persona-v2`: Personalized recommendations based on user behavior
-         * - `rec-similar-v2`: Similar items to a specified product
-         * - `rec-cross-v2`: Cross-sell recommendations (complementary items)
-         * - `rec-cart-v2`: Cart-based recommendations
-         * - `rec-last-v2`: Last seen products for a user
-         * - `rec-visual-v2`: Visually similar items
-         * - `rec-search-v2`: Search-based recommendations
-         * - `rec-next-v2`: Next interaction predictions based on user behavior
+         * - `rec-top-items-v2`: Most popular (products with the highest number of views).
+         * - `rec-persona-v2`: Recommended for you (custom recommendations based on user profile and behavior).
+         * - `rec-similar-v2`: Similar products (products similar to a specific one).
+         * - `rec-cross-v2`: Frequently bought together (complementary products commonly purchased together).
+         * - `rec-cart-v2`: Cart-based recommendations.
+         * - `rec-last-v2`: Recently viewed (products recently viewed by the user).
+         * - `rec-visual-v2`: Visually similar products (products visually similar to a specific one).
+         * - `rec-search-v2`: Manual collection (recommendations from a manually created collection).
+         * - `rec-next-v2`: Recent interactions (products most likely to engage the user in the future).
          */
         campaignVrn: string;
         /**
-         * User ID, required for personalized recommendations based on user behavior. It can be found in the `vtex-recommendations-user` cookie.
+         * The `recommendationsUserId` returned by the `POST` [Start session](https://developers.vtex.com/docs/api-reference/recommendations-bff-api#post-/api/recommend-bff/v2/users/start-session) endpoint. Required for personalized recommendations based on user behavior. This value is also stored in the `vtex-rec-user-id` cookie.
          */
         userId?: string;
         /**
-         * Comma-separated list of product IDs for context-based recommendations. For similar items and cross-sell, send only **one product ID**. For cart recommendations, send all product IDs in the user's cart.
+         * Comma-separated list of product IDs for context-based recommendations. **Required** for: similar products (`rec-similar-v2`), buy together (`rec-cross-v2`), visually similar products (`rec-visual-v2`), next interaction (`rec-next-v2`), and cart recommendations. For similar items and cross-sell campaigns, send only **one product ID**. For cart recommendations, send **all product IDs** currently in the user's cart.
          */
         products?: string;
         /**
@@ -295,37 +418,51 @@ export type GetApiRecommendBffV2RecommendationsData = {
 
 export type GetApiRecommendBffV2RecommendationsErrors = {
     /**
-     * Bad Request - invalid or conflicting parameters.
+     * Bad Request
+     *
+     * Invalid or conflicting parameters.
      */
     400: unknown;
     /**
-     * Unauthorized - missing or invalid credentials.
+     * Unauthorized
+     *
+     * Missing or invalid credentials.
      */
     401: unknown;
     /**
-     * Forbidden - request origin not allowed.
+     * Forbidden
+     *
+     * Request origin not allowed.
      */
     403: unknown;
     /**
-     * Not Found - campaign not found or unavailable.
+     * Not Found
+     *
+     * Campaign not found or unavailable.
      */
     404: unknown;
     /**
-     * Unprocessable Entity - validation failed (e.g., invalid recommendation type).
+     * Unprocessable Entity
+     *
+     * Validation failed due to an invalid recommendation type.
      */
     422: unknown;
     /**
-     * Too Many Requests - rate limit exceeded.
+     * Too Many Requests
+     *
+     * Rate limit exceeded.
      */
     429: unknown;
     /**
-     * Internal Server Error.
+     * Internal Server Error
      */
     500: unknown;
 };
 
 export type GetApiRecommendBffV2RecommendationsResponses = {
     /**
+     * OK
+     *
      * Successfully fetched recommendations.
      */
     200: RecommendationsV2Response;
@@ -337,7 +474,7 @@ export type PostApiRecommendBffV2UsersStartSessionData = {
     body: StartSessionV2Request;
     headers: {
         /**
-         * Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. Must match the `an` query parameter for account name. See API description for details.
+         * Origin identifier for tracking integration sources. Required format: `{accountName}/{sourceType}/{appOrIntegrationId}`. The account name must match the `an` query parameter. Example: `apiexamples/storefront/vtex.recommendation-shelf@2.x`
          */
         'x-vtex-rec-origin': string;
         /**
@@ -361,38 +498,52 @@ export type PostApiRecommendBffV2UsersStartSessionData = {
 
 export type PostApiRecommendBffV2UsersStartSessionErrors = {
     /**
-     * Bad Request - Invalid payload or missing fields.
+     * Bad Request
+     *
+     * Invalid payload or missing fields.
      */
     400: unknown;
     /**
-     * Unauthorized - Missing or invalid credentials.
+     * Unauthorized
+     *
+     * Missing or invalid credentials.
      */
     401: unknown;
     /**
-     * Forbidden - Request origin not allowed.
+     * Forbidden
+     *
+     * Request origin not allowed.
      */
     403: unknown;
     /**
-     * Not Found - Referenced resources were not found.
+     * Not Found
+     *
+     * Referenced resources were not found.
      */
     404: unknown;
     /**
-     * Unprocessable Entity - Validation failed.
+     * Unprocessable Entity
+     *
+     * Validation failed.
      */
     422: unknown;
     /**
-     * Too Many Requests - Rate limit exceeded.
+     * Too Many Requests
+     *
+     * Rate limit exceeded.
      */
     429: unknown;
     /**
-     * Internal Server Error.
+     * Internal Server Error
      */
     500: unknown;
 };
 
 export type PostApiRecommendBffV2UsersStartSessionResponses = {
     /**
-     * OK - Session started successfully.
+     * OK
+     *
+     * Session started successfully.
      */
     200: StartSessionV2Response;
 };
@@ -423,38 +574,52 @@ export type PostApiRecommendBffV2EventsProductViewData = {
 
 export type PostApiRecommendBffV2EventsProductViewErrors = {
     /**
-     * Bad Request - Invalid payload or missing fields.
+     * Bad Request
+     *
+     * Invalid payload or missing fields.
      */
     400: unknown;
     /**
-     * Unauthorized - Missing or invalid credentials.
+     * Unauthorized
+     *
+     * Missing or invalid credentials.
      */
     401: unknown;
     /**
-     * Forbidden - Request origin not allowed.
+     * Forbidden
+     *
+     * Request origin not allowed.
      */
     403: unknown;
     /**
-     * Not Found - Referenced resources were not found.
+     * Not Found
+     *
+     * Referenced resources were not found.
      */
     404: unknown;
     /**
-     * Unprocessable Entity - Validation failed.
+     * Unprocessable Entity
+     *
+     * Validation failed.
      */
     422: unknown;
     /**
-     * Too Many Requests - Rate limit exceeded.
+     * Too Many Requests
+     *
+     * Rate limit exceeded.
      */
     429: unknown;
     /**
-     * Internal Server Error.
+     * Internal Server Error
      */
     500: unknown;
 };
 
 export type PostApiRecommendBffV2EventsProductViewResponses = {
     /**
-     * Accepted - Event queued for processing.
+     * Accepted
+     *
+     * Event queued for processing.
      */
     202: unknown;
 };

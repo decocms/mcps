@@ -22,6 +22,9 @@ export type UpdateDeadlineRequest = {
     min: string;
 };
 
+/**
+ * Update deadline response.
+ */
 export type UpdateDeadlineResponse = {
     /**
      * Object with current deadline information.
@@ -91,222 +94,6 @@ export type UpdateDeadlineResponse = {
      * Condition if the request was successful.
      */
     success?: boolean;
-};
-
-export type AddItemRequest = {
-    /**
-     * Action type (`ADD_ITEM`).
-     */
-    type: string;
-    /**
-     * Unique identifier of the order.
-     */
-    orderId: string;
-    /**
-     * Unique identifier of the item.
-     */
-    itemId: string;
-    /**
-     * Quantity of items to add.
-     */
-    quantity: number;
-    /**
-     * Unique identifier of the warehouse.
-     */
-    warehouseId: string;
-    /**
-     * Price of the item.
-     */
-    price: number;
-    /**
-     * Selling price of the item.
-     */
-    sellingPrice: number;
-    /**
-     * Note to add to the item.
-     */
-    note: string;
-    /**
-     * Items picking options.
-     */
-    pickingOptions: {
-        /**
-         * List of alternate options.
-         */
-        onNotFound: string;
-        /**
-         * List of IDs of alternative items.
-         */
-        alternateOptions: Array<string>;
-    };
-};
-
-export type AddQuantityRequest = {
-    /**
-     * Action type (`ADD_QUANTITY`).
-     */
-    type: string;
-    /**
-     * Unique identifier of the order.
-     */
-    orderId: string;
-    /**
-     * Unique identifier for the item.
-     */
-    itemId: string;
-    /**
-     * New quantity of items.
-     */
-    newQuantity: number;
-    /**
-     * Unit multiplier.
-     */
-    unitMultiplier: number;
-    /**
-     * Reason type.
-     */
-    reasonType: string;
-    /**
-     * Reason detail.
-     */
-    reasonDetail: string;
-};
-
-export type RejectItemRequest = {
-    /**
-     * Action type (`REJECT`).
-     */
-    type: string;
-    /**
-     * Unique identifier of the order.
-     */
-    orderId: string;
-    /**
-     * Unique identifier for the item.
-     */
-    itemId: string;
-    /**
-     * Quantity of items to reject.
-     */
-    quantity: number;
-    /**
-     * Reason type.
-     */
-    reasonType: string;
-    /**
-     * Reason detail.
-     */
-    reasonDetail: string;
-};
-
-export type ReplaceItemRequest = {
-    /**
-     * Action type (`REPLACE`).
-     */
-    type: string;
-    /**
-     * Unique identifier of the order.
-     */
-    orderId: string;
-    itemToReplace: ItemToReplace;
-    ItemToAddRequest: ItemToAddRequest;
-    /**
-     * Reason type.
-     */
-    reasonType: string;
-    /**
-     * Reason detail.
-     */
-    reasonDetail: string;
-};
-
-/**
- * Items to be replaced in the order.
- */
-export type ItemToReplace = {
-    /**
-     * Unique identifier of the item.
-     */
-    id: string;
-    /**
-     * Item quantity.
-     */
-    quantity: number;
-};
-
-/**
- * Items to be added in the order.
- */
-export type ItemToAddRequest = {
-    /**
-     * Unique identifier of the item.
-     */
-    id?: string;
-    /**
-     * Item quantity.
-     */
-    quantity?: number;
-    /**
-     * Price of the item.
-     */
-    price?: number;
-    /**
-     * Selling price of the item.
-     */
-    sellingPrice?: number;
-    /**
-     * Unique identifier of the warehouse.
-     */
-    warehouseId?: string;
-    /**
-     * Note to add to the item.
-     */
-    note?: string;
-    /**
-     * Items picking options.
-     */
-    pickingOptions?: {
-        /**
-         * List of alternate options.
-         */
-        onNotFound: string;
-        /**
-         * List of IDs of alternative items.
-         */
-        alternateOptions: Array<string>;
-    };
-};
-
-export type UpdateItemRequest = {
-    /**
-     * Action type (`UPDATE_ITEM`).
-     */
-    type: 'UPDATE_ITEM';
-    /**
-     * Unique identifier of the order.
-     */
-    orderId: string;
-    /**
-     * Unique identifier of the item.
-     */
-    itemId: string;
-    /**
-     * Note to add to the item.
-     */
-    note: string;
-    /**
-     * Items picking options.
-     */
-    pickingOptions: {
-        /**
-         * List of alternate options.
-         */
-        onNotFound: string;
-        /**
-         * List of IDs of alternative items.
-         */
-        alternateOptions: Array<string>;
-    };
 };
 
 /**
@@ -391,55 +178,6 @@ export type PutOrdersByOrderIdDeadlineResponses = {
 
 export type PutOrdersByOrderIdDeadlineResponse = PutOrdersByOrderIdDeadlineResponses[keyof PutOrdersByOrderIdDeadlineResponses];
 
-export type PostOrderChangesData = {
-    body: AddItemRequest | AddQuantityRequest | ItemToAddRequest | RejectItemRequest | ReplaceItemRequest | ItemToReplace | UpdateItemRequest;
-    headers: {
-        /**
-         * HTTP Client Negotiation _Accept_ Header. Indicates the types of responses the client can understand.
-         */
-        Accept: string;
-        /**
-         * Type of the content being sent.
-         */
-        'Content-Type': string;
-    };
-    path?: never;
-    query?: never;
-    url: '/order/changes';
-};
-
-export type PostOrderChangesErrors = {
-    /**
-     * Bad Request
-     */
-    400: {
-        /**
-         * Error message.
-         */
-        message?: string;
-    };
-    /**
-     * Unauthorized
-     */
-    401: {
-        /**
-         * Authentication failed due to missing, invalid, or expired credentials. Ensure the `X-VTEX-API-AppKey` and `X-VTEX-API-AppToken` headers include valid values.
-         */
-        message?: string;
-    };
-};
-
-export type PostOrderChangesError = PostOrderChangesErrors[keyof PostOrderChangesErrors];
-
-export type PostOrderChangesResponses = {
-    /**
-     * OK
-     */
-    200: AddItemRequest;
-};
-
-export type PostOrderChangesResponse = PostOrderChangesResponses[keyof PostOrderChangesResponses];
-
 export type DeleteBySkuIdWarehousesByWarehouseIdData = {
     body?: never;
     headers: {
@@ -470,7 +208,9 @@ export type DeleteBySkuIdWarehousesByWarehouseIdResponses = {
     /**
      * Empty array.
      */
-    200: Array<unknown>;
+    200: Array<{
+        [key: string]: unknown;
+    }>;
 };
 
 export type DeleteBySkuIdWarehousesByWarehouseIdResponse = DeleteBySkuIdWarehousesByWarehouseIdResponses[keyof DeleteBySkuIdWarehousesByWarehouseIdResponses];
@@ -507,11 +247,11 @@ export type GetBySkuIdWarehousesByWarehouseIdResponses = {
      */
     200: {
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location?: string;
         /**
-         * The account name managing the BIN location.
+         * The account name managing the bin location.
          */
         hostname?: string;
         /**
@@ -530,7 +270,7 @@ export type GetBySkuIdWarehousesByWarehouseIdResponse = GetBySkuIdWarehousesByWa
 export type PostBySkuIdWarehousesByWarehouseIdData = {
     body?: {
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location: string;
     };
@@ -564,11 +304,11 @@ export type PostBySkuIdWarehousesByWarehouseIdResponses = {
      */
     200: {
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location?: string;
         /**
-         * The account name managing the BIN location.
+         * The account name managing the bin location.
          */
         hostname?: string;
         /**
@@ -587,7 +327,7 @@ export type PostBySkuIdWarehousesByWarehouseIdResponse = PostBySkuIdWarehousesBy
 export type PutBySkuIdWarehousesByWarehouseIdData = {
     body?: {
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location: string;
     };
@@ -621,11 +361,11 @@ export type PutBySkuIdWarehousesByWarehouseIdResponses = {
      */
     200: {
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location?: string;
         /**
-         * The account name managing the BIN location.
+         * The account name managing the bin location.
          */
         hostname?: string;
         /**
@@ -667,7 +407,9 @@ export type DeleteBySkuIdWarehousesResponses = {
     /**
      * Empty array.
      */
-    200: Array<unknown>;
+    200: Array<{
+        [key: string]: unknown;
+    }>;
 };
 
 export type DeleteBySkuIdWarehousesResponse = DeleteBySkuIdWarehousesResponses[keyof DeleteBySkuIdWarehousesResponses];
@@ -700,11 +442,11 @@ export type GetBySkuIdWarehousesResponses = {
      */
     200: Array<{
         /**
-         * The BIN location within the warehouse.
+         * The bin location within the warehouse.
          */
         location?: string;
         /**
-         * The account name managing the BIN location.
+         * The account name managing the bin location.
          */
         hostname?: string;
         /**

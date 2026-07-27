@@ -284,8 +284,8 @@ export const zListAllGiftCardsData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/vnd.vtex.giftcardproviders.v1+json'),
-        Accept: z.string().default('application/vnd.vtex.giftcardproviders.v1+json'),
+        'Content-Type': z.string().default('application/vnd.vtex.giftcards.v1+json'),
+        Accept: z.string().default('application/vnd.vtex.giftcards.v1+json'),
         'REST-Range': z.optional(z.string()).default('resources=0-49')
     })
 });
@@ -297,8 +297,8 @@ export const zGetGiftCardbyIdData = z.object({
     }),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/vnd.vtex.giftcardproviders.v1+json'),
-        Accept: z.string().default('application/vnd.vtex.giftcardproviders.v1+json')
+        'Content-Type': z.string().default('application/vnd.vtex.giftcards.v1+json'),
+        Accept: z.string().default('application/vnd.vtex.giftcards.v1+json')
     })
 });
 
@@ -307,8 +307,8 @@ export const zCreateGiftCardData = z.object({
     path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
-        'Content-Type': z.string().default('application/vnd.vtex.giftcardproviders.v1+json'),
-        Accept: z.string().default('application/vnd.vtex.giftcardproviders.v1+json')
+        'Content-Type': z.string().default('application/vnd.vtex.giftcards.v1+json'),
+        Accept: z.string().default('application/vnd.vtex.giftcards.v1+json')
     })
 });
 

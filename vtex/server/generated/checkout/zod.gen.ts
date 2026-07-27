@@ -16,7 +16,10 @@ export const zOrderForm = z.object({
     ])),
     allowManualPrice: z.optional(z.boolean()),
     canEditData: z.optional(z.boolean()),
-    userProfileId: z.optional(z.string()),
+    userProfileId: z.optional(z.union([
+        z.string(),
+        z.null()
+    ])),
     profileProvider: z.optional(z.string()),
     availableAccounts: z.optional(z.array(z.string())),
     availableAddresses: z.optional(z.array(z.object({
@@ -55,7 +58,10 @@ export const zOrderForm = z.object({
         id: z.optional(z.string()),
         productId: z.optional(z.string()),
         productRefId: z.optional(z.string()),
-        refId: z.optional(z.string()),
+        refId: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
         ean: z.optional(z.union([
             z.string(),
             z.null()
@@ -129,7 +135,10 @@ export const zOrderForm = z.object({
             name: z.optional(z.string()),
             price: z.optional(z.int())
         }))),
-        attachments: z.optional(z.array(z.string())),
+        attachments: z.optional(z.array(z.object({
+            name: z.optional(z.string()),
+            content: z.optional(z.record(z.string(), z.unknown()))
+        }))),
         priceTags: z.optional(z.array(z.object({
             identifier: z.optional(z.union([
                 z.string(),
@@ -163,7 +172,10 @@ export const zOrderForm = z.object({
             address: z.optional(z.union([
                 z.object({
                     addressType: z.optional(z.string()),
-                    receiverName: z.optional(z.string()),
+                    receiverName: z.optional(z.union([
+                        z.string(),
+                        z.null()
+                    ])),
                     addressId: z.optional(z.union([
                         z.string(),
                         z.null()
@@ -284,7 +296,7 @@ export const zOrderForm = z.object({
                         z.string(),
                         z.null()
                     ])),
-                    pickupDistance: z.optional(z.int()),
+                    pickupDistance: z.optional(z.number()),
                     polygonName: z.optional(z.union([
                         z.string(),
                         z.null()
@@ -299,7 +311,10 @@ export const zOrderForm = z.object({
             }))),
             selectedAddresses: z.optional(z.array(z.object({
                 addressType: z.optional(z.string()),
-                receiverName: z.optional(z.string()),
+                receiverName: z.optional(z.union([
+                    z.string(),
+                    z.null()
+                ])),
                 addressId: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -324,7 +339,10 @@ export const zOrderForm = z.object({
             }))),
             availableAddresses: z.optional(z.array(z.object({
                 addressType: z.optional(z.string()),
-                receiverName: z.optional(z.string()),
+                receiverName: z.optional(z.union([
+                    z.string(),
+                    z.null()
+                ])),
                 addressId: z.optional(z.union([
                     z.string(),
                     z.null()
@@ -455,6 +473,10 @@ export const zOrderForm = z.object({
         logo: z.optional(z.union([
             z.string(),
             z.null()
+        ])),
+        minimumOrderValue: z.optional(z.union([
+            z.int(),
+            z.null()
         ]))
     }))),
     clientPreferencesData: z.optional(z.object({
@@ -534,7 +556,10 @@ export const zOrderForm = z.object({
             name: z.optional(z.string()),
             skuName: z.optional(z.string()),
             productId: z.optional(z.string()),
-            refId: z.optional(z.string()),
+            refId: z.optional(z.union([
+                z.string(),
+                z.null()
+            ])),
             ean: z.optional(z.union([
                 z.string(),
                 z.null()
@@ -555,10 +580,13 @@ export const zOrderForm = z.object({
         z.record(z.string(), z.unknown()),
         z.null()
     ])),
-    itemsOrdination: z.optional(z.object({
-        criteria: z.optional(z.string()),
-        ascending: z.optional(z.boolean())
-    }))
+    itemsOrdination: z.optional(z.union([
+        z.object({
+            criteria: z.optional(z.string()),
+            ascending: z.optional(z.boolean())
+        }),
+        z.null()
+    ]))
 });
 
 /**
@@ -841,6 +869,21 @@ export const zItemsData = z.object({
     })
 });
 
+export const zDeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexPriceData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        orderFormId: z.string(),
+        itemIndex: z.string()
+    }),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
 export const zPriceChangeData = z.object({
     body: zPriceChangeRequest,
     path: z.object({
@@ -1023,6 +1066,85 @@ export const zAddPaymentDataData = z.object({
             referenceValue: z.optional(z.int()),
             hasDefaultBillingAddress: z.optional(z.boolean())
         })))
+    }),
+    path: z.object({
+        orderFormId: z.string()
+    }),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        orderFormId: z.string(),
+        itemIndex: z.string(),
+        attachmentName: z.string()
+    }),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCheckoutPubOrderFormByOrderFormIdItemsByItemIndexAttachmentsByAttachmentNameData = z.object({
+    body: z.object({
+        content: z.record(z.string(), z.unknown())
+    }),
+    path: z.object({
+        orderFormId: z.string(),
+        itemIndex: z.string(),
+        attachmentName: z.string()
+    }),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData = z.object({
+    body: z.object({
+        subscriptions: z.array(z.record(z.string(), z.unknown()))
+    }),
+    path: z.object({
+        orderFormId: z.string()
+    }),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCheckoutPubOrderFormByOrderFormIdAttachmentsSubscriptionDataData = z.object({
+    body: z.object({
+        subscriptions: z.array(z.object({
+            itemIndex: z.int(),
+            plan: z.object({
+                frequency: z.object({
+                    interval: z.int(),
+                    periodicity: z.string()
+                }),
+                validity: z.optional(z.object({
+                    begin: z.optional(z.string()),
+                    end: z.optional(z.string())
+                })),
+                type: z.string()
+            })
+        }))
     }),
     path: z.object({
         orderFormId: z.string()
@@ -1240,6 +1362,18 @@ export const zGetorderFormconfigurationData = z.object({
 });
 
 export const zUpdateorderFormconfigurationData = z.object({
+    body: zUpdateorderFormconfigurationRequest,
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        individualShippingEstimates: z.optional(z.boolean())
+    })),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zCreateorderFormconfigurationData = z.object({
     body: zUpdateorderFormconfigurationRequest,
     path: z.optional(z.never()),
     query: z.optional(z.object({

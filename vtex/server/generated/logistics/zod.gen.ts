@@ -370,6 +370,11 @@ export const zContentType = z.string();
  */
 export const zAccept = z.string();
 
+/**
+ * Unique identifier for the batch job, returned by the [Create batch inventory job](https://developers.vtex.com/docs/api-reference/logistics-api#post-/availability/v1/inventory/batch) endpoint.
+ */
+export const zBatchId = z.uuid();
+
 export const zDeleteApiLogisticsPvtShippingPoliciesByIdData = z.object({
     body: z.optional(z.never()),
     path: z.object({
@@ -582,7 +587,7 @@ export const zFreightValuesData = z.object({
     body: z.optional(z.never()),
     path: z.object({
         carrierId: z.string(),
-        cep: z.string()
+        postalcode: z.string()
     }),
     query: z.optional(z.never()),
     headers: z.object({
@@ -960,6 +965,48 @@ export const zTransferSupplyLotData = z.object({
     headers: z.object({
         Accept: z.string().default('application/json'),
         'Content-Type': z.string().default('application/json')
+    })
+});
+
+export const zPostAvailabilityV1InventoryBatchData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPostAvailabilityV1InventoryBatchByBatchIdConfirmData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        batchId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zGetAvailabilityV1InventoryBatchByBatchIdStatusData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        batchId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zGetAvailabilityV1InventoryBatchByBatchIdErrorsData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        batchId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
     })
 });
 

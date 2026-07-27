@@ -264,6 +264,35 @@ export type ProductSearch = {
      */
     translated?: boolean;
     /**
+     * Redirect URL when the query maps to a configured redirect rule. Present only when a redirect applies.
+     */
+    redirect?: string | null;
+    /**
+     * Search options available for the query.
+     */
+    options?: {
+        /**
+         * Available sort options.
+         */
+        sorts?: Array<{
+            [key: string]: unknown;
+        }>;
+        /**
+         * Available product count options.
+         */
+        counts?: Array<{
+            [key: string]: unknown;
+        }>;
+        /**
+         * Whether Delivery Promise features are enabled for this query.
+         */
+        deliveryPromisesEnabled?: boolean;
+    };
+    /**
+     * Unique identifier for the search session. Use this value when sending search analytics events.
+     */
+    searchId?: string;
+    /**
      * Pagination information.
      */
     pagination?: {
@@ -1320,11 +1349,13 @@ export type Facets = {
             href?: string;
         }>;
         /**
-         * Facet type
-         * - `TEXT` - The value is a simple text.
-         * - `PRICERANGE` - The value contains the property `range` representing the minimum and the maximum price for the query.
+         * Facet type, which can be:
+         *
+         * - `TEXT`: The value is a simple text.
+         * - `PRICERANGE`: The value contains the property `range` representing the minimum and the maximum price for the query.
+         * - `DELIVERY`: The value represents a delivery option. Only appears in searches using [Delivery Promise](https://help.vtex.com/docs/tutorials/delivery-promise-beta).
          */
-        type?: 'TEXT' | 'PRICERANGE';
+        type?: 'TEXT' | 'PRICERANGE' | 'DELIVERY';
         /**
          * Human-readable format of the facet key.
          */
@@ -1389,6 +1420,34 @@ export type Facets = {
 
 /**
  * Search term. It can contain any character.
+ *
+ * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+ *
+ * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+ *
+ * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+ * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+ *
+ * >⚠️ All searched IDs should be of the same type.
+ *
+ * ## Search by ID
+ *
+ * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+ *
+ * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+ * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+ *
+ * ## Supported ID types
+ *
+ * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+ *
+ * | ID Type | Query format | Example |
+ * | - | - | - |
+ * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+ * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+ * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+ * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+ * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
  */
 export type Query = string;
 
@@ -1403,32 +1462,46 @@ export type Query = string;
  *
  * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
  *
+ * ## Filter combinations
+ *
+ * When shoppers apply filters, the API combines them according to the following rules:
+ *
+ * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+ * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+ *
+ * ## Negative filters (NOT operator)
+ *
+ * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+ *
+ * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+ *
  * ## Available filters
  *
  * The `facets` parameter allows the following filters:
  *
  * | `facetKey` | Description | Example |
  * | - | - | - |
- * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
- * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
- * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
- * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
- *
+ * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+ * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+ * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+ * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+ * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+ * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
  */
 export type FacetsPath = string | null;
 
 /**
- * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export type SponsoredCount = string;
 
 /**
- * Advertisement placement. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export type AdvertisementPlacement = 'top_search' | 'middle_search' | 'search_shelf' | 'cart_shelf' | 'plp_shelf' | 'autocomplete' | 'homepage';
 
 /**
- * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
+ * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
  */
 export type RepeatSponsoredProducts = boolean;
 
@@ -1442,9 +1515,11 @@ export type Locale = string | null;
  *
  * * `default` - Calls the simulation for every single seller.
  * * `skip` - Never calls the simulation.
- * * `only1P` - Only calls the simulation for first party sellers.
+ * * `only1P` - Only calls the simulation for first-party sellers.
+ * * `only3P` - Only calls the simulation for third-party sellers.
+ * * `regionalize1p` - Calls regionalized simulation for first-party sellers only.
  */
-export type SimulationBehavior = 'default' | 'skip' | 'only1P';
+export type SimulationBehavior = 'default' | 'skip' | 'only1P' | 'only3P' | 'regionalize1p';
 
 /**
  * Defines whether the result should hide unavailable items (`true`), or not (`false`). When set to `true`, only products with stock are returned; when set to `false`, the API includes unavailable products as well. A product is considered unavailable when `availableQuantity = 0`, while `availableQuantity = 10000` indicates that the product is available. Retailers may choose to show unavailable items for commercial reasons (for example, to signal that they offer those products even if temporarily out-of-stock). The recommended default is `true`.
@@ -1488,6 +1563,34 @@ export type GetAutocompleteSuggestionsData = {
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
         /**
@@ -1513,6 +1616,34 @@ export type GetCorrectionSearchData = {
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
         /**
@@ -1546,23 +1677,65 @@ export type GetBannersByFacetsData = {
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
+         * ## Filter combinations
+         *
+         * When shoppers apply filters, the API combines them according to the following rules:
+         *
+         * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+         * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+         *
+         * ## Negative filters (NOT operator)
+         *
+         * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+         *
+         * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+         *
          * ## Available filters
          *
          * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
-         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         *
+         * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+         * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+         * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+         * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+         * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
          */
         facets: string | null;
     };
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
         /**
@@ -1588,6 +1761,34 @@ export type GetSearchSuggestionsData = {
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
         /**
@@ -1621,45 +1822,67 @@ export type GetProductSearchByFacetsData = {
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
+         * ## Filter combinations
+         *
+         * When shoppers apply filters, the API combines them according to the following rules:
+         *
+         * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+         * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+         *
+         * ## Negative filters (NOT operator)
+         *
+         * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+         *
+         * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+         *
          * ## Available filters
          *
          * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
-         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         *
+         * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+         * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+         * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+         * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+         * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
          */
         facets: string | null;
     };
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
-        /**
-         * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
-         */
-        sponsoredCount?: string;
-        /**
-         * Advertisement placement. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
-         */
-        advertisementPlacement?: 'top_search' | 'middle_search' | 'search_shelf' | 'cart_shelf' | 'plp_shelf' | 'autocomplete' | 'homepage';
-        /**
-         * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur).
-         */
-        repeatSponsoredProducts?: boolean;
-        /**
-         * Defines the simulation behavior.
-         *
-         * * `default` - Calls the simulation for every single seller.
-         * * `skip` - Never calls the simulation.
-         * * `only1P` - Only calls the simulation for first party sellers.
-         */
-        simulationBehavior?: 'default' | 'skip' | 'only1P';
         /**
          * Number of products per page.
          */
@@ -1669,22 +1892,19 @@ export type GetProductSearchByFacetsData = {
          */
         page?: number | null;
         /**
-         * Defines if sponsored products are listed (`true`) or not (`false`). Applicable to stores using [VTEX Ad Network](https://help.vtex.com/en/tutorial/vtex-ad-network-beta--2cgqXcBuJmXN2livQvClur) to offer ad space.
-         */
-        showSponsored?: boolean | null;
-        /**
-         * Defines the sort type. The possible values are:
-         * - `price:desc`: The results will be sorted by price in descending order, from highest to lowest.
-         * - `price:asc`: The results will be sorted by price in ascending order, from lowest to highest.
-         * - `orders:desc`: The results will be sorted by the amount of orders in the past 90 days, in descending order.
-         * - `name:desc`: The results will be sorted by name in descending alphabetical order.
-         * - `name:asc`: The results will be sorted by name in ascending alphabetical order.
-         * - `release:desc`: The results will be sorted by release date in descending order, from most recent to least recent.
-         * - `discount:desc`: The results will be sorted by discount percentage in descending order, from highest to lowest.
+         * Defines how results are sorted. Relevance is Intelligent Search's **default** sorting type, used for typical product search and applied when this parameter is omitted, null or empty. Use one of the other values listed below only when you need a fixed sort instead of relevance.
          *
-         * If this query parameter is not used, the products will be sorted by relevance.
+         * Allowed values:
+         * - **Omitted, empty, or null** (default): Results are sorted by relevance.
+         * - `price:desc`: Results are sorted by price in descending order, from highest to lowest.
+         * - `price:asc`: Results are sorted by price in ascending order, from lowest to highest.
+         * - `orders:desc`: Results are sorted by the amount of orders in the past 90 days, in descending order.
+         * - `name:desc`: Results are sorted by name in descending alphabetical order.
+         * - `name:asc`: Results are sorted by name in ascending alphabetical order.
+         * - `release:desc`: Results are sorted by release date in descending order, from most recent to least recent.
+         * - `discount:desc`: Results are sorted by discount percentage in descending order, from highest to lowest.
          */
-        sort?: 'price:desc' | 'price:asc' | 'orders:desc' | 'name:desc' | 'name:asc' | 'release:desc' | 'discount:desc';
+        sort?: 'price:desc' | 'price:asc' | 'orders:desc' | 'name:desc' | 'name:asc' | 'release:desc' | 'discount:desc' | null;
         /**
          * Indicates the target language as a BCP 47 language code. The Intelligent Search must have indexed the account in the target language.
          */
@@ -1693,6 +1913,32 @@ export type GetProductSearchByFacetsData = {
          * Defines whether the result should hide unavailable items (`true`), or not (`false`). When set to `true`, only products with stock are returned; when set to `false`, the API includes unavailable products as well. A product is considered unavailable when `availableQuantity = 0`, while `availableQuantity = 10000` indicates that the product is available. Retailers may choose to show unavailable items for commercial reasons (for example, to signal that they offer those products even if temporarily out-of-stock). The recommended default is `true`.
          */
         hideUnavailableItems?: boolean;
+        /**
+         * Defines the simulation behavior.
+         *
+         * * `default` - Calls the simulation for every single seller.
+         * * `skip` - Never calls the simulation.
+         * * `only1P` - Only calls the simulation for first-party sellers.
+         * * `only3P` - Only calls the simulation for third-party sellers.
+         * * `regionalize1p` - Calls regionalized simulation for first-party sellers only.
+         */
+        simulationBehavior?: 'default' | 'skip' | 'only1P' | 'only3P' | 'regionalize1p';
+        /**
+         * Defines if sponsored products are listed (`true`) or not (`false`). Applicable to stores using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads) to offer ad space.
+         */
+        showSponsored?: boolean | null;
+        /**
+         * Amount of sponsored products to be returned. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
+         */
+        sponsoredCount?: string;
+        /**
+         * Advertisement placement. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
+         */
+        advertisementPlacement?: 'top_search' | 'middle_search' | 'search_shelf' | 'cart_shelf' | 'plp_shelf' | 'autocomplete' | 'homepage';
+        /**
+         * Defines if sponsored products can appear again as organic listings. When set as `true`, it allows the same product to be shown as both sponsored and organic. When set as `false`, it removes duplicates, ensuring a sponsored product does not appear again as organic. Applicable only to merchants using [VTEX Ads](https://developers.vtex.com/docs/guides/vtex-ads).
+         */
+        repeatSponsoredProducts?: boolean;
     };
     url: '/product_search/{facets}';
 };
@@ -1734,6 +1980,8 @@ export type GetProductSearchByFacetsError = GetProductSearchByFacetsErrors[keyof
 
 export type GetProductSearchByFacetsResponses = {
     /**
+     * OK
+     *
      * List of products for the given query.
      */
     200: ProductSearch;
@@ -1755,23 +2003,65 @@ export type GetFacetsByFacetsData = {
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
+         * ## Filter combinations
+         *
+         * When shoppers apply filters, the API combines them according to the following rules:
+         *
+         * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+         * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+         *
+         * ## Negative filters (NOT operator)
+         *
+         * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+         *
+         * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+         *
          * ## Available filters
          *
          * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
-         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         *
+         * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+         * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+         * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+         * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+         * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
          */
         facets: string | null;
     };
     query?: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
         /**
@@ -1782,12 +2072,18 @@ export type GetFacetsByFacetsData = {
          * Defines whether the result should hide unavailable items (`true`), or not (`false`). When set to `true`, only products with stock are returned; when set to `false`, the API includes unavailable products as well. A product is considered unavailable when `availableQuantity = 0`, while `availableQuantity = 10000` indicates that the product is available. Retailers may choose to show unavailable items for commercial reasons (for example, to signal that they offer those products even if temporarily out-of-stock). The recommended default is `true`.
          */
         hideUnavailableItems?: boolean;
+        /**
+         * When `true`, hidden facets are omitted from the response.
+         */
+        removeHiddenFacets?: boolean;
     };
     url: '/facets/{facets}';
 };
 
 export type GetFacetsByFacetsResponses = {
     /**
+     * OK
+     *
      * List of facets for the given query.
      */
     200: Facets;
@@ -1809,25 +2105,75 @@ export type GetPickupPointAvailabilityByFacetsData = {
          *
          * You can also repeat the same `facetKey` several times for different values. For example: `category-1/shoes/color/blue/color/red/color/yellow`.
          *
+         * ## Filter combinations
+         *
+         * When shoppers apply filters, the API combines them according to the following rules:
+         *
+         * - **Facets of the same type → OR (union):** When multiple values of the same facet are applied, the API returns the union of all products matching any of those values.
+         * - **Facets of different types → AND (intersection):** When different facet types are combined, the API returns only the products that satisfy all selected facet conditions simultaneously.
+         *
+         * ## Negative filters (NOT operator)
+         *
+         * To exclude a facet value, prefix the value with **`not:`** in the path segment: `/{facetKey}/not:{facetValue}/`. For example, `color/blue/size/not:42` keeps color blue and excludes size 42. Use the same `not:` prefix with the facet keys and values configured in your catalog. This supports use cases such as including products in one collection but excluding another.
+         *
+         * The NOT operator excludes specific values. The OR and AND rules in **Filter combinations** still describe how multiple positive facet selections combine.
+         *
          * ## Available filters
          *
          * The `facets` parameter allows the following filters:
          *
          * | `facetKey` | Description | Example |
          * | - | - | - |
-         * | `trade-policy` **(required)** | Filter the search by trade policy (also known as sales channel), following the format `trade-policy/{tradePolicyId}`. | `trade-policy/2` |
-         * | `price` *(optional)* | Filter the search by a price range, following the format `${minPrice}:${maxPrice}`. | `/color/blue/price/100:500?query=shirt` |
-         * | `category-${n}` *(optional)* | Filter the search by category, where `n` represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). | `category-1/clothing/category-2/shirts` |
-         * | `productClusterIds` *(optional)* | Filter the search by collection, following the format `productClusterIds/{collectionId}`. | `productClusterIds/262` |
-         *
+         * | `trade-policy` **(required)** | Filter by trade policy (sales channel) using `trade-policy/{tradePolicyId}`. Some integrations use the `salesChannel` query string for the same purpose when supported. | `trade-policy/2` |
+         * | `category-${n}` *(optional)* | Filter the search by category, where n represents the category tree level (1 = department, 2 = category, 3 = subcategory, and so on). Declare the full path from the root level through every parent down to the level you need. For example, using only `category-2/shirts` without the `category-1/...` segment is incorrect. | `category-1/clothing/category-2/shirts` |
+         * | `brand` *(optional)* | Filter by brand slug or identifier. | `brand/acme` |
+         * | `{specificationName}` *(optional)* | Filter by a catalog specification exposed as a search filter, using `{specificationName}/{specificationValue}` (for example `color/blue`). | `color/blue` |
+         * | `productClusterIds` *(optional)* | Filter by collection ID. | `productClusterIds/262` |
+         * | `price` *(optional)* | Filter by price range `${minPrice}:${maxPrice}`. | `trade-policy/1/color/blue/price/100:500` (with `?query=shirt` on the full URL when using a text query). |
          */
         facets: string | null;
     };
     query: {
         /**
          * Search term. It can contain any character.
+         *
+         * This parameter is named `query` in the API. The short form **`q`** is an alias for `query` and has the same semantics.
+         *
+         * You can search for products or SKUs using specific ID types by adding search parameters (query) at the end of the store URL, respecting one of the following structures:
+         *
+         * - **Single item search:** `?query=[id type]:[id_1]`. Example: `?query=product:98765`
+         * - **Multiple items search:** `?query=[id type]:[id_1];[id_2];[id_3]`. Example: `?query=product:98765;98743`
+         *
+         * >⚠️ All searched IDs should be of the same type.
+         *
+         * ## Search by ID
+         *
+         * On the Intelligent Search API, search products or SKUs by ID by sending the value in the `query` or `q` query parameter on requests such as `/product_search/{facets}`. The `{facets}` path must include the required `trade-policy` facet and any optional filters.
+         *
+         * - **Product ID:** `.../product_search/trade-policy/1?query=product:98765` or `.../product_search/trade-policy/1?query=product.id:98765`.
+         * - **SKU ID:** `.../product_search/trade-policy/1?query=sku.id:12345` or `.../product_search/trade-policy/1?query=sku:12345`.
+         *
+         * ## Supported ID types
+         *
+         * The possible value types for the ID segment are `product.id`, `sku.id`, `sku.ean`, `sku.reference`, `product.link`, or `id` (ProductID, ProductRefID, SKUID, SKURefID, and EAN).
+         *
+         * | ID Type | Query format | Example |
+         * | - | - | - |
+         * | Product ID | `?query=product:<id>` or `?query=product.id:<id>` | `?query=product:98765` |
+         * | SKU ID | `?query=sku:<id>` or `?query=sku.id:<id>` | `?query=sku.id:12345` |
+         * | Reference ID | `?query=sku.reference:<id>` | `?query=sku.reference:REF123` |
+         * | EAN | `?query=sku.ean:<id>` | `?query=sku.ean:7891234567890` |
+         * | Slug | `?query=product.link:<link>` | `?query=product.link:blue-shirt` |
          */
         query?: string;
+        /**
+         * Indicates the target language as a BCP 47 language code. The Intelligent Search must have indexed the account in the target language.
+         */
+        locale?: string | null;
+        /**
+         * Pickup point ID to filter results to a specific pickup point.
+         */
+        pickupPoint?: string;
         /**
          * Account name. The name of the VTEX account.
          */
@@ -1845,13 +2191,13 @@ export type GetPickupPointAvailabilityByFacetsData = {
          */
         country?: string;
         /**
-         * Pre-computed hash for delivery zones. Used for faster lookup. Required when using the hashes approach (alternative to country and ZIP code).
+         * Pre-computed hash for delivery zones. Used for faster lookup. Required when using the hashes approach (alternative to country and ZIP code). Obtain this value from the `POST` [Search delivery zones](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/delivery-zones/_search/v2) endpoint of the Delivery Promise Suggestions API.
          */
         deliveryZonesHash?: string;
         /**
-         * Pre-computed hash for pickups. Used for faster lookup. Required when using the hashes approach (alternative to country and ZIP code).
+         * Pre-computed hash for pickup points. Used for faster lookup. Required when using the hashes approach (alternative to country and ZIP code). Obtain this value from the `POST` [Search pickup points](https://developers.vtex.com/docs/api-reference/delivery-promise-suggestions-api#post-/api/logistics-shipping/pickuppoints/_search) endpoint of the Delivery Promise Suggestions API.
          */
-        pickupsHash?: string;
+        pickupPointsHash?: string;
     };
     url: '/pickup-point-availability/{facets}';
 };

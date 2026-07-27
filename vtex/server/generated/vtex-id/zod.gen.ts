@@ -88,7 +88,7 @@ export const zEnvironment = z.string().default('vtexcommercestable');
  */
 export const zApiKey = z.string();
 
-export const zPostApiAuthenticatorStorefrontUsersData = z.object({
+export const zPostApiAuthenticatorV1StorefrontUsersData = z.object({
     body: z.optional(z.object({
         identifiers: z.array(z.object({
             type: z.enum([
@@ -100,6 +100,49 @@ export const zPostApiAuthenticatorStorefrontUsersData = z.object({
         })).min(1)
     })),
     path: z.optional(z.never()),
+    query: z.optional(z.object({
+        isLegacyPassword: z.optional(z.boolean()).default(false)
+    })),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zDeleteApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        name: z.string()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPatchApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
+    body: z.optional(z.object({
+        enabled: z.boolean()
+    })),
+    path: z.object({
+        name: z.string()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zPutApiAuthenticatorV1TenantsFeaturesByNameData = z.object({
+    body: z.optional(z.object({
+        clientId: z.string(),
+        idpEndpoint: z.string(),
+        secret: z.string()
+    })),
+    path: z.object({
+        name: z.string()
+    }),
     query: z.optional(z.never()),
     headers: z.object({
         'Content-Type': z.string(),
@@ -273,5 +316,67 @@ export const zPostApiVtexidRefreshtokenWebstoreData = z.object({
         'Content-Type': z.string(),
         Accept: z.string(),
         Host: z.string()
+    })
+});
+
+export const zDeleteApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
+    body: z.object({
+        settings: z.array(z.object({
+            type: z.enum(['OAuth', 'Password'])
+        }))
+    }),
+    path: z.object({
+        unitId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zGetApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        unitId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string()
+    })
+});
+
+export const zPatchApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
+    body: z.object({
+        settings: z.array(z.object({
+            type: z.enum(['OAuth']),
+            status: z.enum(['Enabled', 'Disabled'])
+        }))
+    }),
+    path: z.object({
+        unitId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
+    })
+});
+
+export const zPostApiVtexidOrganizationUnitsByUnitIdSettingsData = z.object({
+    body: z.object({
+        settings: z.array(z.object({
+            type: z.enum(['Password', 'OAuth']),
+            name: z.string(),
+            status: z.enum(['Enabled', 'Disabled'])
+        }))
+    }),
+    path: z.object({
+        unitId: z.uuid()
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string(),
+        Accept: z.string()
     })
 });

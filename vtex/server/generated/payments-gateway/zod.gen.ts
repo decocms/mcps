@@ -49,19 +49,52 @@ export const zOption = z.object({
 });
 
 /**
- * Installment options information.
- */
-export const zInstallment = z.object({
-    payment: zPayment,
-    options: z.array(zOption)
-});
-
-/**
  * Installments options response body information.
  */
 export const zValidRequest = z.object({
     value: z.number(),
-    installments: z.array(zInstallment)
+    installments: z.array(z.object({
+        payment: z.object({
+            id: z.int(),
+            name: z.union([
+                z.string(),
+                z.null()
+            ]),
+            bin: z.union([
+                z.string(),
+                z.null()
+            ]),
+            value: z.number(),
+            isDefault: z.boolean().default(false),
+            self: z.object({
+                href: z.string()
+            })
+        }),
+        options: z.array(zOption)
+    }))
+});
+
+/**
+ * Installment options information.
+ */
+export const zInstallment = z.object({
+    payment: z.object({
+        id: z.int(),
+        name: z.union([
+            z.string(),
+            z.null()
+        ]),
+        bin: z.union([
+            z.string(),
+            z.null()
+        ]),
+        value: z.number(),
+        isDefault: z.boolean().default(false),
+        self: z.object({
+            href: z.string()
+        })
+    }),
+    options: z.array(zOption)
 });
 
 /**
@@ -871,7 +904,7 @@ export const zFields = z.object({
         z.string(),
         z.null()
     ]),
-    address: z.array(z.object({
+    address: z.object({
         addressType: z.optional(z.string()),
         receiverName: z.optional(z.string()),
         postalCode: z.optional(z.string()),
@@ -893,7 +926,7 @@ export const zFields = z.object({
             z.null()
         ])),
         geoCoordinates: z.optional(z.array(z.number()))
-    })),
+    }),
     callbackUrl: z.string()
 });
 
@@ -1178,44 +1211,38 @@ export const zPaymentDetailsResponse = z.object({
         z.string(),
         z.null()
     ]),
-    ConnectorResponses: z.union([
-        z.array(z.object({
-            Tid: z.optional(z.string()),
-            ReturnCode: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            Message: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            authId: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            nsu: z.optional(z.string())
-        })),
-        z.null()
-    ]),
-    connectorResponse: z.union([
-        z.array(z.object({
-            Tid: z.optional(z.string()),
-            ReturnCode: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            Message: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            authId: z.optional(z.union([
-                z.string(),
-                z.null()
-            ])),
-            nsu: z.optional(z.string())
-        })),
-        z.null()
-    ]),
+    ConnectorResponses: z.object({
+        Tid: z.optional(z.string()),
+        ReturnCode: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        Message: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        authId: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        nsu: z.optional(z.string())
+    }),
+    connectorResponse: z.object({
+        Tid: z.optional(z.string()),
+        ReturnCode: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        Message: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        authId: z.optional(z.union([
+            z.string(),
+            z.null()
+        ])),
+        nsu: z.optional(z.string())
+    }),
     ShowConnectorResponses: z.boolean(),
     value: z.number(),
     installmentsInterestRate: z.number(),
@@ -1263,6 +1290,26 @@ export const zRequest = z.object({
 });
 
 /**
+ * Transaction settlement details response body information.
+ */
+export const zTransactionSettlementDetails = z.object({
+    requests: z.array(zRequest),
+    actions: z.array(z.object({
+        paymentId: z.string(),
+        payment: z.object({
+            href: z.string()
+        }),
+        date: z.string(),
+        type: z.string(),
+        value: z.int(),
+        connectorResponse: z.union([
+            z.string(),
+            z.null()
+        ])
+    }))
+});
+
+/**
  * Object containing the transaction settlement reference route.
  */
 export const zPayment1 = z.object({
@@ -1282,14 +1329,6 @@ export const zAction = z.object({
         z.string(),
         z.null()
     ])
-});
-
-/**
- * Transaction settlement details response body information.
- */
-export const zTransactionSettlementDetails = z.object({
-    requests: z.array(zRequest),
-    actions: z.array(zAction)
 });
 
 /**
@@ -1606,7 +1645,7 @@ export const zPaymentDetailsData = z.object({
     body: z.optional(z.never()),
     path: z.object({
         transactionId: z.string(),
-        paymentId: z.string()
+        paymentId: z.optional(z.string())
     }),
     query: z.optional(z.never()),
     headers: z.object({

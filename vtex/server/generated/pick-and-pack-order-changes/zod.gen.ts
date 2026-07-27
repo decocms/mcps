@@ -11,6 +11,9 @@ export const zUpdateDeadlineRequest = z.object({
     min: z.string()
 });
 
+/**
+ * Update deadline response.
+ */
 export const zUpdateDeadlineResponse = z.object({
     order: z.optional(z.object({
         currentDeadline: z.optional(z.object({
@@ -34,84 +37,6 @@ export const zUpdateDeadlineResponse = z.object({
     success: z.optional(z.boolean())
 });
 
-export const zAddItemRequest = z.object({
-    type: z.string(),
-    orderId: z.string(),
-    itemId: z.string(),
-    quantity: z.int(),
-    warehouseId: z.string(),
-    price: z.int(),
-    sellingPrice: z.int(),
-    note: z.string(),
-    pickingOptions: z.object({
-        onNotFound: z.string(),
-        alternateOptions: z.array(z.string())
-    })
-});
-
-export const zAddQuantityRequest = z.object({
-    type: z.string(),
-    orderId: z.string(),
-    itemId: z.string(),
-    newQuantity: z.int(),
-    unitMultiplier: z.int(),
-    reasonType: z.string(),
-    reasonDetail: z.string()
-});
-
-export const zRejectItemRequest = z.object({
-    type: z.string(),
-    orderId: z.string(),
-    itemId: z.string(),
-    quantity: z.int(),
-    reasonType: z.string(),
-    reasonDetail: z.string()
-});
-
-/**
- * Items to be replaced in the order.
- */
-export const zItemToReplace = z.object({
-    id: z.string(),
-    quantity: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
-});
-
-/**
- * Items to be added in the order.
- */
-export const zItemToAddRequest = z.object({
-    id: z.optional(z.string()),
-    quantity: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
-    price: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
-    sellingPrice: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
-    warehouseId: z.optional(z.string()),
-    note: z.optional(z.string()),
-    pickingOptions: z.optional(z.object({
-        onNotFound: z.string(),
-        alternateOptions: z.array(z.string())
-    }))
-});
-
-export const zReplaceItemRequest = z.object({
-    type: z.string(),
-    orderId: z.string(),
-    itemToReplace: zItemToReplace,
-    ItemToAddRequest: zItemToAddRequest,
-    reasonType: z.string(),
-    reasonDetail: z.string()
-});
-
-export const zUpdateItemRequest = z.object({
-    type: z.enum(['UPDATE_ITEM']),
-    orderId: z.string(),
-    itemId: z.string(),
-    note: z.string(),
-    pickingOptions: z.object({
-        onNotFound: z.string(),
-        alternateOptions: z.array(z.string())
-    })
-});
-
 /**
  * Unique identifier of the order.
  */
@@ -132,24 +57,6 @@ export const zPutOrdersByOrderIdDeadlineData = z.object({
     path: z.object({
         orderId: z.string()
     }),
-    query: z.optional(z.never()),
-    headers: z.object({
-        Accept: z.string(),
-        'Content-Type': z.string()
-    })
-});
-
-export const zPostOrderChangesData = z.object({
-    body: z.union([
-        zAddItemRequest,
-        zAddQuantityRequest,
-        zItemToAddRequest,
-        zRejectItemRequest,
-        zReplaceItemRequest,
-        zItemToReplace,
-        zUpdateItemRequest
-    ]),
-    path: z.optional(z.never()),
     query: z.optional(z.never()),
     headers: z.object({
         Accept: z.string(),

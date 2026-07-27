@@ -1855,18 +1855,18 @@ export const deliveryPromiseNotificationTools = [
     id: "VTEX_PUT_DELIVERY_PROMISES_SELLER_PRODUCTS",
     description: "Update delivery promise products for an external seller.",
     requestSchema:
-      deliveryPromiseNotificationZod.zPutDeliveryPromisesExternalSellersBySellerIdProductsData,
+      deliveryPromiseNotificationZod.zPutApiDeliveryPromisesExternalSellersBySellerIdProductsData,
     sdkFn:
-      deliveryPromiseNotificationSdk.putDeliveryPromisesExternalSellersBySellerIdProducts as any,
+      deliveryPromiseNotificationSdk.putApiDeliveryPromisesExternalSellersBySellerIdProducts as any,
   }),
   createToolFromOperation({
     id: "VTEX_PATCH_DELIVERY_PROMISES_SELLER_ITEM",
     description:
       "Update a specific item delivery promise for an external seller.",
     requestSchema:
-      deliveryPromiseNotificationZod.zPatchDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData,
+      deliveryPromiseNotificationZod.zPatchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemIdData,
     sdkFn:
-      deliveryPromiseNotificationSdk.patchDeliveryPromisesExternalSellersBySellerIdItemsByItemId as any,
+      deliveryPromiseNotificationSdk.patchApiDeliveryPromisesExternalSellersBySellerIdItemsByItemId as any,
   }),
 ];
 
@@ -2324,13 +2324,6 @@ export const licenseManagerTools = [
     description: "Assign roles to a user.",
     requestSchema: licenseManagerZod.zPutRolesinUserData,
     sdkFn: licenseManagerSdk.putRolesinUser as any,
-  }),
-  createToolFromOperation({
-    id: "VTEX_GET_ROLES_BY_USER2",
-    description: "Get roles assigned to a user (alternate endpoint).",
-    annotations: { readOnlyHint: true },
-    requestSchema: licenseManagerZod.zGetRolesbyUser2Data,
-    sdkFn: licenseManagerSdk.getRolesbyUser2 as any,
   }),
   createToolFromOperation({
     id: "VTEX_REMOVE_ROLE_FROM_USER",
@@ -3943,12 +3936,6 @@ export const pickAndPackOrderChangesTools = [
     sdkFn: pickAndPackOrderChangesSdk.putOrdersByOrderIdDeadline as any,
   }),
   createToolFromOperation({
-    id: "VTEX_ORDER_CHANGES_POST_CHANGE",
-    description: "Post an order change.",
-    requestSchema: pickAndPackOrderChangesZod.zPostOrderChangesData,
-    sdkFn: pickAndPackOrderChangesSdk.postOrderChanges as any,
-  }),
-  createToolFromOperation({
     id: "VTEX_ORDER_CHANGES_DELETE_SKU_WAREHOUSE",
     description: "Remove a SKU-warehouse association for order changes.",
     annotations: { destructiveHint: true },
@@ -4570,22 +4557,22 @@ export const punchoutTools = [
   createToolFromOperation({
     id: "VTEX_PUNCHOUT_START",
     description: "Start a punchout session.",
-    requestSchema: punchoutZod.zPostApiAuthenticatorPunchoutStartData,
-    sdkFn: punchoutSdk.postApiAuthenticatorPunchoutStart as any,
+    requestSchema: punchoutZod.zPostApiAuthenticatorV1PunchoutStartData,
+    sdkFn: punchoutSdk.postApiAuthenticatorV1PunchoutStart as any,
   }),
   createToolFromOperation({
     id: "VTEX_PUNCHOUT_AUTHENTICATED_START",
     description: "Start an authenticated punchout session.",
     requestSchema:
-      punchoutZod.zPostApiAuthenticatorPunchoutAuthenticatedStartData,
-    sdkFn: punchoutSdk.postApiAuthenticatorPunchoutAuthenticatedStart as any,
+      punchoutZod.zPostApiAuthenticatorV1PunchoutAuthenticatedStartData,
+    sdkFn: punchoutSdk.postApiAuthenticatorV1PunchoutAuthenticatedStart as any,
   }),
   createToolFromOperation({
     id: "VTEX_PUNCHOUT_FINISH",
     description: "Finish a punchout session.",
     annotations: { readOnlyHint: true },
-    requestSchema: punchoutZod.zGetApiAuthenticatorPunchoutFinishData,
-    sdkFn: punchoutSdk.getApiAuthenticatorPunchoutFinish as any,
+    requestSchema: punchoutZod.zGetApiAuthenticatorV1PunchoutFinishData,
+    sdkFn: punchoutSdk.getApiAuthenticatorV1PunchoutFinish as any,
   }),
 ];
 
@@ -5310,8 +5297,8 @@ export const vtexIdTools = [
   createToolFromOperation({
     id: "VTEX_ID_POST_STOREFRONT_USERS",
     description: "Create storefront users.",
-    requestSchema: vtexIdZod.zPostApiAuthenticatorStorefrontUsersData,
-    sdkFn: vtexIdSdk.postApiAuthenticatorStorefrontUsers as any,
+    requestSchema: vtexIdZod.zPostApiAuthenticatorV1StorefrontUsersData,
+    sdkFn: vtexIdSdk.postApiAuthenticatorV1StorefrontUsers as any,
   }),
   createToolFromOperation({
     id: "VTEX_ID_GET_USER_INFO",

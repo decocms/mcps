@@ -14,7 +14,7 @@ export type ContentType = string;
  */
 export type Accept = string;
 
-export type PostApiAuthenticatorPunchoutStartData = {
+export type PostApiAuthenticatorV1PunchoutStartData = {
     body?: {
         /**
          * Username of an existing VTEX user.
@@ -42,10 +42,10 @@ export type PostApiAuthenticatorPunchoutStartData = {
          */
         returnURL?: string;
     };
-    url: '/api/authenticator/punchout/start';
+    url: '/api/authenticator/v1/punchout/start';
 };
 
-export type PostApiAuthenticatorPunchoutStartErrors = {
+export type PostApiAuthenticatorV1PunchoutStartErrors = {
     /**
      * Bad Request - Invalid request payload or missing required fields
      */
@@ -60,7 +60,7 @@ export type PostApiAuthenticatorPunchoutStartErrors = {
     403: unknown;
 };
 
-export type PostApiAuthenticatorPunchoutStartResponses = {
+export type PostApiAuthenticatorV1PunchoutStartResponses = {
     /**
      * OK - Credentials validated successfully and OTT generated
      */
@@ -72,9 +72,9 @@ export type PostApiAuthenticatorPunchoutStartResponses = {
     };
 };
 
-export type PostApiAuthenticatorPunchoutStartResponse = PostApiAuthenticatorPunchoutStartResponses[keyof PostApiAuthenticatorPunchoutStartResponses];
+export type PostApiAuthenticatorV1PunchoutStartResponse = PostApiAuthenticatorV1PunchoutStartResponses[keyof PostApiAuthenticatorV1PunchoutStartResponses];
 
-export type PostApiAuthenticatorPunchoutAuthenticatedStartData = {
+export type PostApiAuthenticatorV1PunchoutAuthenticatedStartData = {
     body?: {
         /**
          * Username for the procurement system user, who doesn't need to be an existing VTEX user.
@@ -98,10 +98,10 @@ export type PostApiAuthenticatorPunchoutAuthenticatedStartData = {
          */
         returnURL?: string;
     };
-    url: '/api/authenticator/punchout/authenticated/start';
+    url: '/api/authenticator/v1/punchout/authenticated/start';
 };
 
-export type PostApiAuthenticatorPunchoutAuthenticatedStartErrors = {
+export type PostApiAuthenticatorV1PunchoutAuthenticatedStartErrors = {
     /**
      * Bad Request - Invalid request payload or missing required fields
      */
@@ -116,7 +116,7 @@ export type PostApiAuthenticatorPunchoutAuthenticatedStartErrors = {
     403: unknown;
 };
 
-export type PostApiAuthenticatorPunchoutAuthenticatedStartResponses = {
+export type PostApiAuthenticatorV1PunchoutAuthenticatedStartResponses = {
     /**
      * OK - Authentication successful and OTT generated
      */
@@ -128,9 +128,9 @@ export type PostApiAuthenticatorPunchoutAuthenticatedStartResponses = {
     };
 };
 
-export type PostApiAuthenticatorPunchoutAuthenticatedStartResponse = PostApiAuthenticatorPunchoutAuthenticatedStartResponses[keyof PostApiAuthenticatorPunchoutAuthenticatedStartResponses];
+export type PostApiAuthenticatorV1PunchoutAuthenticatedStartResponse = PostApiAuthenticatorV1PunchoutAuthenticatedStartResponses[keyof PostApiAuthenticatorV1PunchoutAuthenticatedStartResponses];
 
-export type GetApiAuthenticatorPunchoutFinishData = {
+export type GetApiAuthenticatorV1PunchoutFinishData = {
     body?: never;
     headers: {
         /**
@@ -149,10 +149,10 @@ export type GetApiAuthenticatorPunchoutFinishData = {
          */
         ott: string;
     };
-    url: '/api/authenticator/punchout/finish';
+    url: '/api/authenticator/v1/punchout/finish';
 };
 
-export type GetApiAuthenticatorPunchoutFinishErrors = {
+export type GetApiAuthenticatorV1PunchoutFinishErrors = {
     /**
      * Bad Request - Missing or invalid token
      */

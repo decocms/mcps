@@ -826,6 +826,33 @@ export const zSupplierResponse = z.object({
 });
 
 /**
+ * Object with information about a product assortment.
+ */
+export const zProductAssortment = z.object({
+    Id: z.optional(z.int()),
+    Name: z.optional(z.string()),
+    CreatedAt: z.optional(z.iso.datetime()),
+    UpdatedAt: z.optional(z.iso.datetime()),
+    IncludedCollections: z.optional(z.array(z.int())),
+    ExcludedCollections: z.optional(z.array(z.int()))
+});
+
+/**
+ * Object with information about the association between an assortment and a collection.
+ */
+export const zAssortmentCollectionAssociation = z.object({
+    assortmentId: z.optional(z.int()),
+    collectionId: z.optional(z.int())
+});
+
+/**
+ * Object with information about the error.
+ */
+export const zErrorResponse = z.object({
+    Message: z.optional(z.string())
+});
+
+/**
  * Type of the content being sent.
  */
 export const zContentType = z.string().default('application/json');
@@ -914,6 +941,16 @@ export const zSkuServiceValueId = z.int();
  * Code used to filter translations by a given language. When omitted, all configured languages are returned. The format follows the IETF BCP 47 standard, such as 'en-US' for English (United States), 'en-ES' for Spanish (Spain), or 'pt-BR' for Portuguese (Brazil).
  */
 export const zLocale = z.string();
+
+/**
+ * Product assortment's unique numerical identifier.
+ */
+export const zProductAssortmentId = z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' });
+
+/**
+ * Collection's unique numerical identifier.
+ */
+export const zCollectionId2 = z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' });
 
 export const zProductAndSkuIdsData = z.object({
     body: z.optional(z.never()),
@@ -3961,6 +3998,116 @@ export const zPutApiCatalogPvtCollectionByCollectionIdLanguageData = z.object({
     query: z.optional(z.never()),
     headers: z.object({
         'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zGetApiCatalogPvtAssortmentData = z.object({
+    body: z.optional(z.never()),
+    path: z.optional(z.never()),
+    query: z.optional(z.object({
+        name: z.optional(z.string()),
+        after: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        size: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })),
+        collectionId: z.optional(z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }))
+    })),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCatalogPvtAssortmentData = z.object({
+    body: z.optional(z.object({
+        name: z.string()
+    })),
+    path: z.optional(z.never()),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCatalogPvtAssortmentByProductAssortmentIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zGetApiCatalogPvtAssortmentByProductAssortmentIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPutApiCatalogPvtAssortmentByProductAssortmentIdData = z.object({
+    body: z.optional(z.object({
+        name: z.string()
+    })),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        'Content-Type': z.string().default('application/json'),
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        collectionID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCatalogPvtAssortmentByProductAssortmentIdIncludedCollectionsByCollectionIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        collectionID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zDeleteApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        collectionID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
+        Accept: z.string().default('application/json')
+    })
+});
+
+export const zPostApiCatalogPvtAssortmentByProductAssortmentIdExcludedCollectionsByCollectionIdData = z.object({
+    body: z.optional(z.never()),
+    path: z.object({
+        productAssortmentID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' }),
+        collectionID: z.int().min(-2147483648, { error: 'Invalid value: Expected int32 to be >= -2147483648' }).max(2147483647, { error: 'Invalid value: Expected int32 to be <= 2147483647' })
+    }),
+    query: z.optional(z.never()),
+    headers: z.object({
         Accept: z.string().default('application/json')
     })
 });
