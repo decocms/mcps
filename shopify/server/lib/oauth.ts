@@ -113,6 +113,9 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
  * to the mesh's origin. The mesh callback lives under decocms.com; loopback is
  * allowed over http for local dev (RFC 8252 §7.3), everything else must be
  * https. Same model as the GitHub MCP's redirect allowlist.
+ *
+ * MESH_URL is an optional operator-controlled override: set it to allow a
+ * self-hosted mesh origin (e.g. a local deco studio on a custom host).
  */
 function isAllowedCallback(callbackUrl: string): boolean {
   let url: URL;
@@ -121,6 +124,17 @@ function isAllowedCallback(callbackUrl: string): boolean {
   } catch {
     return false;
   }
+
+  // Explicit override for a self-hosted / local mesh (trusted, operator-set).
+  const meshUrl = process.env.MESH_URL;
+  if (meshUrl) {
+    try {
+      if (url.origin === new URL(meshUrl).origin) return true;
+    } catch {
+      // fall through to the default allowlist
+    }
+  }
+
   const host = url.hostname.toLowerCase();
   const isLoopback = LOOPBACK_HOSTS.has(host);
   if (url.protocol === "http:" && isLoopback) return true;

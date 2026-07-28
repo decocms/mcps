@@ -36,6 +36,7 @@ afterEach(() => {
   delete process.env.SHOPIFY_TOKEN_SECRET;
   delete process.env.SELF_URL;
   delete process.env.SHOPIFY_SCOPES;
+  delete process.env.MESH_URL;
 });
 
 function shopifyHmac(params: Record<string, string>): string {
@@ -80,6 +81,25 @@ describe("GET /oauth/custom", () => {
       ),
     );
     expect(res?.status).toBe(400);
+  });
+
+  test("MESH_URL allows a self-hosted mesh origin (e.g. local studio)", async () => {
+    const studio = "https://studio.internal/oauth/callback?state=s";
+    // Without the override this custom origin is rejected...
+    const rejected = await handleOAuthRoute(
+      new Request(
+        `${SELF}${OAUTH_CONNECT_PATH}?callback_url=${encodeURIComponent(studio)}`,
+      ),
+    );
+    expect(rejected?.status).toBe(400);
+    // ...but setting MESH_URL to that origin allows it.
+    process.env.MESH_URL = "https://studio.internal";
+    const allowed = await handleOAuthRoute(
+      new Request(
+        `${SELF}${OAUTH_CONNECT_PATH}?callback_url=${encodeURIComponent(studio)}`,
+      ),
+    );
+    expect(allowed?.status).toBe(200);
   });
 
   test("redirects to Shopify authorize once a shop is provided", async () => {
