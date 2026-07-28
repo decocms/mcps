@@ -42,6 +42,19 @@ This document lists all secrets required to deploy MCPs via GitHub Actions.
     - `pages_read_engagement` - Read associated pages
     - `business_management` - Access business accounts
 
+### MCP: `shopify`
+OAuth (authorization code grant) against merchant stores. Requires a **public
+Shopify Partner app**.
+- **`SHOPIFY_CLIENT_ID`**: the Partner app's Client ID
+- **`SHOPIFY_CLIENT_SECRET`**: the Partner app's Client secret
+- **`SHOPIFY_TOKEN_SECRET`**: a random high-entropy string (e.g. `openssl rand -hex 32`)
+  used to seal the `{ shop, token }` credential and sign OAuth state. Rotating it
+  invalidates existing connections (merchants must reconnect).
+  - Obtain the app at: https://partners.shopify.com → Apps → create app
+  - App URL: `https://sites-shopify.deco.site`
+  - Redirect URL: `https://sites-shopify.deco.site/oauth/shopify/callback`
+  - `SELF_URL` / `MESH_URL` are injected by the deco platform at runtime.
+
 ### MCP: `github` (Cloudflare Workers — `deploy-github.yml`)
 Unlike the other MCPs, github deploys directly via `wrangler deploy` in
 its own workflow. The GitHub Action only needs Cloudflare credentials:

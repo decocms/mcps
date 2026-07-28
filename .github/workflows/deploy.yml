@@ -99,6 +99,10 @@ jobs:
           REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
           PERPLEXITY_API_KEY: ${{ secrets.PERPLEXITY_API_KEY }}
           META_ACCESS_TOKEN: ${{ secrets.META_ACCESS_TOKEN }}
+          SHOPIFY_CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
+          SHOPIFY_CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
+          SHOPIFY_TOKEN_SECRET: ${{ secrets.SHOPIFY_TOKEN_SECRET }}
+          SHOPIFY_SCOPES: ${{ vars.SHOPIFY_SCOPES }}
 
       - name: Notify success
         if: success()

@@ -111,6 +111,10 @@ try {
     "PERPLEXITY_API_KEY",
     "META_APP_ID",
     "META_APP_SECRET",
+    "SHOPIFY_CLIENT_ID",
+    "SHOPIFY_CLIENT_SECRET",
+    "SHOPIFY_TOKEN_SECRET",
+    "SHOPIFY_SCOPES",
   ];
 
   const autoEnvArgs: string[] = [];
