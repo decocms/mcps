@@ -40,6 +40,33 @@ The OAuth flow needs a **public Shopify Partner app**; its `SHOPIFY_CLIENT_ID`,
 `SHOPIFY_CLIENT_SECRET` and `SHOPIFY_TOKEN_SECRET` are provided as deploy secrets — see
 [`.github/workflows/SECRETS.md`](../.github/workflows/SECRETS.md).
 
+### Protected customer data (required for the customer tools)
+
+The `read_customers` scope alone is **not** enough to read the `Customer` object. Shopify
+gates all customer data behind a separate, app-level approval called
+[**Protected Customer Data**](https://shopify.dev/docs/apps/launch/protected-customer-data),
+independent of OAuth scopes. Without it, any customer tool
+(`SHOPIFY_LIST_CUSTOMERS`, customer lookups, segments, order→customer joins, …) fails with:
+
+> `This app is not approved to access the Customer object. See
+> https://shopify.dev/docs/apps/launch/protected-customer-data …`
+
+To enable it, in the **Partner Dashboard**:
+
+1. Apps → *your app* → **API access**.
+2. Find **Protected customer data access** → **Request access**.
+3. Grant the levels you need:
+   - **Protected customer data** (level 1) — required for _any_ `Customer` access.
+   - **Protected customer fields** (level 2) — PII: name, email, phone, address.
+4. Complete the data-protection questionnaire (how you use, store, encrypt and retain the
+   data). Public/distributed apps are reviewed by Shopify; custom/dev apps are usually
+   granted immediately.
+5. Save, then **reconnect the MCP** (re-run OAuth) if the error persists — the protected-data
+   consent sometimes only takes effect on the next grant.
+
+If you don't need customer data, drop `read_customers` from `SHOPIFY_SCOPES` and the rest of
+the toolset works unaffected.
+
 ### Local development
 
 For local dev you can skip OAuth and pass a raw Admin API token via env vars:
