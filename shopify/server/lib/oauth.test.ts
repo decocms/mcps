@@ -14,7 +14,7 @@ import {
 import { createHmac } from "node:crypto";
 
 const SELF = "https://sites-shopify.deco.site";
-const MESH = "https://mesh.example.com";
+const MESH = "https://api.decocms.com";
 const SECRET = "oauth-test-secret";
 const CLIENT_ID = "test-client-id";
 const CLIENT_SECRET = "test-client-secret";
@@ -27,7 +27,6 @@ beforeEach(() => {
   process.env.SHOPIFY_CLIENT_SECRET = CLIENT_SECRET;
   process.env.SHOPIFY_TOKEN_SECRET = SECRET;
   process.env.SELF_URL = SELF;
-  process.env.MESH_URL = MESH;
 });
 
 afterEach(() => {
@@ -36,7 +35,6 @@ afterEach(() => {
   delete process.env.SHOPIFY_CLIENT_SECRET;
   delete process.env.SHOPIFY_TOKEN_SECRET;
   delete process.env.SELF_URL;
-  delete process.env.MESH_URL;
   delete process.env.SHOPIFY_SCOPES;
 });
 
@@ -54,6 +52,12 @@ describe("authorizationUrl", () => {
     expect(url.origin).toBe(SELF);
     expect(url.pathname).toBe(OAUTH_CONNECT_PATH);
     expect(url.searchParams.get("callback_url")).toBe(CALLBACK);
+  });
+
+  test("defaults to the prod domain (not localhost) when SELF_URL is unset", () => {
+    delete process.env.SELF_URL;
+    const url = new URL(shopifyOAuth.authorizationUrl(CALLBACK));
+    expect(url.origin).toBe("https://sites-shopify.deco.site");
   });
 });
 
