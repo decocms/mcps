@@ -74,6 +74,16 @@ describe("GET /oauth/custom", () => {
     expect(await res!.text()).toContain("Connect your Shopify store");
   });
 
+  test("accepts a callback on the MCP's own origin (runtime mounts it there)", async () => {
+    const selfCallback = `${SELF}/oauth/callback?state=abc`;
+    const res = await handleOAuthRoute(
+      new Request(
+        `${SELF}${OAUTH_CONNECT_PATH}?callback_url=${encodeURIComponent(selfCallback)}`,
+      ),
+    );
+    expect(res?.status).toBe(200);
+  });
+
   test("rejects an off-origin callback URL", async () => {
     const res = await handleOAuthRoute(
       new Request(
