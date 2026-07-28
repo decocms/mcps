@@ -1,0 +1,307 @@
+/**
+ * Shopify OAuth (authorization code grant, offline access token).
+ *
+ * Shopify's authorize endpoint is per-store (`https://{shop}.myshopify.com/...`)
+ * but the mesh runtime's `authorizationUrl(callbackUrl)` hook doesn't know which
+ * store the user wants — so we can't build it up front. We borrow the WhatsApp
+ * MCP's trick: point the runtime at our own `/oauth/custom` page, ask the
+ * merchant for their shop, then drive the real Shopify grant ourselves and hand
+ * the mesh a sealed credential.
+ *
+ * Flow:
+ *   1. runtime → `authorizationUrl` → 302 to `/oauth/custom?callback_url=…`
+ *   2. `/oauth/custom` renders a form; on submit it 302s to Shopify's
+ *      `/admin/oauth/authorize` with `redirect_uri` pointing back at us and the
+ *      mesh callback URL signed into `state`.
+ *   3. Shopify → `/oauth/shopify/callback?code&shop&state&hmac`. We verify the
+ *      HMAC + state, exchange the code for an offline token, seal `{shop, token}`
+ *      into an encrypted credential, and 302 back to the mesh callback with it
+ *      as `code`.
+ *   4. runtime → `exchangeCode({ code })` → we validate and return the sealed
+ *      credential as the connection's `access_token`.
+ *
+ * The token never expires (offline grant), so there's no `refreshToken`.
+ */
+import { normalizeStoreDomain } from "./client.ts";
+import {
+  decryptCredential,
+  encryptCredential,
+  type SealedCredential,
+  signState,
+  verifyShopifyHmac,
+  verifyState,
+} from "./token.ts";
+
+export const OAUTH_CONNECT_PATH = "/oauth/custom";
+export const OAUTH_CALLBACK_PATH = "/oauth/shopify/callback";
+
+/**
+ * Read scopes requested during the grant. Kept to what a standard store can
+ * grant — Shopify rejects the whole authorize request (missing_shopify_permission)
+ * if the app asks for a scope the store isn't entitled to.
+ *
+ * Deliberately excluded from the default because they're plan/entitlement-gated:
+ *   - read_users, read_companies         → Shopify Plus only
+ *   - read_shopify_payments_payouts/…    → require Shopify Payments
+ * Add them (or trim further) per deployment via the SHOPIFY_SCOPES env var.
+ */
+export const DEFAULT_SCOPES = [
+  "read_products",
+  "read_orders",
+  "read_customers",
+  "read_inventory",
+  "read_fulfillments",
+  "read_locations",
+  "read_discounts",
+  "read_content",
+  "read_themes",
+  "read_locales",
+  "read_translations",
+  "read_marketing_events",
+  "read_markets",
+  "read_reports",
+].join(",");
+
+/** Requested scopes — SHOPIFY_SCOPES env (comma-separated) overrides the default. */
+export function getScopes(): string {
+  return process.env.SHOPIFY_SCOPES?.trim() || DEFAULT_SCOPES;
+}
+
+interface OAuthEnv {
+  clientId: string;
+  clientSecret: string;
+  tokenSecret: string;
+  selfUrl: string;
+  meshUrl: string;
+}
+
+/** Resolve OAuth config lazily (process.env isn't populated at module init on
+ * some platforms). Throws a clear error if the core secrets are missing. */
+function getOAuthEnv(): OAuthEnv {
+  const clientId = process.env.SHOPIFY_CLIENT_ID || "";
+  const clientSecret = process.env.SHOPIFY_CLIENT_SECRET || "";
+  const tokenSecret = process.env.SHOPIFY_TOKEN_SECRET || "";
+  if (!clientId || !clientSecret || !tokenSecret) {
+    throw new Error(
+      "Shopify OAuth is not configured — set SHOPIFY_CLIENT_ID, " +
+        "SHOPIFY_CLIENT_SECRET and SHOPIFY_TOKEN_SECRET.",
+    );
+  }
+  return {
+    clientId,
+    clientSecret,
+    tokenSecret,
+    selfUrl: process.env.SELF_URL || "http://localhost:8000",
+    meshUrl: process.env.MESH_URL || "http://localhost:3000",
+  };
+}
+
+const SHOP_DOMAIN_RE = /^[a-z0-9][a-z0-9-]*\.myshopify\.com$/i;
+
+function isValidShopDomain(shop: string): boolean {
+  return SHOP_DOMAIN_RE.test(shop);
+}
+
+/** Only ever redirect the OAuth code back to the mesh (or our own) origin. */
+function isAllowedCallback(callbackUrl: string, env: OAuthEnv): boolean {
+  try {
+    const origin = new URL(callbackUrl).origin;
+    return (
+      origin === new URL(env.meshUrl).origin ||
+      origin === new URL(env.selfUrl).origin
+    );
+  } catch {
+    return false;
+  }
+}
+
+// ── Runtime oauth hook ────────────────────────────────────────────────────────
+
+export const shopifyOAuth = {
+  mode: "PKCE" as const,
+  authorizationServer: "https://admin.shopify.com",
+  authorizationUrl: (callbackUrl: string): string => {
+    const env = getOAuthEnv();
+    const url = new URL(OAUTH_CONNECT_PATH, env.selfUrl);
+    url.searchParams.set("callback_url", callbackUrl);
+    return url.toString();
+  },
+  exchangeCode: async ({ code }: { code: string }) => {
+    const env = getOAuthEnv();
+    const sealed = decryptCredential<SealedCredential>(code, env.tokenSecret);
+    if (!sealed?.shop || !sealed?.token) {
+      throw new Error("Invalid or tampered Shopify authorization code");
+    }
+    // `code` is already the sealed credential minted in the callback — it
+    // becomes the connection's long-lived (offline) access token verbatim.
+    return { access_token: code, token_type: "Bearer" };
+  },
+};
+
+// ── Custom route handlers ─────────────────────────────────────────────────────
+
+function htmlResponse(body: string, status = 200): Response {
+  return new Response(body, {
+    status,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+}
+
+function connectForm(callbackUrl: string): Response {
+  const safeCallback = callbackUrl.replace(/"/g, "&quot;");
+  return htmlResponse(`<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Connect your Shopify store</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f6f6f7; margin: 0;
+      display: flex; min-height: 100vh; align-items: center; justify-content: center; }
+    .card { background: #fff; padding: 2rem; border-radius: 12px; max-width: 380px;
+      width: 100%; box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+    h1 { font-size: 1.15rem; margin: 0 0 .25rem; }
+    p { color: #616161; font-size: .875rem; margin: 0 0 1.25rem; }
+    label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: .35rem; }
+    input { width: 100%; padding: .6rem .7rem; border: 1px solid #c9cccf;
+      border-radius: 8px; font-size: .9rem; box-sizing: border-box; }
+    button { margin-top: 1.25rem; width: 100%; padding: .65rem; border: 0;
+      border-radius: 8px; background: #008060; color: #fff; font-size: .9rem;
+      font-weight: 600; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <form class="card" method="GET" action="${OAUTH_CONNECT_PATH}">
+    <h1>Connect your Shopify store</h1>
+    <p>Enter your store's <code>.myshopify.com</code> domain to authorize read-only access.</p>
+    <label for="shop">Store domain</label>
+    <input id="shop" name="shop" placeholder="my-store.myshopify.com"
+      autocomplete="off" autofocus required />
+    <input type="hidden" name="callback_url" value="${safeCallback}" />
+    <button type="submit">Continue to Shopify</button>
+  </form>
+</body>
+</html>`);
+}
+
+/** GET /oauth/custom — render the form, or (once `shop` is provided) redirect
+ * into Shopify's authorize endpoint. */
+function handleConnect(url: URL, env: OAuthEnv): Response {
+  const callbackUrl = url.searchParams.get("callback_url");
+  if (!callbackUrl || !isAllowedCallback(callbackUrl, env)) {
+    return htmlResponse("Invalid or missing callback URL.", 400);
+  }
+
+  const rawShop = url.searchParams.get("shop");
+  if (!rawShop) return connectForm(callbackUrl);
+
+  const shop = normalizeStoreDomain(rawShop);
+  if (!isValidShopDomain(shop)) {
+    return htmlResponse(
+      "Enter a valid Shopify domain, e.g. my-store.myshopify.com.",
+      400,
+    );
+  }
+
+  const state = signState({ cb: callbackUrl }, env.tokenSecret);
+  const authorize = new URL(`https://${shop}/admin/oauth/authorize`);
+  authorize.searchParams.set("client_id", env.clientId);
+  authorize.searchParams.set("scope", getScopes());
+  authorize.searchParams.set(
+    "redirect_uri",
+    new URL(OAUTH_CALLBACK_PATH, env.selfUrl).toString(),
+  );
+  authorize.searchParams.set("state", state);
+  // No `grant_options[]=per-user` → offline (non-expiring) access token.
+  return Response.redirect(authorize.toString(), 302);
+}
+
+/** GET /oauth/shopify/callback — validate Shopify's redirect, exchange the code
+ * for an offline token, seal it, and bounce back to the mesh callback. */
+async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
+  const params = url.searchParams;
+
+  const state = verifyState<{ cb: string }>(
+    params.get("state") ?? "",
+    env.tokenSecret,
+  );
+  if (!state?.cb || !isAllowedCallback(state.cb, env)) {
+    return htmlResponse("Invalid OAuth state.", 400);
+  }
+
+  if (!verifyShopifyHmac(params, env.clientSecret)) {
+    return htmlResponse("Shopify HMAC validation failed.", 400);
+  }
+
+  const shop = normalizeStoreDomain(params.get("shop") ?? "");
+  const code = params.get("code");
+  if (!isValidShopDomain(shop) || !code) {
+    return htmlResponse("Missing shop or authorization code.", 400);
+  }
+
+  const tokenResponse = await fetch(
+    `https://${shop}/admin/oauth/access_token`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        client_id: env.clientId,
+        client_secret: env.clientSecret,
+        code,
+      }),
+    },
+  );
+
+  if (!tokenResponse.ok) {
+    const detail = (await tokenResponse.text()).slice(0, 300);
+    return htmlResponse(
+      `Shopify token exchange failed (${tokenResponse.status}): ${detail}`,
+      502,
+    );
+  }
+
+  const { access_token: accessToken } = (await tokenResponse.json()) as {
+    access_token?: string;
+  };
+  if (!accessToken) {
+    return htmlResponse("Shopify did not return an access token.", 502);
+  }
+
+  const sealed = encryptCredential(
+    { shop, token: accessToken },
+    env.tokenSecret,
+  );
+  const dest = new URL(state.cb);
+  dest.searchParams.set("code", sealed);
+  return Response.redirect(dest.toString(), 302);
+}
+
+/** Dispatch the two custom OAuth routes; returns null for everything else so
+ * the caller falls through to the runtime. */
+export async function handleOAuthRoute(req: Request): Promise<Response | null> {
+  if (req.method !== "GET") return null;
+  const url = new URL(req.url);
+  if (
+    url.pathname !== OAUTH_CONNECT_PATH &&
+    url.pathname !== OAUTH_CALLBACK_PATH
+  ) {
+    return null;
+  }
+
+  let env: OAuthEnv;
+  try {
+    env = getOAuthEnv();
+  } catch (error) {
+    return htmlResponse(
+      error instanceof Error ? error.message : "OAuth is not configured.",
+      500,
+    );
+  }
+
+  return url.pathname === OAUTH_CONNECT_PATH
+    ? handleConnect(url, env)
+    : handleCallback(url, env);
+}

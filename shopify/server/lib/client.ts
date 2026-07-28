@@ -1,8 +1,14 @@
 /**
  * Shopify Admin GraphQL client — credential resolution, endpoint building and
- * a retrying fetch wrapper. Mirrors magento/server/lib/client.ts: the access
- * token comes from the connection-level Authorization field
- * (MESH_REQUEST_CONTEXT.authorization) and the store domain from state.
+ * a retrying fetch wrapper.
+ *
+ * Credentials come from one of three places, in priority order:
+ *   1. OAuth: the connection Authorization header carries a sealed credential
+ *      (`{ shop, token }`, AES-GCM) minted by the OAuth flow — both the store
+ *      domain and the access token come from there.
+ *   2. Legacy token: a raw Admin API token in the Authorization header, paired
+ *      with a `storeDomain` from connection state (pre-OAuth connections).
+ *   3. Env vars (SHOPIFY_STORE_DOMAIN / SHOPIFY_ACCESS_TOKEN) for local dev.
  */
 import {
   DEFAULT_API_VERSION,
@@ -11,10 +17,15 @@ import {
   REQUEST_TIMEOUT_MS,
 } from "../constants.ts";
 import type { ShopifyCredentials } from "../types/env.ts";
+import {
+  decryptCredential,
+  getTokenSecret,
+  type SealedCredential,
+} from "./token.ts";
 
 export type { ShopifyCredentials };
 
-type CredentialSource = "authorization" | "state" | "env" | "missing";
+type CredentialSource = "oauth" | "authorization" | "state" | "env" | "missing";
 
 export interface ResolvedCredentials extends ShopifyCredentials {
   /** Where each credential value came from — useful for diagnosing missing config. */
@@ -46,7 +57,30 @@ export function resolveCredentials(
   ctx: MeshRequestContext | undefined,
 ): ResolvedCredentials {
   const state = ctx?.state ?? {};
+  const apiVersion =
+    state.apiVersion || process.env.SHOPIFY_API_VERSION || DEFAULT_API_VERSION;
 
+  const rawAuth = ctx?.authorization
+    ? ctx.authorization.replace(/^Bearer\s+/i, "").trim()
+    : "";
+
+  // 1. OAuth: the Authorization header is a sealed { shop, token } credential.
+  if (rawAuth) {
+    const secret = getTokenSecret();
+    const sealed = secret
+      ? decryptCredential<SealedCredential>(rawAuth, secret)
+      : null;
+    if (sealed?.shop && sealed?.token) {
+      return {
+        storeDomain: normalizeStoreDomain(sealed.shop),
+        accessToken: sealed.token,
+        apiVersion,
+        sources: { storeDomain: "oauth", accessToken: "oauth" },
+      };
+    }
+  }
+
+  // 2. Legacy: raw token in the header + storeDomain from state (or env).
   let storeDomain: { value: string; source: CredentialSource };
   if (state.storeDomain) {
     storeDomain = { value: state.storeDomain, source: "state" };
@@ -56,13 +90,9 @@ export function resolveCredentials(
     storeDomain = { value: "", source: "missing" };
   }
 
-  const rawAuth = ctx?.authorization;
-  const tokenFromAuth = rawAuth
-    ? rawAuth.replace(/^Bearer\s+/i, "").trim()
-    : undefined;
   let accessToken: { value: string; source: CredentialSource };
-  if (tokenFromAuth) {
-    accessToken = { value: tokenFromAuth, source: "authorization" };
+  if (rawAuth) {
+    accessToken = { value: rawAuth, source: "authorization" };
   } else if (process.env.SHOPIFY_ACCESS_TOKEN) {
     accessToken = { value: process.env.SHOPIFY_ACCESS_TOKEN, source: "env" };
   } else {
@@ -74,10 +104,7 @@ export function resolveCredentials(
       ? normalizeStoreDomain(storeDomain.value)
       : "",
     accessToken: accessToken.value,
-    apiVersion:
-      state.apiVersion ||
-      process.env.SHOPIFY_API_VERSION ||
-      DEFAULT_API_VERSION,
+    apiVersion,
     sources: {
       storeDomain: storeDomain.source,
       accessToken: accessToken.source,
@@ -92,12 +119,12 @@ export function assertValidCredentials(
   const where = toolId ? ` (tool=${toolId})` : "";
   if (!creds.storeDomain) {
     throw new Error(
-      `Shopify storeDomain is missing${where} — set the Store Domain field in the MCP connection (e.g. my-store.myshopify.com) or the SHOPIFY_STORE_DOMAIN env var.`,
+      `Shopify storeDomain is missing${where} — reconnect the MCP via OAuth, or for local dev set the SHOPIFY_STORE_DOMAIN env var (e.g. my-store.myshopify.com).`,
     );
   }
   if (!creds.accessToken) {
     throw new Error(
-      `Shopify access token is missing${where} — set the Token field in the MCP connection (Authorization: Bearer, an Admin API access token from a custom app) or the SHOPIFY_ACCESS_TOKEN env var.`,
+      `Shopify access token is missing${where} — reconnect the MCP via OAuth, or for local dev set the SHOPIFY_ACCESS_TOKEN env var.`,
     );
   }
 }

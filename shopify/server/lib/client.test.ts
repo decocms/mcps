@@ -8,6 +8,7 @@ import {
   shopifyGraphql,
   toGid,
 } from "./client.ts";
+import { encryptCredential } from "./token.ts";
 
 const originalFetch = globalThis.fetch;
 
@@ -16,6 +17,7 @@ afterEach(() => {
   delete process.env.SHOPIFY_STORE_DOMAIN;
   delete process.env.SHOPIFY_ACCESS_TOKEN;
   delete process.env.SHOPIFY_API_VERSION;
+  delete process.env.SHOPIFY_TOKEN_SECRET;
 });
 
 describe("normalizeStoreDomain", () => {
@@ -41,6 +43,35 @@ describe("normalizeStoreDomain", () => {
 });
 
 describe("resolveCredentials", () => {
+  test("opens a sealed OAuth credential from the authorization header", () => {
+    process.env.SHOPIFY_TOKEN_SECRET = "unit-test-secret";
+    const sealed = encryptCredential(
+      { shop: "oauth-store.myshopify.com", token: "shpat_oauth" },
+      "unit-test-secret",
+    );
+    const creds = resolveCredentials({ authorization: `Bearer ${sealed}` });
+    expect(creds.storeDomain).toBe("oauth-store.myshopify.com");
+    expect(creds.accessToken).toBe("shpat_oauth");
+    expect(creds.sources).toEqual({
+      storeDomain: "oauth",
+      accessToken: "oauth",
+    });
+  });
+
+  test("falls back to legacy raw token when the header isn't a sealed credential", () => {
+    process.env.SHOPIFY_TOKEN_SECRET = "unit-test-secret";
+    const creds = resolveCredentials({
+      authorization: "Bearer shpat_legacy",
+      state: { storeDomain: "legacy-store.myshopify.com" },
+    });
+    expect(creds.accessToken).toBe("shpat_legacy");
+    expect(creds.storeDomain).toBe("legacy-store.myshopify.com");
+    expect(creds.sources).toEqual({
+      storeDomain: "state",
+      accessToken: "authorization",
+    });
+  });
+
   test("reads token from authorization (strips Bearer) and domain from state", () => {
     const creds = resolveCredentials({
       authorization: "Bearer shpat_abc123",
