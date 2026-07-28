@@ -14,7 +14,7 @@ import {
 import { createHmac } from "node:crypto";
 
 const SELF = "https://sites-shopify.deco.site";
-const MESH = "https://mesh.example.com";
+const MESH = "https://api.decocms.com";
 const SECRET = "oauth-test-secret";
 const CLIENT_ID = "test-client-id";
 const CLIENT_SECRET = "test-client-secret";
@@ -27,7 +27,6 @@ beforeEach(() => {
   process.env.SHOPIFY_CLIENT_SECRET = CLIENT_SECRET;
   process.env.SHOPIFY_TOKEN_SECRET = SECRET;
   process.env.SELF_URL = SELF;
-  process.env.MESH_URL = MESH;
 });
 
 afterEach(() => {
@@ -36,8 +35,8 @@ afterEach(() => {
   delete process.env.SHOPIFY_CLIENT_SECRET;
   delete process.env.SHOPIFY_TOKEN_SECRET;
   delete process.env.SELF_URL;
-  delete process.env.MESH_URL;
   delete process.env.SHOPIFY_SCOPES;
+  delete process.env.MESH_URL;
 });
 
 function shopifyHmac(params: Record<string, string>): string {
@@ -54,6 +53,12 @@ describe("authorizationUrl", () => {
     expect(url.origin).toBe(SELF);
     expect(url.pathname).toBe(OAUTH_CONNECT_PATH);
     expect(url.searchParams.get("callback_url")).toBe(CALLBACK);
+  });
+
+  test("defaults to the prod domain (not localhost) when SELF_URL is unset", () => {
+    delete process.env.SELF_URL;
+    const url = new URL(shopifyOAuth.authorizationUrl(CALLBACK));
+    expect(url.origin).toBe("https://sites-shopify.deco.site");
   });
 });
 
@@ -76,6 +81,25 @@ describe("GET /oauth/custom", () => {
       ),
     );
     expect(res?.status).toBe(400);
+  });
+
+  test("MESH_URL allows a self-hosted mesh origin (e.g. local studio)", async () => {
+    const studio = "https://studio.internal/oauth/callback?state=s";
+    // Without the override this custom origin is rejected...
+    const rejected = await handleOAuthRoute(
+      new Request(
+        `${SELF}${OAUTH_CONNECT_PATH}?callback_url=${encodeURIComponent(studio)}`,
+      ),
+    );
+    expect(rejected?.status).toBe(400);
+    // ...but setting MESH_URL to that origin allows it.
+    process.env.MESH_URL = "https://studio.internal";
+    const allowed = await handleOAuthRoute(
+      new Request(
+        `${SELF}${OAUTH_CONNECT_PATH}?callback_url=${encodeURIComponent(studio)}`,
+      ),
+    );
+    expect(allowed?.status).toBe(200);
   });
 
   test("redirects to Shopify authorize once a shop is provided", async () => {

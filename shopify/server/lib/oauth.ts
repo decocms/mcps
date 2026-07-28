@@ -67,12 +67,15 @@ export function getScopes(): string {
   return process.env.SHOPIFY_SCOPES?.trim() || DEFAULT_SCOPES;
 }
 
+/** This MCP's own public origin. Deployed at a fixed domain, so we default to
+ * it; override with SELF_URL for local dev (e.g. http://localhost:8001). */
+const DEFAULT_SELF_URL = "https://sites-shopify.deco.site";
+
 interface OAuthEnv {
   clientId: string;
   clientSecret: string;
   tokenSecret: string;
   selfUrl: string;
-  meshUrl: string;
 }
 
 /** Resolve OAuth config lazily (process.env isn't populated at module init on
@@ -91,8 +94,7 @@ function getOAuthEnv(): OAuthEnv {
     clientId,
     clientSecret,
     tokenSecret,
-    selfUrl: process.env.SELF_URL || "http://localhost:8000",
-    meshUrl: process.env.MESH_URL || "http://localhost:3000",
+    selfUrl: process.env.SELF_URL || DEFAULT_SELF_URL,
   };
 }
 
@@ -102,17 +104,44 @@ function isValidShopDomain(shop: string): boolean {
   return SHOP_DOMAIN_RE.test(shop);
 }
 
-/** Only ever redirect the OAuth code back to the mesh (or our own) origin. */
-function isAllowedCallback(callbackUrl: string, env: OAuthEnv): boolean {
+/** The deco mesh (which mints the OAuth callback URL) lives under decocms.com. */
+const ALLOWED_CALLBACK_HOST_SUFFIXES = ["decocms.com"] as const;
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
+
+/**
+ * Guard against open-redirect / code theft: only ever hand the OAuth code back
+ * to the mesh's origin. The mesh callback lives under decocms.com; loopback is
+ * allowed over http for local dev (RFC 8252 §7.3), everything else must be
+ * https. Same model as the GitHub MCP's redirect allowlist.
+ *
+ * MESH_URL is an optional operator-controlled override: set it to allow a
+ * self-hosted mesh origin (e.g. a local deco studio on a custom host).
+ */
+function isAllowedCallback(callbackUrl: string): boolean {
+  let url: URL;
   try {
-    const origin = new URL(callbackUrl).origin;
-    return (
-      origin === new URL(env.meshUrl).origin ||
-      origin === new URL(env.selfUrl).origin
-    );
+    url = new URL(callbackUrl);
   } catch {
     return false;
   }
+
+  // Explicit override for a self-hosted / local mesh (trusted, operator-set).
+  const meshUrl = process.env.MESH_URL;
+  if (meshUrl) {
+    try {
+      if (url.origin === new URL(meshUrl).origin) return true;
+    } catch {
+      // fall through to the default allowlist
+    }
+  }
+
+  const host = url.hostname.toLowerCase();
+  const isLoopback = LOOPBACK_HOSTS.has(host);
+  if (url.protocol === "http:" && isLoopback) return true;
+  if (url.protocol !== "https:") return false;
+  return ALLOWED_CALLBACK_HOST_SUFFIXES.some(
+    (suffix) => host === suffix || host.endsWith(`.${suffix}`),
+  );
 }
 
 // ── Runtime oauth hook ────────────────────────────────────────────────────────
@@ -188,7 +217,7 @@ function connectForm(callbackUrl: string): Response {
  * into Shopify's authorize endpoint. */
 function handleConnect(url: URL, env: OAuthEnv): Response {
   const callbackUrl = url.searchParams.get("callback_url");
-  if (!callbackUrl || !isAllowedCallback(callbackUrl, env)) {
+  if (!callbackUrl || !isAllowedCallback(callbackUrl)) {
     return htmlResponse("Invalid or missing callback URL.", 400);
   }
 
@@ -225,7 +254,7 @@ async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
     params.get("state") ?? "",
     env.tokenSecret,
   );
-  if (!state?.cb || !isAllowedCallback(state.cb, env)) {
+  if (!state?.cb || !isAllowedCallback(state.cb)) {
     return htmlResponse("Invalid OAuth state.", 400);
   }
 

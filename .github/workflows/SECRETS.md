@@ -53,7 +53,12 @@ Shopify Partner app**.
   - Obtain the app at: https://partners.shopify.com → Apps → create app
   - App URL: `https://sites-shopify.deco.site`
   - Redirect URL: `https://sites-shopify.deco.site/oauth/shopify/callback`
-  - `SELF_URL` / `MESH_URL` are injected by the deco platform at runtime.
+- **`SELF_URL`** (optional): this MCP's public origin. Defaults to
+  `https://sites-shopify.deco.site`; only set it to point OAuth at a different
+  host (e.g. `http://localhost:8001` for local dev).
+- **`MESH_URL`** (optional): the mesh callback origin is validated against a
+  `decocms.com` allowlist (plus loopback) by default. Set `MESH_URL` to also
+  allow a self-hosted mesh origin — e.g. a local deco studio on a custom host.
 
 ### MCP: `github` (Cloudflare Workers — `deploy-github.yml`)
 Unlike the other MCPs, github deploys directly via `wrangler deploy` in
