@@ -18,7 +18,9 @@ Connecting is a one-click **OAuth** flow — no manual token copying:
 2. Shopify shows the standard authorization screen listing the requested **read scopes**.
    Approve it and you're connected — the MCP stores a read-only **offline access token**
    (it never expires, so there's no refresh).
-3. **API Version** (optional config field): defaults to `2026-07`.
+
+There's no connection config to fill in. The Admin API version defaults to `2026-07`;
+override it per deployment with the `SHOPIFY_API_VERSION` env var.
 
 Default scopes requested: `read_products`, `read_orders`, `read_customers`,
 `read_inventory`, `read_fulfillments`, `read_locations`, `read_discounts`, `read_content`,

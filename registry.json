@@ -3030,7 +3030,7 @@
         "short_description": "Read-only access to Shopify stores: catalog, orders, customers, inventory and analytics.",
         "owner": "deco",
         "has_remote": true,
-        "has_oauth": true,
+        "has_oauth": false,
         "tags": [
           "shopify",
           "ecommerce",
