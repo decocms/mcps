@@ -110,19 +110,27 @@ const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
 
 /**
  * Guard against open-redirect / code theft: only ever hand the OAuth code back
- * to the mesh's origin. The mesh callback lives under decocms.com; loopback is
- * allowed over http for local dev (RFC 8252 §7.3), everything else must be
- * https. Same model as the GitHub MCP's redirect allowlist.
+ * to a trusted origin. The runtime mounts its OAuth callback on this MCP's own
+ * origin, so that's the primary allowed origin; we also accept decocms.com
+ * (the mesh) and loopback over http for local dev (RFC 8252 §7.3). Same spirit
+ * as the GitHub MCP's redirect allowlist.
  *
  * MESH_URL is an optional operator-controlled override: set it to allow a
  * self-hosted mesh origin (e.g. a local deco studio on a custom host).
  */
-function isAllowedCallback(callbackUrl: string): boolean {
+function isAllowedCallback(callbackUrl: string, selfUrl: string): boolean {
   let url: URL;
   try {
     url = new URL(callbackUrl);
   } catch {
     return false;
+  }
+
+  // Primary case: the runtime's OAuth callback lives on our own origin.
+  try {
+    if (url.origin === new URL(selfUrl).origin) return true;
+  } catch {
+    // ignore a malformed selfUrl and fall through
   }
 
   // Explicit override for a self-hosted / local mesh (trusted, operator-set).
@@ -217,7 +225,7 @@ function connectForm(callbackUrl: string): Response {
  * into Shopify's authorize endpoint. */
 function handleConnect(url: URL, env: OAuthEnv): Response {
   const callbackUrl = url.searchParams.get("callback_url");
-  if (!callbackUrl || !isAllowedCallback(callbackUrl)) {
+  if (!callbackUrl || !isAllowedCallback(callbackUrl, env.selfUrl)) {
     return htmlResponse("Invalid or missing callback URL.", 400);
   }
 
@@ -254,7 +262,7 @@ async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
     params.get("state") ?? "",
     env.tokenSecret,
   );
-  if (!state?.cb || !isAllowedCallback(state.cb)) {
+  if (!state?.cb || !isAllowedCallback(state.cb, env.selfUrl)) {
     return htmlResponse("Invalid OAuth state.", 400);
   }
 
