@@ -181,34 +181,63 @@ describe("GET /oauth/shopify/callback", () => {
     return `${SELF}${OAUTH_CALLBACK_PATH}?${params.toString()}`;
   }
 
-  test("exchanges the code and bounces a sealed credential to the mesh", async () => {
-    let exchangeBody: unknown;
+  test("exchanges the code for an expiring token and seals the grant", async () => {
+    let exchangeBody: Record<string, string> | undefined;
     globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
       expect(String(input)).toBe(
         "https://my-store.myshopify.com/admin/oauth/access_token",
       );
-      exchangeBody = JSON.parse(String(init?.body));
-      return Response.json({ access_token: "shpat_offline" });
+      expect(init?.headers).toMatchObject({
+        "Content-Type": "application/x-www-form-urlencoded",
+      });
+      exchangeBody = Object.fromEntries(
+        new URLSearchParams(String(init?.body)),
+      );
+      return Response.json({
+        access_token: "shpat_access",
+        refresh_token: "shprt_refresh",
+        expires_in: 3600,
+        refresh_token_expires_in: 7776000,
+      });
     }) as typeof fetch;
 
     const res = await handleOAuthRoute(new Request(callbackUrl()));
     expect(res?.status).toBe(302);
+    // `expiring=1` is what makes Shopify issue a rotating offline token.
     expect(exchangeBody).toEqual({
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
       code: "shopify-auth-code",
+      expiring: "1",
     });
 
     const dest = new URL(res!.headers.get("Location")!);
     expect(dest.origin).toBe(MESH);
     expect(dest.searchParams.get("state")).toBe("mesh-state");
-    const sealed = dest.searchParams.get("code")!;
+    // The `code` carries the whole grant (access + refresh + lifetime).
+    const grant = dest.searchParams.get("code")!;
     expect(
-      decryptCredential<{ shop: string; token: string }>(sealed, SECRET),
+      decryptCredential<{
+        shop: string;
+        access: string;
+        refresh: string;
+        expiresIn: number;
+      }>(grant, SECRET),
     ).toEqual({
       shop: "my-store.myshopify.com",
-      token: "shpat_offline",
+      access: "shpat_access",
+      refresh: "shprt_refresh",
+      expiresIn: 3600,
     });
+  });
+
+  test("fails when Shopify omits the refresh token", async () => {
+    globalThis.fetch = (async () =>
+      Response.json({
+        access_token: "shpat_access",
+      })) as unknown as typeof fetch;
+    const res = await handleOAuthRoute(new Request(callbackUrl()));
+    expect(res?.status).toBe(502);
   });
 
   test("rejects a bad Shopify HMAC", async () => {
@@ -227,20 +256,106 @@ describe("GET /oauth/shopify/callback", () => {
 });
 
 describe("exchangeCode", () => {
-  test("validates and echoes the sealed credential as the access token", async () => {
-    // A sealed credential minted by the callback is passed back as `code`.
-    const sealed = encryptCredential(
-      { shop: "s.myshopify.com", token: "shpat_x" },
+  test("splits the sealed grant into access + refresh tokens", async () => {
+    // A sealed grant minted by the callback is passed back as `code`.
+    const grant = encryptCredential(
+      {
+        shop: "s.myshopify.com",
+        access: "shpat_x",
+        refresh: "shprt_y",
+        expiresIn: 3600,
+      },
       SECRET,
     );
-    const result = await shopifyOAuth.exchangeCode({ code: sealed });
-    expect(result).toEqual({ access_token: sealed, token_type: "Bearer" });
+    const result = await shopifyOAuth.exchangeCode({ code: grant });
+    expect(result.token_type).toBe("Bearer");
+    expect(result.expires_in).toBe(3600);
+    expect(
+      decryptCredential<{ shop: string; token: string }>(
+        result.access_token,
+        SECRET,
+      ),
+    ).toEqual({ shop: "s.myshopify.com", token: "shpat_x" });
+    expect(
+      decryptCredential<{ shop: string; refreshToken: string }>(
+        result.refresh_token!,
+        SECRET,
+      ),
+    ).toEqual({ shop: "s.myshopify.com", refreshToken: "shprt_y" });
   });
 
   test("throws on a tampered code", async () => {
     await expect(
       shopifyOAuth.exchangeCode({ code: "not-a-real-credential" }),
     ).rejects.toThrow(/Invalid or tampered/);
+  });
+});
+
+describe("refreshToken", () => {
+  function sealedRefresh(shop = "my-store.myshopify.com", token = "shprt_old") {
+    return encryptCredential({ shop, refreshToken: token }, SECRET);
+  }
+
+  test("rotates the token against the store's endpoint", async () => {
+    let body: Record<string, string> | undefined;
+    globalThis.fetch = (async (input: unknown, init?: RequestInit) => {
+      expect(String(input)).toBe(
+        "https://my-store.myshopify.com/admin/oauth/access_token",
+      );
+      body = Object.fromEntries(new URLSearchParams(String(init?.body)));
+      return Response.json({
+        access_token: "shpat_new",
+        refresh_token: "shprt_new",
+        expires_in: 3600,
+      });
+    }) as typeof fetch;
+
+    const result = await shopifyOAuth.refreshToken(sealedRefresh());
+    expect(body).toEqual({
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+      grant_type: "refresh_token",
+      refresh_token: "shprt_old",
+    });
+    expect(result.expires_in).toBe(3600);
+    expect(
+      decryptCredential<{ shop: string; token: string }>(
+        result.access_token,
+        SECRET,
+      ),
+    ).toEqual({ shop: "my-store.myshopify.com", token: "shpat_new" });
+    expect(
+      decryptCredential<{ shop: string; refreshToken: string }>(
+        result.refresh_token!,
+        SECRET,
+      ),
+    ).toEqual({ shop: "my-store.myshopify.com", refreshToken: "shprt_new" });
+  });
+
+  test("maps a tampered refresh token to invalid_grant", async () => {
+    await expect(
+      shopifyOAuth.refreshToken("not-a-real-token"),
+    ).rejects.toMatchObject({ error: "invalid_grant" });
+  });
+
+  test("maps a Shopify 4xx to invalid_grant (client must reconnect)", async () => {
+    globalThis.fetch = (async () =>
+      new Response("invalid_grant", {
+        status: 400,
+      })) as unknown as typeof fetch;
+    await expect(
+      shopifyOAuth.refreshToken(sealedRefresh()),
+    ).rejects.toMatchObject({ error: "invalid_grant" });
+  });
+
+  test("treats a Shopify 5xx as transient (plain error → 500)", async () => {
+    globalThis.fetch = (async () =>
+      new Response("boom", { status: 503 })) as unknown as typeof fetch;
+    const err = await shopifyOAuth
+      .refreshToken(sealedRefresh())
+      .catch((e) => e);
+    expect(err).toBeInstanceOf(Error);
+    expect(err.error).toBeUndefined();
   });
 });
 

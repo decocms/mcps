@@ -33,6 +33,16 @@ export interface SealedCredential {
   token: string;
 }
 
+/**
+ * The `{ shop, refreshToken }` pair sealed into an OAuth connection's refresh
+ * token. Expiring offline tokens rotate, so we need the shop to hit the
+ * per-store refresh endpoint when the client asks for a new access token.
+ */
+export interface SealedRefresh {
+  shop: string;
+  refreshToken: string;
+}
+
 /** The shared secret used to seal/open credentials and sign state. */
 export function getTokenSecret(): string {
   return process.env.SHOPIFY_TOKEN_SECRET || "";
