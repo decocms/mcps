@@ -14,19 +14,27 @@
  *      `/admin/oauth/authorize` with `redirect_uri` pointing back at us and the
  *      mesh callback URL signed into `state`.
  *   3. Shopify → `/oauth/shopify/callback?code&shop&state&hmac`. We verify the
- *      HMAC + state, exchange the code for an offline token, seal `{shop, token}`
- *      into an encrypted credential, and 302 back to the mesh callback with it
- *      as `code`.
- *   4. runtime → `exchangeCode({ code })` → we validate and return the sealed
- *      credential as the connection's `access_token`.
+ *      HMAC + state, exchange the code for an *expiring* offline token, seal the
+ *      `{shop, access, refresh, expiresIn}` grant into an encrypted blob, and
+ *      302 back to the mesh callback with it as `code`.
+ *   4. runtime → `exchangeCode({ code })` → we open the grant and hand the
+ *      runtime a sealed access token (`{shop, token}`), a sealed refresh token
+ *      (`{shop, refreshToken}`) and `expires_in`.
+ *   5. When the access token expires, the client re-hits the runtime `/token`
+ *      endpoint with `grant_type=refresh_token`; the runtime calls our
+ *      `refreshToken`, which rotates the token against Shopify's per-store
+ *      endpoint and hands back a freshly sealed access/refresh pair.
  *
- * The token never expires (offline grant), so there's no `refreshToken`.
+ * Shopify no longer issues non-expiring offline tokens (the Admin API rejects
+ * them with a 403), so the grant requests `expiring=1`: a ~1h access token plus
+ * a ~90d rotating refresh token.
  */
+import { OAuthInvalidGrantError } from "@decocms/runtime";
 import { normalizeStoreDomain } from "./client.ts";
 import {
   decryptCredential,
   encryptCredential,
-  type SealedCredential,
+  type SealedRefresh,
   signState,
   verifyShopifyHmac,
   verifyState,
@@ -152,6 +160,45 @@ function isAllowedCallback(callbackUrl: string, selfUrl: string): boolean {
   );
 }
 
+// ── Shopify token endpoint ────────────────────────────────────────────────────
+
+/**
+ * The offline grant sealed into the OAuth `code` handed back to the runtime.
+ * Carries everything `exchangeCode` needs to mint the connection's tokens: the
+ * runtime only forwards `code` (extra query params are dropped), so the access
+ * token, refresh token and lifetime all have to ride inside it.
+ */
+interface SealedGrant {
+  shop: string;
+  access: string;
+  refresh: string;
+  expiresIn?: number;
+}
+
+/** Shopify's expiring-offline-token response (`/admin/oauth/access_token`). */
+interface ShopifyTokenResponse {
+  access_token?: string;
+  refresh_token?: string;
+  expires_in?: number;
+  refresh_token_expires_in?: number;
+  scope?: string;
+}
+
+/** POST to a store's `/admin/oauth/access_token` with form-encoded params. */
+function postTokenEndpoint(
+  shop: string,
+  params: Record<string, string>,
+): Promise<Response> {
+  return fetch(`https://${shop}/admin/oauth/access_token`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/x-www-form-urlencoded",
+      Accept: "application/json",
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+}
+
 // ── Runtime oauth hook ────────────────────────────────────────────────────────
 
 export const shopifyOAuth = {
@@ -165,13 +212,81 @@ export const shopifyOAuth = {
   },
   exchangeCode: async ({ code }: { code: string }) => {
     const env = getOAuthEnv();
-    const sealed = decryptCredential<SealedCredential>(code, env.tokenSecret);
-    if (!sealed?.shop || !sealed?.token) {
+    const grant = decryptCredential<SealedGrant>(code, env.tokenSecret);
+    if (!grant?.shop || !grant?.access || !grant?.refresh) {
       throw new Error("Invalid or tampered Shopify authorization code");
     }
-    // `code` is already the sealed credential minted in the callback — it
-    // becomes the connection's long-lived (offline) access token verbatim.
-    return { access_token: code, token_type: "Bearer" };
+    // Split the grant into the two credentials the runtime hands to the client:
+    // the sealed access token (used verbatim as the Admin API token) and the
+    // sealed refresh token (replayed to `refreshToken` when it expires).
+    return {
+      access_token: encryptCredential(
+        { shop: grant.shop, token: grant.access },
+        env.tokenSecret,
+      ),
+      token_type: "Bearer",
+      refresh_token: encryptCredential(
+        { shop: grant.shop, refreshToken: grant.refresh },
+        env.tokenSecret,
+      ),
+      expires_in: grant.expiresIn,
+    };
+  },
+  refreshToken: async (refreshToken: string) => {
+    const env = getOAuthEnv();
+    const sealed = decryptCredential<SealedRefresh>(
+      refreshToken,
+      env.tokenSecret,
+    );
+    if (!sealed?.shop || !sealed?.refreshToken) {
+      // A garbage/tampered refresh token is unrecoverable — force a reconnect.
+      throw new OAuthInvalidGrantError(
+        "invalid_grant",
+        "Invalid or tampered Shopify refresh token",
+      );
+    }
+
+    const response = await postTokenEndpoint(sealed.shop, {
+      client_id: env.clientId,
+      client_secret: env.clientSecret,
+      grant_type: "refresh_token",
+      refresh_token: sealed.refreshToken,
+    });
+
+    // 4xx means the grant is gone (refresh token rotated out, app uninstalled,
+    // 90-day refresh expiry) → invalid_grant so the client knows to reconnect.
+    // 5xx/network are transient → plain Error surfaces as a 500 and the client
+    // retries later without dropping the connection.
+    if (!response.ok) {
+      const detail = (await response.text()).slice(0, 300);
+      if (response.status >= 400 && response.status < 500) {
+        throw new OAuthInvalidGrantError(
+          "invalid_grant",
+          `Shopify refused the refresh token (${response.status}): ${detail}`,
+        );
+      }
+      throw new Error(
+        `Shopify token refresh failed (${response.status}): ${detail}`,
+      );
+    }
+
+    const body = (await response.json()) as ShopifyTokenResponse;
+    if (!body.access_token || !body.refresh_token) {
+      throw new Error("Shopify refresh did not return the expected tokens");
+    }
+
+    return {
+      access_token: encryptCredential(
+        { shop: sealed.shop, token: body.access_token },
+        env.tokenSecret,
+      ),
+      token_type: "Bearer",
+      refresh_token: encryptCredential(
+        { shop: sealed.shop, refreshToken: body.refresh_token },
+        env.tokenSecret,
+      ),
+      expires_in: body.expires_in,
+    };
   },
 };
 
@@ -249,12 +364,14 @@ function handleConnect(url: URL, env: OAuthEnv): Response {
     new URL(OAUTH_CALLBACK_PATH, env.selfUrl).toString(),
   );
   authorize.searchParams.set("state", state);
-  // No `grant_options[]=per-user` → offline (non-expiring) access token.
+  // No `grant_options[]=per-user` → offline access token (the `expiring=1` opt-in
+  // that makes it a rotating token is sent later, at the code-exchange step).
   return Response.redirect(authorize.toString(), 302);
 }
 
 /** GET /oauth/shopify/callback — validate Shopify's redirect, exchange the code
- * for an offline token, seal it, and bounce back to the mesh callback. */
+ * for an expiring offline token, seal the grant, and bounce back to the mesh
+ * callback. */
 async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
   const params = url.searchParams;
 
@@ -276,21 +393,14 @@ async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
     return htmlResponse("Missing shop or authorization code.", 400);
   }
 
-  const tokenResponse = await fetch(
-    `https://${shop}/admin/oauth/access_token`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        client_id: env.clientId,
-        client_secret: env.clientSecret,
-        code,
-      }),
-    },
-  );
+  // `expiring=1` opts into an expiring offline token (~1h access + ~90d rotating
+  // refresh). Shopify rejects non-expiring tokens on the Admin API with a 403.
+  const tokenResponse = await postTokenEndpoint(shop, {
+    client_id: env.clientId,
+    client_secret: env.clientSecret,
+    code,
+    expiring: "1",
+  });
 
   if (!tokenResponse.ok) {
     const detail = (await tokenResponse.text()).slice(0, 300);
@@ -300,19 +410,26 @@ async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {
     );
   }
 
-  const { access_token: accessToken } = (await tokenResponse.json()) as {
-    access_token?: string;
-  };
-  if (!accessToken) {
-    return htmlResponse("Shopify did not return an access token.", 502);
+  const {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    expires_in: expiresIn,
+  } = (await tokenResponse.json()) as ShopifyTokenResponse;
+  if (!accessToken || !refreshToken) {
+    return htmlResponse(
+      "Shopify did not return an expiring offline token (access + refresh).",
+      502,
+    );
   }
 
-  const sealed = encryptCredential(
-    { shop, token: accessToken },
+  // Seal the whole grant into the `code` — the runtime forwards only `code` to
+  // `exchangeCode`, so the refresh token and lifetime have to travel inside it.
+  const sealedGrant = encryptCredential(
+    { shop, access: accessToken, refresh: refreshToken, expiresIn },
     env.tokenSecret,
   );
   const dest = new URL(state.cb);
-  dest.searchParams.set("code", sealed);
+  dest.searchParams.set("code", sealedGrant);
   return Response.redirect(dest.toString(), 302);
 }
 

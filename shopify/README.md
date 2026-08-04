@@ -16,8 +16,9 @@ Connecting is a one-click **OAuth** flow — no manual token copying:
 1. In the connection UI, start the OAuth flow. You'll land on a page asking for your
    store's `my-store.myshopify.com` domain.
 2. Shopify shows the standard authorization screen listing the requested **read scopes**.
-   Approve it and you're connected — the MCP stores a read-only **offline access token**
-   (it never expires, so there's no refresh).
+   Approve it and you're connected — the MCP stores a read-only **expiring offline access
+   token** (~1h) plus a rotating **refresh token** (~90d). The connection refreshes itself
+   automatically; you only re-run OAuth if the refresh token lapses or you revoke the app.
 
 There's no connection config to fill in. The Admin API version defaults to `2026-07`;
 override it per deployment with the `SHOPIFY_API_VERSION` env var.
@@ -93,17 +94,24 @@ bumping the API version.
 
 ## Auth notes
 
-OAuth (authorization code grant, offline token). Shopify's authorize endpoint is
-per-store, but the runtime's `authorizationUrl(callbackUrl)` hook doesn't know which store
+OAuth (authorization code grant, **expiring** offline token). Shopify's authorize endpoint
+is per-store, but the runtime's `authorizationUrl(callbackUrl)` hook doesn't know which store
 the user wants. So (like the WhatsApp MCP) the hook points at our own `/oauth/custom` page,
 which asks for the shop domain and then drives the real Shopify grant. See the flow diagram
 in [`server/lib/oauth.ts`](./server/lib/oauth.ts).
 
-The Shopify access token is sealed (AES-256-GCM, keyed by `SHOPIFY_TOKEN_SECRET`) together
-with the shop domain into the connection's access token, so both travel back through the
-browser redirect without exposing the raw token, and every tool call carries the store it
-belongs to — no separate Store Domain config field. Legacy connections that used a raw
-Admin API token plus a `storeDomain` state field still work.
+Shopify no longer issues non-expiring offline tokens — the Admin API rejects them with a
+`403` (`Non-expiring access tokens are no longer accepted`). The code exchange therefore
+sends `expiring=1`, which yields a ~1h access token plus a ~90d rotating refresh token. Both
+are sealed (AES-256-GCM, keyed by `SHOPIFY_TOKEN_SECRET`) together with the shop domain, so
+they travel back through the browser redirect without exposing the raw tokens and every tool
+call carries the store it belongs to — no separate Store Domain config field. When the access
+token expires, the client re-hits the runtime `/token` endpoint with
+`grant_type=refresh_token`; the MCP's `refreshToken` hook rotates it against Shopify and
+returns a freshly sealed pair. A Shopify `4xx` on refresh (rotated-out or lapsed token, app
+uninstalled) surfaces as `invalid_grant` so the client knows to reconnect; a `5xx`/network
+error is treated as transient. Legacy connections that used a raw Admin API token plus a
+`storeDomain` state field still work.
 
 A raw admin token in the `Authorization` header (no OAuth) is still accepted as a fallback,
 which is what the local-dev env vars use.
