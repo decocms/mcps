@@ -32,6 +32,13 @@ jobs:
       - name: Check registry.json is up to date
         run: bun run check:registry
 
+      # Runs over every MCP, not only the changed ones: deleting a withAuth()
+      # wrapper elsewhere in the repo must fail the PR that does it.
+      - name: Run auth check
+        run: |
+          bun test shared/auth.test.ts
+          bun run ./scripts/check-auth.ts
+
       - name: Detect changed MCPs
         id: changed
         run: |

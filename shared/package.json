@@ -18,6 +18,7 @@
         "./storage": "./storage/index.ts",
         "./search-ai": "./search-ai/index.ts",
         "./serve": "./serve.ts",
+    "./auth": "./auth.ts",
         "./registry": "./registry.ts",
         "./google-oauth": "./google-oauth.ts",
         "./whatsapp": "./whatsapp/index.ts",

@@ -55,6 +55,33 @@ bun run dev
 
 That's it! The deployment workflows will automatically detect your new MCP - no manual configuration needed.
 
+## Authentication
+
+Every MCP here is served on a public hostname, and the deco runtime does not
+authenticate the transport — it exposes `/mcp` and `POST /mcp/call-tool/<id>`
+to anyone who can resolve the host.
+
+New MCPs are therefore wired with `withAuth` out of the box:
+
+```ts
+import { withAuth } from "@decocms/mcps-shared/auth";
+
+serve(withAuth(runtime.fetch));
+```
+
+- the shared secret comes from the `AUTH_TOKEN` environment variable, read at
+  startup — an MCP without it exits instead of serving anonymous traffic;
+- `bun run new` generates a local `.env` with a random value, so `bun run dev`
+  works immediately;
+- production must provision `AUTH_TOKEN` before the first deploy (site state
+  secret for `kubernetes-bun`, `wrangler secret put` for Cloudflare);
+- tools use `createPrivateTool`, never `createTool`.
+
+`bun run check:auth` enforces both rules and runs on every PR. MCPs that
+predate the requirement are listed in [auth-exemptions.json](auth-exemptions.json)
+— a remediation backlog, not a permanent allowlist. Adding an entry requires
+reviewer sign-off.
+
 ## Deployment
 
 This monorepo uses centralized GitHub Actions workflows with **automatic MCP discovery**.
