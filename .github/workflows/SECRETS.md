@@ -9,6 +9,24 @@ This document lists all secrets required to deploy MCPs via GitHub Actions.
 - **Description**: Authentication token for Deco CLI
 - **How to obtain**: Generated via Deco CLI or dashboard
 
+### `AUTH_TOKEN` (per MCP, not a repository secret)
+- **Used by**: every MCP wrapped in `withAuth` — all new ones
+- **Description**: shared secret every request must present as
+  `Authorization: Bearer <AUTH_TOKEN>`. Read at process startup: an MCP
+  deployed without it will not start.
+- **How to obtain**: `openssl rand -hex 32` (minimum 24 characters)
+- **Where to provision** — one distinct value per MCP, never reused:
+  - `kubernetes-bun` MCPs: add `AUTH_TOKEN` to the site's state secret
+  - Cloudflare Workers MCPs: `cd <mcp> && bunx wrangler secret put AUTH_TOKEN`
+- **Consumer side**: the same value goes into the Mesh connection, which
+  forwards it because `app.json` declares
+  `"auth": { "type": "token", "header": "Authorization", "prefix": "Bearer" }`.
+
+> This is a single secret shared by every org that installs the MCP. It gates
+> anonymous access, which is the hole it exists to close; it does not identify
+> the caller and cannot be rotated per tenant. Per-tenant identity requires
+> verifying the `x-mesh-token` signature, tracked separately.
+
 ## Optional Secrets (per MCP)
 
 ### MCP: `sora`

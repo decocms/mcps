@@ -6,6 +6,7 @@
  */
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
+import { withAuth } from "@decocms/mcps-shared/auth";
 
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
@@ -56,7 +57,26 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   // }),
 });
 
-// Start the server
+/**
+ * Start the server.
+ *
+ * `withAuth` is mandatory: this MCP is served on a public hostname, so every
+ * request must present the shared secret from the AUTH_TOKEN environment
+ * variable. It is read at startup — without it the process exits instead of
+ * serving anonymous traffic.
+ *
+ * Do not remove this wrapper. `scripts/check-auth.ts` fails CI if it is gone.
+ *
+ * If this MCP uses `Authorization` for a per-connection upstream credential
+ * (a user's API key), move the shared secret to its own header:
+ *
+ *   serve(withAuth(runtime.fetch, { header: "x-deco-mcp-auth" }));
+ *
+ * OAuth callbacks and provider webhooks that third parties call without the
+ * secret must be listed explicitly, and carry their own protection:
+ *
+ *   serve(withAuth(runtime.fetch, { publicPaths: ["/oauth/callback"] }));
+ */
 if (runtime.fetch) {
-  serve(runtime.fetch);
+  serve(withAuth(runtime.fetch));
 }

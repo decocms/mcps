@@ -15,6 +15,7 @@
     "fmt": "oxfmt",
     "lint": "oxlint",
     "check": "bun run ./scripts/check.ts",
+    "check:auth": "bun run ./scripts/check-auth.ts",
     "clean": "rm -rf node_modules */node_modules */dist */.vite */.wrangler */.deco",
     "prepare": "sh scripts/setup-hooks.sh",
     "build": "bun run ./scripts/build-mcp.ts",

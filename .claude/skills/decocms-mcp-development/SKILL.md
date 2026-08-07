@@ -59,6 +59,7 @@ We build and host the server. Files:
 ```typescript
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
+import { withAuth } from "@decocms/mcps-shared/auth";
 import { tools } from "./tools/index.ts";
 import type { Env } from "../shared/deco.gen.ts";
 export type { Env };
@@ -67,8 +68,38 @@ const runtime = withRuntime<Env>({
   tools: (env: Env) => tools.map((createTool) => createTool(env)),
 });
 
-if (runtime.fetch) { serve(runtime.fetch); }
+if (runtime.fetch) { serve(withAuth(runtime.fetch)); }
 ```
+
+### Authentication is mandatory
+
+MCPs are served on public hostnames and the runtime does not authenticate the
+transport: `withRuntime` exposes `/mcp` **and** `POST /mcp/call-tool/<toolId>`
+to anyone who resolves the host. `createPrivateTool` is not sufficient on its
+own — it only asserts that some `x-mesh-token` JWT is present, and the runtime
+decodes that token with `decodeJwt`, never verifying its signature.
+
+`withAuth` compares the request credential against the `AUTH_TOKEN`
+environment variable in constant time, and reads that variable at startup — an
+MCP without a secret fails to boot rather than serving anonymously.
+
+`scripts/check-auth.ts` runs in CI and fails any MCP that serves a handler
+without `withAuth(...)`, or that builds a tool with plain `createTool`.
+Legacy MCPs are listed in `auth-exemptions.json`; that file is a remediation
+backlog, and adding to it requires reviewer sign-off.
+
+Overrides:
+
+```typescript
+// Authorization already carries the user's upstream API key
+serve(withAuth(runtime.fetch, { header: "x-deco-mcp-auth" }));
+
+// OAuth callbacks / provider webhooks — each needs its own protection
+serve(withAuth(runtime.fetch, { publicPaths: ["/oauth/callback", "/webhooks/*"] }));
+```
+
+Provision `AUTH_TOKEN` as a site state secret (kubernetes-bun) or via
+`wrangler secret put` (Cloudflare). Generate with `openssl rand -hex 32`.
 
 ### `shared/deco.gen.ts`
 
@@ -208,7 +239,7 @@ When an official HTTP server exists (e.g., `https://api.example.com/mcp`):
 | Package | Purpose |
 |---------|---------|
 | `@decocms/runtime` | `withRuntime`, `createPrivateTool` |
-| `@decocms/mcps-shared` | `serve` utility |
+| `@decocms/mcps-shared` | `serve` utility, `withAuth` middleware |
 | `zod` | Input schema validation |
 | `undici` | Proxy-aware fetch, SSE streaming |
 

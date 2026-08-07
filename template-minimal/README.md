@@ -10,16 +10,59 @@ This template is automatically used when you run:
 bun scripts/new.ts your-mcp-name --description "Your MCP description"
 ```
 
+## Authentication (already wired)
+
+MCPs created from this template are served on a public hostname
+(`https://sites-<name>.decocache.com/mcp`), and the runtime does not
+authenticate the transport on its own. `server/main.ts` therefore wraps the
+handler:
+
+```ts
+serve(withAuth(runtime.fetch));
+```
+
+`withAuth` reads the shared secret from the `AUTH_TOKEN` environment variable
+**at startup**. Without it the process exits — an unconfigured MCP fails to
+boot instead of serving anonymous traffic. Requests must present it as
+`Authorization: Bearer <AUTH_TOKEN>`; `/_healthcheck` and CORS preflight are
+the only exceptions.
+
+`scripts/check-auth.ts` fails CI if the wrapper is removed, so do not delete it.
+
+Two cases need an explicit override:
+
+- **`Authorization` already carries a per-connection upstream credential** (a
+  user's Strapi/Slack/VTEX key). Move the shared secret to its own header:
+  `withAuth(runtime.fetch, { header: "x-deco-mcp-auth" })`.
+- **OAuth callbacks and provider webhooks** are called by third parties that
+  cannot present the secret. List them: `withAuth(runtime.fetch, {
+  publicPaths: ["/oauth/callback"] })` — and give each one its own protection
+  (state parameter, signature check, `?token=` secret).
+
+Provisioning:
+
+| Where | How |
+| --- | --- |
+| local | `.env` — generated for you by `scripts/new.ts`, gitignored |
+| kubernetes-bun | add `AUTH_TOKEN` to the site state secret |
+| cloudflare | `bunx wrangler secret put AUTH_TOKEN` |
+
+Generate a value with `openssl rand -hex 32`. Minimum length is 24 characters.
+
+Tools get a second layer: use `createPrivateTool`, never `createTool`.
+
 ## Structure
 
 ```
 your-mcp/
 ├── server/
-│   ├── main.ts              # Entry point - runtime configuration
+│   ├── main.ts              # Entry point - runtime configuration + withAuth
 │   ├── types/
 │   │   └── env.ts           # StateSchema and Env type
 │   └── tools/
 │       └── index.ts         # Tool exports
+├── .env                     # Local AUTH_TOKEN (gitignored, generated)
+├── .env.example             # Documents the required secret
 ├── app.json.example         # Template for store metadata
 ├── app.json                 # Store metadata (rename from .example)
 ├── package.json
@@ -48,6 +91,14 @@ After creating your MCP:
 4. **Test locally**
    ```bash
    bun run dev
+   ```
+   Requests need the token from `.env`:
+   ```bash
+   curl -X POST http://localhost:8001/mcp \
+     -H "Authorization: Bearer $(grep AUTH_TOKEN .env | cut -d= -f2)" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json, text/event-stream" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
    ```
 
 5. **Enable automatic deployment** (optional)

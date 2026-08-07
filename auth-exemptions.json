@@ -1,0 +1,164 @@
+{
+  "$comment": "MCPs that were serving traffic before authentication was enforced. This is a remediation backlog, not a permanent allowlist: remove an entry once the MCP wraps its handler in withAuth() and its tools use createPrivateTool(). Adding an entry requires reviewer sign-off.",
+  "mcps": {
+    "airtable": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "blog-post-generator": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "content-scraper": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "crazy-egg": {
+      "reason": "Predates the withAuth requirement — 5 findings pending remediation."
+    },
+    "data-for-seo": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "deco-llm": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "deco-news-weekly-digest": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "discord": {
+      "reason": "Predates the withAuth requirement — 46 findings pending remediation."
+    },
+    "discord-read": {
+      "reason": "Predates the withAuth requirement — 45 findings pending remediation."
+    },
+    "dropbox": {
+      "reason": "Predates the withAuth requirement — 19 findings pending remediation."
+    },
+    "farmrio-reorder-collection-db": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "flux": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "github": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "github-repo-reports": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "google-analytics": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-apps-script": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-big-query": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-calendar": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-calendar-sa": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-docs": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-drive": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-forms": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-gemini": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "google-gmail": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "google-meet": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-search-console": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-sheets": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-slides": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-tag-manager": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "google-workspace": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "grafana": {
+      "reason": "Predates the withAuth requirement — 6 findings pending remediation."
+    },
+    "grain": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "hyperdx": {
+      "reason": "Predates the withAuth requirement — 21 findings pending remediation."
+    },
+    "magento": {
+      "reason": "Predates the withAuth requirement — 8 findings pending remediation."
+    },
+    "mcp-studio": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "microsoft-teams": {
+      "reason": "Predates the withAuth requirement — 33 findings pending remediation."
+    },
+    "multi-channel-inbox": {
+      "reason": "Predates the withAuth requirement — 14 findings pending remediation."
+    },
+    "nanobanana": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "openrouter": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "pandadoc": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "perplexity": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "registry": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "shopify": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "slack-mcp": {
+      "reason": "Predates the withAuth requirement — 25 findings pending remediation."
+    },
+    "strapi": {
+      "reason": "Predates the withAuth requirement — 42 findings pending remediation."
+    },
+    "tiktok-ads": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "veo": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "virtual-try-on": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "vtex": {
+      "reason": "Predates the withAuth requirement — 5 findings pending remediation."
+    },
+    "vtex-docs": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
+    "whatsapp": {
+      "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "youtube-channel-admin": {
+      "reason": "Predates the withAuth requirement — 8 findings pending remediation."
+    },
+    "youtube-search": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    }
+  }
+}
