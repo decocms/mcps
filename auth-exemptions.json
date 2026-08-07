@@ -43,6 +43,9 @@
     "github-repo-reports": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
     },
+    "google-analytics": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
     "google-apps-script": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
@@ -88,11 +91,17 @@
     "google-workspace": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
+    "grafana": {
+      "reason": "Predates the withAuth requirement — 6 findings pending remediation."
+    },
     "grain": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
     },
     "hyperdx": {
       "reason": "Predates the withAuth requirement — 21 findings pending remediation."
+    },
+    "magento": {
+      "reason": "Predates the withAuth requirement — 8 findings pending remediation."
     },
     "mcp-studio": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
@@ -118,6 +127,9 @@
     "registry": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
+    "shopify": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
+    },
     "slack-mcp": {
       "reason": "Predates the withAuth requirement — 25 findings pending remediation."
     },
@@ -141,6 +153,12 @@
     },
     "whatsapp": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
+    },
+    "youtube-channel-admin": {
+      "reason": "Predates the withAuth requirement — 8 findings pending remediation."
+    },
+    "youtube-search": {
+      "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     }
   }
 }
