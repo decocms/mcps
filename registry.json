@@ -3021,13 +3021,13 @@
   {
     "id": "deco/shopify",
     "title": "Shopify",
-    "description": "Read-only MCP for the Shopify Admin GraphQL API — products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics.",
+    "description": "MCP for the Shopify Admin GraphQL API — read products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics, plus edit theme files (Liquid & assets).",
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
         "verified": false,
         "friendly_name": "Shopify",
-        "short_description": "Read-only access to Shopify stores: catalog, orders, customers, inventory and analytics.",
+        "short_description": "Read Shopify catalog, orders, customers, inventory and analytics — and edit theme files.",
         "owner": "deco",
         "has_remote": true,
         "has_oauth": false,
@@ -3044,13 +3044,13 @@
         "categories": [
           "E-commerce"
         ],
-        "readme": "The Shopify MCP gives AI agents read-only access to a Shopify store through the Admin GraphQL API. It can browse and search products, variants and collections, inspect orders (including draft orders, abandoned checkouts, returns, refund previews and fulfillment status), look up customers and segments, check inventory levels per location, review discounts and marketing activities, read online store content (pages, blogs, articles, menus, redirects and theme files), and pull financial data from Shopify Payments (payouts, balance, disputes). It also supports ShopifyQL analytics queries where available. Because every tool is a GraphQL query — never a mutation — the MCP can never modify store data. Connect via OAuth: authorize the app against your store's myshopify.com domain and it obtains a read-only offline Admin API token automatically."
+        "readme": "The Shopify MCP gives AI agents access to a Shopify store through the Admin GraphQL API. It can browse and search products, variants and collections, inspect orders (including draft orders, abandoned checkouts, returns, refund previews and fulfillment status), look up customers and segments, check inventory levels per location, review discounts and marketing activities, read online store content (pages, blogs, articles, menus, redirects and theme files), and pull financial data from Shopify Payments (payouts, balance, disputes). It also supports ShopifyQL analytics queries where available. Almost every tool is a read-only GraphQL query; the only mutations are theme-file editing — create, overwrite or delete Liquid templates and theme assets (requires the write_themes scope). Connect via OAuth: authorize the app against your store's myshopify.com domain and it obtains an offline Admin API token automatically."
       }
     },
     "server": {
       "name": "shopify",
       "title": "Shopify",
-      "description": "Read-only MCP for the Shopify Admin GraphQL API — products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics.",
+      "description": "MCP for the Shopify Admin GraphQL API — read products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics, plus edit theme files (Liquid & assets).",
       "icons": [
         {
           "src": "https://github.com/shopify.png"
@@ -3062,7 +3062,7 @@
           "url": "https://sites-shopify.deco.site/mcp",
           "name": "shopify",
           "title": "Shopify",
-          "description": "Read-only MCP for the Shopify Admin GraphQL API — products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics."
+          "description": "MCP for the Shopify Admin GraphQL API — read products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics, plus edit theme files (Liquid & assets)."
         }
       ]
     }
