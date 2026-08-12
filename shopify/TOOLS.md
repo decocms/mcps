@@ -1,8 +1,9 @@
-# Shopify MCP — Tool Selection (read-only)
+# Shopify MCP — Tool Selection
 
-Final tool list for the new `shopify` MCP. **Decision: the MCP is read-only** — every tool
-wraps a query against the **Shopify Admin GraphQL API** (version `2026-07`, current stable).
-No mutations, so the MCP can never modify store data.
+Final tool list for the `shopify` MCP. **The MCP is read-only except for theme-file editing.**
+Every tool wraps the **Shopify Admin GraphQL API** (version `2026-07`, current stable): all are
+queries apart from two theme-file mutations (`SHOPIFY_UPDATE_THEME_FILES`,
+`SHOPIFY_DELETE_THEME_FILES`). No other tool can modify store data.
 
 All tools below are selected (`[x]`). The `Tier` column just indicates expected usage:
 **core** = day-1 essentials, **rec** = common, **opt** = niche but harmless to include.
@@ -22,9 +23,10 @@ All tools below are selected (`[x]`). The `Tier` column just indicates expected 
 
 ## Selection at a glance
 
-~40 read-only tools across 11 domains: products & collections, orders (incl. drafts,
+47 tools across 11 domains: products & collections, orders (incl. drafts,
 returns, abandoned checkouts), fulfillment, inventory, customers, discounts, online store
-content, store properties, B2B, markets, and Shopify Payments.
+content (incl. theme-file read + write), store properties, B2B, markets, and Shopify Payments.
+All are read-only queries except the two theme-file write tools.
 
 Excluded by decision (2026-07-14): gift cards, metafields/metaobjects, files, webhooks.
 
@@ -99,7 +101,7 @@ Scopes: `read_discounts`, `read_marketing_events`
 
 ## 7. Online Store Content
 
-Scopes: `read_content`, `read_online_store_navigation`, `read_themes`
+Scopes: `read_content`, `read_online_store_navigation`, `read_themes`, `write_themes` (for the theme-write tools)
 
 | Pick | Tool | GraphQL op | What it does | Tier |
 |---|---|---|---|---|
@@ -110,6 +112,8 @@ Scopes: `read_content`, `read_online_store_navigation`, `read_themes`
 | [x] | `SHOPIFY_LIST_REDIRECTS` | `urlRedirects` | URL redirects | opt |
 | [x] | `SHOPIFY_LIST_THEMES` | `themes` | Installed themes + roles (main, unpublished…) | opt |
 | [x] | `SHOPIFY_GET_THEME_FILES` | `theme.files` | Read theme files (liquid, JSON templates) | opt |
+| [x] | `SHOPIFY_UPDATE_THEME_FILES` | `themeFilesUpsert` | **Write:** create/overwrite theme files (Liquid, JSON, assets) — full replace per file | rec |
+| [x] | `SHOPIFY_DELETE_THEME_FILES` | `themeFilesDelete` | **Write:** delete theme files by filename | opt |
 
 ## 8. Store Properties & Localization
 
@@ -157,7 +161,7 @@ Scopes: `read_reports`
 
 | Surface | Why excluded |
 |---|---|
-| **All mutations** | MCP is read-only by decision — no create/update/delete of any resource |
+| **All mutations except theme-file editing** | MCP is read-only apart from `themeFilesUpsert`/`themeFilesDelete` — no other create/update/delete of any resource |
 | **Gift cards, metafields/metaobjects, files, webhooks** | Cut from scope by decision (2026-07-14) |
 | **Bulk operations** (`bulkOperationRunQuery`) | Read-only in effect, but implemented as mutations and add async/polling complexity; revisit if large exports become a need |
 | **Raw GraphQL passthrough** (`SHOPIFY_RUN_GRAPHQL`) | Can't guarantee read-only — a passthrough would accept mutations. Could add later as a query-only variant that rejects mutation documents |
@@ -167,6 +171,11 @@ Scopes: `read_reports`
 
 ## Decisions
 
+0. **Theme-file writes:** the MCP is read-only *except* for editing theme files
+   (`SHOPIFY_UPDATE_THEME_FILES` / `SHOPIFY_DELETE_THEME_FILES`), added so agents can modify
+   Liquid/theme code. These require the `write_themes` scope (in `DEFAULT_SCOPES`; drop it via
+   `SHOPIFY_SCOPES` for a strictly read-only deployment). Upsert fully replaces each file — no
+   partial patch — so callers read the current file first. All other write surfaces stay out.
 1. **Store domain configuration:** Magento approach — the Admin API access token goes in the
    connection-level Authorization (Bearer) field, and `storeDomain` is a required field in the
    connection `configSchema` (with `SHOPIFY_STORE_DOMAIN` / `SHOPIFY_ACCESS_TOKEN` env fallbacks

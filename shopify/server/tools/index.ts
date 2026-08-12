@@ -1,5 +1,7 @@
 /**
- * Central export point for all Shopify tools (all read-only).
+ * Central export point for all Shopify tools. Every tool is a read-only query
+ * except the theme-file write tools (themeWriteTools), which are the MCP's only
+ * mutations.
  */
 import { analyticsTools } from "./analytics.ts";
 import { b2bTools } from "./b2b.ts";
@@ -12,6 +14,7 @@ import { orderTools } from "./orders.ts";
 import { paymentTools } from "./payments.ts";
 import { productTools } from "./products.ts";
 import { storeTools } from "./store.ts";
+import { themeWriteTools } from "./themes.ts";
 
 export const tools = [
   ...productTools,
@@ -25,4 +28,5 @@ export const tools = [
   ...b2bTools,
   ...paymentTools,
   ...analyticsTools,
+  ...themeWriteTools,
 ];

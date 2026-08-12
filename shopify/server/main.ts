@@ -1,9 +1,10 @@
 /**
  * Shopify MCP
  *
- * Read-only MCP for the Shopify Admin GraphQL API — products, collections,
+ * Mostly-read MCP for the Shopify Admin GraphQL API — products, collections,
  * orders, customers, inventory, fulfillment, discounts, online store content,
- * B2B, markets, Shopify Payments and ShopifyQL analytics.
+ * B2B, markets, Shopify Payments and ShopifyQL analytics. The only mutations
+ * are the theme-file write tools (create/update/delete Liquid & theme assets).
  */
 import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
