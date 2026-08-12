@@ -29,8 +29,9 @@ override it per deployment with the `SHOPIFY_API_VERSION` env var.
 
 Default scopes requested: `read_products`, `read_orders`, `read_customers`,
 `read_inventory`, `read_fulfillments`, `read_locations`, `read_discounts`, `read_content`,
-`read_themes`, `write_themes`, `read_locales`, `read_translations`, `read_marketing_events`,
-`read_markets`, `read_reports`. Override with the `SHOPIFY_SCOPES` env var
+`read_online_store_navigation`, `read_themes`, `write_themes`, `read_locales`,
+`read_translations`, `read_marketing_events`, `read_markets`, `read_reports`.
+Override with the `SHOPIFY_SCOPES` env var
 (comma-separated) to add or trim — e.g. drop `write_themes` for a strictly read-only
 deployment (the two theme-write tools then fail with an ACCESS_DENIED hint).
 

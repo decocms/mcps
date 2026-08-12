@@ -65,6 +65,7 @@ export const DEFAULT_SCOPES = [
   "read_locations",
   "read_discounts",
   "read_content",
+  "read_online_store_navigation",
   "read_themes",
   "write_themes",
   "read_locales",
