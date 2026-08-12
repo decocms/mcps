@@ -44,14 +44,17 @@ export const OAUTH_CONNECT_PATH = "/oauth/custom";
 export const OAUTH_CALLBACK_PATH = "/oauth/shopify/callback";
 
 /**
- * Read scopes requested during the grant. Kept to what a standard store can
- * grant — Shopify rejects the whole authorize request (missing_shopify_permission)
- * if the app asks for a scope the store isn't entitled to.
+ * Scopes requested during the grant. Almost all are read scopes; `write_themes`
+ * backs the two theme-file write tools (SHOPIFY_UPDATE_THEME_FILES /
+ * SHOPIFY_DELETE_THEME_FILES). Kept to what a standard store can grant — Shopify
+ * rejects the whole authorize request (missing_shopify_permission) if the app
+ * asks for a scope the store isn't entitled to.
  *
  * Deliberately excluded from the default because they're plan/entitlement-gated:
  *   - read_users, read_companies         → Shopify Plus only
  *   - read_shopify_payments_payouts/…    → require Shopify Payments
- * Add them (or trim further) per deployment via the SHOPIFY_SCOPES env var.
+ * Add them (or trim further) per deployment via the SHOPIFY_SCOPES env var —
+ * e.g. drop `write_themes` for a strictly read-only deployment.
  */
 export const DEFAULT_SCOPES = [
   "read_products",
@@ -63,6 +66,7 @@ export const DEFAULT_SCOPES = [
   "read_discounts",
   "read_content",
   "read_themes",
+  "write_themes",
   "read_locales",
   "read_translations",
   "read_marketing_events",
@@ -325,7 +329,7 @@ function connectForm(callbackUrl: string): Response {
 <body>
   <form class="card" method="GET" action="${OAUTH_CONNECT_PATH}">
     <h1>Connect your Shopify store</h1>
-    <p>Enter your store's <code>.myshopify.com</code> domain to authorize read-only access.</p>
+    <p>Enter your store's <code>.myshopify.com</code> domain to authorize access.</p>
     <label for="shop">Store domain</label>
     <input id="shop" name="shop" placeholder="my-store.myshopify.com"
       autocomplete="off" autofocus required />

@@ -17,6 +17,7 @@ import * as orders from "../server/tools/orders.ts";
 import * as payments from "../server/tools/payments.ts";
 import * as products from "../server/tools/products.ts";
 import * as store from "../server/tools/store.ts";
+import * as themes from "../server/tools/themes.ts";
 import { DEFAULT_API_VERSION } from "../server/constants.ts";
 
 const version =
@@ -112,6 +113,19 @@ const SAMPLES: Record<string, Record<string, unknown>> = {
   LIST_DISPUTES_QUERY: { first: 1 },
   LIST_BALANCE_TRANSACTIONS_QUERY: { first: 1 },
   RUN_SHOPIFYQL_QUERY: { query: "FROM sales SHOW total_sales SINCE -7d" },
+  UPDATE_THEME_FILES_MUTATION: {
+    themeId: GID.theme,
+    files: [
+      {
+        filename: "snippets/sample.liquid",
+        body: { type: "TEXT", value: "hello" },
+      },
+    ],
+  },
+  DELETE_THEME_FILES_MUTATION: {
+    themeId: GID.theme,
+    files: ["snippets/sample.liquid"],
+  },
 };
 
 const modules = {
@@ -126,6 +140,7 @@ const modules = {
   b2b,
   payments,
   analytics,
+  themes,
 };
 
 interface Doc {
@@ -137,7 +152,10 @@ interface Doc {
 const docs: Doc[] = [];
 for (const [moduleName, mod] of Object.entries(modules)) {
   for (const [exportName, value] of Object.entries(mod)) {
-    if (exportName.endsWith("_QUERY") && typeof value === "string") {
+    if (
+      (exportName.endsWith("_QUERY") || exportName.endsWith("_MUTATION")) &&
+      typeof value === "string"
+    ) {
       docs.push({ name: exportName, module: moduleName, query: value });
     }
   }

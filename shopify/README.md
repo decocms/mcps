@@ -1,13 +1,16 @@
 # Shopify MCP
 
-Read-only MCP for the **Shopify Admin GraphQL API** (pinned to `2026-07`). Every tool is a
-GraphQL query — never a mutation — so the MCP can never modify store data.
+MCP for the **Shopify Admin GraphQL API** (pinned to `2026-07`). Almost every tool is a
+read-only GraphQL query; the sole exception is theme-file editing — two mutations
+(`SHOPIFY_UPDATE_THEME_FILES`, `SHOPIFY_DELETE_THEME_FILES`) that create, overwrite or delete
+Liquid templates and theme assets. Nothing else can modify store data.
 
-45 tools across 11 domains: products & collections, orders (drafts, abandoned checkouts,
+47 tools across 11 domains: products & collections, orders (drafts, abandoned checkouts,
 returns, refund previews), fulfillment & locations, inventory, customers & segments,
 discounts & marketing, online store content (pages, blogs, articles, menus, redirects,
-themes), store properties & localization, B2B companies & markets, Shopify Payments,
-and ShopifyQL analytics. See [TOOLS.md](./TOOLS.md) for the full catalog and scope map.
+themes — read **and** write), store properties & localization, B2B companies & markets,
+Shopify Payments, and ShopifyQL analytics. See [TOOLS.md](./TOOLS.md) for the full catalog
+and scope map.
 
 ## Setup
 
@@ -15,19 +18,21 @@ Connecting is a one-click **OAuth** flow — no manual token copying:
 
 1. In the connection UI, start the OAuth flow. You'll land on a page asking for your
    store's `my-store.myshopify.com` domain.
-2. Shopify shows the standard authorization screen listing the requested **read scopes**.
-   Approve it and you're connected — the MCP stores a read-only **expiring offline access
-   token** (~1h) plus a rotating **refresh token** (~90d). The connection refreshes itself
-   automatically; you only re-run OAuth if the refresh token lapses or you revoke the app.
+2. Shopify shows the standard authorization screen listing the requested scopes (all read,
+   plus **`write_themes`** for theme editing). Approve it and you're connected — the MCP
+   stores an **expiring offline access token** (~1h) plus a rotating **refresh token** (~90d).
+   The connection refreshes itself automatically; you only re-run OAuth if the refresh token
+   lapses or you revoke the app.
 
 There's no connection config to fill in. The Admin API version defaults to `2026-07`;
 override it per deployment with the `SHOPIFY_API_VERSION` env var.
 
 Default scopes requested: `read_products`, `read_orders`, `read_customers`,
 `read_inventory`, `read_fulfillments`, `read_locations`, `read_discounts`, `read_content`,
-`read_themes`, `read_locales`, `read_translations`, `read_marketing_events`,
+`read_themes`, `write_themes`, `read_locales`, `read_translations`, `read_marketing_events`,
 `read_markets`, `read_reports`. Override with the `SHOPIFY_SCOPES` env var
-(comma-separated) to add or trim.
+(comma-separated) to add or trim — e.g. drop `write_themes` for a strictly read-only
+deployment (the two theme-write tools then fail with an ACCESS_DENIED hint).
 
 Some scopes are **plan/entitlement-gated** and are left out of the default because Shopify
 rejects the whole authorize request (`missing_shopify_permission`) if the store can't grant
