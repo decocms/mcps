@@ -9,6 +9,7 @@
 import { buildUpstreamTools, getUpstreamToolDefs } from "../lib/mcp-proxy.ts";
 import { triggers } from "../lib/trigger-store.ts";
 import { createGetCheckRunTool } from "./get-check-run.ts";
+import { createGetPreviewDeploymentTool } from "./get-preview-deployment.ts";
 import { createMintRepoTokenTool } from "./mint-repo-token.ts";
 
 /**
@@ -21,6 +22,8 @@ import { createMintRepoTokenTool } from "./mint-repo-token.ts";
  *   - MINT_REPO_TOKEN: mint a repo-scoped, least-privilege installation token.
  *   - GET_CHECK_RUN: read a check run's full output (the upstream
  *     get_check_runs omits it).
+ *   - GET_PREVIEW_DEPLOYMENT: resolve a commit's preview url from its GitHub
+ *     Deployments (upstream pull_request_read has no deployments method).
  */
 export async function getTools() {
   const toolDefs = await getUpstreamToolDefs();
@@ -29,5 +32,6 @@ export async function getTools() {
     ...triggers.tools(),
     createMintRepoTokenTool(),
     createGetCheckRunTool(),
+    createGetPreviewDeploymentTool(),
   ];
 }
