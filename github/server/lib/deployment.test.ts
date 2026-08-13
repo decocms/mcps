@@ -106,6 +106,34 @@ describe("getPreviewDeployment", () => {
     expect(r.environment).toBe("staging");
   });
 
+  test("one deployment's status read failing drops only that deployment, not the scan", async () => {
+    setFetch(async (input) => {
+      const url = urlOf(input);
+      if (url.includes("/deployments?")) {
+        return json([
+          { id: 1, environment: "production" },
+          { id: 2, environment: "staging" },
+        ]);
+      }
+      // Deployment 1's statuses 500 — must not abort; deployment 2 still wins.
+      if (url.includes("/deployments/1/statuses")) {
+        return json({ message: "boom" }, 500);
+      }
+      return json([
+        { state: "success", environment_url: "https://prev.preview.vtex.app" },
+      ]);
+    });
+
+    const r = await getPreviewDeployment({
+      token: "t",
+      owner: "a",
+      repo: "b",
+      sha: SHA,
+    });
+    expect(r.environmentUrl).toBe("https://prev.preview.vtex.app");
+    expect(r.deploymentId).toBe(2);
+  });
+
   test("no deployments for the sha → empty (not an error)", async () => {
     setFetch(async () => json([]));
     const r = await getPreviewDeployment({

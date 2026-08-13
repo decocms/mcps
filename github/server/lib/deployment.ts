@@ -205,19 +205,37 @@ export async function getPreviewDeployment(params: {
     return empty;
   }
 
-  // Deployments come newest-first; the first one with a published preview url
-  // wins. Statuses are likewise newest-first, so the first `success` carrying an
-  // environment_url is the current one.
-  for (const dep of deployments.slice(0, MAX_DEPLOYMENTS_SCANNED)) {
-    if (typeof dep?.id !== "number") continue;
-    const statuses = await readJson<DeploymentStatusRow[]>(
-      await githubGet(
-        `${base}/deployments/${dep.id}/statuses?per_page=${STATUSES_PER_PAGE}`,
-        token,
-        `deployment ${dep.id} statuses`,
-      ),
+  // Read every candidate deployment's statuses CONCURRENTLY — the slice bounds
+  // the fan-out — so the in-flight case (deployments exist, none successful yet:
+  // exactly what this feature targets) costs one round-trip, not up to
+  // MAX_DEPLOYMENTS_SCANNED serial hops. A single deployment's status read
+  // failing drops only that deployment (→ []), never the whole scan.
+  const candidates = deployments
+    .slice(0, MAX_DEPLOYMENTS_SCANNED)
+    .filter(
+      (d): d is DeploymentRow & { id: number } => typeof d?.id === "number",
     );
-    if (!Array.isArray(statuses)) continue;
+  const scanned = await Promise.all(
+    candidates.map(async (dep) => {
+      try {
+        const statuses = await readJson<DeploymentStatusRow[]>(
+          await githubGet(
+            `${base}/deployments/${dep.id}/statuses?per_page=${STATUSES_PER_PAGE}`,
+            token,
+            `deployment ${dep.id} statuses`,
+          ),
+        );
+        return { dep, statuses: Array.isArray(statuses) ? statuses : [] };
+      } catch {
+        return { dep, statuses: [] as DeploymentStatusRow[] };
+      }
+    }),
+  );
+
+  // Deployments come newest-first, so the first candidate with a successful
+  // status wins. Statuses are likewise newest-first, so its first `success`
+  // carrying an environment_url is the current one.
+  for (const { dep, statuses } of scanned) {
     const hit = statuses.find(
       (s) =>
         s?.state === "success" &&

@@ -28,7 +28,10 @@ export function createGetPreviewDeploymentTool() {
       "that publish the preview as a deployment rather than a status target_url " +
       "or a bot comment. Returns environmentUrl: null when the commit has no " +
       "deployment with a published url yet (e.g. an in-flight deploy). Requires " +
-      "deployments:read on the caller's token.",
+      "deployments:read on the caller's token. SECURITY: environmentUrl is set " +
+      "by whoever wrote the deployment status and is NOT host-validated here — " +
+      "treat it as untrusted and check it against a preview-host allow-list " +
+      "before showing it as a trusted link or navigating to it.",
     inputSchema: z.object({
       owner: z
         .string()
@@ -49,7 +52,13 @@ export function createGetPreviewDeploymentTool() {
         ),
     }),
     outputSchema: z.object({
-      environmentUrl: z.string().nullable(),
+      environmentUrl: z
+        .string()
+        .nullable()
+        .describe(
+          "Untrusted: the deployment status's environment_url as written by " +
+            "the deployer. Host-validate before showing or navigating.",
+        ),
       environment: z.string().nullable(),
       state: z.string().nullable(),
       deploymentId: z.number().nullable(),
