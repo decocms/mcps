@@ -13,7 +13,7 @@
  *   2. `/oauth/custom` renders a form; on submit it 302s to Shopify's
  *      `/admin/oauth/authorize` with `redirect_uri` pointing back at us and the
  *      mesh callback URL signed into `state`.
- *   3. Shopify → `/oauth/shopify/callback?code&shop&state&hmac`. We verify the
+ *   3. Shopify → `/oauth/store/callback?code&shop&state&hmac`. We verify the
  *      HMAC + state, exchange the code for an *expiring* offline token, seal the
  *      `{shop, access, refresh, expiresIn}` grant into an encrypted blob, and
  *      302 back to the mesh callback with it as `code`.
@@ -41,7 +41,9 @@ import {
 } from "./token.ts";
 
 export const OAUTH_CONNECT_PATH = "/oauth/custom";
-export const OAUTH_CALLBACK_PATH = "/oauth/shopify/callback";
+// Kept free of the "shopify" token (Shopify forbids it in app URLs) and distinct
+// from `/oauth/callback`, which the runtime mounts on this same origin.
+export const OAUTH_CALLBACK_PATH = "/oauth/store/callback";
 
 /**
  * Scopes requested during the grant. Almost all are read scopes; `write_themes`
@@ -82,7 +84,7 @@ export function getScopes(): string {
 
 /** This MCP's own public origin. Deployed at a fixed domain, so we default to
  * it; override with SELF_URL for local dev (e.g. http://localhost:8001). */
-const DEFAULT_SELF_URL = "https://sites-shopify.deco.site";
+const DEFAULT_SELF_URL = "https://mcp-commerce-store.deco.site";
 
 interface OAuthEnv {
   clientId: string;
@@ -374,7 +376,7 @@ function handleConnect(url: URL, env: OAuthEnv): Response {
   return Response.redirect(authorize.toString(), 302);
 }
 
-/** GET /oauth/shopify/callback — validate Shopify's redirect, exchange the code
+/** GET /oauth/store/callback — validate Shopify's redirect, exchange the code
  * for an expiring offline token, seal the grant, and bounce back to the mesh
  * callback. */
 async function handleCallback(url: URL, env: OAuthEnv): Promise<Response> {

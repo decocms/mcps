@@ -4,7 +4,7 @@
   "friendlyName": "Shopify",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-shopify.deco.site/mcp"
+    "url": "https://mcp-commerce-store.deco.site/mcp"
   },
   "description": "MCP for the Shopify Admin GraphQL API — read products, collections, orders, draft orders, customers, inventory, fulfillment, discounts, online store content, B2B, markets, Shopify Payments and ShopifyQL analytics, plus edit theme files (Liquid & assets).",
   "icon": "https://github.com/shopify.png",

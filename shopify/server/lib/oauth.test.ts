@@ -13,7 +13,7 @@ import {
 } from "./token.ts";
 import { createHmac } from "node:crypto";
 
-const SELF = "https://sites-shopify.deco.site";
+const SELF = "https://mcp-commerce-store.deco.site";
 const MESH = "https://api.decocms.com";
 const SECRET = "oauth-test-secret";
 const CLIENT_ID = "test-client-id";
@@ -58,7 +58,7 @@ describe("authorizationUrl", () => {
   test("defaults to the prod domain (not localhost) when SELF_URL is unset", () => {
     delete process.env.SELF_URL;
     const url = new URL(shopifyOAuth.authorizationUrl(CALLBACK));
-    expect(url.origin).toBe("https://sites-shopify.deco.site");
+    expect(url.origin).toBe("https://mcp-commerce-store.deco.site");
   });
 });
 
@@ -167,7 +167,7 @@ describe("GET /oauth/custom", () => {
   });
 });
 
-describe("GET /oauth/shopify/callback", () => {
+describe("GET /oauth/store/callback", () => {
   function callbackUrl(overrides: Record<string, string> = {}): string {
     const state = signState({ cb: CALLBACK }, SECRET);
     const base: Record<string, string> = {
