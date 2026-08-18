@@ -32,10 +32,18 @@ describe("isAllowedRedirectUri", () => {
     expect(isAllowedRedirectUri("http://127.0.0.1:8787/cb")).toBe(true);
   });
 
+  test("accepts deco.host apex and arbitrary subdomains over https", () => {
+    expect(isAllowedRedirectUri("https://deco.host/cb")).toBe(true);
+    expect(
+      isAllowedRedirectUri("https://localhost-c056dce8.deco.host/cb"),
+    ).toBe(true);
+  });
+
   test("rejects non-loopback http", () => {
     expect(isAllowedRedirectUri("http://sites-google-drive.deco.site/cb")).toBe(
       false,
     );
+    expect(isAllowedRedirectUri("http://tunnel.deco.host/cb")).toBe(false);
   });
 
   test("rejects look-alike and suffix-confusion hosts", () => {
@@ -45,6 +53,10 @@ describe("isAllowedRedirectUri", () => {
     );
     expect(isAllowedRedirectUri("https://notdeco.site/cb")).toBe(false);
     expect(isAllowedRedirectUri("https://deco.site.attacker.io/cb")).toBe(
+      false,
+    );
+    expect(isAllowedRedirectUri("https://notdeco.host/cb")).toBe(false);
+    expect(isAllowedRedirectUri("https://deco.host.attacker.io/cb")).toBe(
       false,
     );
   });

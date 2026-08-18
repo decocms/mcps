@@ -10,14 +10,17 @@
  *
  * We close this by refusing any `redirect_uri` whose host isn't one of our
  * own domains (or a subdomain of one). MCPs are hosted under either
- * decocms.com or deco.site depending on how they were deployed, so both are
- * allowed. Loopback hosts are allowed over http for local dev (RFC 8252 §7.3);
- * everything else must be https.
+ * decocms.com or deco.site depending on how they were deployed; deco.host is
+ * additionally allowed since it's the local-dev tunnel domain (cloudflared-
+ * style), needed to test OAuth flows against providers that reject
+ * http://localhost redirect URIs. Loopback hosts are allowed over http for
+ * local dev (RFC 8252 §7.3); everything else must be https.
  */
 
 export const ALLOWED_REDIRECT_HOST_SUFFIXES = [
   "decocms.com",
   "deco.site",
+  "deco.host",
 ] as const;
 
 const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "[::1]", "::1"]);
