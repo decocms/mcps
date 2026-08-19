@@ -37,7 +37,7 @@ export interface ResolvedCredentials extends ShopifyCredentials {
 
 export interface MeshRequestContext {
   authorization?: string | null;
-  state?: { storeDomain?: string; apiVersion?: string };
+  state?: { storeDomain?: string };
 }
 
 /**
@@ -57,8 +57,6 @@ export function resolveCredentials(
   ctx: MeshRequestContext | undefined,
 ): ResolvedCredentials {
   const state = ctx?.state ?? {};
-  const apiVersion =
-    state.apiVersion || process.env.SHOPIFY_API_VERSION || DEFAULT_API_VERSION;
 
   const rawAuth = ctx?.authorization
     ? ctx.authorization.replace(/^Bearer\s+/i, "").trim()
@@ -74,7 +72,6 @@ export function resolveCredentials(
       return {
         storeDomain: normalizeStoreDomain(sealed.shop),
         accessToken: sealed.token,
-        apiVersion,
         sources: { storeDomain: "oauth", accessToken: "oauth" },
       };
     }
@@ -104,7 +101,6 @@ export function resolveCredentials(
       ? normalizeStoreDomain(storeDomain.value)
       : "",
     accessToken: accessToken.value,
-    apiVersion,
     sources: {
       storeDomain: storeDomain.source,
       accessToken: accessToken.source,
@@ -130,8 +126,7 @@ export function assertValidCredentials(
 }
 
 export function buildGraphqlUrl(creds: ShopifyCredentials): string {
-  const version = creds.apiVersion || DEFAULT_API_VERSION;
-  return `https://${creds.storeDomain}/admin/api/${version}/graphql.json`;
+  return `https://${creds.storeDomain}/admin/api/${DEFAULT_API_VERSION}/graphql.json`;
 }
 
 interface GraphqlError {
