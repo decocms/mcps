@@ -92,6 +92,11 @@ import {
   getHomeTopProducts,
   getHomeTopViewedProducts,
 } from "./custom/home-analytics.ts";
+import {
+  getSalesPerformanceSummary,
+  getSalesPerformanceTable,
+  getSalesPerformanceTrend,
+} from "./custom/sales-performance.ts";
 
 // ── Tool registry factories (env: Env) => Tool ────────────────────────────────
 const registryFactories = [
@@ -186,6 +191,10 @@ const customFactories = [
   getHomeMetricsSummary,
   getHomeTopViewedProducts,
   getHomeTopProducts,
+  // Sales Performance dashboard: KPI cards, trend chart, detail table (internal analytics)
+  getSalesPerformanceSummary,
+  getSalesPerformanceTrend,
+  getSalesPerformanceTable,
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
