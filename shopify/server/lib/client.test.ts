@@ -16,7 +16,6 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
   delete process.env.SHOPIFY_STORE_DOMAIN;
   delete process.env.SHOPIFY_ACCESS_TOKEN;
-  delete process.env.SHOPIFY_API_VERSION;
   delete process.env.SHOPIFY_TOKEN_SECRET;
 });
 
@@ -79,7 +78,6 @@ describe("resolveCredentials", () => {
     });
     expect(creds.accessToken).toBe("shpat_abc123");
     expect(creds.storeDomain).toBe("my-store.myshopify.com");
-    expect(creds.apiVersion).toBe("2026-07");
     expect(creds.sources).toEqual({
       storeDomain: "state",
       accessToken: "authorization",
@@ -125,14 +123,6 @@ describe("resolveCredentials", () => {
     expect(creds.accessToken).toBe("");
     expect(creds.sources.accessToken).toBe("missing");
   });
-
-  test("respects apiVersion from state", () => {
-    const creds = resolveCredentials({
-      authorization: "Bearer t",
-      state: { storeDomain: "s", apiVersion: "2026-04" },
-    });
-    expect(creds.apiVersion).toBe("2026-04");
-  });
 });
 
 describe("assertValidCredentials", () => {
@@ -157,7 +147,6 @@ describe("buildGraphqlUrl", () => {
       buildGraphqlUrl({
         storeDomain: "my-store.myshopify.com",
         accessToken: "t",
-        apiVersion: "2026-07",
       }),
     ).toBe("https://my-store.myshopify.com/admin/api/2026-07/graphql.json");
   });
@@ -199,7 +188,6 @@ describe("flattenConnection", () => {
 const CREDS = {
   storeDomain: "my-store.myshopify.com",
   accessToken: "shpat_test",
-  apiVersion: "2026-07",
 };
 
 function mockFetch(
