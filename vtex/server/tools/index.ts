@@ -84,6 +84,7 @@ import {
 import { ordersTimeline } from "./custom/orders-timeline.ts";
 import { ordersSalesCard } from "./custom/orders-sales-card.ts";
 import { searchCollections } from "./custom/search-collections.ts";
+import { listCollections } from "./custom/list-collections.ts";
 import { reorderCollection } from "./custom/reorder-collection.ts";
 import { updateProductSpecifications } from "./custom/update-product-specifications.ts";
 import { getOrdersTrend } from "./custom/orders-trend.ts";
@@ -181,6 +182,9 @@ const customFactories = [
   ordersSalesCard,
   // Collection search (endpoint absent from generated SDKs)
   searchCollections,
+  // List all collections via the search endpoint (generated SDK only exposes
+  // the inactive-only listing)
+  listCollections,
   // Collection overwrite/reorder via XML import flow
   reorderCollection,
   // Bulk replace product specifications (PUT v2, missing from generated SDK)

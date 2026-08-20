@@ -313,13 +313,9 @@ export const collectionTools = [
     requestSchema: catalogZod.zGetApiCatalogPvtCollectionByCollectionIdData,
     sdkFn: catalogSdk.getApiCatalogPvtCollectionByCollectionId as any,
   }),
-  createToolFromOperation({
-    id: "VTEX_LIST_COLLECTIONS",
-    description: "List all collections in the catalog.",
-    annotations: { readOnlyHint: true },
-    requestSchema: catalogZod.zGetAllInactiveCollectionsData,
-    sdkFn: catalogSdk.getAllInactiveCollections as any,
-  }),
+  // VTEX_LIST_COLLECTIONS lives in tools/custom/list-collections.ts — the
+  // generated `/collection/inactive` operation only returns inactive
+  // collections, so we page the catalog search endpoint instead.
   createToolFromOperation({
     id: "VTEX_CREATE_COLLECTION",
     description: "Create a new product collection.",
@@ -343,7 +339,8 @@ export const collectionTools = [
   }),
   createToolFromOperation({
     id: "VTEX_GET_COLLECTION_PRODUCTS",
-    description: "Get all products in a collection.",
+    description:
+      "Get the products in a collection. Only returns products for manual collections; automatic (rule-based) collections resolve their products at query time and return an empty list (TotalRows: 0) from this endpoint.",
     annotations: { readOnlyHint: true },
     requestSchema: catalogZod.zGetProductsfromacollectionData,
     sdkFn: catalogSdk.getProductsfromacollection as any,

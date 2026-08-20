@@ -33,7 +33,7 @@ export const ordersTimeline = (_env: Env) =>
   createTool({
     id: "VTEX_ORDERS_TIMELINE",
     description:
-      "Fetch today's orders aggregated by hour for a bar chart. Uses the admin home orders trend analytics endpoint (single request), falling back to per-hour OMS order-list aggregation when analytics is unavailable.",
+      "Fetch today's orders aggregated by hour for a bar chart. Uses the admin home orders trend analytics endpoint (single request), falling back to per-hour OMS order-list aggregation when analytics is unavailable. Note: the analytics path only provides per-hour order counts, so `totalValue` is 0 unless the OMS fallback is used — for hourly revenue use VTEX_ORDERS_SALES_CARD.",
     inputSchema: z.object({}),
     outputSchema,
     _meta: { ui: { resourceUri: VTEX_ORDERS_TIMELINE_RESOURCE_URI } },
