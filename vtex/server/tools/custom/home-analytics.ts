@@ -80,6 +80,10 @@ export function buildHomeTopProductsUrl(
   });
 }
 
+const topViewedProductsOutputSchema = z.object({
+  items: z.array(z.record(z.string(), z.unknown())),
+});
+
 export function resolveTopViewedProductsParams(input: {
   startDate?: string;
   endDate?: string;
@@ -152,12 +156,16 @@ export const getHomeTopViewedProducts = (_env: Env) =>
         .describe("Maximum number of products to return"),
       timezone: analyticsTimezoneSchema,
     }),
+    outputSchema: topViewedProductsOutputSchema,
     execute: async ({ context, runtimeContext }) => {
       const env = runtimeContext.env as Env;
       const { accountName, appKey, appToken } = env.MESH_REQUEST_CONTEXT.state;
       const params = resolveTopViewedProductsParams(context);
 
-      return fetchAnalyticsConsumption(
+      // This endpoint returns a bare JSON array, but MCP structuredContent must
+      // be a record — wrap it in `{ items }` (same shape the tool adapter uses
+      // for array-returning operations).
+      const data = await fetchAnalyticsConsumption(
         { accountName, appKey, appToken },
         "home-top-viewed-products",
         {
@@ -167,6 +175,8 @@ export const getHomeTopViewedProducts = (_env: Env) =>
           size: params.size,
         },
       );
+
+      return { items: Array.isArray(data) ? data : [] };
     },
   });
 

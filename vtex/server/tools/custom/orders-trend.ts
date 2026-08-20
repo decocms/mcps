@@ -175,6 +175,9 @@ export function parseAnalyticsHourlyBuckets(
     }
 
     const hour = hourLabelInTimezone(point.date, timezone);
+    // The home-orders-trend endpoint only reports order counts per bucket, not
+    // revenue, so totalValue stays 0 on this path. The OMS fallback in
+    // orders-timeline is what populates per-hour revenue.
     byHour.set(hour, {
       hour,
       count,
