@@ -42,6 +42,27 @@ type Runtime = ReturnType<
 const REQUESTED_SCOPES = "repo read:org read:user";
 
 /**
+ * Key material that seals the OAuth `state` and the authorization `code`.
+ *
+ * Unset, the runtime falls back to plain base64url JSON and the code carries
+ * the GitHub access token in the clear, so this throws rather than silently
+ * downgrading. Set it with `bunx wrangler secret put OAUTH_STATE_SECRET`
+ * before deploying a build that reads it.
+ *
+ * Read per-call for the same reason as the credentials below.
+ */
+function getStateSecret(): string {
+  const stateSecret = process.env.OAUTH_STATE_SECRET || "";
+  if (!stateSecret) {
+    throw new Error(
+      "OAuth state secret not configured. " +
+        "Set the OAUTH_STATE_SECRET environment variable.",
+    );
+  }
+  return stateSecret;
+}
+
+/**
  * Lazily read OAuth credentials — on Workers, process.env isn't populated
  * at module-init time, so we must resolve per-call.
  */
@@ -69,6 +90,7 @@ async function getRuntime(): Promise<Runtime> {
           mode: "PKCE",
           authorizationServer: "https://github.com",
           allowedRedirectHosts: [...ALLOWED_REDIRECT_HOST_SUFFIXES],
+          stateSecret: getStateSecret(),
 
           authorizationUrl: (callbackUrl) => {
             const clientId = process.env.GITHUB_CLIENT_ID || "";
