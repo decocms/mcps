@@ -25,8 +25,11 @@ import {
   handleRepoGrantTokenRequest,
 } from "./lib/repo-grant.ts";
 import { setRepoGrantKV } from "./lib/repo-grant-store.ts";
-import { assertAllowedRedirectUri } from "./lib/redirect-allowlist.ts";
-import { REPO_GRANT_REVOKE_PATH, REPO_GRANT_TOKEN_PATH } from "./constants.ts";
+import {
+  ALLOWED_REDIRECT_HOST_SUFFIXES,
+  REPO_GRANT_REVOKE_PATH,
+  REPO_GRANT_TOKEN_PATH,
+} from "./constants.ts";
 import { setTriggerKV } from "./lib/trigger-store.ts";
 import { getTools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
@@ -65,6 +68,7 @@ async function getRuntime(): Promise<Runtime> {
         oauth: {
           mode: "PKCE",
           authorizationServer: "https://github.com",
+          allowedRedirectHosts: [...ALLOWED_REDIRECT_HOST_SUFFIXES],
 
           authorizationUrl: (callbackUrl) => {
             const clientId = process.env.GITHUB_CLIENT_ID || "";
@@ -74,11 +78,6 @@ async function getRuntime(): Promise<Runtime> {
             // Remove state from redirect_uri — pass it as a separate param
             callbackUrlObj.searchParams.delete("state");
             const redirectUri = callbackUrlObj.toString();
-
-            // Defense-in-depth: never forward a redirect_uri off the decocms.com
-            // origin to GitHub. GitHub returns the authorization `code` here, so
-            // an attacker-influenced host would hijack the code/token.
-            assertAllowedRedirectUri(redirectUri);
 
             const url = new URL("https://github.com/login/oauth/authorize");
             url.searchParams.set("client_id", clientId);
