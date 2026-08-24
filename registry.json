@@ -1684,6 +1684,53 @@
     }
   },
   {
+    "id": "deco/google-analytics-sa",
+    "title": "Google Analytics (Service Account)",
+    "description": "Query Google Analytics 4 with a service account — no OAuth login. Grant read access to a service account email on your GA4 property and you are done.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "Google Analytics (Service Account)",
+        "short_description": "Query Google Analytics 4 with a service account — no OAuth login required.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "google",
+          "analytics",
+          "ga4",
+          "data",
+          "reporting",
+          "service-account"
+        ],
+        "categories": [
+          "Analytics"
+        ],
+        "readme": "The Google Analytics Service Account MCP gives server-to-server access to GA4 — the same reporting tools as the OAuth variant, with no per-user login and no refresh token to keep alive. **Setup (easy path)** - Leave SERVICE_ACCOUNT_JSON empty and run the `check-service-account-access` tool. It returns the managed service account email; add that email as a Viewer under GA4 Admin > Property access management, then run the tool again to confirm. **Setup (bring your own)** - Prefer your own Google Cloud project? Create a service account there, enable the Analytics Data and Admin APIs, paste its JSON key into SERVICE_ACCOUNT_JSON, and grant that email Viewer access on the property. **Key Features** - Custom and funnel reports via the Data API, realtime active users, custom dimensions and metrics metadata, account hierarchy, Google Ads links, and property annotations. Access tokens are minted and refreshed automatically."
+      }
+    },
+    "server": {
+      "name": "google-analytics-sa",
+      "title": "Google Analytics (Service Account)",
+      "description": "Query Google Analytics 4 with a service account — no OAuth login. Grant read access to a service account email on your GA4 property and you are done.",
+      "icons": [
+        {
+          "src": "https://www.gstatic.com/analytics-suite/header/suite/v2/ic_analytics.svg"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-google-analytics-sa.deco.site/mcp",
+          "name": "google-analytics-sa",
+          "title": "Google Analytics (Service Account)",
+          "description": "Query Google Analytics 4 with a service account — no OAuth login. Grant read access to a service account email on your GA4 property and you are done."
+        }
+      ]
+    }
+  },
+  {
     "id": "deco/google-apps-script",
     "title": "Google Apps Script",
     "description": "Manage and execute Google Apps Script projects programmatically.",

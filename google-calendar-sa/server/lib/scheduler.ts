@@ -17,7 +17,7 @@ import {
   getCachedConnections,
   type CachedConnection,
 } from "./connection-cache.ts";
-import { getServiceAccountAccessToken } from "./service-account.ts";
+import { getServiceAccountAccessToken } from "@decocms/mcps-shared/google-service-account";
 
 const scopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
 
@@ -96,8 +96,8 @@ async function scanConnection(conn: CachedConnection): Promise<void> {
       try {
         const token = await getServiceAccountAccessToken(
           conn.serviceAccountJson,
-          email,
           scopes,
+          email,
         );
         const client = new GoogleCalendarClient({ accessToken: token });
         const response = await client.listEvents({
