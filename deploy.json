@@ -511,5 +511,14 @@
       "shopify/**",
       "shared/**"
     ]
+  },
+  "wake": {
+    "site": "wake",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "wake/**",
+      "shared/**"
+    ]
   }
 }

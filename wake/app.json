@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "wake",
+  "friendlyName": "Wake Commerce",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-wake.deco.site/mcp"
+  },
+  "description": "Read-only access to Wake Commerce — Storefront catalog (search, product detail, recommendations, shipping) plus Admin orders for analytics.",
+  "icon": "https://raw.githubusercontent.com/deco-cx/apps/main/wake/logo.png",
+  "unlisted": true,
+  "metadata": {
+    "categories": ["E-commerce", "Developer Tools"],
+    "official": false,
+    "tags": ["wake", "fbits", "ecommerce", "storefront", "catalog", "search", "products", "orders", "analytics"],
+    "short_description": "Search a Wake storefront catalog and analyze store orders.",
+    "mesh_description": "The Wake Commerce MCP exposes read-only access to Wake (fbits) for AI agents. **Storefront (catalog)** — full-text product **search** with facet aggregations and price ranges; explicit product **listing** by id, sku, ean, category, brand, price and attributes; rich product **detail** with variants, prices and reviews; **autocomplete**; product **recommendations**; **hotsite** (category / landing page) resolution; variant **options**; **buy lists** (kits); **shipping quotes**; and store metadata. **Admin (orders / analytics)** — list store **orders** by date range, status, payment method, customer or SKU; fetch order **detail** and **status history**; and list configured **order statuses**. **Authentication** — Storefront token (TCS-Access-Token header) for catalog tools; Admin API token (Basic auth) for order tools. Perfect for shopping assistants, catalog explorers and sales/order analytics on top of Wake Commerce."
+  }
+}
