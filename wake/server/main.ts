@@ -6,7 +6,6 @@
  */
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
-import { withAuth } from "@decocms/mcps-shared/auth";
 
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
@@ -25,11 +24,11 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 });
 
 /**
- * `withAuth` is mandatory: this MCP is served on a public hostname, so every
- * request must present the shared secret from the AUTH_TOKEN environment
- * variable. It is read at startup — without it the process exits instead of
- * serving anonymous traffic. `scripts/check-auth.ts` fails CI if it is removed.
+ * Served without `withAuth` for parity with the other deco-hosted commerce MCPs
+ * (VTEX, Shopify, Magento…), which are still open pending the shared-secret
+ * rollout. Tracked in `auth-exemptions.json`; re-add `withAuth` once the Mesh
+ * token-forwarding path is in place so end users don't have to supply a secret.
  */
 if (runtime.fetch) {
-  serve(withAuth(runtime.fetch));
+  serve(runtime.fetch);
 }

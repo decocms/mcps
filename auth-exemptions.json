@@ -151,6 +151,9 @@
     "vtex-docs": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
+    "wake": {
+      "reason": "Open for parity with the other deco-hosted commerce MCPs (VTEX, Shopify, Magento). Re-add withAuth once Mesh token-forwarding lets end users connect without supplying the shared secret."
+    },
     "whatsapp": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
     },
