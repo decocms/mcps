@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "wake",
+  "friendlyName": "Wake Commerce",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-wake.deco.site/mcp"
+  },
+  "description": "Read-only access to the Wake Commerce Storefront API — product search, catalog navigation, product detail, recommendations and shipping quotes.",
+  "icon": "https://raw.githubusercontent.com/deco-cx/apps/main/wake/logo.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["E-commerce", "Developer Tools"],
+    "official": false,
+    "tags": ["wake", "fbits", "ecommerce", "storefront", "catalog", "search", "products"],
+    "short_description": "Search and browse a Wake Commerce storefront catalog.",
+    "mesh_description": "The Wake Commerce MCP exposes read-only access to the Wake (fbits) Storefront GraphQL API, letting AI agents explore an e-commerce catalog. **Key Features** — Full-text product **search** with facet aggregations and price ranges; explicit product **listing** by id, sku, ean, category, brand, price and attributes; rich product **detail** with variants, prices and reviews; search-as-you-type **autocomplete**; product **recommendations**; **hotsite** (category / landing page) resolution; variant **options**; **buy lists** (kits); **shipping quotes** by postal code; and store metadata. **Authentication** — Configure your Wake Storefront API token (sent as the TCS-Access-Token header). Perfect for building shopping assistants, catalog explorers and storefront automations on top of Wake Commerce."
+  }
+}
