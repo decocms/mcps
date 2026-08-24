@@ -24,7 +24,7 @@
       "reporting",
       "service-account"
     ],
-    "short_description": "Query Google Analytics 4 with a service account — no OAuth login required.",
+    "short_description": "Query Google Analytics 4 with a service account — no OAuth login required. ",
     "mesh_description": "The Google Analytics Service Account MCP gives server-to-server access to GA4 — the same reporting tools as the OAuth variant, with no per-user login and no refresh token to keep alive. **Setup (easy path)** - Leave SERVICE_ACCOUNT_JSON empty and run the `check-service-account-access` tool. It returns the managed service account email; add that email as a Viewer under GA4 Admin > Property access management, then run the tool again to confirm. **Setup (bring your own)** - Prefer your own Google Cloud project? Create a service account there, enable the Analytics Data and Admin APIs, paste its JSON key into SERVICE_ACCOUNT_JSON, and grant that email Viewer access on the property. **Key Features** - Custom and funnel reports via the Data API, realtime active users, custom dimensions and metrics metadata, account hierarchy, Google Ads links, and property annotations. Access tokens are minted and refreshed automatically."
   }
 }
