@@ -7,6 +7,7 @@ Read-only access to [Wake Commerce](https://wake.tech/) (fbits) for AI agents:
 - **Admin REST API** — store-level orders for analysis and reporting (admin,
   not per-shopper).
 
+
 Cart, wishlist and customer/session operations are intentionally out of scope
 for now.
 
