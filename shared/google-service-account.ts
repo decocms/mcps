@@ -1,11 +1,16 @@
 /**
- * Google Service Account JWT authentication
+ * Google Service Account JWT authentication.
  *
- * Generates access tokens using a service account JSON key,
- * with support for domain-wide delegation (impersonation).
+ * Signs an RS256 JWT with the service account private key and exchanges it for
+ * an access token via the JWT-bearer grant. No dependencies — WebCrypto only.
+ *
+ * `subject` is optional and only needed for domain-wide delegation, where the
+ * service account acts on behalf of a Workspace user (Gmail, Calendar, Drive).
+ * APIs that grant access to the service account identity directly — GA4, for
+ * instance, where you add the `client_email` as a property user — must omit it.
  */
 
-interface ServiceAccountKey {
+export interface ServiceAccountKey {
   type: string;
   project_id: string;
   private_key_id: string;
@@ -25,7 +30,8 @@ const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const TOKEN_LIFETIME_SECS = 3600;
 const TOKEN_REFRESH_MARGIN_MS = 5 * 60 * 1000;
 
-// Cache keyed by subject email to support multiple impersonations
+// Keyed by service account + subject + scopes, so two connections using
+// different keys never share a token even when impersonating the same user.
 const tokenCache = new Map<string, CachedToken>();
 
 function base64url(input: string | ArrayBuffer): string {
@@ -75,6 +81,7 @@ async function createSignedJwt(
     exp: now + TOKEN_LIFETIME_SECS,
   };
 
+  // Domain-wide delegation only.
   if (subject) {
     payload.sub = subject;
   }
@@ -94,7 +101,23 @@ async function createSignedJwt(
 }
 
 export function parseServiceAccountKey(json: string): ServiceAccountKey {
-  const key = JSON.parse(json) as ServiceAccountKey;
+  let key: ServiceAccountKey & { installed?: unknown; web?: unknown };
+  try {
+    key = JSON.parse(json.trim());
+  } catch {
+    throw new Error(
+      "Service account key is not valid JSON. Paste the full contents of the .json file downloaded from Google Cloud.",
+    );
+  }
+
+  // The most common mistake: downloading an OAuth client instead of a key.
+  if (key.installed || key.web) {
+    throw new Error(
+      "That is an OAuth client file (client_secret.json), not a service account key. " +
+        "In Google Cloud go to IAM & Admin > Service Accounts > your account > Keys > Add key > JSON.",
+    );
+  }
+
   if (key.type !== "service_account") {
     throw new Error(
       `Invalid key type "${key.type}" — expected "service_account"`,
@@ -110,17 +133,17 @@ export function parseServiceAccountKey(json: string): ServiceAccountKey {
 
 export async function getServiceAccountAccessToken(
   serviceAccountJson: string,
-  subject: string,
   scopes: string[],
+  subject?: string,
 ): Promise<string> {
-  const cacheKey = `${subject}:${scopes.join(",")}`;
+  const key = parseServiceAccountKey(serviceAccountJson);
+  const cacheKey = `${key.client_email}:${subject ?? ""}:${scopes.join(",")}`;
 
   const cached = tokenCache.get(cacheKey);
   if (cached && Date.now() < cached.expires_at - TOKEN_REFRESH_MARGIN_MS) {
     return cached.access_token;
   }
 
-  const key = parseServiceAccountKey(serviceAccountJson);
   const jwt = await createSignedJwt(key, scopes, subject);
 
   const response = await fetch(TOKEN_URL, {
@@ -149,10 +172,6 @@ export async function getServiceAccountAccessToken(
     access_token: data.access_token,
     expires_at: Date.now() + data.expires_in * 1000,
   });
-
-  console.log(
-    `[service-account] Token for ${key.client_email} impersonating ${subject}, expires in ${data.expires_in}s`,
-  );
 
   return data.access_token;
 }

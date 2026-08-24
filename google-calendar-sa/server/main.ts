@@ -12,7 +12,7 @@ import {
 import { app as webhookRouter } from "google-calendar/router";
 
 import { type Env, StateSchema } from "../shared/deco.gen.ts";
-import { getServiceAccountAccessToken } from "./lib/service-account.ts";
+import { getServiceAccountAccessToken } from "@decocms/mcps-shared/google-service-account";
 import { cacheConnection } from "./lib/connection-cache.ts";
 import { startScheduler, stopScheduler } from "./lib/scheduler.ts";
 import { saveSAConfig, loadAllSAConfigs } from "./lib/sa-config-store.ts";
@@ -119,6 +119,12 @@ function mergeResults(
 
 const googleScopes = [GOOGLE_SCOPES.CALENDAR, GOOGLE_SCOPES.CALENDAR_EVENTS];
 
+/** Clones env with a different bearer, so tools never share a mutable auth slot. */
+const withToken = (env: Env, token: string): Env => ({
+  ...env,
+  MESH_REQUEST_CONTEXT: { ...env.MESH_REQUEST_CONTEXT, authorization: token },
+});
+
 // deno-lint-ignore no-explicit-any
 const onChangeHandler = async (_env: Env, config: any) => {
   try {
@@ -177,7 +183,6 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ...(tools as any[]).map((createTool: (env: any) => any) => {
       const tool = createTool(env);
-      const originalExecute = tool.execute;
       const shouldFanOut = FAN_OUT_TOOLS.has(tool.id);
 
       return {
@@ -196,32 +201,23 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
             );
           }
 
-          const reqCtx = env.MESH_REQUEST_CONTEXT as unknown as Record<
-            string,
-            unknown
-          >;
-
-          if (!shouldFanOut || emails.length === 1) {
+          // One tool instance per impersonated user, each with its own token.
+          // Mutating a shared MESH_REQUEST_CONTEXT.authorization would let
+          // parallel branches read each other's token.
+          const runAs = async (email: string) => {
             const token = await getServiceAccountAccessToken(
               json,
-              emails[0],
               googleScopes,
+              email,
             );
-            reqCtx.authorization = token;
-            return originalExecute(args);
+            return createTool(withToken(env, token)).execute(args);
+          };
+
+          if (!shouldFanOut || emails.length === 1) {
+            return runAs(emails[0]);
           }
 
-          const results = await Promise.all(
-            emails.map(async (email: string) => {
-              const token = await getServiceAccountAccessToken(
-                json,
-                email,
-                googleScopes,
-              );
-              reqCtx.authorization = token;
-              return originalExecute(args);
-            }),
-          );
+          const results = await Promise.all(emails.map(runAs));
 
           return mergeResults(tool.id, results);
         },
