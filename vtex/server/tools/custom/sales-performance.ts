@@ -82,8 +82,14 @@ const salesMetricsListSchema = z
   .max(5)
   .default([...DEFAULT_SALES_PERFORMANCE_METRICS])
   .describe(
-    "Metrics to return, 1-5 (mapped to metric1..metric5). Endpoints expect at least two. Values: revenue/orders/items/averageTicket in captured|approved|invoiced|canceled variants, plus itemsPerOrder, packagesPerOrder, averageSellingPrice, averageShippingPrice.",
+    "Metrics to return, mapped to metric1..metric5. WARNING: despite the declared 1-5 item schema, the underlying endpoint only accepts EITHER the parameter fully omitted (returns all 5 defaults) OR all 5 metrics supplied explicitly — partial arrays (1-4 items) return HTTP 422; all 5 columns are always returned regardless. Values: revenue/orders/items/averageTicket in captured|approved|invoiced|canceled variants, plus itemsPerOrder, packagesPerOrder, averageSellingPrice, averageShippingPrice.",
   );
+
+// Table-specific variant: same all-5-or-none constraint, plus guidance to use
+// `sortBy` (not a partial `metrics` array) when ranking by a single metric.
+const salesTableMetricsListSchema = salesMetricsListSchema.describe(
+  "Metrics to return, mapped to metric1..metric5. WARNING: despite the declared 1-5 item schema, the underlying endpoint only accepts EITHER the parameter fully omitted (returns all 5 defaults) OR all 5 metrics supplied explicitly — partial arrays (1-4 items) return HTTP 422. To rank/sort by a specific metric, omit the `metrics` param entirely and use `sortBy` instead; all 5 columns are always returned regardless. Values: revenue/orders/items/averageTicket in captured|approved|invoiced|canceled variants, plus itemsPerOrder, packagesPerOrder, averageSellingPrice, averageShippingPrice.",
+);
 
 const salesAggSchema = z
   .enum(["hour", "day", "week", "month"])
@@ -269,7 +275,7 @@ export const getSalesPerformanceTable = (_env: Env) =>
         .enum(SALES_PERFORMANCE_GROUP_BY)
         .default("productName")
         .describe("Dimension to group and rank rows by"),
-      metrics: salesMetricsListSchema,
+      metrics: salesTableMetricsListSchema,
       sortBy: salesMetricSchema
         .default("capturedRevenue")
         .describe("Metric to sort rows by (should be one of `metrics`)"),
