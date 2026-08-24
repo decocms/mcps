@@ -1,6 +1,6 @@
 {
   "name": "wake",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "MCP for the Wake Commerce Storefront API — product search, catalog, and shipping.",
   "private": true,
   "type": "module",
