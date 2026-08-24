@@ -9,6 +9,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 import { createStorefrontClient, type StorefrontClient } from "./storefront.ts";
+import { type AdminClient, createAdminClient } from "./admin.ts";
 
 /** MCP tool annotations (hints for clients about a tool's side effects). */
 export interface ToolAnnotations {
@@ -40,6 +41,37 @@ export function createWakeTool<
       execute: async ({ context, runtimeContext }) => {
         const env = runtimeContext.env as Env;
         const client = createStorefrontClient(env);
+        return config.handler(context as z.infer<TSchema>, client);
+      },
+    });
+}
+
+/**
+ * Factory for Wake **Admin** REST tools (orders / analytics). Resolves the
+ * Admin REST client (api.fbits.net, Basic auth) from the per-request context.
+ * Every admin tool here is read-only.
+ */
+export function createWakeAdminTool<
+  TSchema extends z.ZodObject<z.ZodRawShape>,
+>(config: {
+  id: string;
+  description: string;
+  inputSchema: TSchema;
+  annotations?: ToolAnnotations;
+  handler: (
+    input: z.infer<TSchema>,
+    client: AdminClient,
+  ) => Promise<Record<string, unknown>>;
+}) {
+  return (_env: Env) =>
+    createPrivateTool({
+      id: config.id,
+      description: config.description,
+      inputSchema: config.inputSchema,
+      annotations: config.annotations ?? { readOnlyHint: true },
+      execute: async ({ context, runtimeContext }) => {
+        const env = runtimeContext.env as Env;
+        const client = createAdminClient(env);
         return config.handler(context as z.infer<TSchema>, client);
       },
     });
