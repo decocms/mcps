@@ -4,17 +4,8 @@
  */
 import { z } from "zod";
 import { createWakeTool } from "../lib/tool.ts";
+import { PRODUCT_SORT_KEYS } from "../lib/constants.ts";
 import { BUY_LIST_QUERY, HOTSITE, PRODUCT_OPTIONS } from "../lib/queries.ts";
-
-const PRODUCT_SORT_KEYS = [
-  "NAME",
-  "SALES",
-  "PRICE",
-  "DISCOUNT",
-  "RANDOM",
-  "RELEASE_DATE",
-  "STOCK",
-] as const;
 
 export const getHotsiteTool = createWakeTool({
   id: "WAKE_GET_HOTSITE",

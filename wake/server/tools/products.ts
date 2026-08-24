@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { createWakeTool } from "../lib/tool.ts";
+import { PRODUCT_SORT_KEYS, SEARCH_SORT_KEYS } from "../lib/constants.ts";
 import {
   AUTOCOMPLETE,
   GET_PRODUCT,
@@ -11,18 +12,6 @@ import {
   PRODUCT_RECOMMENDATIONS,
   SEARCH_PRODUCTS,
 } from "../lib/queries.ts";
-
-const PRODUCT_SORT_KEYS = [
-  "NAME",
-  "SALES",
-  "PRICE",
-  "DISCOUNT",
-  "RANDOM",
-  "RELEASE_DATE",
-  "STOCK",
-] as const;
-
-const SEARCH_SORT_KEYS = ["RELEVANCE", ...PRODUCT_SORT_KEYS] as const;
 
 /** [ProductFilterInput] — facet filters returned by search/hotsite aggregations. */
 const facetFilter = z

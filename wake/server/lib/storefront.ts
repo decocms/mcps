@@ -56,7 +56,7 @@ export function createStorefrontClient(env: Env): StorefrontClient {
           signal: controller.signal,
         });
       } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
+        if ((error as { name?: string })?.name === "AbortError") {
           throw new Error(
             `Wake Storefront API request timed out after ${REQUEST_TIMEOUT_MS}ms.`,
           );

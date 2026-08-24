@@ -8,7 +8,7 @@
   },
   "description": "Read-only access to the Wake Commerce Storefront API — product search, catalog navigation, product detail, recommendations and shipping quotes.",
   "icon": "https://raw.githubusercontent.com/deco-cx/apps/main/wake/logo.png",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["E-commerce", "Developer Tools"],
     "official": false,
