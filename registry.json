@@ -3404,6 +3404,54 @@
     }
   },
   {
+    "id": "deco/wake",
+    "title": "Wake Commerce",
+    "description": "Read-only access to the Wake Commerce Storefront API — product search, catalog navigation, product detail, recommendations and shipping quotes.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "Wake Commerce",
+        "short_description": "Search and browse a Wake Commerce storefront catalog.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "wake",
+          "fbits",
+          "ecommerce",
+          "storefront",
+          "catalog",
+          "search",
+          "products"
+        ],
+        "categories": [
+          "E-commerce"
+        ],
+        "readme": "The Wake Commerce MCP exposes read-only access to the Wake (fbits) Storefront GraphQL API, letting AI agents explore an e-commerce catalog. **Key Features** — Full-text product **search** with facet aggregations and price ranges; explicit product **listing** by id, sku, ean, category, brand, price and attributes; rich product **detail** with variants, prices and reviews; search-as-you-type **autocomplete**; product **recommendations**; **hotsite** (category / landing page) resolution; variant **options**; **buy lists** (kits); **shipping quotes** by postal code; and store metadata. **Authentication** — Configure your Wake Storefront API token (sent as the TCS-Access-Token header). Perfect for building shopping assistants, catalog explorers and storefront automations on top of Wake Commerce."
+      }
+    },
+    "server": {
+      "name": "wake",
+      "title": "Wake Commerce",
+      "description": "Read-only access to the Wake Commerce Storefront API — product search, catalog navigation, product detail, recommendations and shipping quotes.",
+      "icons": [
+        {
+          "src": "https://raw.githubusercontent.com/deco-cx/apps/main/wake/logo.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-wake.deco.site/mcp",
+          "name": "wake",
+          "title": "Wake Commerce",
+          "description": "Read-only access to the Wake Commerce Storefront API — product search, catalog navigation, product detail, recommendations and shipping quotes."
+        }
+      ]
+    }
+  },
+  {
     "id": "deco/whatsapp-agent",
     "title": "Deco WhatsApp Agent",
     "description": "Talk to your Mesh Agents via WhatsApp",
