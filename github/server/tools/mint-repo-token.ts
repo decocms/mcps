@@ -19,6 +19,11 @@ import {
   repoGrantClientId,
 } from "../lib/repo-grant.ts";
 import { getRepoGrantStore } from "../lib/repo-grant-store.ts";
+import {
+  ALLOWED_PERMISSIONS,
+  DEFAULT_PERMISSIONS,
+  READ_ONLY_PERMISSIONS,
+} from "../lib/repo-token.ts";
 import type { Env } from "../types/env.ts";
 
 export function createMintRepoTokenTool() {
@@ -29,7 +34,8 @@ export function createMintRepoTokenTool() {
       "with least-privilege permissions, using the GitHub App. The authenticated " +
       "caller must already be entitled to the installation and repository — the " +
       "tool verifies this against the caller's own GitHub context before minting. " +
-      "The token grants only repo-content / pull-request / issue access. Also " +
+      "The token grants only repo-content / pull-request / issue access plus " +
+      "read-only CI checks and deployments. Also " +
       "returns a durable refresh token (refreshToken) plus tokenEndpoint and " +
       "clientId: POST grant_type=refresh_token to tokenEndpoint to mint a fresh " +
       "token later without the caller's GitHub login.",
@@ -58,11 +64,16 @@ export function createMintRepoTokenTool() {
       permissions: z
         .record(z.string(), z.string())
         .optional()
+        // Derived from the allowlist itself: a hand-written list silently went
+        // stale when `checks` was added, so callers were told to expect a
+        // rejection the server would in fact have accepted.
         .describe(
           "Optional GitHub permission map, capped to least privilege. Allowed " +
-            "keys: contents, metadata, pull_requests, issues; values: read | " +
-            'write. Defaults to { contents: "write", metadata: "read", ' +
-            'pull_requests: "write" }. Anything broader is rejected.',
+            `keys: ${[...ALLOWED_PERMISSIONS].join(", ")}; values: read | ` +
+            `write, except ${[...READ_ONLY_PERMISSIONS].join(", ")}, which are ` +
+            `always capped to read. Defaults to ` +
+            `${JSON.stringify(DEFAULT_PERMISSIONS)}. Anything broader is ` +
+            "rejected.",
         ),
     }),
     outputSchema: z.object({

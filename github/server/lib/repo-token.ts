@@ -48,13 +48,18 @@ export class RepoTokenError extends Error {
 
 /**
  * Positive allowlist of permissions we are willing to mint — strictly
- * repo-content / PR / issue / CI-checks level. Anything outside this list is
- * hard-rejected, which by construction also rejects every escalation vector the
- * spec bans (administration, members, organization_*, secrets, actions, ...).
+ * repo-content / PR / issue level plus two read-only CI/deploy signals.
+ * Anything outside this list is hard-rejected, which by construction also
+ * rejects every escalation vector the spec bans (administration, members,
+ * organization_*, secrets, actions, environments, ...).
  *
  * `checks` is needed so the PR panel can read CI check runs
- * (`GET /commits/{sha}/check-runs`); without it the minted installation token
- * gets `403 Resource not accessible by integration`.
+ * (`GET /commits/{sha}/check-runs`); `deployments` so it can read a PR's preview
+ * URL from the Deployments API (`GET /repos/{o}/{r}/deployments` + `/statuses`,
+ * via GET_PREVIEW_DEPLOYMENT) — the ONLY place a VTEX FastStore WebOps preview
+ * is published (not a commit-status `target_url`, not a bot comment). Without
+ * each, the minted installation token gets `403 Resource not accessible by
+ * integration` on that endpoint.
  */
 export const ALLOWED_PERMISSIONS = new Set([
   "contents",
@@ -62,7 +67,36 @@ export const ALLOWED_PERMISSIONS = new Set([
   "pull_requests",
   "issues",
   "checks",
+  "deployments",
 ]);
+
+/**
+ * Permissions we only ever mint at `read`, whatever the caller asks for. These
+ * are observability signals, and write on either is an escalation with teeth:
+ * `checks:write` lets a token POST a green check run — and Studio gates PR
+ * merges on check status, so that is a forged ship signal — while
+ * `deployments:write` lets it create deployments and deployment statuses,
+ * including the `environment_url` that the PR panel then renders as a preview
+ * link. Capped rather than rejected, matching this function's contract (and how
+ * `metadata` has always been handled): a stored grant is re-capped on every
+ * refresh, so a throw here would turn a legacy over-broad grant into a hard
+ * refresh failure instead of quietly narrowing it.
+ */
+export const READ_ONLY_PERMISSIONS = new Set([
+  "metadata",
+  "checks",
+  "deployments",
+]);
+
+/**
+ * The optional read permissions a refresh tries to widen an existing grant
+ * into, MOST-DROPPABLE FIRST. `deployments` is the newest, so an installation
+ * that has approved `checks` but not yet `deployments` sheds only the latter.
+ * Every entry must also be in {@link ALLOWED_PERMISSIONS} (asserted in the unit
+ * test): this list marks which permissions are droppable, it does not add new
+ * ones. See `buildUpgradeLadder` in repo-grant.ts for how it is applied.
+ */
+export const OPTIONAL_READ_UPGRADES = ["deployments", "checks"] as const;
 
 /** GitHub permission levels we allow. `admin` is never granted. */
 const ALLOWED_VALUES = new Set(["read", "write"]);
@@ -113,6 +147,7 @@ function isTransientGitHubResponse(res: Response): boolean {
  * - Each key must be in {@link ALLOWED_PERMISSIONS}; otherwise hard-reject.
  * - Each value must be "read" or "write"; `admin` (or anything else) is
  *   rejected.
+ * - A {@link READ_ONLY_PERMISSIONS} key is capped down to "read".
  * - `metadata:read` is always required by GitHub, so it is forced in (and
  *   never elevated to write).
  */
@@ -138,7 +173,7 @@ export function capPermissions(
         `Permission "${key}" must be "read" or "write" (got "${value}").`,
       );
     }
-    out[key] = value;
+    out[key] = READ_ONLY_PERMISSIONS.has(key) ? "read" : value;
   }
 
   // GitHub always requires metadata:read; never grant metadata:write.
