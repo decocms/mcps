@@ -62,6 +62,34 @@ This MCP requires a **GitHub App** (not a plain OAuth App) because webhook routi
 - Webhook permissions for the desired events
 - A callback URL matching your deployment
 
+#### Repository permissions the App must declare
+
+`MINT_REPO_TOKEN` can only mint what the App itself declares — GitHub `422`s a
+mint whose permission set exceeds the installation's grant. So the App's
+**Repository permissions** must include every key in `ALLOWED_PERMISSIONS`
+(`server/lib/repo-token.ts`):
+
+| Permission     | Level | Why                                                        |
+| -------------- | ----- | ---------------------------------------------------------- |
+| Contents       | Read & write | clone, read, push                                    |
+| Metadata       | Read  | mandatory for every GitHub App                             |
+| Pull requests  | Read & write | open/update PRs                                     |
+| Issues         | Read & write | open/comment issues                                 |
+| Checks         | Read  | `GET_CHECK_RUN`, the PR panel's Checks tab                 |
+| Deployments    | Read  | `GET_PREVIEW_DEPLOYMENT` — the only place a VTEX FastStore WebOps preview URL is published |
+
+Adding a permission to an existing App is **not** self-applying: GitHub marks
+every existing installation as having a pending permission request, and an
+owner/admin of each account must accept it (`Settings → Applications → <App> →
+Review request`, or the emailed prompt). Until an installation accepts, its
+mints simply shed the un-approved optional (see `OPTIONAL_READ_UPGRADES`) and
+keep working with the narrower set — nothing breaks, the corresponding feature
+just stays dark for that org.
+
+Once an installation does accept, its existing repo grants pick the permission
+up on their next `/repo-grant/token` refresh (within ~1h). No re-import, no
+re-install, no user action.
+
 ### Environment Variables
 
 ```bash

@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import {
+  buildUpgradeLadder,
   handleRepoGrantRevokeRequest,
   handleRepoGrantTokenRequest,
   issueRepoGrant,
@@ -195,6 +196,95 @@ async function seedGrant(
   return { creds, meta };
 }
 
+describe("buildUpgradeLadder", () => {
+  test("widens first, then sheds the newest optional one at a time", () => {
+    expect(buildUpgradeLadder({ contents: "write", metadata: "read" })).toEqual(
+      [
+        {
+          contents: "write",
+          metadata: "read",
+          checks: "read",
+          deployments: "read",
+        },
+        { contents: "write", metadata: "read", checks: "read" },
+        { contents: "write", metadata: "read" },
+      ],
+    );
+  });
+
+  test("dedupes rungs a grant already satisfies", () => {
+    // A grant that already carries checks has nothing to gain from the
+    // checks-only rung — asking twice would burn a GitHub call per refresh.
+    expect(
+      buildUpgradeLadder({
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+      }),
+    ).toEqual([
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
+      },
+      { contents: "write", metadata: "read", checks: "read" },
+    ]);
+  });
+
+  test("a fully-upgraded grant needs exactly one rung", () => {
+    const full = {
+      contents: "write",
+      metadata: "read",
+      checks: "read",
+      deployments: "read",
+    };
+    expect(buildUpgradeLadder(full)).toEqual([full]);
+  });
+
+  test("keeps the verbatim stored set as the last rung when capping changes it", () => {
+    // A legacy grant holding checks:write is now capped to read — but the
+    // stored set is the one GitHub is known to have honoured, so it stays as
+    // the final fallback rather than being capped away.
+    expect(
+      buildUpgradeLadder({
+        contents: "write",
+        metadata: "read",
+        checks: "write",
+      }),
+    ).toEqual([
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
+      },
+      { contents: "write", metadata: "read", checks: "read" },
+      { contents: "write", metadata: "read", checks: "write" },
+    ]);
+  });
+
+  test("refuses to build a ladder for a grant with no stored permissions", () => {
+    // Both ways of expressing "nothing" would ESCALATE here: `permissions: {}`
+    // reads as omitted to GitHub (every permission the installation holds), and
+    // capPermissions({}) returns the default contents:write set. No rung is the
+    // only safe answer.
+    expect(buildUpgradeLadder({})).toEqual([]);
+  });
+
+  test("a stored key the allowlist no longer permits still yields a usable rung", () => {
+    // The widened rungs throw while capping; that must degrade to re-minting
+    // exactly what the grant holds, never escape as a 500 from /repo-grant/token.
+    expect(
+      buildUpgradeLadder({
+        contents: "write",
+        metadata: "read",
+        actions: "read",
+      }),
+    ).toEqual([{ contents: "write", metadata: "read", actions: "read" }]);
+  });
+});
+
 describe("refreshRepoGrant — request validation", () => {
   test("missing grant_type or refresh_token → 400 invalid_request", async () => {
     const store = getRepoGrantStore(fakeKV());
@@ -330,12 +420,14 @@ describe("refreshRepoGrant — minting", () => {
       if (/\/app\/installations\/42\/access_tokens/.test(url)) {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
         expect(body.repository_ids).toEqual([999]);
-        // Refresh widens a pre-checks grant to include checks:read so the PR
-        // panel can read CI check runs — no re-install needed.
+        // Refresh widens a legacy grant into every optional read the PR panel
+        // needs — checks:read (CI check runs) and deployments:read (the preview
+        // URL) — so it self-heals with no re-import and no re-install.
         expect(body.permissions).toEqual({
           contents: "write",
           metadata: "read",
           checks: "read",
+          deployments: "read",
         });
         return json(
           {
@@ -373,30 +465,19 @@ describe("refreshRepoGrant — minting", () => {
     expect(stored?.expiresAt).toBe("2026-09-08T00:00:00.000Z");
   });
 
-  test("checks upgrade unavailable (422) falls back to the grant's permissions without revoking", async () => {
+  test("no optional upgrade available (422) falls back to the grant's permissions without revoking", async () => {
     const kv = fakeKV();
     const store = getRepoGrantStore(kv);
-    const { creds, meta } = await seedGrant(store); // no checks in the grant
-    let calls = 0;
+    const { creds, meta } = await seedGrant(store); // no checks, no deployments
+    const asked: Array<Record<string, string>> = [];
     setFetch(async (input, init) => {
       const url = urlOf(input);
       if (/\/app\/installations\/42\/access_tokens/.test(url)) {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
-        calls++;
-        if (calls === 1) {
-          // Widened attempt asks for checks the installation hasn't granted.
-          expect(body.permissions).toEqual({
-            contents: "write",
-            metadata: "read",
-            checks: "read",
-          });
+        asked.push(body.permissions);
+        if (asked.length < 3) {
           return json({ message: "permissions exceed grant" }, 422);
         }
-        // Fallback attempt uses exactly what the grant was issued with.
-        expect(body.permissions).toEqual({
-          contents: "write",
-          metadata: "read",
-        });
         return json(
           {
             token: "ghs_fallback",
@@ -421,9 +502,138 @@ describe("refreshRepoGrant — minting", () => {
     expect(r.ok).toBe(true);
     if (!r.ok) throw new Error("expected ok");
     expect(r.success.access_token).toBe("ghs_fallback");
-    expect(calls).toBe(2);
-    // The still-valid grant must survive the failed checks upgrade.
+    // Newest optional shed first, then the next — the last rung is exactly what
+    // the grant was issued with, so the connection always keeps working.
+    expect(asked).toEqual([
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
+      },
+      { contents: "write", metadata: "read", checks: "read" },
+      { contents: "write", metadata: "read" },
+    ]);
+    // The still-valid grant must survive the failed upgrades.
     expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+
+  test("an installation granting checks but not deployments keeps checks", async () => {
+    // The regression this ladder exists for: adding deployments to the widened
+    // set without shedding it one at a time would 422 the whole mint for every
+    // grant that already had checks, and (before the ladder) go straight to
+    // handleMintFailure — revoking a perfectly good grant on a 422.
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store, {
+      permissions: { contents: "write", metadata: "read", checks: "read" },
+    });
+    const asked: Array<Record<string, string>> = [];
+    setFetch(async (input, init) => {
+      const url = urlOf(input);
+      if (/\/app\/installations\/42\/access_tokens/.test(url)) {
+        const body = JSON.parse((init as { body?: string }).body ?? "{}");
+        asked.push(body.permissions);
+        if (body.permissions.deployments) {
+          return json({ message: "permissions exceed grant" }, 422);
+        }
+        return json(
+          {
+            token: "ghs_with_checks",
+            expires_at: "2026-06-10T01:00:00.000Z",
+            permissions: body.permissions,
+          },
+          201,
+        );
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.success.access_token).toBe("ghs_with_checks");
+    expect(asked).toEqual([
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
+      },
+      { contents: "write", metadata: "read", checks: "read" },
+    ]);
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+
+  test("a non-422 mint failure stops the ladder after one attempt", async () => {
+    // A 5xx says nothing about the permission set, so retrying narrower would
+    // just multiply GitHub calls during an outage — and must stay transient
+    // (503), never invalidate the grant.
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    let calls = 0;
+    setFetch(async (input) => {
+      const url = urlOf(input);
+      if (/\/app\/installations\/42\/access_tokens/.test(url)) {
+        calls++;
+        return json({ message: "server error" }, 500);
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+
+    expect(r).toMatchObject({
+      ok: false,
+      status: 503,
+      error: "temporarily_unavailable",
+    });
+    expect(calls).toBe(1);
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+
+  test("the last rung 422ing is grant-invalidating and revokes", async () => {
+    // Every rung down to the grant's own stored permissions was refused: the
+    // repo left the installation (or the App lost it), so the grant can never
+    // work again and must not linger.
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const { creds, meta } = await seedGrant(store);
+    setFetch(async (input) => {
+      const url = urlOf(input);
+      if (/\/app\/installations\/42\/access_tokens/.test(url)) {
+        return json({ message: "permissions exceed grant" }, 422);
+      }
+      throw new Error(`unexpected url ${url}`);
+    });
+
+    const r = await refreshRepoGrant({
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+
+    expect(r).toMatchObject({ ok: false, status: 400, error: "invalid_grant" });
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(false);
   });
 
   test("omitted client_id is allowed (public-client model)", async () => {

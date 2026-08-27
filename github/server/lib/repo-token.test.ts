@@ -1,11 +1,13 @@
 import { afterEach, describe, expect, test } from "bun:test";
 import { GitHubAppApiError } from "./github-app-auth.ts";
 import {
+  ALLOWED_PERMISSIONS,
   authorizeAndResolveRepoId,
   capPermissions,
   DEFAULT_PERMISSIONS,
   mapMintError,
   mintRepoScopedToken,
+  OPTIONAL_READ_UPGRADES,
   RepoTokenError,
 } from "./repo-token.ts";
 
@@ -70,8 +72,41 @@ describe("capPermissions", () => {
     });
   });
 
+  test("allows deployments:read so the PR panel can read preview URLs", () => {
+    // VTEX FastStore WebOps publishes a PR's preview ONLY as a GitHub
+    // Deployment; without this, GET_PREVIEW_DEPLOYMENT 403s and the card shows
+    // no preview link at all.
+    expect(capPermissions({ deployments: "read" })).toEqual({
+      deployments: "read",
+      metadata: "read",
+    });
+  });
+
   test("forces metadata to read even if write is requested", () => {
     expect(capPermissions({ metadata: "write" })).toEqual({ metadata: "read" });
+  });
+
+  test.each(["checks", "deployments"])(
+    "caps the read-only permission %s down to read",
+    (perm) => {
+      // checks:write would let a token post a green check run — and Studio
+      // gates PR merges on check status. deployments:write would let it write
+      // the environment_url the PR panel renders as a preview link. Neither is
+      // ever needed, so neither is ever minted.
+      expect(capPermissions({ [perm]: "write" })).toEqual({
+        [perm]: "read",
+        metadata: "read",
+      });
+    },
+  );
+
+  test("every optional read upgrade is itself an allowed permission", () => {
+    // OPTIONAL_READ_UPGRADES marks which permissions the refresh ladder may
+    // shed — it must never smuggle in a key capPermissions would reject, which
+    // would make rung 0 of the ladder throw instead of 422.
+    for (const perm of OPTIONAL_READ_UPGRADES) {
+      expect(ALLOWED_PERMISSIONS.has(perm)).toBe(true);
+    }
   });
 
   test.each([
@@ -81,7 +116,6 @@ describe("capPermissions", () => {
     "secrets",
     "actions",
     "environments",
-    "deployments",
   ])("hard-rejects the disallowed permission %s", (perm) => {
     let caught: unknown;
     try {

@@ -29,7 +29,11 @@ import {
   type RepoGrantStore,
   verifySecret,
 } from "./repo-grant-store.ts";
-import { capPermissions, mintRepoScopedToken } from "./repo-token.ts";
+import {
+  capPermissions,
+  mintRepoScopedToken,
+  OPTIONAL_READ_UPGRADES,
+} from "./repo-token.ts";
 import type { Env } from "../types/env.ts";
 
 export interface IssuedRepoGrant {
@@ -182,6 +186,81 @@ export type RefreshResult =
 const INVALID_GRANT_MESSAGE =
   "Repo grant is expired, revoked, unknown, or no longer valid.";
 
+const samePermissions = (
+  a: Record<string, string>,
+  b: Record<string, string>,
+): boolean => {
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
+  );
+};
+
+/**
+ * The permission maps a refresh tries, in order, when re-minting a grant.
+ *
+ * Rung 0 widens the grant into every {@link OPTIONAL_READ_UPGRADES} permission
+ * — `checks:read` (CI check runs) and `deployments:read` (a PR's preview URL,
+ * the ONLY place a VTEX FastStore WebOps deploy publishes it). That is what
+ * lets a grant issued before a permission joined the allowlist pick it up on
+ * its next refresh, riding the ~1h token cycle: no re-import, no re-install,
+ * no user action.
+ *
+ * The rungs below it exist because GitHub 422s the WHOLE mint when ANY
+ * requested permission exceeds what the installation granted — it does not
+ * partially fulfil. So each rung drops one more optional (newest first) and the
+ * last is exactly the grant's stored permissions. An installation that has
+ * approved `checks` but not yet `deployments` therefore keeps `checks` instead
+ * of losing both, and a grant that is still valid for its own scope is never
+ * revoked because a widening failed.
+ *
+ * Cost: until an installation approves a newer permission, each refresh burns
+ * one extra 422'd mint per un-approved optional (~1/hour per connection). That
+ * is the deliberate price of picking the permission up automatically the moment
+ * an org approves it, rather than requiring every connection to be re-imported.
+ *
+ * Exported pure so the ladder — the part with the ordering and dedup rules — is
+ * unit-testable without mocking GitHub.
+ */
+export function buildUpgradeLadder(
+  stored: Record<string, string>,
+): Record<string, string>[] {
+  const ladder: Record<string, string>[] = [];
+  // A grant with NO stored permissions can't be widened safely: `permissions:
+  // {}` reads as "omitted" to GitHub (minting every permission the installation
+  // holds), and `capPermissions({})` returns the DEFAULT coding-agent set
+  // (contents:write) — so both a literal and a capped empty map would hand the
+  // grant more than it was ever issued. Refuse to build a ladder; the caller
+  // then reports a transient failure and keeps the grant rather than escalating
+  // it. Not reachable today (GitHub always echoes metadata back at issue time),
+  // but this is KV data written by past versions of the code.
+  if (Object.keys(stored).length === 0) return ladder;
+  const push = (perms: Record<string, string>) => {
+    if (!ladder.some((p) => samePermissions(p, perms))) ladder.push(perms);
+  };
+  for (let drop = 0; drop <= OPTIONAL_READ_UPGRADES.length; drop++) {
+    const widened = { ...stored };
+    for (const permission of OPTIONAL_READ_UPGRADES.slice(drop)) {
+      widened[permission] = "read";
+    }
+    // A stored key the allowlist no longer permits makes capping throw. That
+    // must not escape into the token endpoint as a 500 — it would bypass the
+    // transient-vs-permanent mapping the whole refresh path is built around.
+    // Skip the widened rung; the verbatim rung below still re-mints the grant.
+    try {
+      push(capPermissions(widened));
+    } catch {
+      // Not widenable — fall through to the stored set.
+    }
+  }
+  // Last resort: exactly what the grant was issued with. Usually already
+  // deduped away by the final loop rung; it differs only for a legacy grant
+  // holding a permission `capPermissions` now caps (e.g. `checks:write`), and
+  // there the stored set is the one we know the installation honoured.
+  push({ ...stored });
+  return ladder;
+}
+
 function oauthError(
   status: number,
   error: string,
@@ -291,18 +370,6 @@ export async function refreshRepoGrant(opts: {
     );
   }
 
-  // Ensure the standard repo-scoped grant carries checks:read so the PR panel
-  // can read CI check runs (GET /commits/{sha}/check-runs). Grants issued
-  // before checks joined the allowlist are upgraded here on their next refresh
-  // — no re-install, riding the ~1h token cycle. If the installation hasn't
-  // granted checks yet, GitHub 422s; we fall back to the grant's stored
-  // permissions and never revoke a grant that is still valid for its own scope.
-  const upgradedPermissions = capPermissions({
-    ...grant.permissions,
-    checks: "read",
-  });
-  const addedChecks = !!upgradedPermissions.checks && !grant.permissions.checks;
-
   const mintWith = (permissions: Record<string, string>) =>
     mintInstallationAccessToken(
       grant.installationId,
@@ -327,23 +394,28 @@ export async function refreshRepoGrant(opts: {
     return mapped;
   };
 
+  // Widen the grant into the optional reads the PR panel needs, shedding one at
+  // a time when the installation hasn't approved it (see buildUpgradeLadder).
   let minted;
-  try {
-    minted = await mintWith(upgradedPermissions);
-  } catch (err) {
-    // A 422 from the checks widening means the installation hasn't granted
-    // checks — retry with exactly the grant's stored permissions so the
-    // connection keeps working, and only then treat a failure as terminal.
-    if (addedChecks && err instanceof GitHubAppApiError && err.status === 422) {
-      try {
-        minted = await mintWith(grant.permissions);
-      } catch (retryErr) {
-        return handleMintFailure(retryErr);
-      }
-    } else {
-      return handleMintFailure(err);
+  let lastErr: unknown;
+  for (const permissions of buildUpgradeLadder(grant.permissions)) {
+    try {
+      minted = await mintWith(permissions);
+      break;
+    } catch (err) {
+      lastErr = err;
+      // Only 422 ("permissions exceed what the App was granted", or the repo
+      // left the installation) is worth retrying narrower. A 5xx/429 outage or
+      // a 401/403 from our own App credentials says nothing about the requested
+      // permission set, so burning the rest of the ladder on it would turn one
+      // transient blip into N pointless GitHub calls per refresh.
+      if (!(err instanceof GitHubAppApiError && err.status === 422)) break;
     }
   }
+  // Every rung 422'd (or the first failed hard): the last error is the one that
+  // decides transient-vs-permanent, and the last rung asked for exactly what
+  // the grant was issued with — so a 422 there really is grant-invalidating.
+  if (!minted) return handleMintFailure(lastErr);
 
   // --- slide TTL and respond ---
   const newExpiresAt = new Date(now + GRANT_TTL_SECONDS * 1000).toISOString();
