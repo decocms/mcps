@@ -7,6 +7,12 @@ export const StateSchema = z.object({
     .describe(
       "Default GA4 Property identifier — 'properties/1234567' or just '1234567'. Used as a fallback for tools when their `property` argument is omitted.",
     ),
+  allowedPropertyIds: z
+    .array(z.string())
+    .nullish()
+    .describe(
+      "Optional allowlist of GA4 property IDs this installation may access. Accepts 'properties/1234567' or just '1234567'. When set, get-account-summaries only returns matching properties (and the accounts that contain them), and all other tools reject any property not in the list. Leave empty to allow all properties the authenticated user can access.",
+    ),
 });
 
 export interface MeshRequestContext {
