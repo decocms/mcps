@@ -99,9 +99,33 @@ GITHUB_CLIENT_ID=<github-app-client-id>
 GITHUB_CLIENT_SECRET=<github-app-client-secret>
 GITHUB_WEBHOOK_SECRET=<webhook-secret>  # Required for webhook signature verification
 PUBLIC_BASE_URL=<public-origin>         # Optional; defaults to https://github-mcp.decocms.com
+EXTRA_ALLOWED_REDIRECT_HOSTS=<host>[,<host>]  # Optional; extra OAuth redirect_uri hosts
 ```
 
 `GITHUB_PRIVATE_KEY` accepts raw PEM, a single-line env value with `\n` escapes, or base64-encoded PEM.
+
+### Allowing a self-hosted Studio as the OAuth `redirect_uri`
+
+GitHub delivers the authorization `code` to the `redirect_uri`, so this server
+only hands GitHub a callback whose host matches
+`ALLOWED_REDIRECT_HOST_SUFFIXES` (`decocms.com` and any subdomain — see
+`server/constants.ts`). A self-hosted Mesh/Studio on its own domain needs its
+host added in **two** places:
+
+1. **This deployment** — `EXTRA_ALLOWED_REDIRECT_HOSTS`, a comma-separated list
+   of host suffixes (a full callback URL is accepted and reduced to its host;
+   single-label values like `com` are rejected, since as a *suffix* they would
+   open a whole TLD). Set it with
+   `bunx wrangler secret put EXTRA_ALLOWED_REDIRECT_HOSTS`; unusable entries are
+   logged and skipped rather than breaking OAuth. Hosts stay in deployment
+   config on purpose, so no install-specific hostname lands in this repo.
+2. **The GitHub App** — add the exact callback URL under *Settings → Developer
+   settings → GitHub Apps → <App> → Callback URL* (GitHub Apps allow several).
+   GitHub rejects the authorize request otherwise, whatever this server allows.
+
+Each added host is one more origin that can receive a user's authorization
+`code`, so add only hosts you control or trust to the same degree as
+`decocms.com`.
 
 `PUBLIC_BASE_URL` is the origin used to build the absolute `tokenEndpoint` that `MINT_REPO_TOKEN` returns; it must point at this deployment. The synthetic refresh flow also needs the `REPO_GRANTS` KV namespace bound in `wrangler.toml` (create with `bunx wrangler kv namespace create REPO_GRANTS`).
 

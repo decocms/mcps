@@ -26,9 +26,10 @@ import {
 } from "./lib/repo-grant.ts";
 import { setRepoGrantKV } from "./lib/repo-grant-store.ts";
 import {
-  ALLOWED_REDIRECT_HOST_SUFFIXES,
+  EXTRA_ALLOWED_REDIRECT_HOSTS_VAR,
   REPO_GRANT_REVOKE_PATH,
   REPO_GRANT_TOKEN_PATH,
+  resolveAllowedRedirectHosts,
 } from "./constants.ts";
 import { setTriggerKV } from "./lib/trigger-store.ts";
 import { getTools } from "./tools/index.ts";
@@ -89,7 +90,9 @@ async function getRuntime(): Promise<Runtime> {
         oauth: {
           mode: "PKCE",
           authorizationServer: "https://github.com",
-          allowedRedirectHosts: [...ALLOWED_REDIRECT_HOST_SUFFIXES],
+          allowedRedirectHosts: resolveAllowedRedirectHosts(
+            process.env[EXTRA_ALLOWED_REDIRECT_HOSTS_VAR],
+          ),
           stateSecret: getStateSecret(),
 
           authorizationUrl: (callbackUrl) => {

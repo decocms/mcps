@@ -45,6 +45,7 @@ export type Env = DefaultEnv<typeof StateSchema, Registry> & {
   GITHUB_CLIENT_SECRET?: string;
   GITHUB_WEBHOOK_SECRET?: string;
   PUBLIC_BASE_URL?: string;
+  EXTRA_ALLOWED_REDIRECT_HOSTS?: string;
 };
 
 export type { Registry };
