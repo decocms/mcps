@@ -70,6 +70,22 @@ When connecting through the MCP URL, provide:
 | `accountName` | Your VTEX account name |
 | `appKey` | Your VTEX App Key |
 | `appToken` | Your VTEX App Token |
+| `writeMode` | Opt-in to write operations. Defaults to `false` (read-only) |
+
+### Read-only by default (write mode)
+
+The MCP is **read-only by default**. Read tools (those annotated
+`readOnlyHint: true` — `GET` / `LIST` / `SEARCH`) always run; any
+create/update/delete tool is refused with a clear error unless the connection
+opts in by setting `writeMode: true` in its configuration state (or
+`VTEX_WRITE_MODE=true` for local development).
+
+A tool is treated as a write **unless** it is explicitly annotated
+`readOnlyHint: true`, so an un-annotated mutation can never slip through the
+gate. The gate is enforced per-request at execution time — not by hiding tools
+from `tools/list` — because `@decocms/runtime` caches tool registrations for the
+process lifetime while configuration state is delivered per-request
+(multi-tenant). See `server/lib/write-mode.ts`.
 
 ### Environment Variables
 
@@ -79,6 +95,8 @@ For local development, create a `.env` file:
 VTEX_ACCOUNT_NAME=your-account-name
 VTEX_APP_KEY=your-app-key
 VTEX_APP_TOKEN=your-app-token
+# Optional — allow write operations locally (default read-only)
+VTEX_WRITE_MODE=true
 ```
 
 ### Internal endpoints (VtexId session-token auth)

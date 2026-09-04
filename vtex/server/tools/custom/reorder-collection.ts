@@ -4,6 +4,7 @@ import {
   assertValidCredentials,
   resolveCredentials,
 } from "../../lib/client-factory.ts";
+import { assertWriteModeEnabled } from "../../lib/write-mode.ts";
 import type { Env } from "../../types/env.ts";
 
 /**
@@ -282,6 +283,10 @@ export const reorderCollection = (_env: Env) =>
       const reorderPromise = (async () => {
         const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
         assertValidCredentials(credentials, "VTEX_REORDER_COLLECTION");
+        assertWriteModeEnabled(
+          env.MESH_REQUEST_CONTEXT?.state,
+          "VTEX_REORDER_COLLECTION",
+        );
         const directSkuIds = context.skuIds ?? [];
         const productIds = context.productIds ?? [];
 
