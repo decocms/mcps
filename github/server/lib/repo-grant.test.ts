@@ -17,6 +17,8 @@ import {
 } from "./repo-grant-store.ts";
 import type { Env } from "../types/env.ts";
 
+const TEST_NOW = Date.parse("2026-06-10T00:00:00.000Z");
+
 function fakeKV() {
   const store = new Map<string, string>();
   return {
@@ -289,6 +291,7 @@ describe("refreshRepoGrant — request validation", () => {
   test("missing grant_type or refresh_token → 400 invalid_request", async () => {
     const store = getRepoGrantStore(fakeKV());
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: null,
       refreshToken: null,
@@ -305,6 +308,7 @@ describe("refreshRepoGrant — request validation", () => {
   test("unsupported grant_type → 400 unsupported_grant_type", async () => {
     const store = getRepoGrantStore(fakeKV());
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "authorization_code",
       refreshToken: "ghr_x.y",
@@ -321,6 +325,7 @@ describe("refreshRepoGrant — request validation", () => {
   test("mismatched client_id → 400 invalid_client", async () => {
     const store = getRepoGrantStore(fakeKV());
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: "ghr_x.y",
@@ -339,6 +344,7 @@ describe("refreshRepoGrant — grant validity (permanent failures)", () => {
   test("unparseable refresh_token → 400 invalid_grant", async () => {
     const store = getRepoGrantStore(fakeKV());
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: "not-a-token",
@@ -352,6 +358,7 @@ describe("refreshRepoGrant — grant validity (permanent failures)", () => {
     const store = getRepoGrantStore(fakeKV());
     const creds = generateGrantCredentials();
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -365,6 +372,7 @@ describe("refreshRepoGrant — grant validity (permanent failures)", () => {
     const store = getRepoGrantStore(fakeKV());
     const { meta } = await seedGrant(store);
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: `ghr_${meta.grantId}.WRONGSECRET`,
@@ -380,6 +388,7 @@ describe("refreshRepoGrant — grant validity (permanent failures)", () => {
       revokedAt: "2026-06-11T00:00:00.000Z",
     });
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -491,6 +500,7 @@ describe("refreshRepoGrant — minting", () => {
     });
 
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -550,6 +560,7 @@ describe("refreshRepoGrant — minting", () => {
     });
 
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -591,6 +602,7 @@ describe("refreshRepoGrant — minting", () => {
     });
 
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -624,6 +636,7 @@ describe("refreshRepoGrant — minting", () => {
     });
 
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -650,6 +663,7 @@ describe("refreshRepoGrant — minting", () => {
       ),
     );
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -670,6 +684,7 @@ describe("refreshRepoGrant — minting", () => {
       ),
     );
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -688,6 +703,7 @@ describe("refreshRepoGrant — minting", () => {
     const { creds, meta } = await seedGrant(store);
     setFetch(async () => json({ message: "repo gone" }, 422));
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -705,6 +721,7 @@ describe("refreshRepoGrant — minting", () => {
     const { creds, meta } = await seedGrant(store);
     setFetch(async () => json({ message: "not found" }, 404));
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -722,6 +739,7 @@ describe("refreshRepoGrant — minting", () => {
     const { creds, meta } = await seedGrant(store);
     setFetch(async () => json({ message: "down" }, 503));
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
@@ -743,6 +761,7 @@ describe("refreshRepoGrant — minting", () => {
     const { creds, meta } = await seedGrant(store);
     setFetch(async () => json({ message: "bad jwt" }, 401));
     const r = await refreshRepoGrant({
+      now: TEST_NOW,
       store,
       grantType: "refresh_token",
       refreshToken: creds.refreshToken,
