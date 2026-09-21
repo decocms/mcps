@@ -8,7 +8,7 @@
   },
   "description": "Manage and execute Google Apps Script projects programmatically.",
   "icon": "https://assets.decocache.com/decocms/02f3aeea-07b4-4b07-b4cc-093d2149885a/Google_Apps_Script_Logo.png",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["Productivity", "Development"],
     "official": false,

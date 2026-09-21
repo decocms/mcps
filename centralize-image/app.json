@@ -1,0 +1,41 @@
+{
+  "scopeName": "deco",
+  "name": "centralize-image",
+  "friendlyName": "Centralize Product Image",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://centralize-image-production.up.railway.app/api/mcp"
+  },
+  "description": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop.",
+  "unlisted": false,
+  "requester": {
+    "repository": "https://github.com/decocms/centralize-image"
+  },
+  "metadata": {
+    "categories": [],
+    "official": true,
+    "verified": true,
+    "tags": [
+      "image",
+      "product",
+      "background-removal",
+      "mcp-app"
+    ],
+    "short_description": "Background-removal + auto-centering editor for product images.",
+    "mesh_description": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop."
+  },
+  "tools": [
+    {
+      "name": "open_centralize_editor",
+      "description": "Open the Centralize Product Image editor UI. Lets the user upload an image and iterate on centering parameters."
+    },
+    {
+      "name": "centralize_product_image",
+      "description": "Remove the background from a product image and auto-center it on a W×H canvas with a configurable minimum margin. Returns the final PNG."
+    },
+    {
+      "name": "MCP_CONFIGURATION",
+      "description": "MCP Configuration"
+    }
+  ]
+}

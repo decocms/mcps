@@ -14,6 +14,7 @@
     "official": false,
     "tags": ["vtex", "documentation", "ecommerce", "rag", "search", "api-reference"],
     "short_description": "Search and retrieve VTEX documentation using RAG-powered semantic search.",
-    "mesh_description": "The VTEX Documentation MCP provides RAG-based semantic search capabilities for VTEX's comprehensive documentation. It enables AI agents to search, retrieve, and understand VTEX platform documentation including API references, developer guides, FastStore documentation, and platform capabilities. Perfect for developers building on the VTEX ecosystem, answering technical questions, or integrating VTEX knowledge into AI-powered applications. Supports semantic search with configurable relevance tuning for accurate documentation retrieval."
+    "mesh_description": "The VTEX Documentation MCP provides RAG-based semantic search capabilities for VTEX's comprehensive documentation. It enables AI agents to search, retrieve, and understand VTEX platform documentation including API references, developer guides, FastStore documentation, and platform capabilities. Perfect for developers building on the VTEX ecosystem, answering technical questions, or integrating VTEX knowledge into AI-powered applications. Supports semantic search with configurable relevance tuning for accurate documentation retrieval.",
+    "verified": true
   }
 }

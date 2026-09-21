@@ -1,0 +1,100 @@
+{
+  "scopeName": "deco",
+  "name": "site-diagnostics",
+  "friendlyName": "Site Diagnostics",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://site-diagnostics.decocms.com/api/mcp"
+  },
+  "description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites.",
+  "unlisted": false,
+  "requester": {
+    "repository": "https://github.com/decocms/site-diagnostics"
+  },
+  "metadata": {
+    "categories": [],
+    "official": true,
+    "verified": true,
+    "tags": [
+      "diagnostics",
+      "performance",
+      "seo"
+    ],
+    "short_description": "Blackbox performance and SEO diagnostics for websites.",
+    "mesh_description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites."
+  },
+  "tools": [
+    {
+      "name": "diagnose",
+      "description": "Launch the site diagnostics UI. Opens an interactive panel where users can enter a URL to run a full diagnostic suite (fetch, HAR capture, Lighthouse audit, render, and screenshot)."
+    },
+    {
+      "name": "fetch_page",
+      "description": "Fetch a URL via HTTP (no browser needed — fast and free). Returns headers, body, internal links, and SEO meta tags. Use for: sitemap.xml, robots.txt, HTML page SEO audit, link discovery. Much faster than capture_har — use this for discovery and SEO checks."
+    },
+    {
+      "name": "capture_har",
+      "description": "Diagnose a URL with multiple passes in a single browser session. Loads the page multiple times (cold + warm cache) on both desktop and mobile. Returns per-pass TTFB, request counts, cache analysis, third-party inventory, failed requests, and slowest resources. ONE call per URL."
+    },
+    {
+      "name": "lighthouse_audit",
+      "description": "Run a Lighthouse audit on a URL. Returns Core Web Vitals, performance/accessibility/SEO scores, and diagnostic audits. Use for performance analysis and identifying optimization opportunities."
+    },
+    {
+      "name": "render_page",
+      "description": "Render a URL with a real browser (JS execution). Returns the fully rendered DOM HTML, visible text, and meta tags. Use when fetch_page returns empty/skeleton HTML (SPAs, client-rendered sites). Slower than fetch_page — prefer fetch_page when SSR HTML is sufficient."
+    },
+    {
+      "name": "screenshot",
+      "description": "Take a screenshot of a URL. Saves the image to R2 and returns a public URL. Use to verify page layout and visual issues."
+    },
+    {
+      "name": "crawl_site",
+      "description": "Discover ALL pages on a website using Firecrawl's map endpoint (fast, no scraping). Returns total page count, pages categorized by type (PDP, PLP, blog, institutional), and sample URLs per category. Use for: content engine analysis, understanding site structure, identifying content gaps (e.g. no blog pages), and scoping the catalog size."
+    },
+    {
+      "name": "audit_seo",
+      "description": "Deep SEO audit using DataForSEO's on-page crawler. Crawls up to 1000 pages and returns: SEO score, broken links, duplicate titles/descriptions, missing meta tags, missing H1, pages without JSON-LD, content word counts, domain info (CMS, SSL, sitemap, HTTP/2). Use for: quantifying SEO issues at scale across the ENTIRE site (not just sample pages). Takes 1-3 minutes to complete (polls until crawl finishes)."
+    },
+    {
+      "name": "research_serp",
+      "description": "Research Google SERP results for a keyword via DataForSEO. Returns top 10 organic results, related searches, people also ask, and AI overview. Use for: competitive benchmarking (who ranks for brand/category keywords), identifying content opportunities, and estimating competitive landscape."
+    },
+    {
+      "name": "research_keywords",
+      "description": "Get keyword search volume, difficulty, CPC, and monthly trends from DataForSEO. Provide seed keywords and get back related keywords with metrics. Use for: identifying high-volume keyword opportunities, estimating organic traffic potential, calculating paid vs. organic rebalancing savings (CPC × volume), and seasonality analysis."
+    },
+    {
+      "name": "research_business",
+      "description": "Research business context about a company using Perplexity (web-grounded AI). Returns company summary, market position, competitors, recent news, and traffic estimates. Use for: understanding the business behind the website, identifying strategic context (DTC priorities, market gaps), and framing diagnostic findings as business opportunities."
+    },
+    {
+      "name": "research_traffic",
+      "description": "Get website traffic intelligence from Similarweb via Apify. Returns global/country rank, monthly visits, traffic source breakdown (direct, search, social, referral, email, paid), engagement metrics (bounce rate, pages/visit, avg duration), top keywords with search volume and CPC, country share, and AI traffic share (ChatGPT, Claude, Perplexity, Gemini). Use for: benchmarking a site against competitors, identifying dominant traffic channels, estimating organic vs paid traffic mix, and validating SEO opportunity sizing."
+    },
+    {
+      "name": "scrape_page",
+      "description": "Deep-scrape a single page using Firecrawl. Returns markdown content, metadata, and optionally branding assets (colors, fonts, logos). Use for: analyzing PDP content quality, detecting review sections, cross-sell blocks, structured data presence, and brand extraction. Slower than fetch_page but returns richer content (rendered markdown)."
+    },
+    {
+      "name": "save_diagnostic",
+      "description": "Save a completed site diagnostic report to persistent storage. Call this after generating the full diagnostic report to persist it for later viewing."
+    },
+    {
+      "name": "list_diagnostics",
+      "description": "List all saved diagnostic reports."
+    },
+    {
+      "name": "load_diagnostic",
+      "description": "Load a saved diagnostic report by ID."
+    },
+    {
+      "name": "delete_diagnostic",
+      "description": "Delete a saved diagnostic report."
+    },
+    {
+      "name": "MCP_CONFIGURATION",
+      "description": "MCP Configuration"
+    }
+  ]
+}

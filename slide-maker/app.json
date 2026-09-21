@@ -1,0 +1,30 @@
+{
+  "scopeName": "deco",
+  "name": "slide-maker",
+  "friendlyName": "Slide Maker",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://slide-maker.decocms.com/api/mcp"
+  },
+  "description": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering.",
+  "unlisted": false,
+  "icon": "https://decoims.com/decocms/825e555a-2275-488b-b325-d048c0246b0d/slidemakericon.png",
+  "metadata": {
+    "categories": [
+      "productivity"
+    ],
+    "official": true,
+    "verified": true,
+    "tags": [
+      "slides",
+      "presentation",
+      "deck",
+      "editor",
+      "reveal-js",
+      "branding",
+      "ai-editing"
+    ],
+    "short_description": "Interactive slide-deck editor — generate, edit, and present decks with AI annotations and brand-aware theming.",
+    "mesh_description": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering."
+  }
+}

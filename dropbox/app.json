@@ -8,7 +8,7 @@
   },
   "description": "Dropbox MCP — OAuth-authenticated tools for files, folders, sharing, and account info via Dropbox API v2",
   "icon": "https://aem.dropbox.com/cms/content/dam/dropbox/www/en-us/branding/dropbox-logo-glyph-blue.svg",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": [
       "Productivity",

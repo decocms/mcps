@@ -8,7 +8,7 @@
   },
   "description": "Process payments and manage financial operations with Latin America's leading fintech platform. Handle transactions, refunds, subscriptions, and payment analytics through natural language.",
   "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["Payments"],
     "official": true,

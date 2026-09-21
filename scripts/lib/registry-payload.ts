@@ -31,6 +31,7 @@ export interface AppJson {
   metadata?: {
     categories?: string[];
     official?: boolean;
+    verified?: boolean;
     tags?: string[];
     short_description?: string;
     mesh_description?: string;
@@ -109,7 +110,7 @@ export function buildRegistryData(
   }));
 
   const meshMeta: MeshMeta = {
-    verified: isOfficial,
+    verified: app.metadata?.verified ?? isOfficial,
     friendly_name: app.friendlyName ?? null,
     short_description: app.metadata?.short_description?.slice(0, 160) ?? null,
     owner: app.scopeName,

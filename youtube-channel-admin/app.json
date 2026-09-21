@@ -8,7 +8,7 @@
   },
   "description": "Manage your YouTube channel: upload videos and thumbnails, edit titles/descriptions/tags/privacy, moderate and reply to comments, fetch captions and query analytics — with a performance dashboard and home widgets for top videos and alerts.",
   "icon": "https://assets.decocache.com/mcp/cac50532-150e-437d-a996-91fd9a0c115e/YouTube.svg",
-  "unlisted": true,
+  "unlisted": false,
   "bindings": {
     "OBJECT_STORAGE": "@deco/object-storage"
   },
