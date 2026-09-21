@@ -8,7 +8,7 @@
   },
   "description": "Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language.",
   "icon": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["E-Commerce"],
     "official": true,

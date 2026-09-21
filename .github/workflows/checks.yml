@@ -30,7 +30,9 @@ jobs:
         run: bun run lint
 
       - name: Check registry.json is up to date
-        run: bun run check:registry
+        run: |
+          bun test scripts/lib/registry-payload.test.ts
+          bun run check:registry
 
       # Runs over every MCP, not only the changed ones: deleting a withAuth()
       # wrapper elsewhere in the repo must fail the PR that does it.

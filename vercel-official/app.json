@@ -8,7 +8,7 @@
   },
   "description": "Deploy and manage your frontend applications with Vercel. Interact with projects, deployments, domains, and serverless functions through natural language.",
   "icon": "https://vercel.com/favicon.ico",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["Software Development"],
     "official": true,

@@ -1,0 +1,24 @@
+{
+  "scopeName": "deco",
+  "name": "system-health",
+  "friendlyName": "System Health",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://system-health.infra.deco.cx/mcp"
+  },
+  "description": "System health and monitoring",
+  "unlisted": false,
+  "icon": "https://github.com/decocms.png",
+  "metadata": {
+    "categories": [
+      "monitoring"
+    ],
+    "official": true,
+    "verified": true,
+    "tags": [
+      "monitoring"
+    ],
+    "short_description": "System health and monitoring",
+    "mesh_description": "System health and monitoring"
+  }
+}

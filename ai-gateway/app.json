@@ -1,0 +1,33 @@
+{
+  "scopeName": "deco",
+  "name": "ai-gateway",
+  "friendlyName": "Deco AI Gateway",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-deco-ai-gateway.deco.site/mcp"
+  },
+  "description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility.",
+  "unlisted": false,
+  "icon": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png",
+  "metadata": {
+    "categories": [
+      "AI"
+    ],
+    "official": false,
+    "verified": true,
+    "tags": [
+      "llm",
+      "openrouter",
+      "ai",
+      "gateway",
+      "cost-tracking",
+      "multi-model",
+      "gpt",
+      "claude",
+      "gemini",
+      "provisioning"
+    ],
+    "short_description": "LLM gateway with automatic per-org OpenRouter API key provisioning and spending visibility.",
+    "mesh_description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility."
+  }
+}

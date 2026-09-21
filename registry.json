@@ -53,7 +53,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Apify",
         "short_description": "Run Apify actors for web scraping and automation tasks.",
         "owner": "apify",
@@ -290,7 +290,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "ClickHouse",
         "short_description": "Query and manage ClickHouse databases with SQL",
         "owner": "clickhouse",
@@ -337,7 +337,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare AI Gateway",
         "short_description": "Manage AI API requests with monitoring, caching, rate limiting, and cost control",
         "owner": "cloudflare",
@@ -386,7 +386,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Audit Logs",
         "short_description": "Access account audit logs for tracking user actions, changes, and API activity",
         "owner": "cloudflare",
@@ -434,7 +434,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare AutoRAG",
         "short_description": "Build RAG applications with automatic vector database and embedding management",
         "owner": "cloudflare",
@@ -482,7 +482,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Browser",
         "short_description": "Control and automate cloud browsers with Puppeteer and Playwright for scraping and testing",
         "owner": "cloudflare",
@@ -531,7 +531,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Builds",
         "short_description": "Manage Cloudflare Pages builds and deployments with build monitoring and configuration",
         "owner": "cloudflare",
@@ -579,7 +579,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare CASB",
         "short_description": "Cloud Access Security Broker for SaaS app security and compliance monitoring",
         "owner": "cloudflare",
@@ -627,7 +627,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Containers",
         "short_description": "Manage and deploy containerized applications on Cloudflare's global edge network",
         "owner": "cloudflare",
@@ -675,7 +675,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare DEX",
         "short_description": "Monitor Digital Employee Experience with endpoint connectivity and performance metrics",
         "owner": "cloudflare",
@@ -723,7 +723,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare DNS Analytics",
         "short_description": "Analyze DNS query patterns, performance, and geographic distribution of DNS traffic",
         "owner": "cloudflare",
@@ -771,7 +771,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Docs",
         "short_description": "Access Cloudflare's comprehensive documentation through natural language",
         "owner": "cloudflare",
@@ -820,7 +820,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare GraphQL",
         "short_description": "Query Cloudflare Analytics using GraphQL with flexible data retrieval and aggregation",
         "owner": "cloudflare",
@@ -868,7 +868,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Logs",
         "short_description": "Access and analyze Cloudflare logs for HTTP requests, firewall events, and Worker executions",
         "owner": "cloudflare",
@@ -916,7 +916,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Observability",
         "short_description": "Monitor and analyze your Cloudflare services with comprehensive observability tools",
         "owner": "cloudflare",
@@ -966,7 +966,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Radar",
         "short_description": "Access global internet trends and insights from Cloudflare Radar with traffic and security data",
         "owner": "cloudflare",
@@ -1015,7 +1015,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": true,
+        "verified": false,
         "friendly_name": "Cloudflare Workers",
         "short_description": "Deploy and manage serverless functions at the edge with Cloudflare Workers",
         "owner": "cloudflare",
@@ -1054,6 +1054,57 @@
           "name": "cloudflare-workers-mcp",
           "title": "Cloudflare Workers",
           "description": "Deploy and manage serverless functions at the edge with Cloudflare Workers. Interact with Workers, KV, Durable Objects, and bindings through natural language."
+        }
+      ]
+    }
+  },
+  {
+    "id": "deco/ai-gateway",
+    "title": "Deco AI Gateway",
+    "description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Deco AI Gateway",
+        "short_description": "LLM gateway with automatic per-org OpenRouter API key provisioning and spending visibility.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "llm",
+          "openrouter",
+          "ai",
+          "gateway",
+          "cost-tracking",
+          "multi-model",
+          "gpt",
+          "claude",
+          "gemini",
+          "provisioning"
+        ],
+        "categories": [
+          "AI"
+        ],
+        "readme": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility."
+      }
+    },
+    "server": {
+      "name": "ai-gateway",
+      "title": "Deco AI Gateway",
+      "description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility.",
+      "icons": [
+        {
+          "src": "https://assets.decocache.com/mcp/6e1418f7-c962-406b-aceb-137197902709/ai-gateway.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-deco-ai-gateway.deco.site/mcp",
+          "name": "ai-gateway",
+          "title": "Deco AI Gateway",
+          "description": "LLM gateway with automatic OpenRouter API key provisioning per organization. Each org gets its own isolated key for cost tracking and spending visibility."
         }
       ]
     }
@@ -1149,6 +1200,60 @@
           "description": "Generate blog posts from context using n8n workflow automation."
         }
       ]
+    }
+  },
+  {
+    "id": "deco/centralize-image",
+    "title": "Centralize Product Image",
+    "description": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Centralize Product Image",
+        "short_description": "Background-removal + auto-centering editor for product images.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "image",
+          "product",
+          "background-removal",
+          "mcp-app"
+        ],
+        "readme": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop.",
+        "tools": [
+          {
+            "name": "open_centralize_editor",
+            "description": "Open the Centralize Product Image editor UI. Lets the user upload an image and iterate on centering parameters."
+          },
+          {
+            "name": "centralize_product_image",
+            "description": "Remove the background from a product image and auto-center it on a W×H canvas with a configurable minimum margin. Returns the final PNG."
+          },
+          {
+            "name": "MCP_CONFIGURATION",
+            "description": "MCP Configuration"
+          }
+        ]
+      }
+    },
+    "server": {
+      "name": "centralize-image",
+      "title": "Centralize Product Image",
+      "description": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop.",
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://centralize-image-production.up.railway.app/api/mcp",
+          "name": "centralize-image",
+          "title": "Centralize Product Image",
+          "description": "Remove the background from a product image, auto-center it on a configurable canvas, and fine-tune position, scale, and crop."
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/decocms/centralize-image"
+      }
     }
   },
   {
@@ -1395,108 +1500,6 @@
     }
   },
   {
-    "id": "deco/discord-mcp",
-    "title": "Discord MCP",
-    "description": "Discord bot with AI streaming responses, voice channel support, message indexing and server management tools.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": false,
-        "friendly_name": "Discord MCP",
-        "short_description": "Discord bot with AI streaming responses, voice channel support (TTS/STT), and server management tools.",
-        "owner": "deco",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "discord",
-          "bot",
-          "ai-agent",
-          "streaming",
-          "voice",
-          "tts",
-          "messages",
-          "roles",
-          "members",
-          "server-management",
-          "webhooks",
-          "automation",
-          "whisper"
-        ],
-        "categories": [
-          "Communication"
-        ],
-        "readme": "The Discord MCP provides comprehensive integration with Discord servers, enabling AI agents to manage and automate Discord communities. Key features include: **Streaming AI Responses** - Real-time message editing shows responses as they generate, similar to ChatGPT. **Voice Channel Support** - Bot can join voice channels, listen to users via Whisper transcription, and respond with Text-to-Speech (TTS). **File Processing** - Supports images (vision), audio (Whisper), PDF, DOCX, and text files. **Message Indexing** - Tracks messages, reactions, edits, and deletions in PostgreSQL. **Moderation Tools** - Kick, ban, timeout, mute members; manage roles and channels. **Context Awareness** - Maintains conversation history for natural interactions. Works with @mentions, prefix commands, and DMs. Configurable streaming, context limits, and voice settings. Ideal for building AI-powered community assistants with multimodal capabilities."
-      }
-    },
-    "server": {
-      "name": "discord-mcp",
-      "title": "Discord MCP",
-      "description": "Discord bot with AI streaming responses, voice channel support, message indexing and server management tools.",
-      "icons": [
-        {
-          "src": "https://assets.decocache.com/decocms/c84a9954-d171-4b02-8bf2-906ad913b16e/discord-logo.jpeg"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://sites-discord-read.deco.site/mcp",
-          "name": "discord-mcp",
-          "title": "Discord MCP",
-          "description": "Discord bot with AI streaming responses, voice channel support, message indexing and server management tools."
-        }
-      ]
-    }
-  },
-  {
-    "id": "deco/dropbox-mcp",
-    "title": "Dropbox",
-    "description": "Dropbox MCP — OAuth-authenticated tools for files, folders, sharing, and account info via Dropbox API v2",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": false,
-        "friendly_name": "Dropbox",
-        "short_description": "Dropbox file operations, sharing, and account info via OAuth",
-        "owner": "deco",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "dropbox",
-          "files",
-          "storage",
-          "cloud-storage",
-          "sharing",
-          "documents",
-          "sync"
-        ],
-        "categories": [
-          "Productivity"
-        ],
-        "readme": "The Dropbox MCP exposes Dropbox API v2 to AI agents via OAuth 2.0 with PKCE and offline refresh tokens. Tools cover file/folder browsing (list_folder, search, get_metadata), content I/O (download, upload, temporary links), mutations (create_folder, move, copy, delete, restore, list_revisions), sharing (create_shared_link, list_shared_links, share_folder, add_folder_member), and account info (get_current_account, get_space_usage). Uses least-privilege scopes (account_info.read, files.metadata.{read,write}, files.content.{read,write}, sharing.{read,write})."
-      }
-    },
-    "server": {
-      "name": "dropbox-mcp",
-      "title": "Dropbox",
-      "description": "Dropbox MCP — OAuth-authenticated tools for files, folders, sharing, and account info via Dropbox API v2",
-      "icons": [
-        {
-          "src": "https://aem.dropbox.com/cms/content/dam/dropbox/www/en-us/branding/dropbox-logo-glyph-blue.svg"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://dropbox-mcp.decocms.com/mcp",
-          "name": "dropbox-mcp",
-          "title": "Dropbox",
-          "description": "Dropbox MCP — OAuth-authenticated tools for files, folders, sharing, and account info via Dropbox API v2"
-        }
-      ]
-    }
-  },
-  {
     "id": "deco/flux",
     "title": "FLUX Image Generation",
     "description": "Generate images using Black Forest Labs FLUX models. Supports text-to-image generation with multiple FLUX model variants.",
@@ -1549,7 +1552,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": false,
+        "verified": true,
         "friendly_name": "GitHub",
         "short_description": "OAuth proxy for the official GitHub MCP Server — 30+ tools for repos, issues, PRs, and more",
         "owner": "deco",
@@ -1731,53 +1734,6 @@
     }
   },
   {
-    "id": "deco/google-apps-script",
-    "title": "Google Apps Script",
-    "description": "Manage and execute Google Apps Script projects programmatically.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": false,
-        "friendly_name": "Google Apps Script",
-        "short_description": "Manage and execute Google Apps Script projects programmatically.",
-        "owner": "deco",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "google",
-          "apps-script",
-          "automation",
-          "scripting",
-          "development",
-          "javascript"
-        ],
-        "categories": [
-          "Productivity"
-        ],
-        "readme": "The Google Apps Script MCP provides comprehensive integration with Google Apps Script API, enabling full programmatic control over script projects. This MCP allows AI agents to create and manage Apps Script projects, read and update script files, execute functions remotely, manage versions and deployments, and monitor script executions. It supports advanced features including deployment configuration, version control, and execution logging. Perfect for automating Google Workspace workflows, building custom integrations, and managing script-based applications. Ideal for users who need to programmatically manage Apps Script projects or execute automation scripts. Provides secure OAuth-based authentication."
-      }
-    },
-    "server": {
-      "name": "google-apps-script",
-      "title": "Google Apps Script",
-      "description": "Manage and execute Google Apps Script projects programmatically.",
-      "icons": [
-        {
-          "src": "https://assets.decocache.com/decocms/02f3aeea-07b4-4b07-b4cc-093d2149885a/Google_Apps_Script_Logo.png"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://sites-google-apps-script.deco.site/mcp",
-          "name": "google-apps-script",
-          "title": "Google Apps Script",
-          "description": "Manage and execute Google Apps Script projects programmatically."
-        }
-      ]
-    }
-  },
-  {
     "id": "deco/google-big-query",
     "title": "Google BigQuery",
     "description": "Query and manage Google BigQuery datasets. Execute SQL queries, list datasets and tables, explore schemas, monitor jobs, and discover projects.",
@@ -1871,54 +1827,6 @@
           "name": "google-calendar",
           "title": "Google Calendar",
           "description": "Integrate and manage your Google Calendar. Create, edit and delete events, check availability and sync your calendars."
-        }
-      ]
-    }
-  },
-  {
-    "id": "deco/google-calendar-sa",
-    "title": "Google Calendar (Service Account)",
-    "description": "Access Google Calendar using a service account with domain-wide delegation. See all events for any user in your Google Workspace without per-user OAuth login.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": false,
-        "friendly_name": "Google Calendar (Service Account)",
-        "short_description": "Access Google Calendar using a service account with domain-wide delegation. ",
-        "owner": "deco",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "google",
-          "calendar",
-          "scheduling",
-          "events",
-          "meetings",
-          "productivity",
-          "service-account"
-        ],
-        "categories": [
-          "Productivity"
-        ],
-        "readme": "The Google Calendar Service Account MCP provides server-to-server access to Google Calendar using a Google Workspace service account with domain-wide delegation. Unlike the OAuth-based MCP, this variant requires no per-user login — it authenticates using a service account JSON key and impersonates a target user to access their calendar. Tokens are generated and refreshed automatically. Ideal for organization-wide calendar visibility, automated scheduling, and internal tools that need to read all meetings for a shared account."
-      }
-    },
-    "server": {
-      "name": "google-calendar-sa",
-      "title": "Google Calendar (Service Account)",
-      "description": "Access Google Calendar using a service account with domain-wide delegation. See all events for any user in your Google Workspace without per-user OAuth login.",
-      "icons": [
-        {
-          "src": "https://assets.decocache.com/mcp/b5fffe71-647a-461c-aa39-3da07b86cc96/Google-Meets.svg"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://sites-google-calendar-sa.deco.site/mcp",
-          "name": "google-calendar-sa",
-          "title": "Google Calendar (Service Account)",
-          "description": "Access Google Calendar using a service account with domain-wide delegation. See all events for any user in your Google Workspace without per-user OAuth login."
         }
       ]
     }
@@ -2501,7 +2409,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": false,
+        "verified": true,
         "friendly_name": "Grain",
         "short_description": "Integrate with Grain to access and manage your meeting recordings, transcripts and AI summaries.",
         "owner": "deco",
@@ -2591,6 +2499,64 @@
           "description": "Query observability data from HyperDX. Search logs, metrics, and traces with time series charts and pattern analysis."
         }
       ]
+    }
+  },
+  {
+    "id": "deco/image-editor",
+    "title": "Image Editor",
+    "description": "Apply ordered edits to an image URL and return the final image.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Image Editor",
+        "short_description": "URL-based image editing tool for agents.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "image",
+          "background-removal",
+          "editing",
+          "mcp-app"
+        ],
+        "categories": [
+          "productivity"
+        ],
+        "readme": "Apply ordered edits to an image URL and return the final image.",
+        "tools": [
+          {
+            "name": "edit_image",
+            "description": "Apply ordered edits to an image URL and return the final image."
+          },
+          {
+            "name": "MCP_CONFIGURATION",
+            "description": "MCP Configuration"
+          }
+        ]
+      }
+    },
+    "server": {
+      "name": "image-editor",
+      "title": "Image Editor",
+      "description": "Apply ordered edits to an image URL and return the final image.",
+      "icons": [
+        {
+          "src": "https://github.com/decocms.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://image-editor.deco-cx.workers.dev/api/mcp",
+          "name": "image-editor",
+          "title": "Image Editor",
+          "description": "Apply ordered edits to an image URL and return the final image."
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/decocms/centralize-image"
+      }
     }
   },
   {
@@ -3115,14 +3081,127 @@
     }
   },
   {
+    "id": "deco/site-diagnostics",
+    "title": "Site Diagnostics",
+    "description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Site Diagnostics",
+        "short_description": "Blackbox performance and SEO diagnostics for websites.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "diagnostics",
+          "performance",
+          "seo"
+        ],
+        "readme": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites.",
+        "tools": [
+          {
+            "name": "diagnose",
+            "description": "Launch the site diagnostics UI. Opens an interactive panel where users can enter a URL to run a full diagnostic suite (fetch, HAR capture, Lighthouse audit, render, and screenshot)."
+          },
+          {
+            "name": "fetch_page",
+            "description": "Fetch a URL via HTTP (no browser needed — fast and free). Returns headers, body, internal links, and SEO meta tags. Use for: sitemap.xml, robots.txt, HTML page SEO audit, link discovery. Much faster than capture_har — use this for discovery and SEO checks."
+          },
+          {
+            "name": "capture_har",
+            "description": "Diagnose a URL with multiple passes in a single browser session. Loads the page multiple times (cold + warm cache) on both desktop and mobile. Returns per-pass TTFB, request counts, cache analysis, third-party inventory, failed requests, and slowest resources. ONE call per URL."
+          },
+          {
+            "name": "lighthouse_audit",
+            "description": "Run a Lighthouse audit on a URL. Returns Core Web Vitals, performance/accessibility/SEO scores, and diagnostic audits. Use for performance analysis and identifying optimization opportunities."
+          },
+          {
+            "name": "render_page",
+            "description": "Render a URL with a real browser (JS execution). Returns the fully rendered DOM HTML, visible text, and meta tags. Use when fetch_page returns empty/skeleton HTML (SPAs, client-rendered sites). Slower than fetch_page — prefer fetch_page when SSR HTML is sufficient."
+          },
+          {
+            "name": "screenshot",
+            "description": "Take a screenshot of a URL. Saves the image to R2 and returns a public URL. Use to verify page layout and visual issues."
+          },
+          {
+            "name": "crawl_site",
+            "description": "Discover ALL pages on a website using Firecrawl's map endpoint (fast, no scraping). Returns total page count, pages categorized by type (PDP, PLP, blog, institutional), and sample URLs per category. Use for: content engine analysis, understanding site structure, identifying content gaps (e.g. no blog pages), and scoping the catalog size."
+          },
+          {
+            "name": "audit_seo",
+            "description": "Deep SEO audit using DataForSEO's on-page crawler. Crawls up to 1000 pages and returns: SEO score, broken links, duplicate titles/descriptions, missing meta tags, missing H1, pages without JSON-LD, content word counts, domain info (CMS, SSL, sitemap, HTTP/2). Use for: quantifying SEO issues at scale across the ENTIRE site (not just sample pages). Takes 1-3 minutes to complete (polls until crawl finishes)."
+          },
+          {
+            "name": "research_serp",
+            "description": "Research Google SERP results for a keyword via DataForSEO. Returns top 10 organic results, related searches, people also ask, and AI overview. Use for: competitive benchmarking (who ranks for brand/category keywords), identifying content opportunities, and estimating competitive landscape."
+          },
+          {
+            "name": "research_keywords",
+            "description": "Get keyword search volume, difficulty, CPC, and monthly trends from DataForSEO. Provide seed keywords and get back related keywords with metrics. Use for: identifying high-volume keyword opportunities, estimating organic traffic potential, calculating paid vs. organic rebalancing savings (CPC × volume), and seasonality analysis."
+          },
+          {
+            "name": "research_business",
+            "description": "Research business context about a company using Perplexity (web-grounded AI). Returns company summary, market position, competitors, recent news, and traffic estimates. Use for: understanding the business behind the website, identifying strategic context (DTC priorities, market gaps), and framing diagnostic findings as business opportunities."
+          },
+          {
+            "name": "research_traffic",
+            "description": "Get website traffic intelligence from Similarweb via Apify. Returns global/country rank, monthly visits, traffic source breakdown (direct, search, social, referral, email, paid), engagement metrics (bounce rate, pages/visit, avg duration), top keywords with search volume and CPC, country share, and AI traffic share (ChatGPT, Claude, Perplexity, Gemini). Use for: benchmarking a site against competitors, identifying dominant traffic channels, estimating organic vs paid traffic mix, and validating SEO opportunity sizing."
+          },
+          {
+            "name": "scrape_page",
+            "description": "Deep-scrape a single page using Firecrawl. Returns markdown content, metadata, and optionally branding assets (colors, fonts, logos). Use for: analyzing PDP content quality, detecting review sections, cross-sell blocks, structured data presence, and brand extraction. Slower than fetch_page but returns richer content (rendered markdown)."
+          },
+          {
+            "name": "save_diagnostic",
+            "description": "Save a completed site diagnostic report to persistent storage. Call this after generating the full diagnostic report to persist it for later viewing."
+          },
+          {
+            "name": "list_diagnostics",
+            "description": "List all saved diagnostic reports."
+          },
+          {
+            "name": "load_diagnostic",
+            "description": "Load a saved diagnostic report by ID."
+          },
+          {
+            "name": "delete_diagnostic",
+            "description": "Delete a saved diagnostic report."
+          },
+          {
+            "name": "MCP_CONFIGURATION",
+            "description": "MCP Configuration"
+          }
+        ]
+      }
+    },
+    "server": {
+      "name": "site-diagnostics",
+      "title": "Site Diagnostics",
+      "description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites.",
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://site-diagnostics.decocms.com/api/mcp",
+          "name": "site-diagnostics",
+          "title": "Site Diagnostics",
+          "description": "Blackbox performance and SEO diagnostics for storefronts and high-traffic websites."
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/decocms/site-diagnostics"
+      }
+    }
+  },
+  {
     "id": "deco/slack",
-    "title": "Slack Bot Beta",
+    "title": "Slack Bot",
     "description": "Slack bot integration with intelligent thread management, AI agent commands, message handling and webhook support.",
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": false,
-        "friendly_name": "Slack Bot Beta",
+        "verified": true,
+        "friendly_name": "Slack Bot",
         "short_description": "Slack bot with intelligent thread management, AI agent commands, and webhook support.",
         "owner": "deco",
         "has_remote": true,
@@ -3146,7 +3225,7 @@
     },
     "server": {
       "name": "slack",
-      "title": "Slack Bot Beta",
+      "title": "Slack Bot",
       "description": "Slack bot integration with intelligent thread management, AI agent commands, message handling and webhook support.",
       "icons": [
         {
@@ -3158,8 +3237,59 @@
           "type": "HTTP",
           "url": "https://sites-slack-mcp.deco.site/mcp",
           "name": "slack",
-          "title": "Slack Bot Beta",
+          "title": "Slack Bot",
           "description": "Slack bot integration with intelligent thread management, AI agent commands, message handling and webhook support."
+        }
+      ],
+      "repository": {
+        "url": "https://github.com/decocms/mcps/tree/main/slack-mcp"
+      }
+    }
+  },
+  {
+    "id": "deco/slide-maker",
+    "title": "Slide Maker",
+    "description": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Slide Maker",
+        "short_description": "Interactive slide-deck editor — generate, edit, and present decks with AI annotations and brand-aware theming.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "slides",
+          "presentation",
+          "deck",
+          "editor",
+          "reveal-js",
+          "branding",
+          "ai-editing"
+        ],
+        "categories": [
+          "productivity"
+        ],
+        "readme": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering."
+      }
+    },
+    "server": {
+      "name": "slide-maker",
+      "title": "Slide Maker",
+      "description": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering.",
+      "icons": [
+        {
+          "src": "https://decoims.com/decocms/825e555a-2275-488b-b325-d048c0246b0d/slidemakericon.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://slide-maker.decocms.com/api/mcp",
+          "name": "slide-maker",
+          "title": "Slide Maker",
+          "description": "Interactive presentation editor that runs as an MCP App. Generate, edit, and present slide decks with AI-powered annotations, brand-aware theming, and reveal.js rendering."
         }
       ]
     }
@@ -3207,6 +3337,48 @@
           "name": "strapi",
           "title": "Strapi CMS",
           "description": "Manage content, media, users, and roles in Strapi CMS. Full API integration for headless content management."
+        }
+      ]
+    }
+  },
+  {
+    "id": "deco/system-health",
+    "title": "System Health",
+    "description": "System health and monitoring",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "System Health",
+        "short_description": "System health and monitoring",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "monitoring"
+        ],
+        "categories": [
+          "monitoring"
+        ],
+        "readme": "System health and monitoring"
+      }
+    },
+    "server": {
+      "name": "system-health",
+      "title": "System Health",
+      "description": "System health and monitoring",
+      "icons": [
+        {
+          "src": "https://github.com/decocms.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://system-health.infra.deco.cx/mcp",
+          "name": "system-health",
+          "title": "System Health",
+          "description": "System health and monitoring"
         }
       ]
     }
@@ -3362,7 +3534,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": false,
+        "verified": true,
         "friendly_name": "VTEX Commerce APIs",
         "short_description": "Interact with VTEX Commerce APIs for catalog, orders, and inventory management.",
         "owner": "deco",
@@ -3410,7 +3582,7 @@
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
-        "verified": false,
+        "verified": true,
         "friendly_name": "VTEX Documentation",
         "short_description": "Search and retrieve VTEX documentation using RAG-powered semantic search.",
         "owner": "deco",
@@ -3446,6 +3618,56 @@
           "name": "vtex-docs",
           "title": "VTEX Documentation",
           "description": "RAG-based MCP for searching and retrieving VTEX documentation."
+        }
+      ]
+    }
+  },
+  {
+    "id": "deco/wake",
+    "title": "Wake Commerce",
+    "description": "Read-only access to Wake Commerce — Storefront catalog (search, product detail, recommendations, shipping) plus Admin orders for analytics.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": true,
+        "friendly_name": "Wake Commerce",
+        "short_description": "Search a Wake storefront catalog and analyze store orders.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "wake",
+          "fbits",
+          "ecommerce",
+          "storefront",
+          "catalog",
+          "search",
+          "products",
+          "orders",
+          "analytics"
+        ],
+        "categories": [
+          "E-commerce"
+        ],
+        "readme": "The Wake Commerce MCP exposes read-only access to Wake (fbits) for AI agents. **Storefront (catalog)** — full-text product **search** with facet aggregations and price ranges; explicit product **listing** by id, sku, ean, category, brand, price and attributes; rich product **detail** with variants, prices and reviews; **autocomplete**; product **recommendations**; **hotsite** (category / landing page) resolution; variant **options**; **buy lists** (kits); **shipping quotes**; and store metadata. **Admin (orders / analytics)** — list store **orders** by date range, status, payment method, customer or SKU; fetch order **detail** and **status history**; and list configured **order statuses**. **Authentication** — Storefront token (TCS-Access-Token header) for catalog tools; Admin API token (Basic auth) for order tools. Perfect for shopping assistants, catalog explorers and sales/order analytics on top of Wake Commerce."
+      }
+    },
+    "server": {
+      "name": "wake",
+      "title": "Wake Commerce",
+      "description": "Read-only access to Wake Commerce — Storefront catalog (search, product detail, recommendations, shipping) plus Admin orders for analytics.",
+      "icons": [
+        {
+          "src": "https://raw.githubusercontent.com/deco-cx/apps/main/wake/logo.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-wake.deco.site/mcp",
+          "name": "wake",
+          "title": "Wake Commerce",
+          "description": "Read-only access to Wake Commerce — Storefront catalog (search, product detail, recommendations, shipping) plus Admin orders for analytics."
         }
       ]
     }
@@ -3494,6 +3716,54 @@
           "name": "whatsapp-agent",
           "title": "Deco WhatsApp Agent",
           "description": "Talk to your Mesh Agents via WhatsApp"
+        }
+      ]
+    }
+  },
+  {
+    "id": "deco/youtube-channel-admin",
+    "title": "YouTube Channel Admin",
+    "description": "Manage your YouTube channel: upload videos and thumbnails, edit titles/descriptions/tags/privacy, moderate and reply to comments, fetch captions and query analytics — with a performance dashboard and home widgets for top videos and alerts.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "YouTube Channel Admin",
+        "short_description": "Manage your YouTube channel: uploads, metadata, comments and analytics.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "youtube",
+          "channel",
+          "upload",
+          "comments",
+          "analytics",
+          "thumbnails",
+          "creator"
+        ],
+        "categories": [
+          "Media"
+        ],
+        "readme": "The YouTube  Channel Admin MCP connects to your Google account (OAuth) and manages your channel end-to-end: resumable video uploads (from a URL or from the org's object storage), custom thumbnails, title/description/tags/privacy edits, caption listing and transcript export, comment listing/reply/moderation, and YouTube Analytics queries. Ships a channel dashboard plus home widgets showing top videos, 28-day performance and alerts for videos with upload/processing problems or comments held for review."
+      }
+    },
+    "server": {
+      "name": "youtube-channel-admin",
+      "title": "YouTube Channel Admin",
+      "description": "Manage your YouTube channel: upload videos and thumbnails, edit titles/descriptions/tags/privacy, moderate and reply to comments, fetch captions and query analytics — with a performance dashboard and home widgets for top videos and alerts.",
+      "icons": [
+        {
+          "src": "https://assets.decocache.com/mcp/cac50532-150e-437d-a996-91fd9a0c115e/YouTube.svg"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-youtube-channel-admin.deco.site/mcp",
+          "name": "youtube-channel-admin",
+          "title": "YouTube Channel Admin",
+          "description": "Manage your YouTube channel: upload videos and thumbnails, edit titles/descriptions/tags/privacy, moderate and reply to comments, fetch captions and query analytics — with a performance dashboard and home widgets for top videos and alerts."
         }
       ]
     }
@@ -3728,7 +3998,7 @@
       "description": "AI-powered semantic search engine for finding high-quality content. Search the web with natural language understanding and get relevant results instantly.",
       "icons": [
         {
-          "src": "https://github.com/exa-labs.png"
+          "src": "https://assets.decocache.com/decocms/3638f940-f5b8-463f-8724-f092c82d1f4c/exa.jpeg"
         }
       ],
       "remotes": [
@@ -3933,56 +4203,6 @@
           "name": "google-gke-mcp",
           "title": "Google GKE",
           "description": "Manage Kubernetes clusters on Google Cloud with GKE. Deploy, scale, and monitor containerized applications through natural language commands."
-        }
-      ]
-    }
-  },
-  {
-    "id": "google/google-maps-mcp",
-    "title": "Google Maps",
-    "description": "Access Google Maps Platform APIs through natural language. Get directions, geocoding, places data, and mapping services with AI assistance.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": true,
-        "friendly_name": "Google Maps",
-        "short_description": "Access Google Maps Platform APIs through natural language",
-        "owner": "google",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "maps",
-          "geocoding",
-          "directions",
-          "places",
-          "location",
-          "google-maps",
-          "geospatial",
-          "navigation",
-          "gis"
-        ],
-        "categories": [
-          "Mapping"
-        ],
-        "readme": "Google Maps Platform provides comprehensive mapping and location services used by millions of applications worldwide. This official MCP gives you natural language access to Google Maps APIs including geocoding for converting addresses to coordinates and reverse geocoding for coordinates to addresses. Get optimal route directions with multiple transportation modes (driving, walking, bicycling, transit) considering real-time traffic conditions, toll roads, and route alternatives. Search and discover places with detailed information including business hours, ratings, reviews, photos, and contact details. Calculate accurate distances and travel times between multiple locations using the Distance Matrix API. Optimize multi-stop routes with the Directions API for efficient delivery and logistics planning. Access detailed place information with the Places API including nearby search, text search, and place details. Use the Geolocation API to determine device location based on cell towers and WiFi access points. Implement time zone services to convert coordinates to time zones and calculate local times. Create custom maps with markers, polylines, polygons, and info windows. Access Street View imagery programmatically for location verification and virtual tours. Utilize Elevation API for topographic data and terrain information. Perfect for location-based applications, delivery services, real estate platforms, and travel apps."
-      }
-    },
-    "server": {
-      "name": "google-maps-mcp",
-      "title": "Google Maps",
-      "description": "Access Google Maps Platform APIs through natural language. Get directions, geocoding, places data, and mapping services with AI assistance.",
-      "icons": [
-        {
-          "src": "https://www.gstatic.com/images/branding/product/2x/maps_64dp.png"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://mapstools.googleapis.com/mcp",
-          "name": "google-maps-mcp",
-          "title": "Google Maps",
-          "description": "Access Google Maps Platform APIs through natural language. Get directions, geocoding, places data, and mapping services with AI assistance."
         }
       ]
     }
@@ -4422,106 +4642,6 @@
     }
   },
   {
-    "id": "mercadolibre/mercadolibre-mcp",
-    "title": "Mercado Libre",
-    "description": "Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": true,
-        "friendly_name": "Mercado Libre",
-        "short_description": "Manage your e-commerce operations on Latin America's largest marketplace",
-        "owner": "mercadolibre",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "e-commerce",
-          "marketplace",
-          "online-selling",
-          "latin-america",
-          "mercadolibre",
-          "retail",
-          "inventory",
-          "shipping",
-          "sales"
-        ],
-        "categories": [
-          "E-Commerce"
-        ],
-        "readme": "Mercado Libre is Latin America's leading e-commerce platform with over 140 million active users across 18 countries including Argentina, Brazil, Mexico, Chile, Colombia, and Peru. This official MCP enables sellers to create and manage product listings with detailed descriptions, multiple images, specifications, and competitive pricing strategies. Manage your inventory across multiple warehouses and fulfillment centers with real-time stock updates. Process orders from receipt to fulfillment including order confirmation, payment verification, and shipping coordination. Integrate with Mercado Envíos for streamlined shipping with automatic label generation, tracking updates, and delivery confirmation. Handle customer inquiries and questions through the platform's messaging system with automated responses and quick replies. Monitor your seller reputation and performance metrics including response time, shipping accuracy, and customer satisfaction scores. Access detailed sales analytics with revenue reports, best-selling products, traffic sources, and conversion rates. Set up promotional campaigns with discounts, bundles, and special offers to boost sales. Manage returns and refunds efficiently while maintaining high seller ratings. Use the cross-border trade features to sell internationally within Latin America. Configure multiple payment options and installment plans to increase conversion rates. Perfect for sellers looking to grow their business in Latin American markets."
-      }
-    },
-    "server": {
-      "name": "mercadolibre-mcp",
-      "title": "Mercado Libre",
-      "description": "Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language.",
-      "icons": [
-        {
-          "src": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://mcp.mercadolibre.com/mcp",
-          "name": "mercadolibre-mcp",
-          "title": "Mercado Libre",
-          "description": "Manage your e-commerce operations on Latin America's largest marketplace. List products, manage orders, track sales, and handle logistics through natural language."
-        }
-      ]
-    }
-  },
-  {
-    "id": "mercadolibre/mercadopago-mcp",
-    "title": "Mercado Pago",
-    "description": "Process payments and manage financial operations with Latin America's leading fintech platform. Handle transactions, refunds, subscriptions, and payment analytics through natural language.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": true,
-        "friendly_name": "Mercado Pago",
-        "short_description": "Process payments and manage financial operations with Latin America's leading fintech",
-        "owner": "mercadolibre",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "payments",
-          "fintech",
-          "transactions",
-          "latin-america",
-          "mercadopago",
-          "gateway",
-          "subscriptions",
-          "refunds",
-          "checkout"
-        ],
-        "categories": [
-          "Payments"
-        ],
-        "readme": "Mercado Pago is Latin America's largest fintech platform processing billions of dollars in transactions annually across 18 countries. This official MCP provides comprehensive payment processing capabilities for credit cards, debit cards, digital wallets, bank transfers, cash payments, and cryptocurrencies. Create secure checkout experiences with customizable payment forms, one-click checkout for returning customers, and mobile-optimized payment flows. Process payments with smart routing to maximize approval rates, automatic retry logic for failed transactions, and real-time fraud detection and prevention. Manage recurring subscriptions with flexible billing cycles, automatic payment collection, and dunning management for failed payments. Handle refunds, chargebacks, and disputes efficiently with automated workflows and detailed transaction history. Access comprehensive financial analytics including transaction volumes, approval rates, payment methods distribution, and revenue trends. Configure installment payments with interest-free or interest-bearing options to increase conversion rates. Integrate with major e-commerce platforms, point-of-sale systems, and custom applications through robust APIs. Use QR code payments for in-person transactions with instant confirmation. Manage seller balances, withdrawals, and settlement schedules. Implement 3D Secure authentication for enhanced security compliance. Perfect for businesses of all sizes processing payments in Latin American markets with multi-currency support and local payment methods."
-      }
-    },
-    "server": {
-      "name": "mercadopago-mcp",
-      "title": "Mercado Pago",
-      "description": "Process payments and manage financial operations with Latin America's leading fintech platform. Handle transactions, refunds, subscriptions, and payment analytics through natural language.",
-      "icons": [
-        {
-          "src": "https://http2.mlstatic.com/frontend-assets/ui-navigation/5.19.1/mercadolibre/favicon.svg"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://mcp.mercadopago.com/mcp",
-          "name": "mercadopago-mcp",
-          "title": "Mercado Pago",
-          "description": "Process payments and manage financial operations with Latin America's leading fintech platform. Handle transactions, refunds, subscriptions, and payment analytics through natural language."
-        }
-      ]
-    }
-  },
-  {
     "id": "monday/monday-mcp",
     "title": "monday.com",
     "description": "MCP server for monday.com integration - manage boards, items, and automations.",
@@ -4747,7 +4867,7 @@
       "description": "Official Postman MCP - Operate on the Postman API to manage collections, environments, requests, and API workflows programmatically.",
       "icons": [
         {
-          "src": "https://github.com/postmanlabs.png"
+          "src": "https://www.postman.com/_ar-assets/images/favicon-1-48.png"
         }
       ],
       "remotes": [
@@ -5390,52 +5510,6 @@
     }
   },
   {
-    "id": "todoist/todoist-mcp",
-    "title": "Todoist",
-    "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": true,
-        "friendly_name": "Todoist",
-        "short_description": "Manage tasks, projects, and workflows with AI-powered Todoist integration",
-        "owner": "todoist",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "todoist",
-          "task-management",
-          "productivity",
-          "workflow",
-          "automation"
-        ],
-        "categories": [
-          "Productivity"
-        ],
-        "readme": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows. Enables the creation, management, and organization of tasks and projects within Todoist. Connects AI agents to Todoist workflows, allowing them to automate task management, set due dates, assign priorities, manage labels, and improve personal and team productivity."
-      }
-    },
-    "server": {
-      "name": "todoist-mcp",
-      "title": "Todoist",
-      "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows.",
-      "icons": [
-        {
-          "src": "https://github.com/Doist.png"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://ai.todoist.net/mcp",
-          "name": "todoist-mcp",
-          "title": "Todoist",
-          "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows."
-        }
-      ]
-    }
-  },
-  {
     "id": "trunk/trunk-mcp",
     "title": "Trunk",
     "description": "Flaky test detection, root cause analysis, and fix suggestions for development teams.",
@@ -5525,56 +5599,6 @@
           "name": "twelvelabs-mcp",
           "title": "TwelveLabs",
           "description": "TwelveLabs MCP: video indexing, search, analysis, and embeddings for AI applications."
-        }
-      ]
-    }
-  },
-  {
-    "id": "vercel/vercel-mcp",
-    "title": "Vercel",
-    "description": "Deploy and manage your frontend applications with Vercel. Interact with projects, deployments, domains, and serverless functions through natural language.",
-    "is_public": true,
-    "_meta": {
-      "mcp.mesh": {
-        "verified": true,
-        "friendly_name": "Vercel",
-        "short_description": "Deploy and manage your frontend applications with Vercel",
-        "owner": "vercel",
-        "has_remote": true,
-        "has_oauth": false,
-        "tags": [
-          "deployment",
-          "frontend",
-          "nextjs",
-          "serverless",
-          "vercel",
-          "jamstack",
-          "cdn",
-          "edge-functions",
-          "ci-cd"
-        ],
-        "categories": [
-          "Software Development"
-        ],
-        "readme": "Vercel is the platform for frontend developers, providing zero-configuration deployments for modern web applications with automatic HTTPS, CDN, and serverless functions. This official MCP enables you to deploy Next.js, React, Vue, Angular, Svelte, and static sites with git integration for automatic deployments on every push. Experience instant rollbacks, preview deployments for every pull request, and production deployments on merge. Manage custom domains with automatic SSL certificate provisioning, DNS configuration, and domain redirects. Configure environment variables per deployment environment (production, preview, development) with encrypted secrets management. Deploy Edge Functions that run on Vercel's global edge network for ultra-low latency, and Serverless Functions for backend API routes with automatic scaling. Access real-time Web Analytics with Core Web Vitals tracking, page performance metrics, and visitor insights without impacting performance. Use Edge Config for ultra-low-latency data access at the edge, and KV for serverless Redis-compatible storage. Configure build settings including framework presets, custom build commands, and output directories. Set up team collaboration with role-based access control, audit logs, and deployment protection rules. Integrate with monitoring tools, implement A/B testing with Edge Middleware, and optimize images automatically with Vercel Image Optimization. Perfect for teams building high-performance web applications."
-      }
-    },
-    "server": {
-      "name": "vercel-mcp",
-      "title": "Vercel",
-      "description": "Deploy and manage your frontend applications with Vercel. Interact with projects, deployments, domains, and serverless functions through natural language.",
-      "icons": [
-        {
-          "src": "https://vercel.com/favicon.ico"
-        }
-      ],
-      "remotes": [
-        {
-          "type": "HTTP",
-          "url": "https://mcp.vercel.com/",
-          "name": "vercel-mcp",
-          "title": "Vercel",
-          "description": "Deploy and manage your frontend applications with Vercel. Interact with projects, deployments, domains, and serverless functions through natural language."
         }
       ]
     }

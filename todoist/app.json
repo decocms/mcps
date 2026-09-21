@@ -8,7 +8,7 @@
   },
   "description": "Official Todoist MCP server for AI assistants to manage tasks, projects, and workflows.",
   "icon": "https://github.com/Doist.png",
-  "unlisted": false,
+  "unlisted": true,
   "official": true,
   "metadata": {
     "categories": ["Productivity", "Automation"],

@@ -8,7 +8,7 @@
   },
   "description": "Access Google Maps Platform APIs through natural language. Get directions, geocoding, places data, and mapping services with AI assistance.",
   "icon": "https://www.gstatic.com/images/branding/product/2x/maps_64dp.png",
-  "unlisted": false,
+  "unlisted": true,
   "metadata": {
     "categories": ["Mapping"],
     "official": true,

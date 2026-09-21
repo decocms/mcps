@@ -1,0 +1,40 @@
+{
+  "scopeName": "deco",
+  "name": "image-editor",
+  "friendlyName": "Image Editor",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://image-editor.deco-cx.workers.dev/api/mcp"
+  },
+  "description": "Apply ordered edits to an image URL and return the final image.",
+  "unlisted": false,
+  "icon": "https://github.com/decocms.png",
+  "requester": {
+    "repository": "https://github.com/decocms/centralize-image"
+  },
+  "metadata": {
+    "categories": [
+      "productivity"
+    ],
+    "official": true,
+    "verified": true,
+    "tags": [
+      "image",
+      "background-removal",
+      "editing",
+      "mcp-app"
+    ],
+    "short_description": "URL-based image editing tool for agents.",
+    "mesh_description": "Apply ordered edits to an image URL and return the final image."
+  },
+  "tools": [
+    {
+      "name": "edit_image",
+      "description": "Apply ordered edits to an image URL and return the final image."
+    },
+    {
+      "name": "MCP_CONFIGURATION",
+      "description": "MCP Configuration"
+    }
+  ]
+}

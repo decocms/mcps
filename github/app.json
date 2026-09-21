@@ -27,6 +27,7 @@
       "collaboration"
     ],
     "short_description": "OAuth proxy for the official GitHub MCP Server — 30+ tools for repos, issues, PRs, and more",
-    "mesh_description": "OAuth proxy for the official GitHub MCP Server. Authenticates via GitHub App OAuth and exposes 30+ tools (repository management, issue tracking, pull request workflows, code search, branch management, and more). Receives GitHub webhook events and routes them to the correct connection by installation ID. Install the GitHub App, authenticate via OAuth, and get full access to the complete GitHub API toolset."
+    "mesh_description": "OAuth proxy for the official GitHub MCP Server. Authenticates via GitHub App OAuth and exposes 30+ tools (repository management, issue tracking, pull request workflows, code search, branch management, and more). Receives GitHub webhook events and routes them to the correct connection by installation ID. Install the GitHub App, authenticate via OAuth, and get full access to the complete GitHub API toolset.",
+    "verified": true
   }
 }
