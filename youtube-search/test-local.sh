@@ -11,6 +11,7 @@
 PORT="${PORT:-8001}"
 BASE="http://localhost:${PORT}/mcp"
 
+
 # Unsigned JWT — runtime uses decodeJwt (jose, no signature verification)
 MESH_TOKEN="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJsb2NhbC10ZXN0LXVzZXIiLCJ1c2VyIjp7ImlkIjoibG9jYWwtdGVzdC11c2VyIn0sInN0YXRlIjp7fSwiY29ubmVjdGlvbklkIjoiY29ubl9sb2NhbF90ZXN0IiwibWVzaFVybCI6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMSIsIm9yZ2FuaXphdGlvbklkIjoibG9jYWwtb3JnIiwib3JnYW5pemF0aW9uU2x1ZyI6ImxvY2FsIn0.fakesig"
 
