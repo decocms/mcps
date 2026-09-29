@@ -1,0 +1,35 @@
+{
+  "scopeName": "deco",
+  "name": "dynamic-yield",
+  "friendlyName": "Dynamic Yield",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-dynamic-yield.deco.site/mcp"
+  },
+  "description": "Operate Dynamic Yield through its public APIs: QA campaigns and recommendations with the Experience API, report events, sync the product feed and read user profiles.",
+  "icon": "https://avatars.githubusercontent.com/u/12912945?s=256&v=4",
+  "unlisted": false,
+  "auth": {
+    "type": "token",
+    "header": "Authorization",
+    "prefix": "Bearer"
+  },
+  "metadata": {
+    "categories": [
+      "E-commerce",
+      "Marketing"
+    ],
+    "official": false,
+    "tags": [
+      "dynamic-yield",
+      "personalization",
+      "recommendations",
+      "experience-api",
+      "product-feed",
+      "ab-testing",
+      "ecommerce"
+    ],
+    "short_description": "QA Dynamic Yield campaigns and recommendations, report events and sync the product feed.",
+    "mesh_description": "The **Dynamic Yield** MCP wraps Dynamic Yield's public server-side APIs. **Serve**: DY_CHOOSE runs the Experience API choose call for a page context (HOMEPAGE, CATEGORY, PRODUCT, CART, OTHER) and returns campaign payloads, recommendation slots, decision ids and analytics metadata; it accepts dyApiPreview tokens to QA unpublished variations and does not count as a pageview by default. **Collect**: DY_TRACK_PAGEVIEW, DY_TRACK_EVENTS and DY_TRACK_ENGAGEMENT report real data, so use them with test users. **Product feed**: DY_FEED_BULK upserts, partially updates or deletes up to 100 products per call in an API-synced feed, and DY_FEED_TRANSACTION_STATUS checks the result. **Profiles**: DY_USER_PROFILE reads Profile Anywhere affinity data. **Authentication**: a server-side DY API key (Settings › API Keys) sent as the connection token, with the Experience API and Feed ACLs as needed; set the data center (US or EU) in the configuration. Dynamic Yield has no public API for managing campaigns or reports, so those remain in the DY console."
+  }
+}

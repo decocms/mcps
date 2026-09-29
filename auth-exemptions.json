@@ -31,6 +31,9 @@
     "dropbox": {
       "reason": "Predates the withAuth requirement — 19 findings pending remediation."
     },
+    "dynamic-yield": {
+      "reason": "The Authorization header carries the user's Dynamic Yield API key (app.json auth token), so there is no shared secret to check. Re-add withAuth once Mesh forwards the connection secret on a separate header."
+    },
     "farmrio-reorder-collection-db": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
     },
