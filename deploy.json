@@ -530,5 +530,14 @@
       "wake/**",
       "shared/**"
     ]
+  },
+  "dynamic-yield": {
+    "site": "dynamic-yield",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "dynamic-yield/**",
+      "shared/**"
+    ]
   }
 }
