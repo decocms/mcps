@@ -23,6 +23,12 @@
           "title": "App Token",
           "description": "Your VTEX App Token for API authentication",
           "format": "password"
+        },
+        "writeMode": {
+          "type": "boolean",
+          "title": "Enable write mode",
+          "description": "Opt-in to write operations. When off (default), the MCP is read-only: only read tools run and any create/update/delete tool is refused.",
+          "default": false
         }
       },
       "required": ["accountName", "appKey", "appToken"]

@@ -11,6 +11,7 @@ import {
   resolveCredentials,
 } from "./client-factory.ts";
 import { applyParamDescriptions } from "./param-descriptions.ts";
+import { assertWriteModeEnabled, isReadOnlyTool } from "./write-mode.ts";
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Schema introspection helpers
@@ -312,6 +313,11 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
   // start would poison every subsequent state read with `state: {}`.
   // Read per-request env from `runtimeContext` instead — the runtime fills
   // it from AsyncLocalStorage on every execute call.
+  // Read-only unless the operation is explicitly annotated readOnlyHint: true.
+  // Un-annotated operations are treated as writes so a mutation can never slip
+  // through the read-only gate.
+  const readOnly = isReadOnlyTool(config.annotations);
+
   return (_env: Env) =>
     createTool({
       id: config.id,
@@ -322,6 +328,7 @@ export function createToolFromOperation(config: ToolFromOperationConfig) {
         const meshCtx = (runtimeContext.env as Env).MESH_REQUEST_CONTEXT;
         const creds = resolveCredentials(meshCtx?.state);
         assertValidCredentials(creds, config.id);
+        if (!readOnly) assertWriteModeEnabled(meshCtx?.state, config.id);
         const factory = config.clientFactory ?? createVtexClient;
         const client = factory(creds);
         const structured = unflattenToStructured(
