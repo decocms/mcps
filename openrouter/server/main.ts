@@ -12,6 +12,7 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { z } from "zod";
 import { logger } from "./lib/logger.ts";
+import { assertAllowedRedirectUri } from "./lib/redirect-allowlist.ts";
 import { tools } from "./tools/index.ts";
 
 const StateSchema = z.object({});
@@ -29,6 +30,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
     // Generates the URL to redirect users to for authorization
     authorizationUrl: (callbackUrl) => {
+      assertAllowedRedirectUri(callbackUrl);
+
       const url = new URL("https://openrouter.ai/auth");
       url.searchParams.set("callback_url", callbackUrl);
       // Optional: Add PKCE code challenge for extra security
