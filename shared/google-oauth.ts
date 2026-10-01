@@ -14,6 +14,8 @@
  * ```
  */
 
+import { assertAllowedRedirectUri } from "./redirect-allowlist.ts";
+
 export interface GoogleOAuthConfig {
   /**
    * Google OAuth scopes required by this MCP
@@ -61,6 +63,8 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
      * Handles Google's requirement for clean redirect_uri (without state param)
      */
     authorizationUrl: (callbackUrl: string, env?: any) => {
+      assertAllowedRedirectUri(callbackUrl);
+
       const callbackUrlObj = new URL(callbackUrl);
       const state = callbackUrlObj.searchParams.get("state");
 
@@ -104,6 +108,7 @@ export function createGoogleOAuth(config: GoogleOAuthConfig) {
           "redirect_uri is required for Google OAuth token exchange",
         );
       }
+      assertAllowedRedirectUri(redirect_uri);
 
       const params = new URLSearchParams({
         code,
