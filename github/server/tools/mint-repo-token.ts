@@ -35,7 +35,7 @@ export function createMintRepoTokenTool() {
       "caller must already be entitled to the installation and repository — the " +
       "tool verifies this against the caller's own GitHub context before minting. " +
       "The token grants only repo-content / pull-request / issue access plus " +
-      "read-only CI checks and deployments. Also " +
+      "read-only CI checks, commit statuses, and deployments. Also " +
       "returns a durable refresh token (refreshToken) plus tokenEndpoint and " +
       "clientId: POST grant_type=refresh_token to tokenEndpoint to mint a fresh " +
       "token later without the caller's GitHub login.",
