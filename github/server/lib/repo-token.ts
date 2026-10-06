@@ -48,7 +48,7 @@ export class RepoTokenError extends Error {
 
 /**
  * Positive allowlist of permissions we are willing to mint — strictly
- * repo-content / PR / issue level plus two read-only CI/deploy signals.
+ * repo-content / PR / issue level plus read-only CI/deploy signals.
  * Anything outside this list is hard-rejected, which by construction also
  * rejects every escalation vector the spec bans (administration, members,
  * organization_*, secrets, actions, environments, ...).
@@ -57,9 +57,11 @@ export class RepoTokenError extends Error {
  * (`GET /commits/{sha}/check-runs`); `deployments` so it can read a PR's preview
  * URL from the Deployments API (`GET /repos/{o}/{r}/deployments` + `/statuses`,
  * via GET_PREVIEW_DEPLOYMENT) — the ONLY place a VTEX FastStore WebOps preview
- * is published (not a commit-status `target_url`, not a bot comment). Without
- * each, the minted installation token gets `403 Resource not accessible by
- * integration` on that endpoint.
+ * is published (not a commit-status `target_url`, not a bot comment).
+ * `statuses` is needed to read commit statuses, including status contexts in
+ * GitHub's combined GraphQL check rollup. Without each permission, the minted
+ * installation token gets `403 Resource not accessible by integration` on
+ * that endpoint.
  */
 export const ALLOWED_PERMISSIONS = new Set([
   "contents",
@@ -68,16 +70,18 @@ export const ALLOWED_PERMISSIONS = new Set([
   "issues",
   "checks",
   "deployments",
+  "statuses",
 ]);
 
 /**
  * Permissions we only ever mint at `read`, whatever the caller asks for. These
- * are observability signals, and write on either is an escalation with teeth:
+ * are observability signals, and write access can forge a merge signal:
  * `checks:write` lets a token POST a green check run — and Studio gates PR
  * merges on check status, so that is a forged ship signal — while
  * `deployments:write` lets it create deployments and deployment statuses,
  * including the `environment_url` that the PR panel then renders as a preview
- * link. Capped rather than rejected, matching this function's contract (and how
+ * link. `statuses:write` can post a successful commit status. Capped rather
+ * than rejected, matching this function's contract (and how
  * `metadata` has always been handled): a stored grant is re-capped on every
  * refresh, so a throw here would turn a legacy over-broad grant into a hard
  * refresh failure instead of quietly narrowing it.
@@ -86,17 +90,22 @@ export const READ_ONLY_PERMISSIONS = new Set([
   "metadata",
   "checks",
   "deployments",
+  "statuses",
 ]);
 
 /**
  * The optional read permissions a refresh tries to widen an existing grant
- * into, MOST-DROPPABLE FIRST. `deployments` is the newest, so an installation
- * that has approved `checks` but not yet `deployments` sheds only the latter.
+ * into, MOST-DROPPABLE FIRST. `statuses` is the newest, so installations that
+ * have approved checks and deployments retain them when statuses is refused.
  * Every entry must also be in {@link ALLOWED_PERMISSIONS} (asserted in the unit
  * test): this list marks which permissions are droppable, it does not add new
  * ones. See `buildUpgradeLadder` in repo-grant.ts for how it is applied.
  */
-export const OPTIONAL_READ_UPGRADES = ["deployments", "checks"] as const;
+export const OPTIONAL_READ_UPGRADES = [
+  "statuses",
+  "deployments",
+  "checks",
+] as const;
 
 /** GitHub permission levels we allow. `admin` is never granted. */
 const ALLOWED_VALUES = new Set(["read", "write"]);
@@ -195,7 +204,9 @@ async function findCallerInstallation(
   while (true) {
     const res = await fetch(
       `${GITHUB_API}/user/installations?per_page=${PER_PAGE}&page=${page}`,
-      { headers: githubHeaders(callerToken) },
+      {
+        headers: githubHeaders(callerToken),
+      },
     );
     if (!res.ok) {
       if (isTransientGitHubResponse(res)) {

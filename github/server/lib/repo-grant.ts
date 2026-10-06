@@ -200,7 +200,8 @@ const samePermissions = (
  * The permission maps a refresh tries, in order, when re-minting a grant.
  *
  * Rung 0 widens the grant into every {@link OPTIONAL_READ_UPGRADES} permission
- * — `checks:read` (CI check runs) and `deployments:read` (a PR's preview URL,
+ * — `statuses:read` (commit statuses), `checks:read` (CI check runs), and
+ * `deployments:read` (a PR's preview URL,
  * the ONLY place a VTEX FastStore WebOps deploy publishes it). That is what
  * lets a grant issued before a permission joined the allowlist pick it up on
  * its next refresh, riding the ~1h token cycle: no re-import, no re-install,

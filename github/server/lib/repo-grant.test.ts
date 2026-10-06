@@ -207,6 +207,13 @@ describe("buildUpgradeLadder", () => {
           metadata: "read",
           checks: "read",
           deployments: "read",
+          statuses: "read",
+        },
+        {
+          contents: "write",
+          metadata: "read",
+          checks: "read",
+          deployments: "read",
         },
         { contents: "write", metadata: "read", checks: "read" },
         { contents: "write", metadata: "read" },
@@ -229,6 +236,13 @@ describe("buildUpgradeLadder", () => {
         metadata: "read",
         checks: "read",
         deployments: "read",
+        statuses: "read",
+      },
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
       },
       { contents: "write", metadata: "read", checks: "read" },
     ]);
@@ -240,6 +254,7 @@ describe("buildUpgradeLadder", () => {
       metadata: "read",
       checks: "read",
       deployments: "read",
+      statuses: "read",
     };
     expect(buildUpgradeLadder(full)).toEqual([full]);
   });
@@ -255,6 +270,13 @@ describe("buildUpgradeLadder", () => {
         checks: "write",
       }),
     ).toEqual([
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
+        statuses: "read",
+      },
       {
         contents: "write",
         metadata: "read",
@@ -430,13 +452,13 @@ describe("refreshRepoGrant — minting", () => {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
         expect(body.repository_ids).toEqual([999]);
         // Refresh widens a legacy grant into every optional read the PR panel
-        // needs — checks:read (CI check runs) and deployments:read (the preview
-        // URL) — so it self-heals with no re-import and no re-install.
+        // needs, including commit statuses, without re-import or re-install.
         expect(body.permissions).toEqual({
           contents: "write",
           metadata: "read",
           checks: "read",
           deployments: "read",
+          statuses: "read",
         });
         return json(
           {
@@ -477,14 +499,18 @@ describe("refreshRepoGrant — minting", () => {
   test("no optional upgrade available (422) falls back to the grant's permissions without revoking", async () => {
     const kv = fakeKV();
     const store = getRepoGrantStore(kv);
-    const { creds, meta } = await seedGrant(store); // no checks, no deployments
+    const { creds, meta } = await seedGrant(store); // no optional reads
     const asked: Array<Record<string, string>> = [];
     setFetch(async (input, init) => {
       const url = urlOf(input);
       if (/\/app\/installations\/42\/access_tokens/.test(url)) {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
         asked.push(body.permissions);
-        if (asked.length < 3) {
+        if (
+          Object.keys(body.permissions).some(
+            (key) => key !== "contents" && key !== "metadata",
+          )
+        ) {
           return json({ message: "permissions exceed grant" }, 422);
         }
         return json(
@@ -520,6 +546,13 @@ describe("refreshRepoGrant — minting", () => {
         metadata: "read",
         checks: "read",
         deployments: "read",
+        statuses: "read",
+      },
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
       },
       { contents: "write", metadata: "read", checks: "read" },
       { contents: "write", metadata: "read" },
@@ -528,7 +561,7 @@ describe("refreshRepoGrant — minting", () => {
     expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
   });
 
-  test("an installation granting checks but not deployments keeps checks", async () => {
+  test("an installation granting checks but not deployments or statuses keeps checks", async () => {
     // The regression this ladder exists for: adding deployments to the widened
     // set without shedding it one at a time would 422 the whole mint for every
     // grant that already had checks, and (before the ladder) go straight to
@@ -544,7 +577,7 @@ describe("refreshRepoGrant — minting", () => {
       if (/\/app\/installations\/42\/access_tokens/.test(url)) {
         const body = JSON.parse((init as { body?: string }).body ?? "{}");
         asked.push(body.permissions);
-        if (body.permissions.deployments) {
+        if (body.permissions.statuses || body.permissions.deployments) {
           return json({ message: "permissions exceed grant" }, 422);
         }
         return json(
@@ -578,9 +611,62 @@ describe("refreshRepoGrant — minting", () => {
         metadata: "read",
         checks: "read",
         deployments: "read",
+        statuses: "read",
+      },
+      {
+        contents: "write",
+        metadata: "read",
+        checks: "read",
+        deployments: "read",
       },
       { contents: "write", metadata: "read", checks: "read" },
     ]);
+    expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
+  });
+
+  test("a refused statuses upgrade retains approved checks and deployments", async () => {
+    const kv = fakeKV();
+    const store = getRepoGrantStore(kv);
+    const permissions = {
+      contents: "write",
+      metadata: "read",
+      checks: "read",
+      deployments: "read",
+    };
+    const { creds, meta } = await seedGrant(store, { permissions });
+    const asked: Array<Record<string, string>> = [];
+    setFetch(async (_input, init) => {
+      const body = JSON.parse((init as { body?: string }).body ?? "{}");
+      expect(body.repository_ids).toEqual([999]);
+      asked.push(body.permissions);
+      if (body.permissions.statuses) {
+        return json({ message: "permissions exceed grant" }, 422);
+      }
+      return json(
+        {
+          token: "ghs_existing_reads",
+          expires_at: "2026-06-10T01:00:00.000Z",
+          permissions: body.permissions,
+        },
+        201,
+      );
+    });
+
+    const result = await refreshRepoGrant({
+      now: TEST_NOW,
+      store,
+      grantType: "refresh_token",
+      refreshToken: creds.refreshToken,
+      clientId: "Iv1.abc",
+      expectedClientId: "Iv1.abc",
+      jwt: "fake.jwt",
+    });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("expected ok");
+    expect(result.success.access_token).toBe("ghs_existing_reads");
+    expect(result.success.refresh_token).toBe(creds.refreshToken);
+    expect(asked).toEqual([{ ...permissions, statuses: "read" }, permissions]);
     expect(kv.store.has(`grant:${meta.grantId}`)).toBe(true);
   });
 

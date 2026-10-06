@@ -76,6 +76,7 @@ mint whose permission set exceeds the installation's grant. So the App's
 | Pull requests  | Read & write | open/update PRs                                     |
 | Issues         | Read & write | open/comment issues                                 |
 | Checks         | Read  | `GET_CHECK_RUN`, the PR panel's Checks tab                 |
+| Commit statuses | Read | commit statuses and GraphQL's combined CI check rollup |
 | Deployments    | Read  | `GET_PREVIEW_DEPLOYMENT` — the only place a VTEX FastStore WebOps preview URL is published |
 
 Adding a permission to an existing App is **not** self-applying: GitHub marks

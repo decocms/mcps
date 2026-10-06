@@ -86,13 +86,21 @@ describe("capPermissions", () => {
     expect(capPermissions({ metadata: "write" })).toEqual({ metadata: "read" });
   });
 
-  test.each(["checks", "deployments"])(
+  test("allows statuses:read for commit statuses in the combined CI rollup", () => {
+    expect(capPermissions({ statuses: "read" })).toEqual({
+      statuses: "read",
+      metadata: "read",
+    });
+  });
+
+  test.each(["checks", "deployments", "statuses"])(
     "caps the read-only permission %s down to read",
     (perm) => {
       // checks:write would let a token post a green check run — and Studio
       // gates PR merges on check status. deployments:write would let it write
       // the environment_url the PR panel renders as a preview link. Neither is
-      // ever needed, so neither is ever minted.
+      // ever needed. Status writes can also forge a successful CI signal, so
+      // these permissions are always minted at read.
       expect(capPermissions({ [perm]: "write" })).toEqual({
         [perm]: "read",
         metadata: "read",
