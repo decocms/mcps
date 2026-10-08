@@ -5,16 +5,31 @@
  * Format: base64(jobId + "\n" + apiPageToken)
  * The newline is the separator — jobIds and pageTokens never contain newlines.
  */
-export function encodePageToken(jobId: string, apiToken: string): string {
-  return btoa(`${jobId}\n${apiToken}`);
+/**
+ * The job's location travels inside the token: BigQuery answers 404
+ * "Not found: Job" to jobs.getQueryResults for any job outside the US/EU
+ * multi-regions (e.g. southamerica-east1) unless `location` is passed, so a
+ * page-2 fetch without it fails for every non-US dataset.
+ */
+export function encodePageToken(
+  jobId: string,
+  apiToken: string,
+  location?: string,
+): string {
+  return btoa(
+    location ? `${jobId}\n${apiToken}\n${location}` : `${jobId}\n${apiToken}`,
+  );
 }
 
 export function decodePageToken(token: string): {
   jobId: string;
   apiToken: string;
+  location?: string;
 } {
   const decoded = atob(token);
-  const nl = decoded.indexOf("\n");
-  if (nl === -1) throw new Error("Invalid pageToken format");
-  return { jobId: decoded.slice(0, nl), apiToken: decoded.slice(nl + 1) };
+  const parts = decoded.split("\n");
+  if (parts.length < 2) throw new Error("Invalid pageToken format");
+  // Tokens issued before the location was encoded have two parts.
+  const [jobId, apiToken, location] = parts;
+  return location ? { jobId, apiToken, location } : { jobId, apiToken };
 }
