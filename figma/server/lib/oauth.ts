@@ -89,10 +89,11 @@ async function postToken(
         ? data.error
         : (data.message ?? `HTTP ${res.status}`);
     // A revoked or expired refresh token must surface as invalid_grant so Mesh
-    // drops it instead of retrying forever. Figma answers 400 for these.
+    // drops it instead of retrying forever. Figma answers 400 for these; a 401
+    // means bad client credentials, which must not evict users' tokens.
     if (
       path.endsWith("/refresh") &&
-      (res.status === 400 || res.status === 401 || reason === "invalid_grant")
+      (res.status === 400 || reason === "invalid_grant")
     ) {
       throw new OAuthInvalidGrantError(
         "invalid_grant",

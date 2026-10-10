@@ -37,8 +37,9 @@ async function screenshot(
   format: "png" | "jpg",
   scale?: number,
 ) {
-  const box = node.absoluteBoundingBox ?? { width: 1000, height: 1000 };
-  const s = fitScale(box.width, box.height, scale);
+  const box = node.absoluteBoundingBox;
+  // An explicit scale with no known size is honored as-is.
+  const s = box ? fitScale(box.width, box.height, scale) : (scale ?? 1);
   const urls = await renderImages(token, fileKey, [node.id], {
     format,
     scale: s,
