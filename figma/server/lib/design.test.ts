@@ -255,3 +255,94 @@ test("commentsFor keeps threads inside the node, with replies", () => {
     "e",
   ]);
 });
+
+test("FILA-style frame: dividers, trimmed text, lone-child gap, absolute children, fonts", () => {
+  const modal: FigmaNode = {
+    id: "4012:156",
+    name: "Modal",
+    type: "FRAME",
+    ...box(0, 0, 450, 768),
+    layoutMode: "HORIZONTAL",
+    itemSpacing: 30,
+    children: [
+      {
+        id: "4012:257",
+        name: "Frame 657",
+        type: "FRAME",
+        ...box(20, 73, 100, 100),
+        layoutMode: "HORIZONTAL",
+        itemSpacing: 10,
+        primaryAxisAlignItems: "CENTER",
+        children: [
+          {
+            id: "4012:999",
+            name: "img",
+            type: "RECTANGLE",
+            ...box(20, 73, 100, 100),
+          },
+        ],
+      },
+      {
+        id: "4012:175",
+        name: "Line 5",
+        type: "LINE",
+        ...box(20, 200, 386, 0),
+        layoutSizingHorizontal: "FILL",
+        strokeWeight: 1,
+        strokes: [
+          { type: "SOLID", color: { r: 0.95, g: 0.95, b: 0.95, a: 1 } },
+        ],
+      },
+      {
+        id: "4012:299",
+        name: "Tamanho: 43",
+        type: "TEXT",
+        ...box(40, 300, 87, 10),
+        characters: "Tamanho: GG",
+        style: {
+          fontFamily: "Helvetica Neue LT Std",
+          fontWeight: 400,
+          fontSize: 14,
+          leadingTrim: "CAP_HEIGHT",
+        },
+      },
+      {
+        id: "4012:309",
+        name: "1. Chuteiras",
+        type: "TEXT",
+        ...box(40, 400, 195, 11),
+        characters: "Sacola",
+        style: { fontFamily: "HeadlandOne", fontWeight: 400, fontSize: 16 },
+        characterStyleOverrides: [1, 1, 1, 1, 1, 1],
+        styleOverrideTable: {
+          1: { fontFamily: "Helvetica Neue LT Std", fontWeight: 700 },
+        },
+      },
+      {
+        id: "4012:225",
+        name: "Footer",
+        type: "FRAME",
+        ...box(0, 618, 450, 150),
+        layoutPositioning: "ABSOLUTE",
+        children: [],
+      },
+    ],
+  };
+  const out = designOutline(modal, {});
+  const [root, image, , line, size, cta, footer] = out.text.split("\n");
+  expect(root).toContain("position: relative"); // has an absolute child
+  expect(root).toContain("gap: 30px");
+  expect(image).toContain("justify-content: center");
+  expect(image).not.toContain("gap:"); // one child: gap is a no-op
+  expect(line).not.toContain("asset=svg");
+  expect(line).toContain("border-top: 1px solid #F2F2F2");
+  expect(size).toStartWith("  TEXT [4012:299] 87×10");
+  expect(size).not.toContain("Tamanho: 43"); // stale layer name dropped
+  expect(size).toContain("text-box: trim-both cap alphabetic");
+  expect(cta).toContain('"Sacola"');
+  expect(footer).toContain("position: absolute; left: 0px; top: 618px");
+  expect([...out.fonts].sort()).toEqual([
+    "Helvetica Neue LT Std 400",
+    "Helvetica Neue LT Std 700",
+  ]);
+});

@@ -48,8 +48,11 @@ export function color(c: Color, opacity = 1): string {
   const [r, g, b] = [c.r, c.g, c.b].map((v) => Math.round(v * 255));
   if (a >= 1) {
     return `#${[r, g, b]
+
       .map((v) => v.toString(16).padStart(2, "0"))
+
       .join("")
+
       .toUpperCase()}`;
   }
   return `rgba(${r}, ${g}, ${b}, ${a})`;
@@ -60,10 +63,12 @@ const visible = (p: { visible?: boolean; [k: string]: unknown }) =>
 
 function gradient(p: Paint): string {
   const stops = (p.gradientStops ?? [])
+
     .map(
       (s: { color: Color; position: number }) =>
         `${color(s.color, p.opacity ?? 1)} ${round(s.position * 100)}%`,
     )
+
     .join(", ");
   if (p.type === "GRADIENT_LINEAR" && p.gradientHandlePositions?.length >= 2) {
     const [a, b] = p.gradientHandlePositions;
@@ -80,7 +85,9 @@ function gradient(p: Paint): string {
 /** One CSS value per visible paint, in CSS order (topmost first). */
 export function paints(list: Paint[] | undefined): string[] {
   return (list ?? [])
+
     .filter(visible)
+
     .map((p) => {
       if (p.type === "SOLID") return color(p.color, p.opacity ?? 1);
       if (p.type.startsWith("GRADIENT_")) return gradient(p);
@@ -88,6 +95,7 @@ export function paints(list: Paint[] | undefined): string[] {
         return `url(figma-image:${p.imageRef}) /* ${String(p.scaleMode ?? "FILL").toLowerCase()} */`;
       return `/* ${p.type.toLowerCase()} */`;
     })
+
     .reverse();
 }
 
@@ -97,11 +105,13 @@ function background(fills: Paint[] | undefined): string | undefined {
   if (values.length === 1) return values[0];
   // Stack solids as flat gradients so every layer is a valid background image.
   return values
+
     .map((v) =>
       v.startsWith("#") || v.startsWith("rgba")
         ? `linear-gradient(${v}, ${v})`
         : v,
     )
+
     .join(", ");
 }
 
@@ -162,13 +172,15 @@ const ALIGN: Record<string, string> = {
 
 function autoLayout(node: FigmaNode, css: string[]) {
   const mode = node.layoutMode;
+  // Figma keeps a gap on single-child frames; in CSS it does nothing.
+  const spaced = (node.children ?? []).filter(visible).length > 1;
   if (mode === "GRID") {
     css.push("display: grid");
     if (node.gridColumnCount)
       css.push(`grid-template-columns: repeat(${node.gridColumnCount}, 1fr)`);
     if (node.gridRowCount)
       css.push(`grid-template-rows: repeat(${node.gridRowCount}, auto)`);
-    if (node.gridRowGap || node.gridColumnGap)
+    if (spaced && (node.gridRowGap || node.gridColumnGap))
       css.push(
         `gap: ${px(node.gridRowGap ?? 0)} ${px(node.gridColumnGap ?? 0)}`,
       );
@@ -181,7 +193,11 @@ function autoLayout(node: FigmaNode, css: string[]) {
       css.push(`justify-content: ${justify}`);
     const align = ALIGN[node.counterAxisAlignItems ?? "MIN"];
     if (align && align !== "flex-start") css.push(`align-items: ${align}`);
-    if (node.itemSpacing && node.primaryAxisAlignItems !== "SPACE_BETWEEN") {
+    if (
+      spaced &&
+      node.itemSpacing &&
+      node.primaryAxisAlignItems !== "SPACE_BETWEEN"
+    ) {
       css.push(
         node.layoutWrap === "WRAP" && node.counterAxisSpacing
           ? `gap: ${px(node.counterAxisSpacing)} ${px(node.itemSpacing)}`
@@ -279,6 +295,9 @@ export function textStyle(
     css.push(`line-height: ${round(style.lineHeightPercentFontSize / 100)}`);
   if (style.letterSpacing)
     css.push(`letter-spacing: ${px(style.letterSpacing)}`);
+  // Figma "vertical trim": the box is cut to cap height, hence the small height.
+  if (style.leadingTrim === "CAP_HEIGHT")
+    css.push("text-box: trim-both cap alphabetic");
   const align = { CENTER: "center", RIGHT: "right", JUSTIFIED: "justify" }[
     style.textAlignHorizontal as string
   ];
@@ -322,11 +341,33 @@ function textRuns(node: FigmaNode): string | undefined {
   return runs.length ? runs.join(" ") : undefined;
 }
 
+/** Absolute children need this node as their containing block. */
+function hasAbsoluteChild(node: FigmaNode): boolean {
+  const kids = (node.children ?? []).filter(visible);
+  if (!kids.length || !CONTAINER_TYPES.has(node.type)) return false;
+  const flow =
+    node.layoutMode === "HORIZONTAL" ||
+    node.layoutMode === "VERTICAL" ||
+    node.layoutMode === "GRID";
+  return (
+    !flow || kids.some((k: FigmaNode) => k.layoutPositioning === "ABSOLUTE")
+  );
+}
+
 export function nodeCss(node: FigmaNode, parent?: FigmaNode): string[] {
   const css: string[] = [];
   sizing(node, parent, css);
+  if (!css.includes("position: absolute") && hasAbsoluteChild(node))
+    css.push("position: relative");
   if (node.type === "TEXT") {
     css.push(...textStyle(node.style, node.fills));
+  } else if (node.type === "LINE") {
+    // A divider: a border, not an SVG to export.
+    const stroke = paints(node.strokes)[0];
+    if (stroke)
+      css.push(
+        `border-top: ${px(node.strokeWeight ?? 1)} ${node.strokeDashes?.length ? "dashed" : "solid"} ${stroke}`,
+      );
   } else if (!VECTOR_TYPES.has(node.type)) {
     autoLayout(node, css);
     const bg = background(node.fills);
@@ -367,6 +408,8 @@ export interface OutlineResult {
   truncated: boolean;
   boundVariables: number;
   imageRefs: Set<string>;
+  /** "Family weight" pairs used by text, for checking the project loads them. */
+  fonts: Set<string>;
 }
 
 /**
@@ -381,6 +424,7 @@ export function designOutline(
   const maxNodes = opts.maxNodes ?? 800;
   const lines: string[] = [];
   const imageRefs = new Set<string>();
+  const fonts = new Set<string>();
   let nodeCount = 0;
   let truncated = false;
   let boundVariables = 0;
@@ -397,8 +441,11 @@ export function designOutline(
     }
     nodeCount++;
     const box = node.absoluteBoundingBox;
+    // Text layers are identified by their content; their names are often stale.
     const parts = [
-      `${"  ".repeat(depth)}${node.type} "${node.name}" [${node.id}]`,
+      node.type === "TEXT"
+        ? `${"  ".repeat(depth)}TEXT [${node.id}]`
+        : `${"  ".repeat(depth)}${node.type} "${node.name}" [${node.id}]`,
     ];
     if (box) parts.push(`${round(box.width)}×${round(box.height)}`);
 
@@ -408,10 +455,12 @@ export function designOutline(
         ? assets.componentSets?.[comp.componentSetId]
         : undefined;
       const props = Object.entries(node.componentProperties ?? {})
+
         .map(
           ([k, v]) =>
             `${cleanProp(k)}=${JSON.stringify((v as { value: unknown }).value)}`,
         )
+
         .join(" ");
       parts.push(
         `<${set?.name ?? comp?.name ?? node.componentId}${props ? ` ${props}` : ""}>`,
@@ -419,25 +468,29 @@ export function designOutline(
     }
     if (node.type === "COMPONENT" || node.type === "COMPONENT_SET") {
       const defs = Object.entries(node.componentPropertyDefinitions ?? {})
+
         .map(([k, v]) => {
           const d = v as { type: string; variantOptions?: string[] };
           return `${cleanProp(k)}:${d.variantOptions ? d.variantOptions.join("|") : d.type.toLowerCase()}`;
         })
+
         .join(" ");
       if (defs) parts.push(`props{${defs}}`);
     }
 
     const styleNames = Object.entries(node.styles ?? {})
+
       .map(
         ([kind, id]) =>
           `${kind}:"${assets.styles?.[id as string]?.name ?? id}"`,
       )
+
       .join(" ");
     if (styleNames) parts.push(`styles{${styleNames}}`);
     if (node.boundVariables && Object.keys(node.boundVariables).length)
       boundVariables++;
 
-    const vectorOnly = isVectorOnly(node);
+    const vectorOnly = node.type !== "LINE" && isVectorOnly(node);
     if (vectorOnly) parts.push("asset=svg");
     for (const p of (node.fills ?? []).filter(visible)) {
       if (p.type === "IMAGE" && p.imageRef) {
@@ -455,6 +508,20 @@ export function designOutline(
       );
       const runs = textRuns(node);
       if (runs) parts.push(`runs: ${runs}`);
+      // The base style counts only if some character still uses it.
+      const overrides = (node.characterStyleOverrides ?? []) as number[];
+      const baseUsed =
+        overrides.length < chars.length || overrides.some((o) => !o);
+      const styles = [
+        ...(baseUsed ? [node.style] : []),
+        ...Object.values(
+          (node.styleOverrideTable ?? {}) as Record<string, typeof node.style>,
+        ),
+      ];
+      for (const st of styles) {
+        if (st?.fontFamily)
+          fonts.add(`${st.fontFamily} ${st.fontWeight ?? 400}`);
+      }
     }
     lines.push(parts.join(" "));
 
@@ -481,14 +548,19 @@ export function designOutline(
     truncated,
     boundVariables,
     imageRefs,
+    fonts,
   };
 }
 
 const xmlEscape = (s: string) =>
   s
+
     .replaceAll("&", "&amp;")
+
     .replaceAll('"', "&quot;")
+
     .replaceAll("<", "&lt;")
+
     .replaceAll(">", "&gt;");
 
 /** Sparse XML outline: ids, names, types, positions and sizes only. */
@@ -574,7 +646,9 @@ export function figjamXml(root: FigmaNode): string {
   visit(root, 0);
   // Name connector endpoints so edges read without a second lookup.
   return out
+
     .join("\n")
+
     .replace(/(from|to)="([^"]+)"/g, (m, k, id) =>
       names.has(id)
         ? `${k}="${id}" ${k}-name="${xmlEscape(names.get(id)!)}"`

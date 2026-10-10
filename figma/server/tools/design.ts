@@ -65,33 +65,56 @@ export const getDesignContextTool = createPrivateTool({
     fileKey: fileKeySchema,
     nodeId: nodeIdSchema,
     clientFrameworks: z
+
       .string()
+
       .optional()
+
       .describe('Target frameworks, e.g. "react,next" — echoed as guidance.'),
     clientLanguages: z
+
       .string()
+
       .optional()
+
       .describe('Target languages, e.g. "typescript,css".'),
     includeScreenshot: z
+
       .boolean()
+
       .default(true)
+
       .describe("Attach a PNG of the node (recommended)."),
     includeComments: z
+
       .boolean()
+
       .default(true)
+
       .describe("Include unresolved comments pinned inside the node."),
     maxDepth: z
+
       .number()
+
       .int()
+
       .min(0)
+
       .optional()
+
       .describe("Stop descending after this depth (default: full tree)."),
     maxNodes: z
+
       .number()
+
       .int()
+
       .min(10)
+
       .max(5000)
+
       .default(800)
+
       .describe("Layer budget before truncating."),
   }),
   execute: async ({ context, runtimeContext }) => {
@@ -145,7 +168,7 @@ export const getDesignContextTool = createPrivateTool({
       context.clientFrameworks || context.clientLanguages
         ? `Target stack: ${[context.clientFrameworks, context.clientLanguages].filter(Boolean).join(" / ")}. Translate the CSS below into that stack's idioms and the repo's existing components/tokens.`
         : "",
-      'Format: TYPE "name" [id] W×H <Component Prop=Value> styles{…} asset=… { css } "text". Children are indented under their parent.',
+      'Format: TYPE "name" [id] W×H <Component Prop=Value> styles{…} asset=… { css }. Text layers: TEXT [id] W×H { css } "content". Children are indented under their parent.',
       "",
       outline.text,
     ];
@@ -165,6 +188,10 @@ export const getDesignContextTool = createPrivateTool({
       notes.push(
         `${outline.imageRefs.size} image fill(s): pass their refs to download_assets (imageRefs) for the original files.`,
       );
+    if (outline.fonts.size)
+      notes.push(
+        `Fonts: ${[...outline.fonts].sort().join(", ")}. Use the project's font setup; flag any it does not load instead of substituting silently.`,
+      );
     if (outline.boundVariables)
       notes.push(
         `${outline.boundVariables} layer(s) use Figma variables: call get_variable_defs for token names.`,
@@ -175,7 +202,9 @@ export const getDesignContextTool = createPrivateTool({
     content.push({
       type: "text",
       text: sections
+
         .filter((s, i, a) => s !== "" || a[i - 1] !== "")
+
         .join("\n"),
     });
     return { content };
@@ -191,10 +220,15 @@ export const getMetadataTool = createPrivateTool({
     fileKey: fileKeySchema,
     nodeId: nodeIdSchema,
     maxDepth: z
+
       .number()
+
       .int()
+
       .min(1)
+
       .optional()
+
       .describe(
         "Limit depth (default: full subtree for a node, 2 for a whole file).",
       ),
@@ -224,10 +258,15 @@ export const getScreenshotTool = createPrivateTool({
     nodeId: nodeIdSchema,
     format: z.enum(["png", "jpg"]).default("png"),
     scale: z
+
       .number()
+
       .min(0.01)
+
       .max(4)
+
       .optional()
+
       .describe("Render scale; omit to auto-fit."),
   }),
   execute: async ({ context, runtimeContext }) => {
@@ -269,25 +308,41 @@ export const downloadAssetsTool = createPrivateTool({
   inputSchema: z.object({
     fileKey: fileKeySchema,
     nodeIds: z
+
       .array(z.string())
+
       .max(50)
+
       .default([])
+
       .describe("Layers to export."),
     imageRefs: z
+
       .array(z.string())
+
       .max(50)
+
       .default([])
+
       .describe("Image-fill refs whose original source file you want."),
     defaultFormat: z.enum(["png", "jpg", "svg", "pdf"]).default("svg"),
     defaultScale: z
+
       .number()
+
       .min(0.01)
+
       .max(4)
+
       .default(2)
+
       .describe("Raster scale (ignored for svg/pdf)."),
     enableBase64Response: z
+
       .boolean()
+
       .default(false)
+
       .describe("Inline the files (max 10) instead of returning URLs."),
   }),
   execute: async ({ context, runtimeContext }) => {
@@ -524,8 +579,11 @@ export const getMotionContextTool = createPrivateTool({
     fileKey: fileKeySchema,
     nodeId: nodeIdSchema,
     recursive: z
+
       .boolean()
+
       .default(true)
+
       .describe("Include descendants' interactions."),
   }),
   execute: async ({ context, runtimeContext }) => {
