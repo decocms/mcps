@@ -37,6 +37,9 @@
     "farmrio-reorder-collection-db": {
       "reason": "Predates the withAuth requirement — 1 finding pending remediation."
     },
+    "figma": {
+      "reason": "OAuth MCP: the Authorization header carries the caller's own Figma access token and every tool forwards it to api.figma.com, so there is no shared secret to check and no server-side credential exposed. OAuth state/code are sealed with OAUTH_STATE_SECRET and redirect hosts are pinned to decocms.com. Re-add withAuth once Mesh forwards the connection secret on a separate header."
+    },
     "flux": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
