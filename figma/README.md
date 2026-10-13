@@ -5,7 +5,7 @@ user's own Figma account (OAuth). Tool names follow
 [Figma's official MCP server](https://developers.figma.com/docs/figma-mcp-server/tools-and-prompts/),
 so prompts and skills written for it carry over.
 
-Served at `https://sites-figma.deco.site/mcp` (kubernetes-bun, see `deploy.json`).
+Served at `https://sites-figma-mcp.deco.site/mcp` (kubernetes-bun, see `deploy.json`).
 
 ## Tools
 
@@ -60,7 +60,7 @@ any other connection that uses the same Figma account.
 ## Setup
 
 1. Create an OAuth app at https://www.figma.com/developers/apps:
-   - callback: `https://sites-figma.deco.site/oauth/callback`
+   - callback: `https://sites-figma-mcp.deco.site/oauth/callback`
    - scopes: `current_user:read file_content:read file_metadata:read file_comments:read file_dev_resources:read file_dev_resources:write library_content:read library_assets:read team_library_content:read`
    - A private app works for members of the Figma org that owns it. A public
      app goes through Figma review.
@@ -68,7 +68,7 @@ any other connection that uses the same Figma account.
    `OAUTH_STATE_SECRET` (`openssl rand -hex 32`). The server refuses to start
    without `OAUTH_STATE_SECRET`.
 3. In Studio, add the MCP from the store, or create a custom HTTP connection
-   to `https://sites-figma.deco.site/mcp` with no token. Studio runs the OAuth
+   to `https://sites-figma-mcp.deco.site/mcp` with no token. Studio runs the OAuth
    flow.
 
 ### Until the OAuth app is approved
@@ -79,7 +79,7 @@ reviews it. Everyone else connects with a personal access token:
 1. Figma → Settings → Security → Personal access tokens. Give it the read
    scopes listed above and the shortest expiry that works for you.
 2. In Studio, create a Custom Connection: type **HTTP**, URL
-   `https://sites-figma.deco.site/mcp`, and paste the token (`figd_…`) in the
+   `https://sites-figma-mcp.deco.site/mcp`, and paste the token (`figd_…`) in the
    **Token** field.
 
 The MCP sends `figd_` tokens as `X-Figma-Token`, so no OAuth is involved.
