@@ -24,6 +24,12 @@ export const StateSchema = z.object({
     .describe(
       "Store currency for analytics endpoints, e.g. BRL or USD (default BRL)",
     ),
+  writeMode: z
+    .boolean()
+    .optional()
+    .describe(
+      "Opt-in to write operations. When false or omitted (default), the MCP is read-only: only read tools (GET/LIST/SEARCH) run and any create/update/delete tool is refused. Set to true to allow writes.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
