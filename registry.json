@@ -1548,6 +1548,54 @@
     }
   },
   {
+    "id": "deco/figma",
+    "title": "Figma",
+    "description": "Figma design context for coding agents: screenshots, layout as CSS, tokens, comments, design-system search and Code Connect. Until our Figma OAuth app is approved, connect with a Figma personal access token.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "Figma",
+        "short_description": "Read Figma designs as code-ready context: screenshot, layout, tokens, comments and Code Connect",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "figma",
+          "design",
+          "design-to-code",
+          "design-system",
+          "code-connect",
+          "figjam",
+          "ui"
+        ],
+        "categories": [
+          "Design"
+        ],
+        "readme": "The Figma MCP gives coding agents a real reference to the design instead of guessing. **Design to code** - get_design_context returns a screenshot plus a one-line-per-layer outline with auto-layout as flexbox CSS, sizes, colors, typography, component props, real text and the design comments pinned to the frame; get_metadata, get_screenshot, download_assets (SVG/PNG/original image fills), get_variable_defs, get_motion_context (prototype transitions) and get_figjam cover the rest. **Design systems** - get_libraries discovers the libraries a file uses and search_design_system finds published components and styles. **Code Connect** - mappings from main components to code are stored as Figma dev resources (visible in Dev Mode): get_code_connect_map, get_code_connect_suggestions, get_context_for_code_connect and add_code_connect_map. Tool names follow Figma's official MCP server. **Authentication** - your own Figma account; access and rate limits follow its seat (use a Dev or Full seat: View/Collab seats get only a few design reads per month). **Connecting today** - our Figma OAuth app is still under Figma review, so the Connect button only works for its owner. Until it is approved, create a Figma personal access token (Figma > Settings > Security > Personal access tokens, read scopes) and add a Custom Connection: type HTTP, URL https://sites-figma.deco.site/mcp, paste the token in the Token field."
+      }
+    },
+    "server": {
+      "name": "figma",
+      "title": "Figma",
+      "description": "Figma design context for coding agents: screenshots, layout as CSS, tokens, comments, design-system search and Code Connect. Until our Figma OAuth app is approved, connect with a Figma personal access token.",
+      "icons": [
+        {
+          "src": "https://static.figma.com/app/icon/1/icon-192.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-figma.deco.site/mcp",
+          "name": "figma",
+          "title": "Figma",
+          "description": "Figma design context for coding agents: screenshots, layout as CSS, tokens, comments, design-system search and Code Connect. Until our Figma OAuth app is approved, connect with a Figma personal access token."
+        }
+      ]
+    }
+  },
+  {
     "id": "deco/flux",
     "title": "FLUX Image Generation",
     "description": "Generate images using Black Forest Labs FLUX models. Supports text-to-image generation with multiple FLUX model variants.",
