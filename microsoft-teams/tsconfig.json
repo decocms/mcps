@@ -17,7 +17,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-    "types": ["@types/node", "@cloudflare/workers-types"]
+    "types": ["@types/node", "@cloudflare/workers-types", "@types/bun"]
   },
   "include": ["server"]
 }

@@ -4,6 +4,7 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { z } from "zod";
 import { tools } from "./tools/index.ts";
 import { AIRTABLE_SCOPES } from "./constants.ts";
+import { assertAllowedRedirectUri } from "./lib/redirect-allowlist.ts";
 
 const StateSchema = z.object({});
 
@@ -14,6 +15,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
     mode: "PKCE",
     authorizationServer: "https://airtable.com",
     authorizationUrl: (callbackUrl) => {
+      assertAllowedRedirectUri(callbackUrl);
+
       const callback = new URL(callbackUrl);
       const state = callback.searchParams.get("state");
       callback.searchParams.delete("state");
@@ -27,6 +30,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       return url.toString();
     },
     exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
+      assertAllowedRedirectUri(redirect_uri ?? "");
+
       const clientId = process.env.AIRTABLE_CLIENT_ID ?? "";
       const clientSecret = process.env.AIRTABLE_CLIENT_SECRET ?? "";
 
