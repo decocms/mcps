@@ -5,11 +5,13 @@ const FOLDER_OVERRIDES = {
   whatsappagent: "whatsapp",
   "blog-generator": "blog-post-generator",
   "github-mcp": "github",
+  "figma-mcp": "figma",
 };
 
 const PKG_NAME_OVERRIDES = {
   vibemcp: "mcp-studio",
   "github-mcp": "github",
+  "figma-mcp": "figma",
   openrouter: "@decocms/openrouter",
   airtable: "@decocms/airtable",
   "blog-generator": "blog-post-generator",
