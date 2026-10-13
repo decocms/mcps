@@ -75,7 +75,13 @@ export function tokenFrom(runtimeContext: unknown): string {
       env?: { MESH_REQUEST_CONTEXT?: { authorization?: string | null } };
     }
   )?.env;
-  const token = env?.MESH_REQUEST_CONTEXT?.authorization;
+  // The runtime already strips the scheme; strip it again so a raw
+  // "Bearer …" value can't hide a figd_ personal token from figmaFetch.
+  const token = env?.MESH_REQUEST_CONTEXT?.authorization
+
+    ?.replace(/^Bearer\s+/i, "")
+
+    .trim();
   if (!token) {
     throw new Error(
       "Missing Figma authorization. Connect this MCP with your Figma account first.",

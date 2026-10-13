@@ -71,6 +71,20 @@ any other connection that uses the same Figma account.
    to `https://sites-figma.deco.site/mcp` with no token. Studio runs the OAuth
    flow.
 
+### Until the OAuth app is approved
+
+A public Figma OAuth app only accepts its owner and plan admins while Figma
+reviews it. Everyone else connects with a personal access token:
+
+1. Figma → Settings → Security → Personal access tokens. Give it the read
+   scopes listed above and the shortest expiry that works for you.
+2. In Studio, create a Custom Connection: type **HTTP**, URL
+   `https://sites-figma.deco.site/mcp`, and paste the token (`figd_…`) in the
+   **Token** field.
+
+The MCP sends `figd_` tokens as `X-Figma-Token`, so no OAuth is involved.
+Remove the store note in `app.json` once Figma approves the app.
+
 ## Auth
 
 This MCP is exempt from `withAuth` (see `auth-exemptions.json`). The

@@ -7,7 +7,7 @@ import {
   metadataXml,
   paints,
 } from "./design.ts";
-import { type FigmaNode, fitScale, parseFigmaRef } from "./figma.ts";
+import { type FigmaNode, fitScale, parseFigmaRef, tokenFrom } from "./figma.ts";
 
 describe("parseFigmaRef", () => {
   test("design link with dashed node-id", () => {
@@ -345,4 +345,13 @@ test("FILA-style frame: dividers, trimmed text, lone-child gap, absolute childre
     "Helvetica Neue LT Std 400",
     "Helvetica Neue LT Std 700",
   ]);
+});
+
+test("tokenFrom accepts the raw token and tolerates a Bearer prefix", () => {
+  const ctx = (authorization: string) => ({
+    env: { MESH_REQUEST_CONTEXT: { authorization } },
+  });
+  expect(tokenFrom(ctx("figd_abc"))).toBe("figd_abc");
+  expect(tokenFrom(ctx("Bearer figd_abc"))).toBe("figd_abc");
+  expect(() => tokenFrom(ctx(""))).toThrow();
 });
