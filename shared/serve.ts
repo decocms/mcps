@@ -98,6 +98,34 @@ function withLogging(fetcher: Fetcher): Fetcher {
 }
 
 /**
+ * Gzips POST responses when the client accepts it. MCP `tools/list` can be
+ * ~1MB of JSON schemas (VTEX: 718 tools) and is fetched on every proxied
+ * session, so uncompressed it dominates origin egress.
+ * GET is skipped: it's the long-lived SSE stream, which gzip would buffer.
+ */
+function withCompression(fetcher: Fetcher): Fetcher {
+  return async (req: Request, ...args) => {
+    const response = await fetcher(req, ...args);
+    if (
+      req.method !== "POST" ||
+      !response.body ||
+      response.headers.has("content-encoding") ||
+      !/\bgzip\b/.test(req.headers.get("accept-encoding") ?? "")
+    ) {
+      return response;
+    }
+    const headers = new Headers(response.headers);
+    headers.set("content-encoding", "gzip");
+    headers.delete("content-length");
+    headers.append("vary", "accept-encoding");
+    return new Response(
+      response.body.pipeThrough(new CompressionStream("gzip")),
+      { status: response.status, statusText: response.statusText, headers },
+    );
+  };
+}
+
+/**
  * Starts a Bun server with the provided fetch handler.
  *
  * Configures the server with:
@@ -114,7 +142,7 @@ export function serve(fetcher: Fetcher) {
     idleTimeout: 0,
     port: process.env.PORT || 8001,
     hostname: "0.0.0.0", // Listen on all network interfaces (required for K8s)
-    fetch: withLogging(fetcher),
+    fetch: withLogging(withCompression(fetcher)),
     development: process.env.NODE_ENV !== "production",
   });
 }
