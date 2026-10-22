@@ -12,6 +12,7 @@ import { scrapeAllBlogs } from "../lib/blog-scraper.ts";
 import {
   scrapeAllLinkedInSources,
   scrapeLinkedInProfile,
+  type LinkedInActorChoice,
 } from "../lib/linkedin-scraper.ts";
 import {
   scrapeAllRedditSources,
@@ -58,6 +59,14 @@ function getOpenRouterApiKey(env: Env): string | null {
  */
 function getApifyApiToken(env: Env): string | null {
   return env.MESH_REQUEST_CONTEXT?.state?.apifyApiToken ?? null;
+}
+
+/**
+ * LinkedIn Actor choice from state. Default harvestapi.
+ */
+function getLinkedInActor(env: Env): LinkedInActorChoice {
+  const value = env.MESH_REQUEST_CONTEXT?.state?.linkedinActor;
+  return value === "johnvc" ? "johnvc" : "harvestapi";
 }
 
 // =============================================================================
@@ -159,6 +168,7 @@ export const getScrapeAllTool = (env: Env) =>
               openrouterApiKey,
               apifyApiToken,
               linkedin_max_posts,
+              getLinkedInActor(env),
             );
             const totalSaved = linkedinResults.reduce(
               (sum, r) => sum + r.postsSaved,
@@ -332,6 +342,7 @@ export const getScrapeLinkedInTool = (env: Env) =>
             profile_url,
             0.7,
             max_posts,
+            getLinkedInActor(env),
           );
           return {
             success: true,
@@ -346,6 +357,7 @@ export const getScrapeLinkedInTool = (env: Env) =>
             openrouterApiKey,
             apifyApiToken,
             max_posts,
+            getLinkedInActor(env),
           );
           const totalSaved = results.reduce((sum, r) => sum + r.postsSaved, 0);
           const totalRelevant = results.reduce(

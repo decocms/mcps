@@ -27,6 +27,15 @@ The MCP expects a database with the following tables:
 When installing, configure:
 - `database.apiUrl`: Database API URL
 - `database.token`: Authentication token
+- `apifyApiToken`: Apify token (required for LinkedIn)
+- `linkedinActor` (optional): `harvestapi` (default) or `johnvc` for
+  [`johnvc/linkedin-posts-api`](https://apify.com/johnvc/linkedin-posts-api).
+  The default stays HarvestAPI. CLI equivalent: `LINKEDIN_ACTOR=johnvc`.
+
+When `linkedinActor` is `johnvc`, profile posts are mapped into the existing
+`LinkedInRawPost` shape. Share counts are stored as 0, author avatar is null,
+and a person profile returns the recent posts LinkedIn shows a signed-out
+visitor (usually 3 to 8), which covers the default `maxPosts = 5`.
 
 ## Available Tools
 
