@@ -1,43 +1,20 @@
 import { z } from "zod";
 
 /**
- * Grain Public API types
- * @see https://grainhq.notion.site/Grain-Personal-API
+ * Grain Public API v2 types
+ * @see https://developers.grain.com/endpoints.html
  */
 
-// -- Recordings (list) --
-
-export interface Recording {
-  id: string;
-  title: string;
-  url: string;
-  start_datetime: string;
-  end_datetime: string;
-  public_thumbnail_url: string | null;
-}
-
-export interface ListRecordingsParams {
-  cursor?: string;
-  start_date?: string;
-  end_date?: string;
-  title?: string;
-  attendance?: "hosted" | "attended";
-  include_highlights?: boolean;
-  include_participants?: boolean;
-  include_calendar_id?: boolean;
-}
-
-export interface ListRecordingsResponse {
-  cursor: string | null;
-  recordings: Recording[];
-}
-
-// -- Recording details (single) --
+// -- v2 wire shapes --
 
 export interface RecordingParticipant {
-  email: string;
-  name: string;
+  id?: string;
+  email: string | null;
+  name: string | null;
   scope: string;
+  confirmed_attendee?: boolean;
+  observed_join_time?: string | null;
+  observed_leave_time?: string | null;
 }
 
 export interface RecordingHighlight {
@@ -52,16 +29,69 @@ export interface RecordingHighlight {
   thumbnail_url: string;
 }
 
+/** A Recording as v2 returns it (fields beyond `include` may be absent). */
+export interface GrainRecordingV2 {
+  id: string;
+  title: string;
+  url: string;
+  start_datetime: string;
+  end_datetime: string;
+  duration_ms?: number;
+  thumbnail_url: string | null;
+  source?: string;
+  media_type?: string;
+  tags?: string[];
+  recorders?: { id: string; name: string; email: string | null }[];
+  participants?: RecordingParticipant[];
+  highlights?: RecordingHighlight[];
+  ai_summary?: { text: string } | null;
+  ai_template_sections?: { title: string; data: unknown }[];
+  [key: string]: unknown;
+}
+
+export interface RecordingsInclude {
+  participants?: boolean;
+  highlights?: boolean;
+  ai_summary?: boolean;
+  ai_template_sections?: { format?: "json" | "markdown" | "text" };
+}
+
+export interface ListRecordingsParams {
+  cursor?: string;
+  start_date?: string;
+  end_date?: string;
+  title?: string;
+  attendance?: "hosted" | "attended";
+  include_highlights?: boolean;
+  include_participants?: boolean;
+}
+
+export interface ListRecordingsResponse {
+  cursor: string | null;
+  recordings: GrainRecordingV2[];
+}
+
+// -- The shape this MCP exposes (stable across the v1 → v2 move) --
+
+export interface Recording {
+  id: string;
+  title: string;
+  url: string;
+  start_datetime: string;
+  end_datetime: string;
+  public_thumbnail_url: string | null;
+}
+
 export interface RecordingDetails extends Recording {
   participants?: RecordingParticipant[];
+  /** Recorder emails (v1 called them owners). */
   owners?: string[];
   tags?: string[];
   highlights?: RecordingHighlight[];
   transcript_json?: TranscriptEntry[];
-  transcript_vtt?: string;
+  /** v2's AI summary, in markdown (v1 called it intelligence notes). */
   intelligence_notes_md?: string;
   intelligence_notes_json?: IntelligenceNoteSection[];
-  intelligence_notes_text?: string;
 }
 
 export interface TranscriptEntry {
@@ -76,91 +106,83 @@ export interface IntelligenceNoteSection {
   body: string;
 }
 
-// -- Views --
-
-export interface GrainView {
-  id: string;
-  name: string;
+/** v2 Recording → the MCP's stable shape. Extra v2 fields pass through. */
+export function toDetails(r: GrainRecordingV2): RecordingDetails {
+  const owners = (r.recorders ?? [])
+    .map((x) => x.email)
+    .filter((e): e is string => Boolean(e));
+  return {
+    ...r,
+    id: r.id,
+    title: r.title,
+    url: r.url,
+    start_datetime: r.start_datetime,
+    end_datetime: r.end_datetime,
+    public_thumbnail_url: r.thumbnail_url ?? null,
+    owners,
+    tags: r.tags ?? [],
+    participants: r.participants,
+    highlights: r.highlights,
+    intelligence_notes_md: r.ai_summary?.text ?? undefined,
+    intelligence_notes_json: r.ai_template_sections?.map((s) => ({
+      title: s.title,
+      body: typeof s.data === "string" ? s.data : JSON.stringify(s.data),
+    })),
+  };
 }
 
-export interface ListViewsResponse {
-  views: GrainView[];
-  cursor?: string;
-}
+// -- Hooks (v2) --
 
-// -- Hooks (REST Hooks) --
-
-export type HookAction = "added" | "updated" | "removed";
-
-export interface CreateHookParams {
-  version: 2;
-  hook_url: string;
-  view_id: string;
-  actions?: HookAction[];
-}
+export type HookType =
+  | "recording_added"
+  | "recording_updated"
+  | "recording_deleted"
+  | "highlight_added"
+  | "highlight_updated"
+  | "highlight_deleted"
+  | "story_added"
+  | "story_updated"
+  | "story_deleted"
+  | "upload_added"
+  | "upload_updated";
 
 export interface Hook {
   id: string;
+  enabled: boolean;
   hook_url: string;
-  view_id: string;
+  hook_type: HookType;
+  include: Record<string, unknown>;
   inserted_at: string;
 }
-
-export interface CreateHookResponse extends Hook {}
 
 export interface ListHooksResponse {
   hooks: Hook[];
 }
 
-// -- Webhook payloads (inbound from Grain) --
+// -- Webhook payloads (inbound from Grain, v2 envelope) --
 
-export type WebhookEventType =
-  | "recording_added"
-  | "recording_updated"
-  | "recording_removed"
-  | "highlight_added"
-  | "highlight_updated"
-  | "highlight_removed"
-  | "story_added"
-  | "story_updated"
-  | "story_removed";
-
-export interface WebhookRecordingData {
-  id: string;
-  title?: string;
-  url?: string;
-  start_datetime?: string;
-  end_datetime?: string;
-  public_thumbnail_url?: string | null;
-}
+export type WebhookEventType = HookType;
 
 export interface WebhookPayload {
   type: WebhookEventType;
   user_id?: string;
-  data: WebhookRecordingData;
+  data: { id: string; [key: string]: unknown };
 }
 
 export const WebhookPayloadSchema = z.object({
   type: z.enum([
     "recording_added",
     "recording_updated",
-    "recording_removed",
+    "recording_deleted",
     "highlight_added",
     "highlight_updated",
-    "highlight_removed",
+    "highlight_deleted",
     "story_added",
     "story_updated",
-    "story_removed",
+    "story_deleted",
+    "upload_added",
+    "upload_updated",
   ]),
   user_id: z.string().optional(),
-  data: z
-    .object({
-      id: z.string(),
-      title: z.string().optional(),
-      url: z.string().optional(),
-      start_datetime: z.string().optional(),
-      end_datetime: z.string().optional(),
-      public_thumbnail_url: z.string().nullable().optional(),
-    })
-    .passthrough(),
+  data: z.object({ id: z.string() }).passthrough(),
 });

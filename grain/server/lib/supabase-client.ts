@@ -8,11 +8,14 @@ export function getSupabaseClient(): SupabaseClient {
   }
 
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  // Server-side key: the tables have RLS on and no anon access. The anon key
+  // stays as a fallback only for local setups that still use it.
+  const supabaseKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
     throw new Error(
-      "SUPABASE_URL and SUPABASE_ANON_KEY are required to use indexed recording search.",
+      "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required to use indexed recording search.",
     );
   }
 

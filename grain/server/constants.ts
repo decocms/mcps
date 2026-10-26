@@ -1,14 +1,22 @@
 /**
- * Grain API constants
- * @see https://grainhq.notion.site/Grain-Personal-API-877184aa82b54c77a875083c1b560de9
+ * Grain Public API v2 constants.
+ * v1 (`/_/public-api/...` without `/v2`) was retired — it answers 410 Gone.
+ * @see https://developers.grain.com/endpoints.html
  */
-export const GRAIN_BASE_URL = "https://api.grain.com";
+export const GRAIN_BASE_URL = "https://api.grain.com/_/public-api/v2";
+export const GRAIN_API_VERSION = "2026-10-01";
 
-export const GRAIN_RECORDINGS_ENDPOINT = "/_/public-api/recordings";
-export const GRAIN_VIEWS_ENDPOINT = "/_/public-api/views";
-export const GRAIN_HOOKS_ENDPOINT = "/_/public-api/hooks";
+export const GRAIN_RECORDINGS_ENDPOINT = "/recordings";
+export const GRAIN_HOOKS_ENDPOINT = "/hooks";
 
-export const GRAIN_HOOKS_VERSION = 2;
+/** Hook types the index listens to. */
+export const INDEXED_HOOK_TYPES = [
+  "recording_added",
+  "recording_updated",
+] as const;
+
+/** What every indexed recording is fetched with. */
+export const INDEX_INCLUDE = { participants: true, ai_summary: true } as const;
 
 export const DEFAULT_PAGE_SIZE = 50;
 export const MAX_PAGE_SIZE = 100;

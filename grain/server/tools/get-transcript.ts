@@ -43,10 +43,7 @@ export const createGetTranscriptTool = (env: Env) =>
         const format = context.format ?? "txt";
 
         const [recording, transcript] = await Promise.all([
-          client.getRecording(context.recordingId, {
-            include_participants: false,
-            include_owners: false,
-          }),
+          client.getRecording(context.recordingId, {}),
           client.getTranscript(context.recordingId, format),
         ]);
 

@@ -74,13 +74,16 @@ export const createGetRecordingTool = (env: Env) =>
       try {
         const client = new GrainClient({ apiKey: getGrainApiKey(env) });
 
-        const recording = await client.getRecording(context.recordingId, {
-          include_highlights: context.include_highlights,
-          include_participants: true,
-          include_owners: true,
-          transcript_format: context.include_transcript ? "json" : undefined,
-          intelligence_notes_format: context.include_notes ? "md" : undefined,
-        });
+        const [recording, transcript] = await Promise.all([
+          client.getRecording(context.recordingId, {
+            participants: true,
+            highlights: Boolean(context.include_highlights),
+            ai_summary: Boolean(context.include_notes),
+          }),
+          context.include_transcript
+            ? client.getTranscript(context.recordingId, "json")
+            : undefined,
+        ]);
 
         return {
           id: recording.id,
@@ -101,7 +104,7 @@ export const createGetRecordingTool = (env: Env) =>
             duration: h.duration,
             url: h.url,
           })),
-          transcript_json: recording.transcript_json,
+          transcript_json: Array.isArray(transcript) ? transcript : undefined,
           intelligence_notes_md: recording.intelligence_notes_md,
         };
       } catch (error) {

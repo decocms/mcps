@@ -1,21 +1,21 @@
 import {
+  GRAIN_API_VERSION,
   GRAIN_BASE_URL,
-  GRAIN_RECORDINGS_ENDPOINT,
-  GRAIN_VIEWS_ENDPOINT,
   GRAIN_HOOKS_ENDPOINT,
-  GRAIN_HOOKS_VERSION,
+  GRAIN_RECORDINGS_ENDPOINT,
 } from "../constants.ts";
-import type {
-  ListRecordingsParams,
-  ListRecordingsResponse,
-  RecordingDetails,
-  CreateHookParams,
-  CreateHookResponse,
-  ListHooksResponse,
-  ListViewsResponse,
-  TranscriptEntry,
+import {
+  type GrainRecordingV2,
+  type Hook,
+  type HookType,
+  type ListHooksResponse,
+  type ListRecordingsParams,
+  type ListRecordingsResponse,
+  type RecordingDetails,
+  type RecordingsInclude,
+  type TranscriptEntry,
+  toDetails,
 } from "./types.ts";
-
 export interface GrainClientConfig {
   apiKey: string;
 }
@@ -60,52 +60,38 @@ export class GrainAPIError extends Error {
   }
 }
 
+/** v2 wants full date-times; the tools accept plain dates ("2025-01-01") too. */
+export function isoDateTime(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? value : d.toISOString();
+}
+
 export class GrainClient {
   private apiKey: string;
-  private baseUrl: string;
 
   constructor(config: GrainClientConfig) {
     this.apiKey = config.apiKey;
-    this.baseUrl = GRAIN_BASE_URL;
   }
 
-  private getHeaders(): Record<string, string> {
+  private headers(accept = "application/json"): Record<string, string> {
     return {
       Authorization: `Bearer ${this.apiKey}`,
+      "Public-Api-Version": GRAIN_API_VERSION,
       "Content-Type": "application/json",
-      Accept: "application/json",
+      Accept: accept,
     };
   }
 
   private async request<T>(
-    method: "GET" | "POST" | "DELETE",
+    method: "POST" | "DELETE",
     endpoint: string,
-    options?: {
-      params?: Record<string, string>;
-      body?: Record<string, string | number | string[] | undefined>;
-    },
+    body?: unknown,
   ): Promise<T> {
-    const url = new URL(`${this.baseUrl}${endpoint}`);
-
-    if (options?.params) {
-      for (const [key, value] of Object.entries(options.params)) {
-        if (value !== undefined && value !== null) {
-          url.searchParams.append(key, value);
-        }
-      }
-    }
-
-    const fetchOptions: RequestInit = {
+    const response = await fetch(`${GRAIN_BASE_URL}${endpoint}`, {
       method,
-      headers: this.getHeaders(),
-    };
-
-    if (options?.body && method !== "GET") {
-      fetchOptions.body = JSON.stringify(options.body);
-    }
-
-    const response = await fetch(url.toString(), fetchOptions);
-
+      headers: this.headers(),
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
       throw new GrainAPIError(
@@ -115,64 +101,49 @@ export class GrainClient {
         endpoint,
       );
     }
-
     return (await response.json()) as T;
   }
 
+  /** POST /v2/recordings — filters go in the body; `after_datetime` = on/after. */
   async listRecordings(
     params?: ListRecordingsParams,
   ): Promise<ListRecordingsResponse> {
-    const queryParams: Record<string, string> = {};
-
-    if (params?.cursor) queryParams.cursor = params.cursor;
-    if (params?.start_date) queryParams.start_date = params.start_date;
-    if (params?.end_date) queryParams.end_date = params.end_date;
-    if (params?.title) queryParams.title = params.title;
-    if (params?.attendance) queryParams.attendance = params.attendance;
-    if (params?.include_highlights) queryParams.include_highlights = "true";
-    if (params?.include_participants) queryParams.include_participants = "true";
-    if (params?.include_calendar_id) queryParams.include_calendar_id = "true";
-
+    const filter: Record<string, string> = {};
+    if (params?.start_date)
+      filter.after_datetime = isoDateTime(params.start_date);
+    if (params?.end_date) filter.before_datetime = isoDateTime(params.end_date);
+    if (params?.title) filter.title_search = params.title;
+    if (params?.attendance) filter.attendance = params.attendance;
     return this.request<ListRecordingsResponse>(
-      "GET",
+      "POST",
       GRAIN_RECORDINGS_ENDPOINT,
-      { params: queryParams },
+      {
+        ...(params?.cursor ? { cursor: params.cursor } : {}),
+        filter,
+        include: {
+          highlights: Boolean(params?.include_highlights),
+          participants: Boolean(params?.include_participants),
+        },
+      },
     );
   }
 
+  /** POST /v2/recordings/:id, normalized to the MCP's stable shape. */
   async getRecording(
     recordingId: string,
-    options?: {
-      include_highlights?: boolean;
-      include_participants?: boolean;
-      include_owners?: boolean;
-      transcript_format?: "json" | "vtt";
-      intelligence_notes_format?: "json" | "md" | "text";
-    },
+    include: RecordingsInclude = { participants: true, ai_summary: true },
   ): Promise<RecordingDetails> {
-    const params: Record<string, string> = {};
-
-    if (options?.include_highlights) params.include_highlights = "true";
-    if (options?.include_participants !== false)
-      params.include_participants = "true";
-    if (options?.include_owners !== false) params.include_owners = "true";
-    if (options?.transcript_format)
-      params.transcript_format = options.transcript_format;
-    if (options?.intelligence_notes_format)
-      params.intelligence_notes_format = options.intelligence_notes_format;
-
-    return this.request<RecordingDetails>(
-      "GET",
+    const recording = await this.request<GrainRecordingV2>(
+      "POST",
       `${GRAIN_RECORDINGS_ENDPOINT}/${recordingId}`,
-      { params },
+      { include },
     );
+    return toDetails(recording);
   }
 
   /**
-   * GET /_/public-api/recordings/:id/transcript       → JSON
-   * GET /_/public-api/recordings/:id/transcript.txt   → plain text
-   * GET /_/public-api/recordings/:id/transcript.vtt   → WebVTT (paid seat)
-   * GET /_/public-api/recordings/:id/transcript.srt   → SRT (paid seat)
+   * GET /v2/recordings/:id/transcript       → JSON segments
+   * GET /v2/recordings/:id/transcript.txt   → plain text (also .vtt / .srt)
    */
   async getTranscript(
     recordingId: string,
@@ -180,14 +151,11 @@ export class GrainClient {
   ): Promise<string | TranscriptEntry[]> {
     const suffix = format === "json" ? "" : `.${format}`;
     const endpoint = `${GRAIN_RECORDINGS_ENDPOINT}/${recordingId}/transcript${suffix}`;
-
-    const url = new URL(`${this.baseUrl}${endpoint}`);
-    const headers = this.getHeaders();
-    if (format !== "json") {
-      headers["Accept"] = "text/plain";
-    }
-    const response = await fetch(url.toString(), { headers });
-
+    const response = await fetch(`${GRAIN_BASE_URL}${endpoint}`, {
+      headers: this.headers(
+        format === "json" ? "application/json" : "text/plain",
+      ),
+    });
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
       throw new GrainAPIError(
@@ -197,55 +165,43 @@ export class GrainClient {
         endpoint,
       );
     }
-
-    if (format === "json") {
-      return (await response.json()) as TranscriptEntry[];
-    }
-    return await response.text();
+    if (format !== "json") return await response.text();
+    const segments = (await response.json()) as {
+      speaker: string;
+      text: string;
+      start?: number;
+      end?: number;
+    }[];
+    return segments.map((s) => ({
+      speaker: s.speaker,
+      text: s.text,
+      start_time: s.start,
+      end_time: s.end,
+    }));
   }
 
-  /**
-   * @see https://grainhq.notion.site/Grain-Personal-API (GET /_/public-api/views)
-   */
-  async listViews(): Promise<ListViewsResponse> {
-    return this.request<ListViewsResponse>("GET", GRAIN_VIEWS_ENDPOINT, {
-      params: { type_filter: "recordings" },
-    });
-  }
-
-  /**
-   * @see https://grainhq.notion.site/Grain-Personal-API (GET /_/public-api/hooks)
-   */
+  /** POST /v2/hooks (list). */
   async listHooks(): Promise<ListHooksResponse> {
-    return this.request<ListHooksResponse>("GET", GRAIN_HOOKS_ENDPOINT);
+    return this.request<ListHooksResponse>("POST", GRAIN_HOOKS_ENDPOINT, {});
   }
 
   /**
-   * @see https://grainhq.notion.site/Grain-Personal-API (POST /_/public-api/hooks)
-   * Grain performs a reachability test on `hook_url`. The endpoint must respond 2xx.
+   * POST /v2/hooks/create. Grain sends a reachability POST to `hookUrl`
+   * first; it must answer 2xx or the hook is not created.
    */
   async createHook(
     hookUrl: string,
-    viewId: string,
-    actions?: CreateHookParams["actions"],
-  ): Promise<CreateHookResponse> {
-    const body: Record<string, string | number | string[] | undefined> = {
-      version: GRAIN_HOOKS_VERSION,
+    hookType: HookType,
+    include?: RecordingsInclude,
+  ): Promise<Hook> {
+    return this.request<Hook>("POST", `${GRAIN_HOOKS_ENDPOINT}/create`, {
       hook_url: hookUrl,
-      view_id: viewId,
-    };
-    if (actions) {
-      body.actions = actions;
-    }
-
-    return this.request<CreateHookResponse>("POST", GRAIN_HOOKS_ENDPOINT, {
-      body,
+      hook_type: hookType,
+      ...(include ? { include } : {}),
     });
   }
 
-  /**
-   * @see https://grainhq.notion.site/Grain-Personal-API (DELETE /_/public-api/hooks/:id)
-   */
+  /** DELETE /v2/hooks/:id */
   async deleteHook(hookId: string): Promise<void> {
     await this.request<{ success: boolean }>(
       "DELETE",
