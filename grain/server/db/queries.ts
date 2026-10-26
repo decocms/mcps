@@ -39,34 +39,30 @@ function buildParticipantsText(participants: RecordingParticipant[]): string {
 
 export interface EnrichedWebhookData {
   payload: WebhookPayload;
-  details: RecordingDetails | null;
+  /** Fetched from the Grain API — never taken from the (unsigned) webhook body. */
+  details: RecordingDetails;
 }
 
-function toDbRow(data: EnrichedWebhookData): GrainRecordingRow {
-  const { payload, details } = data;
-  const participants = details?.participants ?? [];
-
+function toDbRow({ payload, details }: EnrichedWebhookData): GrainRecordingRow {
+  const participants = details.participants ?? [];
+  const now = new Date().toISOString();
   return {
-    id: payload.data.id,
-    title: details?.title ?? payload.data.title ?? null,
-    url: details?.url ?? payload.data.url ?? null,
-    start_datetime:
-      details?.start_datetime ?? payload.data.start_datetime ?? null,
-    end_datetime: details?.end_datetime ?? payload.data.end_datetime ?? null,
-    public_thumbnail_url:
-      details?.public_thumbnail_url ??
-      payload.data.public_thumbnail_url ??
-      null,
-    owners: details?.owners ?? [],
-    tags: details?.tags ?? [],
+    id: details.id,
+    title: details.title ?? null,
+    url: details.url ?? null,
+    start_datetime: details.start_datetime ?? null,
+    end_datetime: details.end_datetime ?? null,
+    public_thumbnail_url: details.public_thumbnail_url ?? null,
+    owners: details.owners ?? [],
+    tags: details.tags ?? [],
     participants,
     participants_text: buildParticipantsText(participants),
-    intelligence_notes_md: details?.intelligence_notes_md ?? null,
+    intelligence_notes_md: details.intelligence_notes_md ?? null,
     user_id: payload.user_id ?? null,
     webhook_type: payload.type,
     raw_payload: payload,
-    indexed_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
+    indexed_at: now,
+    updated_at: now,
   };
 }
 

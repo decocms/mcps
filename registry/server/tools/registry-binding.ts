@@ -275,7 +275,9 @@ export const createListRegistryTool = (_env: Env) =>
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+        const supabaseKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ??
+          process.env.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
           throw new Error(
@@ -355,7 +357,9 @@ export const createGetRegistryTool = (_env: Env) =>
 
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+        const supabaseKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ??
+          process.env.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
           throw new Error(
@@ -407,7 +411,9 @@ export const createVersionsRegistryTool = (_env: Env) =>
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+        const supabaseKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ??
+          process.env.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
           throw new Error(
@@ -478,7 +484,9 @@ export const createFiltersRegistryTool = (_env: Env) =>
       try {
         // Get configuration from environment
         const supabaseUrl = process.env.SUPABASE_URL;
-        const supabaseKey = process.env.SUPABASE_ANON_KEY;
+        const supabaseKey =
+          process.env.SUPABASE_SERVICE_ROLE_KEY ??
+          process.env.SUPABASE_ANON_KEY;
 
         if (!supabaseUrl || !supabaseKey) {
           throw new Error(

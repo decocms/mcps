@@ -2,6 +2,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { getGrainApiKey } from "../lib/env.ts";
 import { z } from "zod";
 import { GrainClient, GrainAPIError } from "../lib/grain-client.ts";
+import { toDetails } from "../lib/types.ts";
 import type { Env } from "../types/env.ts";
 
 export const createListRecordingsTool = (env: Env) =>
@@ -75,7 +76,7 @@ export const createListRecordingsTool = (env: Env) =>
 
         return {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          recordings: response.recordings as any,
+          recordings: response.recordings.map(toDetails) as any,
           cursor: response.cursor,
         };
       } catch (error) {

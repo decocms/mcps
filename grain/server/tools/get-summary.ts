@@ -33,16 +33,18 @@ export const createGetSummaryTool = (env: Env) =>
         const client = new GrainClient({ apiKey: getGrainApiKey(env) });
         const format = context.format ?? "md";
 
-        const recording = await client.getRecording(context.recordingId, {
-          include_participants: false,
-          include_owners: false,
-          intelligence_notes_format: format,
-        });
+        // v2: the summary is `ai_summary` (markdown); structured notes are
+        // the AI template sections.
+        const recording = await client.getRecording(
+          context.recordingId,
+          format === "json"
+            ? { ai_template_sections: { format: "json" } }
+            : { ai_summary: true },
+        );
 
         let notes: string | { title: string; body: string }[] | undefined;
-        if (format === "md") notes = recording.intelligence_notes_md;
-        else if (format === "json") notes = recording.intelligence_notes_json;
-        else notes = recording.intelligence_notes_text;
+        if (format === "json") notes = recording.intelligence_notes_json;
+        else notes = recording.intelligence_notes_md;
 
         return {
           id: recording.id,
