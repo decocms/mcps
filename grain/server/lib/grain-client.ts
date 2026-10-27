@@ -1,14 +1,10 @@
 import {
   GRAIN_API_VERSION,
   GRAIN_BASE_URL,
-  GRAIN_HOOKS_ENDPOINT,
   GRAIN_RECORDINGS_ENDPOINT,
 } from "../constants.ts";
 import {
   type GrainRecordingV2,
-  type Hook,
-  type HookType,
-  type ListHooksResponse,
   type ListRecordingsParams,
   type ListRecordingsResponse,
   type RecordingDetails,
@@ -178,34 +174,5 @@ export class GrainClient {
       start_time: s.start,
       end_time: s.end,
     }));
-  }
-
-  /** POST /v2/hooks (list). */
-  async listHooks(): Promise<ListHooksResponse> {
-    return this.request<ListHooksResponse>("POST", GRAIN_HOOKS_ENDPOINT, {});
-  }
-
-  /**
-   * POST /v2/hooks/create. Grain sends a reachability POST to `hookUrl`
-   * first; it must answer 2xx or the hook is not created.
-   */
-  async createHook(
-    hookUrl: string,
-    hookType: HookType,
-    include?: RecordingsInclude,
-  ): Promise<Hook> {
-    return this.request<Hook>("POST", `${GRAIN_HOOKS_ENDPOINT}/create`, {
-      hook_url: hookUrl,
-      hook_type: hookType,
-      ...(include ? { include } : {}),
-    });
-  }
-
-  /** DELETE /v2/hooks/:id */
-  async deleteHook(hookId: string): Promise<void> {
-    await this.request<{ success: boolean }>(
-      "DELETE",
-      `${GRAIN_HOOKS_ENDPOINT}/${hookId}`,
-    );
   }
 }

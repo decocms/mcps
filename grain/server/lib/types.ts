@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 /**
  * Grain Public API v2 types
  * @see https://developers.grain.com/endpoints.html
@@ -130,59 +128,3 @@ export function toDetails(r: GrainRecordingV2): RecordingDetails {
     })),
   };
 }
-
-// -- Hooks (v2) --
-
-export type HookType =
-  | "recording_added"
-  | "recording_updated"
-  | "recording_deleted"
-  | "highlight_added"
-  | "highlight_updated"
-  | "highlight_deleted"
-  | "story_added"
-  | "story_updated"
-  | "story_deleted"
-  | "upload_added"
-  | "upload_updated";
-
-export interface Hook {
-  id: string;
-  enabled: boolean;
-  hook_url: string;
-  hook_type: HookType;
-  include: Record<string, unknown>;
-  inserted_at: string;
-}
-
-export interface ListHooksResponse {
-  hooks: Hook[];
-}
-
-// -- Webhook payloads (inbound from Grain, v2 envelope) --
-
-export type WebhookEventType = HookType;
-
-export interface WebhookPayload {
-  type: WebhookEventType;
-  user_id?: string;
-  data: { id: string; [key: string]: unknown };
-}
-
-export const WebhookPayloadSchema = z.object({
-  type: z.enum([
-    "recording_added",
-    "recording_updated",
-    "recording_deleted",
-    "highlight_added",
-    "highlight_updated",
-    "highlight_deleted",
-    "story_added",
-    "story_updated",
-    "story_deleted",
-    "upload_added",
-    "upload_updated",
-  ]),
-  user_id: z.string().optional(),
-  data: z.object({ id: z.string() }).passthrough(),
-});
