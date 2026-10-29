@@ -165,6 +165,51 @@ export const createCreateWorkspaceTool = (env: Env) =>
   });
 
 // ============================================================================
+// Create Version Tool
+// ============================================================================
+
+export const createCreateVersionTool = (env: Env) =>
+  createPrivateTool({
+    id: "create_version",
+    description:
+      "Create a container version from a workspace. It does NOT publish: the version must be published in the GTM UI. GTM deletes the workspace after the version is created.",
+    inputSchema: z.object({
+      accountId: z.string().describe("Account ID (e.g., '12345')"),
+      containerId: z.string().describe("Container ID (e.g., '67890')"),
+      workspaceId: z.string().describe("Workspace ID (e.g., '5')"),
+      name: z.string().describe("Version name"),
+      notes: z.string().optional().describe("Version notes"),
+    }),
+    outputSchema: z.object({
+      containerVersionId: z.string().optional(),
+      tagManagerUrl: z.string().optional(),
+      compilerError: z.boolean().optional(),
+      mergeConflict: z.boolean().optional(),
+      syncError: z.boolean().optional(),
+    }),
+    execute: async ({ context }) => {
+      const client = new GTMClient({
+        accessToken: getAccessToken(env),
+      });
+
+      const res = await client.createVersion(
+        context.accountId,
+        context.containerId,
+        context.workspaceId,
+        { name: context.name, notes: context.notes },
+      );
+
+      return {
+        containerVersionId: res.containerVersion?.containerVersionId,
+        tagManagerUrl: res.containerVersion?.tagManagerUrl,
+        compilerError: res.compilerError,
+        mergeConflict: res.syncStatus?.mergeConflict,
+        syncError: res.syncStatus?.syncError,
+      };
+    },
+  });
+
+// ============================================================================
 // Export all workspace tools
 // ============================================================================
 
@@ -172,4 +217,5 @@ export const workspaceTools = [
   createListWorkspacesTool,
   createGetWorkspaceTool,
   createCreateWorkspaceTool,
+  createCreateVersionTool,
 ];

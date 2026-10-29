@@ -9,7 +9,8 @@
     "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
     "build": "bun run build:server",
     "publish": "cat app.json | deco registry publish -w /shared/deco -y",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "@decocms/runtime": "1.2.5",
