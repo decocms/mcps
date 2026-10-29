@@ -54,6 +54,16 @@ mesh client ──► google-workspace MCP ──► calendarmcp.googleapis.com/
 
 The OAuth flow is the standard `createGoogleOAuth` from `@decocms/mcps-shared` — PKCE with refresh-token rotation. The full union of scopes is sent at consent time, so a single approval covers every service.
 
+### The OAuth client must be marked "agentic"
+
+From **2026-11-11** Google's Workspace MCP servers reject OAuth clients that are not marked as agentic (`is_agentic`, Google Cloud Console → Credentials → the OAuth client). From **2026-11-12** the setting is permanent: changing it means a new client ID, and every user reconnects.
+
+- The client in use is `GOOGLE_WORKSPACE_CLIENT_ID` / `GOOGLE_WORKSPACE_CLIENT_SECRET` when set, else the shared `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+- Google recommends a separate client when one client serves both agent and non-agent traffic. All MCPs in this repo are agent traffic, so marking the shared client is enough unless it is also used elsewhere (e.g. a human sign-in).
+- If the client is not marked, tool calls fail with an explicit "not marked as agentic" error instead of the generic 403 re-auth hint.
+
+The REST-based Google MCPs in this repo (`google-gmail`, `google-drive`, `google-analytics`, ...) call the REST APIs, not Google's MCP servers, so they keep working either way.
+
 ## Tool definitions are committed snapshots
 
 Tool names, descriptions, JSON schemas and PRM scopes for each backend live in `server/tools/generated/<service>.json`. These are committed to the repo for reproducible builds.
