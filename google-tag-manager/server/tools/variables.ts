@@ -66,7 +66,12 @@ const VariableSchema = z.object({
     .describe("Triggers that enable this variable"),
   tagManagerUrl: z.string().describe("Tag Manager URL for this variable"),
   parentFolderId: z.string().optional().describe("Parent folder ID"),
-  formatValue: ParameterSchema.optional().describe("Format value parameter"),
+  formatValue: z
+    .record(z.string(), z.unknown())
+    .optional()
+    .describe(
+      "Format value options (caseConversionType, convertNullToValue, ...)",
+    ),
 });
 
 // ============================================================================
@@ -273,7 +278,7 @@ export const createUpdateVariableTool = (env: Env) =>
   createPrivateTool({
     id: "update_variable",
     description:
-      "Update an existing GTM variable. All fields from the original variable must be provided.",
+      "Update an existing GTM variable. Only the fields you pass change; everything else (consent settings, folder, setup/teardown tags, schedule) is kept.",
     inputSchema: z.object({
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       containerId: z.string().describe("Container ID (e.g., '67890')"),
