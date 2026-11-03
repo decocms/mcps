@@ -5,6 +5,8 @@ const GA4_DATA_API = "https://analyticsdata.googleapis.com/v1beta";
 const GA4_ADMIN_API = "https://analyticsadmin.googleapis.com/v1beta";
 // Property annotations are v1alpha-only (not present in v1beta).
 const GA4_ADMIN_ALPHA_API = "https://analyticsadmin.googleapis.com/v1alpha";
+// runFunnelReport only exists on the Data API's v1alpha; the v1beta path 404s.
+const GA4_DATA_ALPHA_API = "https://analyticsdata.googleapis.com/v1alpha";
 
 // Hard limit on pagination loops to prevent runaway requests if GA4 returns a
 // repeated nextPageToken during a quota event or transient backend failure.
@@ -107,7 +109,7 @@ export class GaClient {
 
   async runFunnelReport(property: string, body: object): Promise<unknown> {
     const prop = normalizeProperty(property);
-    return this.request(`${GA4_DATA_API}/${prop}:runFunnelReport`, {
+    return this.request(`${GA4_DATA_ALPHA_API}/${prop}:runFunnelReport`, {
       method: "POST",
       body: JSON.stringify(body),
     });

@@ -20,6 +20,21 @@ interface JsonRpcError {
 
 type JsonRpcResponse = JsonRpcSuccess | JsonRpcError;
 
+/**
+ * From 2026-11-11 Google's Workspace MCP servers only accept OAuth clients
+ * flagged "agentic" (is_agentic) in Google Cloud Console; the rejection says
+ * the client "is not marked as an AI agent". Re-authenticating cannot fix
+ * that, so it must not be reported as a missing scope.
+ */
+export function notAgenticError(text: string): Error | null {
+  if (!/agentic|ai agent/i.test(text)) return null;
+  return new Error(
+    `Google rejected this MCP's OAuth client because it is not marked as agentic (is_agentic). ` +
+      `Re-authenticating will not help: a Google Cloud admin must enable the agentic setting on the ` +
+      `OAuth client (GOOGLE_WORKSPACE_CLIENT_ID, or GOOGLE_CLIENT_ID if unset). Upstream: ${text}`,
+  );
+}
+
 export async function proxyMcpCall(
   backendUrl: string,
   toolName: string,
@@ -51,23 +66,32 @@ export async function proxyMcpCall(
 
   if (res.status === 403) {
     const text = await res.text();
-    throw new Error(
-      `Google ${backendUrl} returned 403 Forbidden. The token is missing the required scope. Re-authenticate to grant the new permission. Body: ${text}`,
+    throw (
+      notAgenticError(text) ??
+      new Error(
+        `Google ${backendUrl} returned 403 Forbidden. The token is missing the required scope. Re-authenticate to grant the new permission. Body: ${text}`,
+      )
     );
   }
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(
-      `Google MCP backend error ${res.status} on ${toolName}: ${text}`,
+    throw (
+      notAgenticError(text) ??
+      new Error(
+        `Google MCP backend error ${res.status} on ${toolName}: ${text}`,
+      )
     );
   }
 
   const json = (await res.json()) as JsonRpcResponse;
 
   if ("error" in json) {
-    throw new Error(
-      `Google MCP JSON-RPC error on ${toolName}: ${json.error.message} (code ${json.error.code})`,
+    throw (
+      notAgenticError(json.error.message) ??
+      new Error(
+        `Google MCP JSON-RPC error on ${toolName}: ${json.error.message} (code ${json.error.code})`,
+      )
     );
   }
 
