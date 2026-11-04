@@ -25,6 +25,7 @@ import type {
   UpdateTriggerInput,
   CreateVariableInput,
   UpdateVariableInput,
+  CreateVersionResponse,
 } from "./types.ts";
 
 export interface GTMClientConfig {
@@ -64,6 +65,22 @@ export class GTMClient {
     }
 
     return (await response.json()) as T;
+  }
+
+  /**
+   * GTM's PUT replaces the whole entity: any field left out (consentSettings,
+   * parentFolderId, setupTag, priority, schedule...) is deleted. Read the current
+   * entity and overlay only the fields the caller actually set.
+   */
+  private async mergedPut<T>(url: string, input: object): Promise<T> {
+    const current = await this.request<Record<string, unknown>>(url);
+    const changes = Object.fromEntries(
+      Object.entries(input).filter(([, v]) => v !== undefined),
+    );
+    return this.request<T>(url, {
+      method: "PUT",
+      body: JSON.stringify({ ...current, ...changes }),
+    });
   }
 
   // ==================== Account Methods ====================
@@ -191,6 +208,21 @@ export class GTMClient {
     );
   }
 
+  /**
+   * Create a container version from a workspace (does not publish it)
+   */
+  async createVersion(
+    accountId: string,
+    containerId: string,
+    workspaceId: string,
+    input: { name: string; notes?: string },
+  ): Promise<CreateVersionResponse> {
+    return this.request<CreateVersionResponse>(
+      `${ENDPOINTS.WORKSPACE(accountId, containerId, workspaceId)}:create_version`,
+      { method: "POST", body: JSON.stringify(input) },
+    );
+  }
+
   // ==================== Tag Methods ====================
 
   /**
@@ -252,12 +284,9 @@ export class GTMClient {
     tagId: string,
     input: UpdateTagInput,
   ): Promise<Tag> {
-    return this.request<Tag>(
+    return this.mergedPut<Tag>(
       ENDPOINTS.TAG(accountId, containerId, workspaceId, tagId),
-      {
-        method: "PUT",
-        body: JSON.stringify(input),
-      },
+      input,
     );
   }
 
@@ -341,12 +370,9 @@ export class GTMClient {
     triggerId: string,
     input: UpdateTriggerInput,
   ): Promise<Trigger> {
-    return this.request<Trigger>(
+    return this.mergedPut<Trigger>(
       ENDPOINTS.TRIGGER(accountId, containerId, workspaceId, triggerId),
-      {
-        method: "PUT",
-        body: JSON.stringify(input),
-      },
+      input,
     );
   }
 
@@ -430,12 +456,9 @@ export class GTMClient {
     variableId: string,
     input: UpdateVariableInput,
   ): Promise<Variable> {
-    return this.request<Variable>(
+    return this.mergedPut<Variable>(
       ENDPOINTS.VARIABLE(accountId, containerId, workspaceId, variableId),
-      {
-        method: "PUT",
-        body: JSON.stringify(input),
-      },
+      input,
     );
   }
 

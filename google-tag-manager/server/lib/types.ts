@@ -173,7 +173,7 @@ export interface Variable {
   disablingTriggerId?: string[];
   enablingTriggerId?: string[];
   tagManagerUrl: string;
-  formatValue?: Parameter;
+  formatValue?: Record<string, unknown>;
 }
 
 /**
@@ -294,6 +294,7 @@ export interface UpdateTagInput {
   liveOnly?: boolean;
   parentFolderId?: string;
   paused?: boolean;
+  consentSettings?: TagConsentSetting;
 }
 
 /**
@@ -352,4 +353,18 @@ export interface UpdateVariableInput {
   parentFolderId?: string;
   disablingTriggerId?: string[];
   enablingTriggerId?: string[];
+}
+
+/**
+ * Response of workspaces.create_version
+ */
+export interface CreateVersionResponse {
+  containerVersion?: {
+    containerVersionId: string;
+    name?: string;
+    tagManagerUrl?: string;
+  };
+  compilerError?: boolean;
+  syncStatus?: { mergeConflict?: boolean; syncError?: boolean };
+  newWorkspacePath?: string;
 }
