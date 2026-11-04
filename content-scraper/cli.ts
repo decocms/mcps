@@ -23,6 +23,7 @@ import { scrapeAllBlogs } from "./server/lib/blog-scraper.ts";
 import {
   scrapeAllLinkedInSources,
   scrapeLinkedInProfile,
+  type LinkedInActorChoice,
 } from "./server/lib/linkedin-scraper.ts";
 import {
   scrapeAllRedditSources,
@@ -84,6 +85,7 @@ ENVIRONMENT:
   DATABASE_TOKEN        Token de autenticação Bearer (obrigatório)
   OPENROUTER_API_KEY    Chave da API OpenRouter (obrigatória para scraping)
   APIFY_API_TOKEN       Token da API Apify (obrigatório para LinkedIn)
+  LINKEDIN_ACTOR        harvestapi (default) or johnvc
 `;
 
 // =============================================================================
@@ -95,14 +97,17 @@ interface CliConfig {
   databaseToken: string;
   openrouterApiKey: string;
   apifyApiToken: string;
+  linkedinActor: LinkedInActorChoice;
 }
 
 function loadConfig(): CliConfig {
+  const actorEnv = (process.env.LINKEDIN_ACTOR ?? "harvestapi").trim();
   return {
     databaseApiUrl: process.env.DATABASE_API_URL ?? "",
     databaseToken: process.env.DATABASE_TOKEN ?? "",
     openrouterApiKey: process.env.OPENROUTER_API_KEY ?? "",
     apifyApiToken: process.env.APIFY_API_TOKEN ?? "",
+    linkedinActor: actorEnv === "johnvc" ? "johnvc" : "harvestapi",
   };
 }
 
@@ -191,6 +196,7 @@ async function cmdScrapeAll(
           apiKey,
           config.apifyApiToken,
           maxPosts,
+          config.linkedinActor,
         );
         const totalSaved = linkedinResults.reduce(
           (sum, r) => sum + r.postsSaved,
@@ -279,6 +285,7 @@ async function cmdScrapeLinkedIn(
         profileUrl,
         0.7,
         maxPosts,
+        config.linkedinActor,
       );
       console.log(
         `\n✅ Complete! ${result.postsSaved} posts saved, ${result.postsRelevant} relevant\n`,
@@ -289,6 +296,7 @@ async function cmdScrapeLinkedIn(
         apiKey,
         apifyToken,
         maxPosts,
+        config.linkedinActor,
       );
       const totalSaved = results.reduce((sum, r) => sum + r.postsSaved, 0);
       const totalRelevant = results.reduce(

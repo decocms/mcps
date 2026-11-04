@@ -64,6 +64,13 @@ export const StateSchema = z.object({
     .string()
     .optional()
     .describe("Apify API token for LinkedIn scraping (required for LinkedIn)"),
+  linkedinActor: z
+    .enum(["harvestapi", "johnvc"])
+    .optional()
+    .default("harvestapi")
+    .describe(
+      "LinkedIn posts Actor: harvestapi (default) or johnvc (linkedin-posts-api). Clear/omit to keep harvestapi.",
+    ),
   urlFields: z.object({
     urls: z.array(UrlEntrySchema).describe("URLs to scrape content from"),
   }),
