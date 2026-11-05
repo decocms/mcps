@@ -149,3 +149,98 @@ test("throws when neither query nor pageToken is provided", async () => {
     }),
   ).rejects.toThrow("query is required when pageToken is not provided");
 });
+
+// ── Job location (non-US/EU datasets) ────────────────────────────────────────
+// BigQuery answers 404 "Not found: Job" to getQueryResults for a job in e.g.
+// southamerica-east1 unless `location` is passed — page 2+ broke for every
+// non-US dataset while page 1 (returned inline by jobs.query) worked.
+
+test("first call: nextPageToken carries the job location", async () => {
+  globalThis.fetch = mock(() =>
+    Promise.resolve(
+      makeResponse({
+        jobComplete: true,
+        jobReference: {
+          jobId: "jobSA",
+          projectId: "myproject",
+          location: "southamerica-east1",
+        },
+        schema: SCHEMA,
+        rows: ROWS,
+        totalRows: "500",
+        totalBytesProcessed: "4096",
+        cacheHit: false,
+        pageToken: "BQ_PAGE2",
+      }),
+    ),
+  ) as unknown as typeof fetch;
+
+  const { createQueryTool } = await import("../../server/tools/bigquery.ts");
+  const tool = createQueryTool({
+    MESH_REQUEST_CONTEXT: { authorization: "Bearer fake" },
+  } as never);
+
+  // @ts-ignore
+  const result = await tool.execute({
+    context: { projectId: "myproject", query: "SELECT name FROM t" },
+    runtimeContext: {} as never,
+  });
+
+  expect(decodePageToken(result.nextPageToken!)).toEqual({
+    jobId: "jobSA",
+    apiToken: "BQ_PAGE2",
+    location: "southamerica-east1",
+  });
+});
+
+test("subsequent call: getQueryResults is sent the job location", async () => {
+  let capturedUrl = "";
+  globalThis.fetch = mock((url: string | URL) => {
+    capturedUrl = url.toString();
+    return Promise.resolve(
+      makeResponse({
+        jobComplete: true,
+        jobReference: {
+          jobId: "jobSA",
+          projectId: "myproject",
+          location: "southamerica-east1",
+        },
+        schema: SCHEMA,
+        rows: ROWS,
+        totalRows: "500",
+        totalBytesProcessed: "0",
+        cacheHit: false,
+        pageToken: "BQ_PAGE3",
+      }),
+    );
+  }) as unknown as typeof fetch;
+
+  const { createQueryTool } = await import("../../server/tools/bigquery.ts");
+  const tool = createQueryTool({
+    MESH_REQUEST_CONTEXT: { authorization: "Bearer fake" },
+  } as never);
+
+  // @ts-ignore
+  const result = await tool.execute({
+    context: {
+      projectId: "myproject",
+      pageToken: encodePageToken("jobSA", "BQ_PAGE2", "southamerica-east1"),
+    },
+    runtimeContext: {} as never,
+  });
+
+  expect(capturedUrl).toContain("/queries/jobSA");
+  expect(capturedUrl).toContain("location=southamerica-east1");
+  // The location keeps travelling to page 3.
+  expect(decodePageToken(result.nextPageToken!).location).toBe(
+    "southamerica-east1",
+  );
+});
+
+test("tokens issued before the location was encoded still decode", () => {
+  const legacy = btoa("jobOld\nOLD_TOKEN");
+  expect(decodePageToken(legacy)).toEqual({
+    jobId: "jobOld",
+    apiToken: "OLD_TOKEN",
+  });
+});
