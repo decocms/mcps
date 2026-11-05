@@ -17,6 +17,7 @@ import {
   refreshAccessToken,
   REQUESTED_SCOPES,
 } from "./lib/dropbox-oauth.ts";
+import { assertAllowedRedirectUri } from "./lib/redirect-allowlist.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
@@ -38,6 +39,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     authorizationServer: "https://www.dropbox.com",
 
     authorizationUrl: (callbackUrl) => {
+      assertAllowedRedirectUri(callbackUrl);
+
       const clientId = process.env.DROPBOX_CLIENT_ID || "";
       const callbackUrlObj = new URL(callbackUrl);
       const state = callbackUrlObj.searchParams.get("state");
@@ -62,6 +65,8 @@ const runtime = withRuntime<Env, typeof StateSchema, Registry>({
     },
 
     exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
+      assertAllowedRedirectUri(redirect_uri ?? "");
+
       const { clientId, clientSecret } = getOAuthCredentials();
 
       const tokenResponse = await exchangeCodeForToken({
