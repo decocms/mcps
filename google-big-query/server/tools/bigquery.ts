@@ -148,14 +148,18 @@ export const createQueryTool = (env: Env) =>
         totalBytesProcessed: string;
         jobId?: string;
         pageToken?: string;
+        location?: string;
       };
 
       if (context.pageToken) {
         // Subsequent page: decode opaque token and call getQueryResults
-        const { jobId, apiToken } = decodePageToken(context.pageToken);
+        const { jobId, apiToken, location } = decodePageToken(
+          context.pageToken,
+        );
         const page = await client.getQueryResults(context.projectId, jobId, {
           maxResults: context.maxResults,
           pageToken: apiToken,
+          location,
         });
         if (!page.jobComplete) {
           throw new Error("Unexpected: job not complete on page fetch");
@@ -168,6 +172,7 @@ export const createQueryTool = (env: Env) =>
           totalBytesProcessed: "0",
           jobId: page.pageToken ? jobId : undefined,
           pageToken: page.pageToken,
+          location,
         };
       } else {
         // First page: execute query
@@ -203,7 +208,7 @@ export const createQueryTool = (env: Env) =>
 
       const nextPageToken =
         result.jobId && result.pageToken
-          ? encodePageToken(result.jobId, result.pageToken)
+          ? encodePageToken(result.jobId, result.pageToken, result.location)
           : undefined;
 
       return {

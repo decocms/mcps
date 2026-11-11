@@ -149,3 +149,54 @@ test("throws when neither query nor pageToken is provided", async () => {
     }),
   ).rejects.toThrow("query is required when pageToken is not provided");
 });
+
+test("job location round-trips through nextPageToken into page 2's getQueryResults", async () => {
+  // Non-US jobs (southamerica-east1) 404 on getQueryResults without location.
+  let capturedUrl = "";
+  globalThis.fetch = mock((url: string | URL) => {
+    capturedUrl = url.toString();
+    return Promise.resolve(
+      makeResponse({
+        jobComplete: true,
+        jobReference: {
+          jobId: "jobSA",
+          projectId: "myproject",
+          location: "southamerica-east1",
+        },
+        schema: SCHEMA,
+        rows: ROWS,
+        totalRows: "500",
+        totalBytesProcessed: "100",
+        cacheHit: false,
+        pageToken: "BQ_P2",
+      }),
+    );
+  }) as unknown as typeof fetch;
+
+  const { createQueryTool } = await import("../../server/tools/bigquery.ts");
+  const tool = createQueryTool({
+    MESH_REQUEST_CONTEXT: { authorization: "Bearer fake" },
+  } as never);
+
+  // @ts-ignore
+  const first = await tool.execute({
+    context: { projectId: "myproject", query: "SELECT 1", maxResults: 1 },
+    runtimeContext: {} as never,
+  });
+  expect(decodePageToken(first.nextPageToken!).location).toBe(
+    "southamerica-east1",
+  );
+
+  // @ts-ignore
+  await tool.execute({
+    context: { projectId: "myproject", pageToken: first.nextPageToken },
+    runtimeContext: {} as never,
+  });
+  expect(capturedUrl).toContain("/queries/jobSA");
+  expect(capturedUrl).toContain("location=southamerica-east1");
+});
+
+test("legacy token without location still decodes", () => {
+  const legacy = btoa("job1\ntok1");
+  expect(decodePageToken(legacy)).toEqual({ jobId: "job1", apiToken: "tok1" });
+});

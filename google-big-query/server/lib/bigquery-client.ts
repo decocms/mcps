@@ -191,9 +191,15 @@ export class BigQueryClient {
       pageToken?: string;
       startIndex?: string;
       timeoutMs?: number;
+      /** Job location — required for jobs outside the US/EU multi-regions. */
+      location?: string;
     },
   ): Promise<GetQueryResultsResponse> {
     const url = new URL(ENDPOINTS.QUERY_RESULTS(projectId, jobId));
+
+    if (options?.location) {
+      url.searchParams.set("location", options.location);
+    }
 
     if (options?.maxResults) {
       url.searchParams.set("maxResults", String(options.maxResults));
@@ -258,6 +264,7 @@ export class BigQueryClient {
         projectId,
         response.jobReference.jobId,
         {
+          location: response.jobReference.location,
           timeoutMs: options.timeoutMs ?? DEFAULTS.QUERY_TIMEOUT_MS,
         },
       );
@@ -308,6 +315,7 @@ export class BigQueryClient {
     totalBytesProcessed: string;
     jobId?: string;
     pageToken?: string;
+    location?: string;
   }> {
     let response = await this.query(projectId, options);
 
@@ -325,6 +333,7 @@ export class BigQueryClient {
         projectId,
         response.jobReference.jobId,
         {
+          location: response.jobReference.location,
           timeoutMs: options.timeoutMs ?? DEFAULTS.QUERY_TIMEOUT_MS,
           maxResults: options.maxResults ?? DEFAULTS.MAX_RESULTS,
         },
@@ -351,6 +360,7 @@ export class BigQueryClient {
       totalBytesProcessed: response.totalBytesProcessed || "0",
       jobId: response.pageToken ? response.jobReference?.jobId : undefined,
       pageToken: response.pageToken,
+      location: response.jobReference?.location,
     };
   }
 
