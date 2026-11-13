@@ -403,8 +403,24 @@ function Composer({
 }) {
   const [request, setRequest] = useState("");
   const [model, setModel] = useState(data.defaultModel);
-  const [jobId, setJobId] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
+  // The running edit lives in the route, which Studio keeps in its URL and
+  // hands back when it reloads the app, so the edit is still followed.
+  const search = useSearch({ strict: false }) as {
+    link?: string;
+    job?: string;
+  };
+  const navigate = useNavigate();
+  const jobId = search.job ?? null;
+  const setJobId = (job: string | null) =>
+    navigate({
+      to: "/",
+      search: {
+        ...(search.link ? { link: search.link } : {}),
+        ...(job ? { job } : {}),
+      },
+      replace: true,
+    });
 
   const start = useMutation({
     mutationFn: () =>

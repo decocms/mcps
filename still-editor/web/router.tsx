@@ -47,8 +47,12 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: ToolRouter,
-  validateSearch: (search: Record<string, unknown>): { link?: string } =>
-    typeof search.link === "string" ? { link: search.link } : {},
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { link?: string; job?: string } => ({
+    ...(typeof search.link === "string" ? { link: search.link } : {}),
+    ...(typeof search.job === "string" ? { job: search.job } : {}),
+  }),
 });
 
 const routeTree = rootRoute.addChildren([indexRoute]);
