@@ -5810,7 +5810,6 @@ export const ALLOWED_SERVERS: string[] = [
   "support.supp/mcp-server",
   "sv.mcp/el-salvador",
   "sv.prometheus/mcp",
-  "systems.entia/entity-verification",
   "tax.zip/ziptax",
   "team.jogo/mcp",
   "tech.agentbazaar/marketplace",
