@@ -26,7 +26,7 @@ export async function callConnectionTool(
     ...(connection.token
       ? { authorization: `Bearer ${connection.token}` }
       : {}),
-    ...(connection.headers ?? {}),
+    ...connection.headers,
   };
   const client = new Client({ name: "still-editor", version: "0.1.0" });
   await client.connect(
