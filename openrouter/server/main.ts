@@ -12,6 +12,7 @@ import { serve } from "@decocms/mcps-shared/serve";
 import { type DefaultEnv, withRuntime } from "@decocms/runtime";
 import { z } from "zod";
 import { logger } from "./lib/logger.ts";
+import { imageTools } from "./tools/images.ts";
 import { tools } from "./tools/index.ts";
 
 const StateSchema = z.object({});
@@ -62,7 +63,8 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       };
     },
   },
-  tools,
+  // Image tools stay out of the exported `tools` that deco-llm reuses.
+  tools: (env: Env) => [...tools(env), ...imageTools(env)],
   prompts: [],
 });
 
