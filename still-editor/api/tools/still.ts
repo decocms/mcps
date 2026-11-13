@@ -181,7 +181,7 @@ export const stillEditStartTool = (_env: Env) =>
       const job = await startJob(
         store,
         { id: newId(), productId: piece.productId, versionId },
-        () =>
+        (onPhase) =>
           runEdit({
             env,
             store,
@@ -191,6 +191,7 @@ export const stillEditStartTool = (_env: Env) =>
             request: context.request,
             model,
             user,
+            onPhase,
           }),
       );
       return { jobId: job.id, versionId };
@@ -220,6 +221,8 @@ export const stillEditStatusTool = (_env: Env) =>
           : null;
       return {
         status: job.status,
+        phase: job.phase ?? null,
+        startedAt: job.startedAt,
         error: job.error ?? null,
         version: version ? await versionWithUrl(store, version) : null,
       };

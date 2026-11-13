@@ -22,6 +22,7 @@ import {
   type StillCheck,
   stillBox,
 } from "./image.ts";
+import type { JobPhase } from "./jobs.ts";
 import type { Storage } from "./storage.ts";
 import { type Env, settings } from "../types/env.ts";
 
@@ -182,6 +183,7 @@ export async function runEdit(args: {
   request: string;
   model: string;
   user: User;
+  onPhase?: (phase: JobPhase) => Promise<void>;
 }): Promise<Version> {
   const { env, store, piece, versionId, parentId } = args;
   const base = `pieces/${piece.productId}`;
@@ -258,6 +260,7 @@ export async function runEdit(args: {
     model: string;
     images: { uri: string; mediaType: string }[];
   };
+  await args.onPhase?.("generating");
   for (let attempt = 0; ; attempt++) {
     try {
       // Image models take up to ~80 s, past the binding's 60 s default.
@@ -282,6 +285,7 @@ export async function runEdit(args: {
   }
   const output = generated.images[0];
   if (!output) throw new Error("The image model returned no image");
+  await args.onPhase?.("composing");
   await keepGenerated(
     env,
     store,

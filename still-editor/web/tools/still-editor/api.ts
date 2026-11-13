@@ -46,6 +46,8 @@ export interface Loaded {
 
 export interface EditStatus {
   status: "running" | "done" | "failed";
+  phase: "preparing" | "generating" | "composing" | null;
+  startedAt: string;
   error: string | null;
   version: Version | null;
 }
