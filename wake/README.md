@@ -1,11 +1,12 @@
 # Wake Commerce MCP
 
-Read-only access to [Wake Commerce](https://wake.tech/) (fbits) for AI agents:
+Access to [Wake Commerce](https://wake.tech/) (fbits) for AI agents. Everything is
+read-only except the product image tools:
 
 - **Storefront GraphQL API** — product search, catalog navigation, product
   detail, recommendations and shipping quotes.
-- **Admin REST API** — store-level orders for analysis and reporting (admin,
-  not per-shopper).
+- **Admin REST API** — store-level orders for analysis and reporting, and
+  product variant images (admin, not per-shopper).
 
 Cart, wishlist and customer/session operations are intentionally out of scope
 for now.
@@ -15,7 +16,7 @@ for now.
 | Field | Required | Description |
 | --- | --- | --- |
 | `storefrontToken` | ✅ | Wake Storefront API token, sent as the `TCS-Access-Token` header. Powers all catalog/product tools. [How to create one](https://wakecommerce.readme.io/docs/storefront-api-criacao-e-autenticacao-do-token). |
-| `apiToken` | — | Wake Admin API token, sent as `Authorization: Basic <token>` for `api.fbits.net`. Required only for the admin order tools. |
+| `apiToken` | — | Wake Admin API token, sent as `Authorization: Basic <token>` for `api.fbits.net`. Required only for the admin tools (orders, product images). |
 | `account` | — | Wake account name (e.g. `erploja2`). Reference only. |
 
 The MCP endpoint itself is protected by `withAuth`, which reads the `AUTH_TOKEN`
@@ -51,6 +52,18 @@ The Admin API is served from `https://api.fbits.net`.
 | `WAKE_GET_ORDER` | Full detail of a single order by id. |
 | `WAKE_GET_ORDER_STATUS_HISTORY` | Status change history (timeline) of an order. |
 | `WAKE_LIST_ORDER_STATUSES` | All order statuses configured in the store (to map ids before filtering). |
+
+### Admin (product variant images) — requires `apiToken` with product image permission
+
+These change the live store. Images are addressed by **variant** id (`productVariantId` from the Storefront API); with a product id the Admin API answers "Nenhuma imagem encontrada".
+
+| Tool | Description |
+| --- | --- |
+| `WAKE_ADMIN_VARIANT_IMAGES_LIST` | Images of one variant: id, URL, order, print (estampa) flag. |
+| `WAKE_ADMIN_VARIANT_IMAGE_ADD` | Upload one image (base64 or an https URL, JPEG or PNG, up to 2 MB) at a given order; returns the new image id. |
+| `WAKE_ADMIN_VARIANT_IMAGE_DELETE` | Delete one image by id. Cannot be undone. |
+
+When Wake rejects the `apiToken` (HTTP 401/403: expired, revoked, missing permission or not accepted from this server), every admin tool fails with a message that starts with `[wake-admin-token-rejected]` and asks to renew the token, so apps can show that instead of a generic error.
 
 ## Development
 
