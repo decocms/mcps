@@ -21,6 +21,7 @@ import resizeRaw, { initResize } from "@jsquash/resize";
 // @ts-expect-error Same as the PNG codec above.
 import resizeWasm from "@jsquash/resize/lib/resize/pkg/squoosh_resize_bg.wasm" with { type: "file" };
 import { readFile } from "node:fs/promises";
+import { resolve } from "node:path";
 
 export const FRAME_WIDTH = 1600;
 export const FRAME_HEIGHT = 2000;
@@ -51,14 +52,18 @@ if (!("ImageData" in globalThis)) {
 let codecs: Promise<void> | null = null;
 function initCodecs(): Promise<void> {
   codecs ??= (async () => {
-    const wasm = (path: string) => readFile(path);
+    // The bundle gets paths relative to its own directory, not to the cwd.
+    const wasm = (path: string) => readFile(resolve(import.meta.dir, path));
     await initJpegDec({ wasmBinary: await wasm(jpegDecWasm) } as never);
     await initJpegEnc({ wasmBinary: await wasm(jpegEncWasm) } as never);
     await initPng((await WebAssembly.compile(await wasm(pngWasm))) as never);
     await initResize(
       (await WebAssembly.compile(await wasm(resizeWasm))) as never,
     );
-  })();
+  })().catch((error) => {
+    codecs = null;
+    throw error;
+  });
   return codecs;
 }
 
