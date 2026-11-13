@@ -9,9 +9,6 @@ export const DEFAULT_MODELS = [
 ];
 
 export const StateSchema = z.object({
-  OPENROUTER: BindingOf("@deco/openrouter").describe(
-    "OpenRouter connection. Its account pays for the image models.",
-  ),
   WAKE: BindingOf("@deco/wake").describe(
     "Wake connection of the store, with an admin token that can write product images.",
   ),
@@ -44,13 +41,14 @@ export const StateSchema = z.object({
   MODELS: z
     .array(z.string())
     .default(DEFAULT_MODELS)
-    .describe("Image models offered in the editor, OpenRouter ids"),
+    .describe(
+      "Image models offered in the editor, OpenRouter ids. They run on the image tier's key in Studio's AI providers.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
 
 const SettingsSchema = StateSchema.omit({
-  OPENROUTER: true,
   WAKE: true,
   OBJECT_STORAGE: true,
 });

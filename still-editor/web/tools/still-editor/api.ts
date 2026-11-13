@@ -14,7 +14,6 @@ export interface Version {
   parentId: string | null;
   prompt: string;
   model: string;
-  cost: number | null;
   check: { ok: boolean; problems: string[] };
   author: { email: string; name: string | null };
   createdAt: string;
@@ -71,6 +70,12 @@ export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes(TOKEN_REJECTED)) {
     return "O token da Wake expirou ou foi revogado. Gere um token novo no admin da Wake e atualize o campo apiToken da connection Wake no Studio.";
+  }
+  if (message.includes('for tier "image"')) {
+    return "A organização não tem modelo de imagem. Adicione a chave do OpenRouter em Settings → AI providers.";
+  }
+  if (message.includes("need an OpenRouter image tier")) {
+    return "O tier de imagem da organização precisa usar a chave do OpenRouter (Settings → AI providers).";
   }
   return message;
 }

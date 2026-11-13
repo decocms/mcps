@@ -97,6 +97,19 @@ function withMcpApiRoute(fetcher: Fetcher): Fetcher {
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: {
     state: StateSchema,
+    scopes: [
+      "SELF::generate_image",
+      "SELF::GET_PRESIGNED_URL",
+      "SELF::DELETE_OBJECT",
+      "WAKE::WAKE_LIST_PRODUCTS",
+      "WAKE::WAKE_ADMIN_VARIANT_IMAGES_LIST",
+      "WAKE::WAKE_ADMIN_VARIANT_IMAGE_ADD",
+      "WAKE::WAKE_ADMIN_VARIANT_IMAGE_DELETE",
+      "OBJECT_STORAGE::LIST_OBJECTS",
+      "OBJECT_STORAGE::GET_PRESIGNED_URL",
+      "OBJECT_STORAGE::PUT_PRESIGNED_URL",
+      "OBJECT_STORAGE::DELETE_OBJECT",
+    ],
   },
   tools,
   resources: [editorResource],

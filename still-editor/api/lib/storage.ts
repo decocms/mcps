@@ -4,7 +4,7 @@
  * Layout under STORAGE_PREFIX:
  *   assets/plate.png                         the backdrop plate, 1600×2000, blurred
  *   pieces/<productId>/source.json + .jpg    the original generation of the garment
- *   pieces/<productId>/versions/<id>.json    one edit: prompt, model, cost, check
+ *   pieces/<productId>/versions/<id>.json    one edit: prompt, model, check
  *   pieces/<productId>/versions/<id>.jpg     the composed Still
  *   pieces/<productId>/versions/<id>-model   what the model returned (PNG or JPEG)
  *   pieces/<productId>/publications/<id>.json + -before.jpg

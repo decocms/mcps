@@ -14,13 +14,14 @@ The user opens a product by its storefront link, writes what to change, picks a 
 
 | Field | Description |
 | --- | --- |
-| `OPENROUTER` | OpenRouter connection with `IMAGE_GENERATE`. Its account pays for the models. |
 | `WAKE` | Wake connection with an admin `apiToken` allowed to write product images. |
 | `OBJECT_STORAGE` | Storage for versions, backups, jobs and the publication log. |
 | `STILL_ORDER` | Image order that marks the Still (default 85). |
 | `TOP_CATEGORY_IDS` / `BOTTOM_CATEGORY_IDS` | Wake categories that tell a top from a bottom. |
 | `STORAGE_PREFIX` | Storage folder (default `still-editor`). |
 | `DEFAULT_MODEL` / `MODELS` | Models offered in the editor (OpenRouter ids). |
+
+Image models run through Studio's `generate_image` (the `SELF::` scopes), on the key of the organization's **image** tier in Settings → AI providers; that account pays. The tier must be on an OpenRouter key: the editor asks OpenAI models for 1536×1920 with high quality and low moderation, which Studio delivers only through OpenRouter.
 
 Storage must hold the backdrop plate at `<prefix>/assets/plate.png`, 1600×2000 and already blurred. A product's original generation can be seeded at `<prefix>/pieces/<productId>/source.json` (`raw`, `half`, `background`, `facts`, `pairProductId`) with the generation image at the `raw` path; without it, edits start from the live Still.
 
