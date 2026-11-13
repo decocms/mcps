@@ -33,10 +33,10 @@ import { cn } from "@decocms/ui/lib/utils.ts";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { AlertTriangle, ChevronDown, Link01, Trash01 } from "@untitledui/icons";
+import { AlertTriangle, ChevronDown, Trash01 } from "@untitledui/icons";
 import { useState } from "react";
 import { useMcpApp, useMcpState } from "@/context.tsx";
-import appIcon from "../../../icon.svg";
+import { EditProgress } from "./edit-progress.tsx";
 import {
   callTool,
   describeError,
@@ -79,34 +79,22 @@ function OpenPiece({ onOpen }: { onOpen: (link: string) => void }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">
       <form
-        className="flex w-full max-w-xl flex-col items-center gap-6"
+        className="surface flex w-full max-w-lg flex-col gap-4 p-6"
         onSubmit={(event) => {
           event.preventDefault();
           if (value.trim()) onOpen(value.trim());
         }}
       >
-        <div className="flex flex-col items-center gap-4">
-          <img src={appIcon} alt="" className="size-14" />
-          <h1 className="font-display text-2xl text-foreground">
-            Editar Still
-          </h1>
-        </div>
-        <div className="relative w-full">
-          <Link01 className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
+        <h1 className="font-display text-2xl">Editar Still</h1>
+        <div className="flex gap-2">
           <Input
             autoFocus
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="Cole o link da peça na loja"
+            placeholder="Link da peça na loja"
             aria-label="Link da peça na loja"
-            className="h-11 pr-20 pl-10"
           />
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!value.trim()}
-            className="absolute top-1/2 right-2 -translate-y-1/2"
-          >
+          <Button type="submit" disabled={!value.trim()}>
             Abrir
           </Button>
         </div>
@@ -446,7 +434,7 @@ function Composer({
     onError: (error) => setFailure(describeError(error)),
   });
 
-  useQuery({
+  const status = useQuery({
     queryKey: ["still_edit_status", jobId],
     enabled: jobId !== null,
     refetchInterval: 3000,
@@ -492,9 +480,11 @@ function Composer({
         className="max-h-40 overflow-y-auto"
         disabled={running}
       />
-      <p className="text-meta">
-        {running ? "Gerando, leva até 2 minutos" : base}
-      </p>
+      {running ? (
+        <EditProgress status={status.data} />
+      ) : (
+        <p className="text-meta">{base}</p>
+      )}
       <div className="flex gap-2">
         <Select value={model} onValueChange={setModel} disabled={running}>
           <SelectTrigger className="min-w-0 flex-1" aria-label="Modelo">
