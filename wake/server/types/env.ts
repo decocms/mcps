@@ -6,7 +6,8 @@
  * The MCP talks to two Wake APIs:
  * - Storefront GraphQL (public catalog), authenticated with `storefrontToken`
  *   sent as the `TCS-Access-Token` header.
- * - Admin REST (api.fbits.net, orders/analytics), authenticated with `apiToken`
+ * - Admin REST (api.fbits.net, orders/analytics, product images), authenticated
+ *   with `apiToken`
  *   sent as the `Authorization: Basic <token>` header.
  */
 import type { DefaultEnv } from "@decocms/runtime";
@@ -22,7 +23,7 @@ export const StateSchema = z.object({
     .string()
     .optional()
     .describe(
-      "Wake Admin API token, sent as the `Authorization: Basic <token>` header for api.fbits.net. Required only for admin tools (orders/analytics). See https://wakecommerce.readme.io/docs/introducao-a-api",
+      "Wake Admin API token, sent as the `Authorization: Basic <token>` header for api.fbits.net. Required only for admin tools (orders/analytics, product images). See https://wakecommerce.readme.io/docs/introducao-a-api",
     ),
   account: z
     .string()
