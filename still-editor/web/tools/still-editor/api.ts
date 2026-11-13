@@ -18,6 +18,9 @@ export interface Version {
   author: { email: string; name: string | null };
   createdAt: string;
   imageUrl: string;
+  /** What the edit started from; absent on versions made before it was kept. */
+  base?: "version" | "original" | "store";
+  beforeUrl: string | null;
 }
 
 export interface Publication {
@@ -43,6 +46,8 @@ export interface Loaded {
 
 export interface EditStatus {
   status: "running" | "done" | "failed";
+  phase: "preparing" | "generating" | "composing" | null;
+  startedAt: string;
   error: string | null;
   version: Version | null;
 }

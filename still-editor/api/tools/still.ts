@@ -5,6 +5,7 @@ import {
   composeVersion,
   loadPlate,
   type PieceSource,
+  removeVersion,
   runEdit,
   type Version,
 } from "../lib/edit.ts";
@@ -39,12 +40,11 @@ async function readAll<T extends { id: string }>(
 }
 
 async function versionWithUrl(store: Storage, version: Version) {
-  return {
-    ...version,
-    imageUrl: await store.getUrl(
-      `pieces/${version.productId}/versions/${version.id}.jpg`,
-    ),
-  };
+  const [imageUrl, beforeUrl] = await Promise.all([
+    store.getUrl(`pieces/${version.productId}/versions/${version.id}.jpg`),
+    version.beforePath ? store.getUrl(version.beforePath) : null,
+  ]);
+  return { ...version, imageUrl, beforeUrl };
 }
 
 function pieceSummary(piece: Piece) {
@@ -181,7 +181,7 @@ export const stillEditStartTool = (_env: Env) =>
       const job = await startJob(
         store,
         { id: newId(), productId: piece.productId, versionId },
-        () =>
+        (onPhase) =>
           runEdit({
             env,
             store,
@@ -191,6 +191,7 @@ export const stillEditStartTool = (_env: Env) =>
             request: context.request,
             model,
             user,
+            onPhase,
           }),
       );
       return { jobId: job.id, versionId };
@@ -220,6 +221,8 @@ export const stillEditStatusTool = (_env: Env) =>
           : null;
       return {
         status: job.status,
+        phase: job.phase ?? null,
+        startedAt: job.startedAt,
         error: job.error ?? null,
         version: version ? await versionWithUrl(store, version) : null,
       };
@@ -336,6 +339,35 @@ export const stillRestoreTool = (_env: Env) =>
     },
   });
 
+export const stillVersionDeleteTool = (_env: Env) =>
+  createPrivateTool({
+    id: "still_version_delete",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    description:
+      "Delete an edit version: its image, request and files. The store is not changed; publications keep their own backup.",
+    inputSchema: z.object({
+      productId: z.number().int().positive(),
+      versionId: z.string().min(1),
+    }),
+    outputSchema: z.object({ deleted: z.boolean() }),
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
+      currentUser(env);
+      const store = storage(env);
+      const found = await store.getJson<Version>(
+        `pieces/${context.productId}/versions/${context.versionId}.json`,
+      );
+      if (!found) return { deleted: false };
+      await removeVersion(store, context.productId, context.versionId);
+      return { deleted: true };
+    },
+  });
+
 export const stillTools = [
   stillEditorTool,
   stillLoadTool,
@@ -343,4 +375,5 @@ export const stillTools = [
   stillEditStatusTool,
   stillPublishTool,
   stillRestoreTool,
+  stillVersionDeleteTool,
 ];

@@ -8,11 +8,15 @@ import type { Storage } from "./storage.ts";
 
 const INTERRUPTED_AFTER_MS = 7 * 60 * 1000;
 
+/** Where a running edit is, so the editor can show it is moving. */
+export type JobPhase = "preparing" | "generating" | "composing";
+
 export interface Job {
   id: string;
   productId: number;
   versionId: string;
   status: "running" | "done" | "failed";
+  phase?: JobPhase;
   error?: string;
   startedAt: string;
   finishedAt?: string;
@@ -22,17 +26,20 @@ const inProcess = new Set<string>();
 
 export async function startJob(
   store: Storage,
-  job: Omit<Job, "status" | "startedAt">,
-  work: () => Promise<unknown>,
+  job: Omit<Job, "status" | "startedAt" | "phase">,
+  work: (progress: (phase: JobPhase) => Promise<void>) => Promise<unknown>,
 ): Promise<Job> {
   const state: Job = {
     ...job,
     status: "running",
+    phase: "preparing",
     startedAt: new Date().toISOString(),
   };
   await store.putJson(`jobs/${job.id}.json`, state);
   inProcess.add(job.id);
-  void work()
+  const progress = (phase: JobPhase) =>
+    store.putJson(`jobs/${job.id}.json`, { ...state, phase });
+  void work(progress)
     .then(() => ({ status: "done" as const }))
     .catch((error: unknown) => ({
       status: "failed" as const,
