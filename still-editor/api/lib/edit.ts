@@ -47,7 +47,6 @@ export interface Version {
   parentId: string | null;
   prompt: string;
   model: string;
-  cost: number | null;
   background: Background;
   /** Garment width (px) the version was composed at: the current Still's. */
   targetWidth: number | null;
@@ -226,34 +225,52 @@ export async function runEdit(args: {
     background,
   });
   const isOpenAI = args.model.startsWith("openai/");
-  const modelPath = `${base}/versions/${versionId}-model`;
   const request = {
+    // The org's own OpenRouter key, whatever its image tier is set to.
+    provider: "openrouter",
     model: args.model,
     prompt,
-    references: [editUrl, ...piece.photos.slice(0, 2)],
+    referenceImages: [editUrl, ...piece.photos.slice(0, 2)].map((uri) => ({
+      uri,
+    })),
     ...(isOpenAI
       ? { size: "1536x1920", quality: "high", moderation: "low" }
       : { aspectRatio: "4:5" }),
-    outputPutUrl: await store.putUrl(modelPath),
   };
-  let cost = 0;
+  let generated: {
+    model: string;
+    images: { uri: string; mediaType: string }[];
+  };
   for (let attempt = 0; ; attempt++) {
     try {
       // Image models take up to ~80 s, past the binding's 60 s default.
-      const result = (await callConnectionTool(
+      generated = (await callConnectionTool(
         env,
-        "OPENROUTER",
-        "IMAGE_GENERATE",
+        "SELF",
+        "generate_image",
         request,
         280_000,
-      )) as { cost: number | null };
-      cost += result.cost ?? 0;
+      )) as typeof generated;
       break;
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (attempt >= 1 || !isRefusal(message)) throw error;
     }
   }
+  // A Studio without model choice ignores `model` and runs the tier's.
+  if (generated.model !== args.model) {
+    throw new Error(
+      `Studio ran ${generated.model} instead of ${args.model}: it does not support choosing the image model yet`,
+    );
+  }
+  const output = generated.images[0];
+  if (!output) throw new Error("The image model returned no image");
+  await keepGenerated(
+    env,
+    store,
+    output,
+    `${base}/versions/${versionId}-model`,
+  );
 
   const still = await composeVersion(store, plate, {
     productId: piece.productId,
@@ -271,7 +288,6 @@ export async function runEdit(args: {
     parentId,
     prompt: args.request.trim(),
     model: args.model,
-    cost,
     background,
     targetWidth,
     check: checkStill(still),
@@ -284,6 +300,32 @@ export async function runEdit(args: {
   };
   await store.putJson(`${base}/versions/${versionId}.json`, version);
   return version;
+}
+
+/**
+ * Studio stores what generate_image returns in its own storage; the version
+ * keeps a copy next to its other files and Studio's is removed.
+ */
+async function keepGenerated(
+  env: Env,
+  store: Storage,
+  image: { uri: string; mediaType: string },
+  path: string,
+): Promise<void> {
+  const key = image.uri.replace(/^studio-storage:\/\//, "");
+  const { url } = (await callConnectionTool(env, "SELF", "GET_PRESIGNED_URL", {
+    key,
+    expiresIn: 300,
+  })) as { url: string };
+  const res = await fetch(url);
+  if (!res.ok)
+    throw new Error(`Reading the generated image: HTTP ${res.status}`);
+  await store.put(
+    path,
+    new Uint8Array(await res.arrayBuffer()),
+    image.mediaType,
+  );
+  await callConnectionTool(env, "SELF", "DELETE_OBJECT", { key });
 }
 
 /**

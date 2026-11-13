@@ -14,7 +14,6 @@ export interface Version {
   parentId: string | null;
   prompt: string;
   model: string;
-  cost: number | null;
   check: { ok: boolean; problems: string[] };
   author: { email: string; name: string | null };
   createdAt: string;
@@ -71,6 +70,9 @@ export function describeError(error: unknown): string {
   const message = error instanceof Error ? error.message : String(error);
   if (message.includes(TOKEN_REJECTED)) {
     return "O token da Wake expirou ou foi revogado. Gere um token novo no admin da Wake e atualize o campo apiToken da connection Wake no Studio.";
+  }
+  if (message.includes("has no openrouter key")) {
+    return "A organização não tem chave do OpenRouter. Adicione em Settings → AI providers.";
   }
   return message;
 }
