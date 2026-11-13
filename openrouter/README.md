@@ -28,12 +28,6 @@ OpenRouter is a unified API for accessing AI models from multiple providers (Ope
 - **`GET_STREAM_ENDPOINT`** – Returns the deployed `POST /api/chat` URL plus usage instructions
 - **`POST /api/chat`** – Real-time streaming endpoint built with the [Vercel AI SDK](https://github.com/vercel/ai) that emits Server-Sent Events compatible with `useChat`, `streamText`, or any SSE client. Payload mirrors the `CHAT_COMPLETION` tool schema.
 
-#### Image generation
-- **`IMAGE_MODELS_LIST`** – Image models available for `IMAGE_GENERATE`, with how many reference images each accepts
-- **`IMAGE_GENERATE`** – Generate or edit one image (prompt + optional reference images by URL), billed to the **connected** OpenRouter account; there is no fallback to the deployment's key. Pass `outputPutUrl` (a presigned PUT URL) to receive the file there; otherwise the image comes back inline as a data URL. `moderation: "low"` applies to OpenAI models only.
-
-These two tools are registered by this MCP's entrypoint only, not through the exported `tools` that deco-llm reuses.
-
 <!--
 > This MCP now relies on the official [OpenRouter TypeScript SDK](https://openrouter.ai/docs/sdks/typescript) for model discovery and chat completions. Provider preferences are temporarily unavailable because the SDK does not expose the legacy `provider` payload yet. Prefer explicit `models` fallback ordering (or `openrouter/auto`) until the SDK adds native support.
 -->
