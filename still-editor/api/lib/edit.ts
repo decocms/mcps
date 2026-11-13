@@ -40,11 +40,18 @@ export interface PieceSource {
   pairProductId?: number;
 }
 
+/** What an edit started from: a previous version, the original generation or
+ *  the live Still. */
+export type EditBase = "version" | "original" | "store";
+
 export interface Version {
   id: string;
   productId: number;
   /** The version this one edited; null = the original Still. */
   parentId: string | null;
+  base?: EditBase;
+  /** The image the edit started from, composed like a Still. */
+  beforePath?: string;
   prompt: string;
   model: string;
   background: Background;
@@ -195,6 +202,8 @@ export async function runEdit(args: {
   // original generation, or (no generation stored) the live Still.
   let background: Background;
   let editUrl: string;
+  let editBase: EditBase;
+  let before: Uint8Array | null;
   if (parentId) {
     const parent = await store.getJson<Version>(
       `${base}/versions/${parentId}.json`,
@@ -202,6 +211,8 @@ export async function runEdit(args: {
     if (!parent) throw new Error(`Version ${parentId} was not found`);
     background = parent.background;
     editUrl = await store.getUrl(`${base}/versions/${parentId}-model`);
+    editBase = "version";
+    before = await store.get(`${base}/versions/${parentId}.jpg`);
   } else if (source) {
     background = source.background;
     const half = await sourceHalf(store, source);
@@ -211,12 +222,18 @@ export async function runEdit(args: {
       "image/jpeg",
     );
     editUrl = await store.getUrl(`${base}/versions/${versionId}-base.jpg`);
+    editBase = "original";
+    before = await encodeStill(await onPlate(half, plate, targetWidth));
   } else if (current?.url && currentPixels) {
     background = isLightGarment(currentPixels, plate) ? "grey" : "white";
     editUrl = current.url;
+    editBase = "store";
+    before = await encodeStill(currentPixels);
   } else {
     throw new Error("This product has no Still and no stored generation");
   }
+  const beforePath = `${base}/versions/${versionId}-before.jpg`;
+  if (before) await store.put(beforePath, before, "image/jpeg");
 
   const prompt = buildPrompt({
     piece: piece.type,
@@ -288,6 +305,8 @@ export async function runEdit(args: {
     parentId,
     prompt: args.request.trim(),
     model: args.model,
+    base: editBase,
+    ...(before ? { beforePath } : {}),
     background,
     targetWidth,
     check: checkStill(still),
@@ -342,12 +361,40 @@ export async function composeVersion(
     `pieces/${version.productId}/versions/${version.id}-model`,
   );
   if (!output) throw new Error("The model output was not stored");
-  const edited = await decodeImage(output);
-  const bg = borderColor(edited);
-  if (version.targetWidth) {
-    return composeAtWidth(edited, bg, plate, version.targetWidth, sizeFactor);
+  return onPlate(
+    await decodeImage(output),
+    plate,
+    version.targetWidth,
+    sizeFactor,
+  );
+}
+
+/** A garment on a plain background, on the plate at `targetWidth` (or fitted). */
+function onPlate(
+  image: Pixels,
+  plate: Pixels,
+  targetWidth: number | null,
+  sizeFactor = 1,
+): Promise<Pixels> {
+  const bg = borderColor(image);
+  if (targetWidth) {
+    return composeAtWidth(image, bg, plate, targetWidth, sizeFactor);
   }
-  const box = pieceBox(edited, bg);
-  if (!box) throw new Error("No garment found in the generated image");
-  return compose(edited, bg, plate, fitScale(box) * sizeFactor);
+  const box = pieceBox(image, bg);
+  if (!box) throw new Error("No garment found in the image");
+  return compose(image, bg, plate, fitScale(box) * sizeFactor);
+}
+
+/** Every file of a version: record, Still, model output and edit inputs. */
+export async function removeVersion(
+  store: Storage,
+  productId: number,
+  versionId: string,
+): Promise<void> {
+  const folder = `pieces/${productId}/versions/`;
+  const files = (await store.list(folder)).filter((path) => {
+    const name = path.slice(folder.length);
+    return name.startsWith(`${versionId}.`) || name.startsWith(`${versionId}-`);
+  });
+  await Promise.all(files.map((path) => store.remove(path)));
 }

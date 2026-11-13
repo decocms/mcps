@@ -11,7 +11,7 @@ import {
   AlertDialogTrigger,
 } from "@decocms/ui/components/alert-dialog.tsx";
 import { Badge } from "@decocms/ui/components/badge.tsx";
-import { Button } from "@decocms/ui/components/button.tsx";
+import { Button, buttonVariants } from "@decocms/ui/components/button.tsx";
 import {
   Collapsible,
   CollapsibleContent,
@@ -119,6 +119,7 @@ function Editor({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sizeFactor, setSizeFactor] = useState(1);
   const [view, setView] = useState<"piece" | "outfit">("piece");
+  const [showBefore, setShowBefore] = useState(false);
 
   if (loaded.isPending) {
     return (
@@ -149,10 +150,13 @@ function Editor({
   const select = (id: string | null) => {
     setSelectedId(id);
     setSizeFactor(1);
+    setShowBefore(false);
   };
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["still_load", link] });
-  const shownUrl = selected?.imageUrl ?? data.piece.still?.url ?? null;
+  const before = showBefore ? (selected?.beforeUrl ?? null) : null;
+  const shownUrl =
+    before ?? selected?.imageUrl ?? data.piece.still?.url ?? null;
   const canShowOutfit = Boolean(data.pair?.still?.url && shownUrl);
 
   return (
@@ -223,11 +227,22 @@ function Editor({
               scaled={data.piece.type === "bottom" ? "bottom" : "top"}
             />
           ) : (
-            <StillTile url={shownUrl} sizeFactor={sizeFactor} />
+            <StillTile url={shownUrl} sizeFactor={before ? 1 : sizeFactor} />
           )}
 
           {selected && (
             <div className="flex flex-col gap-3">
+              <VersionDetails
+                app={app}
+                data={data}
+                version={selected}
+                showBefore={showBefore}
+                onShowBefore={setShowBefore}
+                onDeleted={() => {
+                  select(null);
+                  refresh();
+                }}
+              />
               <div className="flex items-center gap-3">
                 <span className="text-sm text-muted-foreground">Tamanho</span>
                 <Slider
@@ -390,6 +405,114 @@ function PublishButton({
   );
 }
 
+/** What was asked for a version, what it started from, and its removal. */
+function VersionDetails({
+  app,
+  data,
+  version,
+  showBefore,
+  onShowBefore,
+  onDeleted,
+}: {
+  app: App;
+  data: Loaded;
+  version: Version;
+  showBefore: boolean;
+  onShowBefore: (show: boolean) => void;
+  onDeleted: () => void;
+}) {
+  const remove = useMutation({
+    mutationFn: () =>
+      callTool<{ deleted: boolean }>(app, "still_version_delete", {
+        productId: data.piece.productId,
+        versionId: version.id,
+      }),
+    onSuccess: () => {
+      toast.success("Versão apagada");
+      onDeleted();
+    },
+    onError: (error) => toast.error(describeError(error)),
+  });
+  const parent = data.versions.find((v) => v.id === version.parentId);
+  const startedFrom =
+    version.base === "original"
+      ? "sobre a geração original"
+      : version.base === "store"
+        ? "sobre o Still da loja"
+        : version.parentId
+          ? parent
+            ? `sobre a versão de ${formatWhen(parent.createdAt)}`
+            : "sobre uma versão apagada"
+          : null;
+  const facts = [
+    modelName(version.model),
+    firstName(version.author),
+    formatWhen(version.createdAt),
+    startedFrom,
+  ].filter(Boolean);
+
+  return (
+    <div className="surface-inset flex flex-col gap-3 p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <p className="text-sm text-foreground">{version.prompt}</p>
+          <p className="text-meta">{facts.join(" · ")}</p>
+        </div>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="shrink-0"
+              disabled={remove.isPending}
+            >
+              {remove.isPending && <Spinner size="2xs" />}
+              Apagar
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Apagar esta versão?</AlertDialogTitle>
+              <AlertDialogDescription>
+                A imagem e o pedido saem do histórico. A loja não muda.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancelar</AlertDialogCancel>
+              <AlertDialogAction
+                className={buttonVariants({ variant: "destructive" })}
+                onClick={() => remove.mutate()}
+              >
+                Apagar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+      {version.beforeUrl && (
+        <div className="flex gap-1">
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={!showBefore}
+            onClick={() => onShowBefore(false)}
+          >
+            Depois
+          </Button>
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={showBefore}
+            onClick={() => onShowBefore(true)}
+          >
+            Antes
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Composer({
   app,
   data,
@@ -529,6 +652,7 @@ function Versions({
     id: string | null,
     url: string | null,
     caption: string,
+    when: string | null,
     flagged: boolean,
   ) => (
     <button
@@ -550,7 +674,10 @@ function Versions({
           />
         )}
       </div>
-      <span className="text-meta truncate px-0.5">{caption}</span>
+      <span className="line-clamp-2 px-0.5 text-sm text-foreground">
+        {caption}
+      </span>
+      {when && <span className="text-meta px-0.5">{when}</span>}
       {flagged && (
         <Badge variant="outline" className="mx-0.5 self-start">
           Fora do padrão
@@ -567,6 +694,7 @@ function Versions({
           null,
           data.piece.still?.url ?? null,
           "Na loja",
+          null,
           false,
         )}
         {data.versions.map((version) =>
@@ -574,6 +702,7 @@ function Versions({
             version.id,
             version.id,
             version.imageUrl,
+            version.prompt,
             formatWhen(version.createdAt),
             !version.check.ok,
           ),
