@@ -73,7 +73,22 @@ export async function listVariantImages(
     "WAKE_ADMIN_VARIANT_IMAGES_LIST",
     { variantId },
   )) as { images: WakeImage[] };
-  return result.images;
+  return result.images.map((image) => ({
+    ...image,
+    url: image.url && originalSize(image.url),
+  }));
+}
+
+/**
+ * Wake lists images resized to 800×800, letterboxing a 4×5 Still. Without
+ * the size parameters it serves the original, which the edit measures and
+ * the publication backs up.
+ */
+function originalSize(url: string): string {
+  const parsed = new URL(url);
+  parsed.searchParams.delete("w");
+  parsed.searchParams.delete("h");
+  return parsed.toString();
 }
 
 export function stillOf(images: WakeImage[], stillOrder: number) {
