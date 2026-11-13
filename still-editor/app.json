@@ -1,0 +1,26 @@
+{
+  "scopeName": "deco",
+  "name": "still-editor",
+  "friendlyName": "Still Editor",
+  "description": "Edit and republish Mix & Match product Stills with image models",
+  "icon": "",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-still-editor.decocache.com/api/mcp",
+    "configSchema": {
+      "type": "object",
+      "properties": {},
+      "required": []
+    }
+  },
+  "unlisted": true,
+  "metadata": {
+    "categories": [],
+    "official": false,
+    "tags": [
+      "template",
+      "mcp-app"
+    ],
+    "short_description": "Edit and republish Mix & Match product Stills with image models"
+  }
+}
