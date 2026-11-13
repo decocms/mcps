@@ -18,8 +18,12 @@ export function EditProgress({ status }: { status: EditStatus | undefined }) {
   const seconds = Math.max(0, Math.floor((now - startedAt) / 1000));
   const elapsed = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
   return (
-    <p className="text-meta tnum" aria-live="polite">
-      {PHASE_LABEL[status?.phase ?? "preparing"]} · {elapsed}
+    <p className="text-meta tnum">
+      {/* Announced on a step change only; the ticking time stays out of it. */}
+      <span aria-live="polite">
+        {PHASE_LABEL[status?.phase ?? "preparing"]}
+      </span>{" "}
+      · {elapsed}
     </p>
   );
 }
