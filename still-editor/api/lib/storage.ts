@@ -12,15 +12,12 @@
  *   locks/<productId>.json                   one publication at a time
  */
 import { callConnectionTool } from "./connection.ts";
-import type { Env } from "../types/env.ts";
+import { type Env, settings } from "../types/env.ts";
 
 const URL_TTL_SECONDS = 3600;
 
 export function storage(env: Env) {
-  const prefix = env.MESH_REQUEST_CONTEXT.state.STORAGE_PREFIX.replace(
-    /\/+$/,
-    "",
-  );
+  const prefix = settings(env).STORAGE_PREFIX.replace(/\/+$/, "");
   const key = (path: string) => `${prefix}/${path}`;
 
   async function getUrl(path: string): Promise<string> {

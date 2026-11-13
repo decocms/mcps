@@ -12,7 +12,7 @@ import { checkStill, encodeStill } from "../lib/image.ts";
 import { readJob, startJob } from "../lib/jobs.ts";
 import { type Publication, publishStill } from "../lib/publish.ts";
 import { type Storage, storage } from "../lib/storage.ts";
-import type { Env } from "../types/env.ts";
+import { type Env, settings } from "../types/env.ts";
 
 export const STILL_EDITOR_RESOURCE_URI = "ui://still-editor/editor";
 
@@ -84,7 +84,7 @@ export const stillEditorTool = (_env: Env) =>
     execute: async ({ context }) => ({ link: context.link ?? null }),
   });
 
-export const stillLoadTool = (env: Env) =>
+export const stillLoadTool = (_env: Env) =>
   createPrivateTool({
     id: "still_load",
     annotations: {
@@ -100,7 +100,8 @@ export const stillLoadTool = (env: Env) =>
         .optional()
         .describe("Another garment to preview the outfit with"),
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       currentUser(env);
       const productId = productIdFromLink(context.link);
       if (!productId) {
@@ -123,7 +124,7 @@ export const stillLoadTool = (env: Env) =>
         readAll<Version>(store, `pieces/${productId}/versions/`),
         readAll<Publication>(store, `pieces/${productId}/publications/`),
       ]);
-      const settings = env.MESH_REQUEST_CONTEXT.state;
+      const { MODELS, DEFAULT_MODEL } = settings(env);
       return {
         piece: pieceSummary(piece),
         pair: pair ? pieceSummary(pair) : null,
@@ -134,13 +135,13 @@ export const stillLoadTool = (env: Env) =>
             .map((version) => versionWithUrl(store, version)),
         ),
         publications: publications.sort((a, b) => b.at.localeCompare(a.at)),
-        models: settings.MODELS,
-        defaultModel: settings.DEFAULT_MODEL,
+        models: MODELS,
+        defaultModel: DEFAULT_MODEL,
       };
     },
   });
 
-export const stillEditStartTool = (env: Env) =>
+export const stillEditStartTool = (_env: Env) =>
   createPrivateTool({
     id: "still_edit_start",
     annotations: {
@@ -166,11 +167,12 @@ export const stillEditStartTool = (env: Env) =>
       model: z.string().optional(),
     }),
     outputSchema: z.object({ jobId: z.string(), versionId: z.string() }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const user = currentUser(env);
-      const settings = env.MESH_REQUEST_CONTEXT.state;
-      const model = context.model ?? settings.DEFAULT_MODEL;
-      if (!settings.MODELS.includes(model)) {
+      const { MODELS, DEFAULT_MODEL } = settings(env);
+      const model = context.model ?? DEFAULT_MODEL;
+      if (!MODELS.includes(model)) {
         throw new Error(`Model ${model} is not enabled for this editor`);
       }
       const store = storage(env);
@@ -195,7 +197,7 @@ export const stillEditStartTool = (env: Env) =>
     },
   });
 
-export const stillEditStatusTool = (env: Env) =>
+export const stillEditStatusTool = (_env: Env) =>
   createPrivateTool({
     id: "still_edit_status",
     annotations: {
@@ -205,7 +207,8 @@ export const stillEditStatusTool = (env: Env) =>
     },
     description: "Status of an edit started with still_edit_start.",
     inputSchema: z.object({ jobId: z.string() }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       currentUser(env);
       const store = storage(env);
       const job = await readJob(store, context.jobId);
@@ -229,7 +232,7 @@ const expectedStillSchema = z
   .nullable()
   .describe("The Still image id seen when the product was opened");
 
-export const stillPublishTool = (env: Env) =>
+export const stillPublishTool = (_env: Env) =>
   createPrivateTool({
     id: "still_publish",
     annotations: {
@@ -246,7 +249,8 @@ export const stillPublishTool = (env: Env) =>
       sizeFactor: z.number().min(0.8).max(1.2).default(1),
       expectedStillId: expectedStillSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const user = currentUser(env);
       const store = storage(env);
       const piece = await loadPiece(env, context.productId);
@@ -291,7 +295,7 @@ export const stillPublishTool = (env: Env) =>
     },
   });
 
-export const stillRestoreTool = (env: Env) =>
+export const stillRestoreTool = (_env: Env) =>
   createPrivateTool({
     id: "still_restore",
     annotations: {
@@ -307,7 +311,8 @@ export const stillRestoreTool = (env: Env) =>
       publicationId: z.string(),
       expectedStillId: expectedStillSchema,
     }),
-    execute: async ({ context }) => {
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
       const user = currentUser(env);
       const store = storage(env);
       const publication = await store.getJson<Publication>(
