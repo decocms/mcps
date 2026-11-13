@@ -1,4 +1,3 @@
-import { withAuth } from "@decocms/mcps-shared/auth";
 import { withRuntime } from "@decocms/runtime";
 import { prompts } from "./prompts/index.ts";
 import { helloAppResource } from "./resources/hello.ts";
@@ -107,5 +106,5 @@ const runtime = withRuntime<Env, typeof StateSchema>({
 
 /** Platform-agnostic fetch handler. Use this in platform entrypoints. */
 export const app = {
-  fetch: withLogging(withMcpApiRoute(withAuth(runtime.fetch))),
+  fetch: withLogging(withMcpApiRoute(runtime.fetch)),
 };

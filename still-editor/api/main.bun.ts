@@ -1,3 +1,4 @@
+import { withAuth } from "@decocms/mcps-shared/auth";
 import { app } from "./app.ts";
 
 const PORT = Number(process.env.PORT) || 3001;
@@ -6,7 +7,7 @@ Bun.serve({
   idleTimeout: 0,
   hostname: "0.0.0.0",
   port: PORT,
-  fetch: app.fetch,
+  fetch: withAuth(app.fetch),
 });
 
 const slug = process.env.WORKTREE_SLUG;

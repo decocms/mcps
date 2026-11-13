@@ -1,4 +1,4 @@
-import { createTool } from "@decocms/runtime/tools";
+import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../types/env.ts";
 
@@ -18,7 +18,7 @@ export const helloOutputSchema = z.object({
 export type HelloOutput = z.infer<typeof helloOutputSchema>;
 
 export const helloTool = (_env: Env) =>
-  createTool({
+  createPrivateTool({
     id: "hello_world",
     description:
       "Say hello! Takes a name and returns a friendly greeting. Use this to test that the MCP server and MCP App UI are working.",
