@@ -1,4 +1,3 @@
-import { helloTool } from "./hello.ts";
-import { spikeCheckTool, spikeSleepTool } from "./spike.ts";
+import { stillTools } from "./still.ts";
 
-export const tools = [helloTool, spikeCheckTool, spikeSleepTool];
+export const tools = stillTools;
