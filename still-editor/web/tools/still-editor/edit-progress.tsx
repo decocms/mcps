@@ -8,7 +8,14 @@ const PHASE_LABEL = {
 } as const;
 
 /** The running edit's step and elapsed time, ticking every second. */
-export function EditProgress({ status }: { status: EditStatus | undefined }) {
+export function EditProgress({
+  status,
+  opening = false,
+}: {
+  status: EditStatus | undefined;
+  /** The job is done and the editor is loading the new version. */
+  opening?: boolean;
+}) {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -21,7 +28,9 @@ export function EditProgress({ status }: { status: EditStatus | undefined }) {
     <p className="text-meta tnum">
       {/* Announced on a step change only; the ticking time stays out of it. */}
       <span aria-live="polite">
-        {PHASE_LABEL[status?.phase ?? "preparing"]}
+        {opening
+          ? "Abrindo a nova versão"
+          : PHASE_LABEL[status?.phase ?? "preparing"]}
       </span>{" "}
       · {elapsed}
     </p>

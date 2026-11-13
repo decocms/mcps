@@ -29,7 +29,7 @@ import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import { AlertTriangle, Link01, Trash01 } from "@untitledui/icons";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useMcpApp, useMcpState } from "@/context.tsx";
 import { EditProgress } from "./edit-progress.tsx";
 import appIcon from "../../../icon.svg";
@@ -277,8 +277,8 @@ function Editor({
             app={app}
             data={data}
             parent={selected ?? null}
-            onDone={(version) => {
-              refresh();
+            onDone={async (version) => {
+              await refresh();
               select(version.id);
             }}
           />
@@ -421,7 +421,8 @@ function Composer({
   app: App;
   data: Loaded;
   parent: Version | null;
-  onDone: (version: Version) => void;
+  /** Resolves once the new version is loaded, so progress shows until then. */
+  onDone: (version: Version) => Promise<void>;
 }) {
   const [request, setRequest] = useState("");
   const [model, setModel] = useState(data.defaultModel);
@@ -457,18 +458,29 @@ function Composer({
     onError: (error) => setFailure(describeError(error)),
   });
 
+  // After "done" the editor reloads the piece; progress stays until it has.
+  const [opening, setOpening] = useState(false);
+  const opened = useRef<string | null>(null);
+
   const status = useQuery({
     queryKey: ["still_edit_status", jobId],
     enabled: jobId !== null,
-    refetchInterval: 3000,
+    refetchInterval: opening ? false : 3000,
     queryFn: async () => {
       const status = await callTool<EditStatus>(app, "still_edit_status", {
         jobId,
       });
       if (status.status === "done" && status.version) {
-        setJobId(null);
-        setRequest("");
-        onDone(status.version);
+        if (opened.current === jobId) return status;
+        opened.current = jobId;
+        setOpening(true);
+        try {
+          await onDone(status.version);
+        } finally {
+          setOpening(false);
+          setJobId(null);
+          setRequest("");
+        }
       } else if (status.status === "failed") {
         setJobId(null);
         setFailure(describeError(status.error));
@@ -504,7 +516,7 @@ function Composer({
         disabled={running}
       />
       {running ? (
-        <EditProgress status={status.data} />
+        <EditProgress status={status.data} opening={opening} />
       ) : (
         <p className="text-meta">{base}</p>
       )}
