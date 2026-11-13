@@ -180,7 +180,7 @@ function Editor({
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={onChangePiece}>
-          Trocar peça
+          Ver outra peça
         </Button>
       </header>
 
@@ -205,26 +205,6 @@ function Editor({
                     onClick={() => setView("outfit")}
                   >
                     Conjunto
-                  </Button>
-                </div>
-              )}
-              {selected?.beforeUrl && (
-                <div className="flex gap-1">
-                  <Button
-                    variant="tab"
-                    size="sm"
-                    aria-pressed={!showBefore}
-                    onClick={() => setShowBefore(false)}
-                  >
-                    Depois
-                  </Button>
-                  <Button
-                    variant="tab"
-                    size="sm"
-                    aria-pressed={showBefore}
-                    onClick={() => setShowBefore(true)}
-                  >
-                    Antes
                   </Button>
                 </div>
               )}
@@ -264,6 +244,31 @@ function Editor({
             />
           ) : (
             <StillTile url={shownUrl} />
+          )}
+
+          {selected?.beforeUrl && (
+            <div
+              role="group"
+              aria-label="Comparar com a imagem de partida"
+              className="surface-inset flex gap-1 self-center rounded-full p-1"
+            >
+              <Button
+                variant="tab"
+                size="sm"
+                aria-pressed={showBefore}
+                onClick={() => setShowBefore(true)}
+              >
+                Antes
+              </Button>
+              <Button
+                variant="tab"
+                size="sm"
+                aria-pressed={!showBefore}
+                onClick={() => setShowBefore(false)}
+              >
+                Depois
+              </Button>
+            </div>
           )}
         </section>
 
@@ -609,6 +614,7 @@ function Versions({
             <span className="size-1.5 rounded-full bg-brand" />
             Na loja
           </span>
+          <span className="text-meta">{liveSince(data)}</span>
         </VersionRow>
       </li>
       {data.versions.map((version) => (
@@ -645,6 +651,14 @@ function Versions({
       ))}
     </ul>
   );
+}
+
+/** When the live Still went up, from the latest publication that changed it. */
+function liveSince(data: Loaded): string {
+  const last = data.publications.find((p) => p.status === "published");
+  if (!last) return "Still original";
+  const verb = last.kind === "restore" ? "Restaurado" : "Publicado";
+  return `${verb} em ${formatWhen(last.at)} · ${firstName(last.author)}`;
 }
 
 function VersionRow({
