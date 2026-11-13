@@ -226,6 +226,8 @@ export async function runEdit(args: {
   });
   const isOpenAI = args.model.startsWith("openai/");
   const request = {
+    // The org's own OpenRouter key, whatever its image tier is set to.
+    provider: "openrouter",
     model: args.model,
     prompt,
     referenceImages: [editUrl, ...piece.photos.slice(0, 2)].map((uri) => ({

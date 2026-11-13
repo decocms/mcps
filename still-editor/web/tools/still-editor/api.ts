@@ -71,11 +71,8 @@ export function describeError(error: unknown): string {
   if (message.includes(TOKEN_REJECTED)) {
     return "O token da Wake expirou ou foi revogado. Gere um token novo no admin da Wake e atualize o campo apiToken da connection Wake no Studio.";
   }
-  if (message.includes('for tier "image"')) {
-    return "A organização não tem modelo de imagem. Adicione a chave do OpenRouter em Settings → AI providers.";
-  }
-  if (message.includes("need an OpenRouter image tier")) {
-    return "O tier de imagem da organização precisa usar a chave do OpenRouter (Settings → AI providers).";
+  if (message.includes("has no openrouter key")) {
+    return "A organização não tem chave do OpenRouter. Adicione em Settings → AI providers.";
   }
   return message;
 }

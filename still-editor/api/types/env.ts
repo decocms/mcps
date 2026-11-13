@@ -42,7 +42,7 @@ export const StateSchema = z.object({
     .array(z.string())
     .default(DEFAULT_MODELS)
     .describe(
-      "Image models offered in the editor, OpenRouter ids. They run on the image tier's key in Studio's AI providers.",
+      "Image models offered in the editor, OpenRouter ids. They run on the organization's OpenRouter key in Studio's AI providers.",
     ),
 });
 
