@@ -4,7 +4,7 @@
  * current Still is the image at STILL_ORDER).
  */
 import { callConnectionTool } from "./connection.ts";
-import type { Env } from "../types/env.ts";
+import { type Env, settings } from "../types/env.ts";
 
 export type PieceType = "top" | "bottom";
 
@@ -83,7 +83,7 @@ export function stillOf(images: WakeImage[], stillOrder: number) {
 }
 
 export async function loadPiece(env: Env, productId: number): Promise<Piece> {
-  const settings = env.MESH_REQUEST_CONTEXT.state;
+  const { STILL_ORDER, TOP_CATEGORY_IDS, BOTTOM_CATEGORY_IDS } = settings(env);
   const [main, others] = await Promise.all([
     listVariants(env, productId, true),
     listVariants(env, productId, false),
@@ -94,10 +94,10 @@ export async function loadPiece(env: Env, productId: number): Promise<Piece> {
   const images = await listVariantImages(env, first.productVariantId);
   const categories = (first.productCategories ?? []).map((c) => Number(c.id));
   const type: PieceType | null = categories.some((id) =>
-    settings.BOTTOM_CATEGORY_IDS.includes(id),
+    BOTTOM_CATEGORY_IDS.includes(id),
   )
     ? "bottom"
-    : categories.some((id) => settings.TOP_CATEGORY_IDS.includes(id))
+    : categories.some((id) => TOP_CATEGORY_IDS.includes(id))
       ? "top"
       : null;
   return {
@@ -112,11 +112,10 @@ export async function loadPiece(env: Env, productId: number): Promise<Piece> {
         .map((node) => node.productVariantId)
         .filter((id) => id !== first.productVariantId),
     ],
-    still: stillOf(images, settings.STILL_ORDER),
+    still: stillOf(images, STILL_ORDER),
     photos: images
       .filter(
-        (image) =>
-          !image.isPrint && image.order !== settings.STILL_ORDER && image.url,
+        (image) => !image.isPrint && image.order !== STILL_ORDER && image.url,
       )
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((image) => image.url as string),

@@ -7,7 +7,7 @@ import type { User } from "@decocms/runtime";
 import { listVariantImages, type Piece, stillOf } from "./catalog.ts";
 import { callConnectionTool } from "./connection.ts";
 import type { Storage } from "./storage.ts";
-import type { Env } from "../types/env.ts";
+import { type Env, settings } from "../types/env.ts";
 
 const LOCK_TTL_MS = 10 * 60 * 1000;
 
@@ -46,7 +46,7 @@ async function addImage(
     {
       variantId,
       imageUrl,
-      order: env.MESH_REQUEST_CONTEXT.state.STILL_ORDER,
+      order: settings(env).STILL_ORDER,
       isPrint: false,
       showThumbnail: true,
     },
@@ -85,7 +85,7 @@ export async function publishStill(args: {
   user: User;
 }): Promise<Publication> {
   const { env, store, piece } = args;
-  const stillOrder = env.MESH_REQUEST_CONTEXT.state.STILL_ORDER;
+  const stillOrder = settings(env).STILL_ORDER;
   const base = `pieces/${piece.productId}`;
   const lockPath = `locks/${piece.productId}.json`;
 

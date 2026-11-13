@@ -48,4 +48,18 @@ export const StateSchema = z.object({
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;
-export type Settings = z.infer<typeof StateSchema>;
+
+const SettingsSchema = StateSchema.omit({
+  OPENROUTER: true,
+  WAKE: true,
+  OBJECT_STORAGE: true,
+});
+
+type Settings = z.infer<typeof SettingsSchema>;
+
+/**
+ * The connection's settings, with defaults for fields it never saved: the
+ * runtime hands over the stored state without applying the schema.
+ */
+export const settings = (env: Env): Settings =>
+  SettingsSchema.parse(env.MESH_REQUEST_CONTEXT.state);

@@ -23,7 +23,7 @@ import {
   stillBox,
 } from "./image.ts";
 import type { Storage } from "./storage.ts";
-import type { Env } from "../types/env.ts";
+import { type Env, settings } from "../types/env.ts";
 
 export type Background = "white" | "grey";
 
@@ -184,7 +184,7 @@ export async function runEdit(args: {
 
   // The current Still sets the garment width the edit is composed at.
   const images = await listVariantImages(env, piece.mainVariantId);
-  const current = stillOf(images, env.MESH_REQUEST_CONTEXT.state.STILL_ORDER);
+  const current = stillOf(images, settings(env).STILL_ORDER);
   const currentPixels = current?.url
     ? await decodeImage(await fetchBytes(current.url))
     : null;
