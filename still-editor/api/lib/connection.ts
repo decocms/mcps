@@ -19,10 +19,8 @@ export async function callConnectionTool(
 ): Promise<unknown> {
   const ctx = env.MESH_REQUEST_CONTEXT;
   const ref: unknown = (ctx.state as Record<string, unknown>)[binding];
-  const connectionId =
-    typeof ref === "object" && ref !== null && "value" in ref
-      ? ref.value
-      : null;
+  // Bindings arrive as client proxies that answer `value` only when read.
+  const connectionId = ref == null ? null : Reflect.get(Object(ref), "value");
   if (typeof connectionId !== "string") {
     throw new Error(`${binding} is not configured on this connection`);
   }
