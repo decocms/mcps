@@ -6,12 +6,13 @@ import {
   Outlet,
   RouterProvider,
 } from "@tanstack/react-router";
+import { Spinner } from "@decocms/ui/components/spinner.tsx";
 import { useEffect } from "react";
 import { useMcpApp, useMcpHostContext, useMcpState } from "./context.tsx";
-import HelloPage from "./tools/hello/index.tsx";
+import StillEditorPage from "./tools/still-editor/index.tsx";
 
 const TOOL_PAGES: Record<string, React.ComponentType> = {
-  hello_world: HelloPage,
+  still_editor: StillEditorPage,
 };
 
 function ToolRouter() {
@@ -20,10 +21,7 @@ function ToolRouter() {
   if (!toolName) {
     return (
       <div className="flex items-center justify-center min-h-dvh p-6">
-        <div className="flex items-center gap-3 text-muted-foreground">
-          <span className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
-          <span className="text-sm">Connecting to host...</span>
-        </div>
+        <Spinner size="sm" label="Conectando" />
       </div>
     );
   }
@@ -33,7 +31,9 @@ function ToolRouter() {
   if (!Page) {
     return (
       <div className="flex items-center justify-center min-h-dvh p-6">
-        <p className="text-sm text-destructive">Unknown tool: {toolName}</p>
+        <p className="text-sm text-destructive">
+          Ferramenta desconhecida: {toolName}
+        </p>
       </div>
     );
   }
@@ -47,6 +47,8 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: ToolRouter,
+  validateSearch: (search: Record<string, unknown>): { link?: string } =>
+    typeof search.link === "string" ? { link: search.link } : {},
 });
 
 const routeTree = rootRoute.addChildren([indexRoute]);

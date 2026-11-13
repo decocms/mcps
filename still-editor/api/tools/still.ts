@@ -68,6 +68,11 @@ const linkSchema = z
 export const stillEditorTool = (_env: Env) =>
   createPrivateTool({
     id: "still_editor",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    },
     description:
       "Open the Still editor: paste a product link, edit its Still (the garment photo on the brand's backdrop used by Mix & Match) with an image model, and publish the approved version to the store.",
     inputSchema: z.object({
@@ -82,6 +87,11 @@ export const stillEditorTool = (_env: Env) =>
 export const stillLoadTool = (env: Env) =>
   createPrivateTool({
     id: "still_load",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: true,
+    },
     description:
       "Load a product for editing: its current Still, the pair garment, the edit versions and the publication history.",
     inputSchema: z.object({
@@ -133,6 +143,12 @@ export const stillLoadTool = (env: Env) =>
 export const stillEditStartTool = (env: Env) =>
   createPrivateTool({
     id: "still_edit_start",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "Start an edit of a product's Still from the original or from a previous version. Returns a job to poll with still_edit_status (an edit takes up to a few minutes).",
     inputSchema: z.object({
@@ -182,6 +198,11 @@ export const stillEditStartTool = (env: Env) =>
 export const stillEditStatusTool = (env: Env) =>
   createPrivateTool({
     id: "still_edit_status",
+    annotations: {
+      readOnlyHint: true,
+      destructiveHint: false,
+      openWorldHint: false,
+    },
     description: "Status of an edit started with still_edit_start.",
     inputSchema: z.object({ jobId: z.string() }),
     execute: async ({ context }) => {
@@ -211,6 +232,12 @@ const expectedStillSchema = z
 export const stillPublishTool = (env: Env) =>
   createPrivateTool({
     id: "still_publish",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "Publish an approved version as the product's Still on every variant in the store. Changes the live store; the replaced Still is kept and can be restored.",
     inputSchema: z.object({
@@ -267,6 +294,12 @@ export const stillPublishTool = (env: Env) =>
 export const stillRestoreTool = (env: Env) =>
   createPrivateTool({
     id: "still_restore",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
     description:
       "Put back the Still that a publication replaced, on every variant. Changes the live store.",
     inputSchema: z.object({

@@ -2,11 +2,11 @@
   "scopeName": "deco",
   "name": "still-editor",
   "friendlyName": "Still Editor",
-  "description": "Edit and republish Mix & Match product Stills with image models",
+  "description": "Edit a product's Still (the garment photo on the brand's backdrop) with image models and publish the approved version to Wake.",
   "icon": "",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-still-editor.decocache.com/api/mcp",
+    "url": "https://sites-still-editor.deco.site/api/mcp",
     "configSchema": {
       "type": "object",
       "properties": {},
@@ -18,9 +18,11 @@
     "categories": [],
     "official": false,
     "tags": [
-      "template",
-      "mcp-app"
+      "mcp-app",
+      "wake",
+      "image",
+      "ecommerce"
     ],
-    "short_description": "Edit and republish Mix & Match product Stills with image models"
+    "short_description": "Edit and republish product Stills with image models."
   }
 }
