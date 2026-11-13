@@ -12,11 +12,6 @@ import {
 } from "@decocms/ui/components/alert-dialog.tsx";
 import { Badge } from "@decocms/ui/components/badge.tsx";
 import { Button, buttonVariants } from "@decocms/ui/components/button.tsx";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@decocms/ui/components/collapsible.tsx";
 import { IconButton } from "@decocms/ui/components/icon-button.tsx";
 import { Input } from "@decocms/ui/components/input.tsx";
 import {
@@ -33,7 +28,7 @@ import { cn } from "@decocms/ui/lib/utils.ts";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { AlertTriangle, ChevronDown, Link01, Trash01 } from "@untitledui/icons";
+import { AlertTriangle, Link01, Trash01 } from "@untitledui/icons";
 import { useState } from "react";
 import { useMcpApp, useMcpState } from "@/context.tsx";
 import { EditProgress } from "./edit-progress.tsx";
@@ -282,17 +277,27 @@ function Editor({
               select(version.id);
             }}
           />
-          <Versions
-            app={app}
-            data={data}
-            selectedId={selectedId}
-            onSelect={select}
-            onDeleted={() => {
-              select(null);
-              refresh();
-            }}
+          <HistoryPanel
+            versions={
+              data.versions.length > 0 && (
+                <Versions
+                  app={app}
+                  data={data}
+                  selectedId={selectedId}
+                  onSelect={select}
+                  onDeleted={() => {
+                    select(null);
+                    refresh();
+                  }}
+                />
+              )
+            }
+            publications={
+              data.publications.length > 0 && (
+                <History app={app} data={data} onDone={refresh} />
+              )
+            }
           />
-          <History app={app} data={data} onDone={refresh} />
         </div>
       </div>
     </div>
@@ -531,6 +536,54 @@ function Composer({
 
 /** The store's Still, then every version, newest first. The selected row
  *  opens to what the edit asked for, and its removal. */
+/** Versions and publications in one card, so both stay in view: the card
+ *  takes the column's remaining height and its list scrolls. */
+function HistoryPanel({
+  versions,
+  publications,
+}: {
+  versions: React.ReactNode;
+  publications: React.ReactNode;
+}) {
+  const [tab, setTab] = useState<"versions" | "publications">("versions");
+  if (!versions && !publications) return null;
+  const shown =
+    tab === "publications" && publications
+      ? "publications"
+      : versions
+        ? "versions"
+        : "publications";
+  return (
+    <section className="surface flex min-h-0 flex-col overflow-hidden lg:max-h-[calc(100dvh-26rem)]">
+      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border/70 px-3">
+        {versions && (
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={shown === "versions"}
+            onClick={() => setTab("versions")}
+          >
+            Versões
+          </Button>
+        )}
+        {publications && (
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={shown === "publications"}
+            onClick={() => setTab("publications")}
+          >
+            Publicações
+          </Button>
+        )}
+      </div>
+      <div className="always-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {shown === "versions" ? versions : publications}
+      </div>
+    </section>
+  );
+}
+
 function Versions({
   app,
   data,
@@ -544,61 +597,53 @@ function Versions({
   onSelect: (id: string | null) => void;
   onDeleted: () => void;
 }) {
-  if (data.versions.length === 0) return null;
   return (
-    <section className="surface overflow-hidden">
-      <div className="flex h-12 items-center border-b border-border/70 px-5">
-        <h2 className="text-sm font-medium text-foreground">Versões</h2>
-      </div>
-      <ul className="always-scrollbar max-h-[28rem] divide-y divide-border/70 overflow-y-auto">
-        <li>
+    <ul className="divide-y divide-border/70">
+      <li>
+        <VersionRow
+          url={data.piece.still?.url ?? null}
+          selected={selectedId === null}
+          onSelect={() => onSelect(null)}
+        >
+          <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+            <span className="size-1.5 rounded-full bg-brand" />
+            Na loja
+          </span>
+        </VersionRow>
+      </li>
+      {data.versions.map((version) => (
+        <li key={version.id}>
           <VersionRow
-            url={data.piece.still?.url ?? null}
-            selected={selectedId === null}
-            onSelect={() => onSelect(null)}
+            url={version.imageUrl}
+            selected={selectedId === version.id}
+            onSelect={() => onSelect(version.id)}
           >
-            <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
-              <span className="size-1.5 rounded-full bg-brand" />
-              Na loja
+            <span
+              className={cn(
+                "text-sm text-foreground",
+                selectedId !== version.id && "line-clamp-2",
+              )}
+            >
+              {version.prompt}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-meta">{formatWhen(version.createdAt)}</span>
+              {!version.check.ok && (
+                <Badge variant="outline">Fora do padrão</Badge>
+              )}
             </span>
           </VersionRow>
+          {selectedId === version.id && (
+            <VersionDetails
+              app={app}
+              data={data}
+              version={version}
+              onDeleted={onDeleted}
+            />
+          )}
         </li>
-        {data.versions.map((version) => (
-          <li key={version.id}>
-            <VersionRow
-              url={version.imageUrl}
-              selected={selectedId === version.id}
-              onSelect={() => onSelect(version.id)}
-            >
-              <span
-                className={cn(
-                  "text-sm text-foreground",
-                  selectedId !== version.id && "line-clamp-2",
-                )}
-              >
-                {version.prompt}
-              </span>
-              <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="text-meta">
-                  {formatWhen(version.createdAt)}
-                </span>
-                {!version.check.ok && (
-                  <Badge variant="outline">Fora do padrão</Badge>
-                )}
-              </span>
-            </VersionRow>
-            {selectedId === version.id && (
-              <VersionDetails
-                app={app}
-                data={data}
-                version={version}
-                onDeleted={onDeleted}
-              />
-            )}
-          </li>
-        ))}
-      </ul>
-    </section>
+      ))}
+    </ul>
   );
 }
 
@@ -742,70 +787,61 @@ function History({
     },
     onError: (error) => toast.error(describeError(error)),
   });
-  if (data.publications.length === 0) return null;
   const label = {
     publish: "Publicado",
     restore: "Restaurado",
   } as const;
   return (
-    <Collapsible className="surface group overflow-hidden">
-      <CollapsibleTrigger className="focus-ring flex h-12 w-full items-center justify-between px-5 text-sm font-medium text-foreground hover:bg-accent/50">
-        Publicações
-        <ChevronDown className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-      </CollapsibleTrigger>
-      <CollapsibleContent>
-        <ul className="divide-y divide-border/70 border-t border-border/70">
-          {data.publications.map((publication) => (
-            <li
-              key={publication.id}
-              className="flex items-center justify-between gap-3 px-5 py-3"
-            >
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <p className="text-sm text-foreground">
-                  {publication.status === "published"
-                    ? label[publication.kind]
-                    : "Desfeito, nada mudou"}
-                </p>
-                <p className="text-meta">
-                  {formatWhen(publication.at)} · {firstName(publication.author)}
-                </p>
-              </div>
-              {publication.status === "published" && publication.before && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="xs"
-                      disabled={restore.isPending}
-                    >
-                      Restaurar
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Restaurar o Still anterior?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Volta o Still que esta publicação substituiu, nas{" "}
-                        {data.piece.variantCount} variantes.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={() => restore.mutate(publication.id)}
-                      >
-                        Restaurar
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </li>
-          ))}
-        </ul>
-      </CollapsibleContent>
-    </Collapsible>
+    <ul className="divide-y divide-border/70">
+      {data.publications.map((publication) => (
+        <li
+          key={publication.id}
+          className="flex items-center justify-between gap-3 px-5 py-3"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-sm text-foreground">
+              {publication.status === "published"
+                ? label[publication.kind]
+                : "Desfeito, nada mudou"}
+            </p>
+            <p className="text-meta">
+              {formatWhen(publication.at)} · {firstName(publication.author)}
+            </p>
+          </div>
+          {publication.status === "published" && publication.before && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={restore.isPending}
+                >
+                  Restaurar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Restaurar o Still anterior?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Volta o Still que esta publicação substituiu, nas{" "}
+                    {data.piece.variantCount} variantes.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => restore.mutate(publication.id)}
+                  >
+                    Restaurar
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
