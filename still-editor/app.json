@@ -3,7 +3,7 @@
   "name": "still-editor",
   "friendlyName": "Still Editor",
   "description": "Edit a product's Still (the garment photo on the brand's backdrop) with image models and publish the approved version to Wake.",
-  "icon": "https://raw.githubusercontent.com/decocms/mcps/main/still-editor/icon.png",
+  "icon": "https://decoims.com/decocms-tanstack/2026/11/efe3ac46-76f3-494e-b7f1-016905bcace1-icon.png",
   "connection": {
     "type": "HTTP",
     "url": "https://sites-still-editor.deco.site/api/mcp",
