@@ -11,12 +11,8 @@ import {
   AlertDialogTrigger,
 } from "@decocms/ui/components/alert-dialog.tsx";
 import { Badge } from "@decocms/ui/components/badge.tsx";
-import { Button } from "@decocms/ui/components/button.tsx";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@decocms/ui/components/collapsible.tsx";
+import { Button, buttonVariants } from "@decocms/ui/components/button.tsx";
+import { IconButton } from "@decocms/ui/components/icon-button.tsx";
 import { Input } from "@decocms/ui/components/input.tsx";
 import {
   Select,
@@ -25,7 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@decocms/ui/components/select.tsx";
-import { Slider } from "@decocms/ui/components/slider.tsx";
 import { toast } from "@decocms/ui/components/sonner.tsx";
 import { Spinner } from "@decocms/ui/components/spinner.tsx";
 import { Textarea } from "@decocms/ui/components/textarea.tsx";
@@ -33,9 +28,11 @@ import { cn } from "@decocms/ui/lib/utils.ts";
 import type { App } from "@modelcontextprotocol/ext-apps/react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearch } from "@tanstack/react-router";
-import { ChevronDown } from "@untitledui/icons";
-import { useState } from "react";
+import { AlertTriangle, Link01, Trash01 } from "@untitledui/icons";
+import { useRef, useState } from "react";
 import { useMcpApp, useMcpState } from "@/context.tsx";
+import { EditProgress } from "./edit-progress.tsx";
+import appIcon from "../../../icon.svg";
 import {
   callTool,
   describeError,
@@ -78,22 +75,34 @@ function OpenPiece({ onOpen }: { onOpen: (link: string) => void }) {
   return (
     <div className="flex min-h-dvh items-center justify-center p-6">
       <form
-        className="surface flex w-full max-w-lg flex-col gap-4 p-6"
+        className="flex w-full max-w-xl flex-col items-center gap-6"
         onSubmit={(event) => {
           event.preventDefault();
           if (value.trim()) onOpen(value.trim());
         }}
       >
-        <h1 className="font-display text-2xl">Editar Still</h1>
-        <div className="flex gap-2">
+        <div className="flex flex-col items-center gap-4">
+          <img src={appIcon} alt="" className="size-14" />
+          <h1 className="font-display text-2xl text-foreground">
+            Editar Still
+          </h1>
+        </div>
+        <div className="relative w-full">
+          <Link01 className="pointer-events-none absolute top-1/2 left-3.5 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             autoFocus
             value={value}
             onChange={(event) => setValue(event.target.value)}
-            placeholder="Link da peça na loja"
+            placeholder="Cole o link da peça na loja"
             aria-label="Link da peça na loja"
+            className="h-11 pr-20 pl-10"
           />
-          <Button type="submit" disabled={!value.trim()}>
+          <Button
+            type="submit"
+            size="sm"
+            disabled={!value.trim()}
+            className="absolute top-1/2 right-2 -translate-y-1/2"
+          >
             Abrir
           </Button>
         </div>
@@ -117,8 +126,8 @@ function Editor({
     queryFn: () => callTool<Loaded>(app, "still_load", { link }),
   });
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [sizeFactor, setSizeFactor] = useState(1);
   const [view, setView] = useState<"piece" | "outfit">("piece");
+  const [showBefore, setShowBefore] = useState(false);
 
   if (loaded.isPending) {
     return (
@@ -148,109 +157,117 @@ function Editor({
   const selected = data.versions.find((version) => version.id === selectedId);
   const select = (id: string | null) => {
     setSelectedId(id);
-    setSizeFactor(1);
+    setShowBefore(false);
   };
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["still_load", link] });
-  const shownUrl = selected?.imageUrl ?? data.piece.still?.url ?? null;
+  const before = showBefore ? (selected?.beforeUrl ?? null) : null;
+  const shownUrl =
+    before ?? selected?.imageUrl ?? data.piece.still?.url ?? null;
   const canShowOutfit = Boolean(data.pair?.still?.url && shownUrl);
+  const isBottom = data.piece.type === "bottom";
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
       <header className="flex items-center justify-between gap-4">
-        <div className="min-w-0">
-          <h1 className="truncate text-sm font-medium text-foreground">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h1 className="truncate font-display text-xl text-foreground">
             {data.piece.name}
           </h1>
           <p className="text-meta">
-            {data.piece.type === "bottom" ? "Calcinha" : "Top"} ·{" "}
-            {data.piece.variantCount} variantes
+            {isBottom ? "Calcinha" : "Top"} · {data.piece.variantCount}{" "}
+            variantes
           </p>
         </div>
         <Button variant="ghost" size="sm" onClick={onChangePiece}>
-          Trocar peça
+          Ver outra peça
         </Button>
       </header>
 
-      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="surface flex flex-col gap-4 p-5">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex gap-1">
-              <Button
-                variant="tab"
-                size="sm"
-                aria-pressed={view === "piece"}
-                onClick={() => setView("piece")}
-              >
-                Peça
-              </Button>
+          <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
               {canShowOutfit && (
-                <Button
-                  variant="tab"
-                  size="sm"
-                  aria-pressed={view === "outfit"}
-                  onClick={() => setView("outfit")}
-                >
-                  Conjunto
-                </Button>
+                <div className="flex gap-1">
+                  <Button
+                    variant="tab"
+                    size="sm"
+                    aria-pressed={view === "piece"}
+                    onClick={() => setView("piece")}
+                  >
+                    Peça
+                  </Button>
+                  <Button
+                    variant="tab"
+                    size="sm"
+                    aria-pressed={view === "outfit"}
+                    onClick={() => setView("outfit")}
+                  >
+                    Conjunto
+                  </Button>
+                </div>
               )}
             </div>
-            {selected ? (
+            {selected && (
               <PublishButton
                 app={app}
                 data={data}
                 version={selected}
-                sizeFactor={sizeFactor}
                 onDone={() => {
                   select(null);
                   refresh();
                 }}
               />
-            ) : (
-              <span className="text-meta">Atual na loja</span>
             )}
           </div>
 
-          {view === "outfit" && canShowOutfit ? (
-            <Outfit
-              top={
-                data.piece.type === "bottom" ? data.pair?.still?.url : shownUrl
-              }
-              bottom={
-                data.piece.type === "bottom" ? shownUrl : data.pair?.still?.url
-              }
-              sizeFactor={sizeFactor}
-              scaled={data.piece.type === "bottom" ? "bottom" : "top"}
-            />
-          ) : (
-            <StillTile url={shownUrl} sizeFactor={sizeFactor} />
+          {selected && !selected.check.ok && (
+            // The variant's foreground is meant for a solid warning fill and
+            // disappears on its own tint.
+            <Alert
+              variant="warning"
+              className="text-foreground *:data-[slot=alert-description]:text-foreground [&>svg]:text-warning"
+            >
+              <AlertTriangle />
+              <AlertDescription>
+                Fora do padrão do Still:{" "}
+                {selected.check.problems.map(describeProblem).join(" ")}
+              </AlertDescription>
+            </Alert>
           )}
 
-          {selected && (
-            <div className="flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground">Tamanho</span>
-                <Slider
-                  className="flex-1"
-                  min={80}
-                  max={120}
-                  step={1}
-                  value={[Math.round(sizeFactor * 100)]}
-                  onValueChange={([value]) => setSizeFactor(value / 100)}
-                  aria-label="Tamanho da peça"
-                />
-                <span className="text-meta w-10 text-right tnum">
-                  {Math.round(sizeFactor * 100)}%
-                </span>
-              </div>
-              {!selected.check.ok && (
-                <Alert variant="warning">
-                  <AlertDescription>
-                    Fora do padrão do Still:{" "}
-                    {selected.check.problems.map(describeProblem).join(" ")}
-                  </AlertDescription>
-                </Alert>
-              )}
+          {view === "outfit" && canShowOutfit ? (
+            <Outfit
+              top={isBottom ? data.pair?.still?.url : shownUrl}
+              bottom={isBottom ? shownUrl : data.pair?.still?.url}
+            />
+          ) : (
+            <StillTile url={shownUrl} />
+          )}
+
+          {selected?.beforeUrl && (
+            <div
+              role="group"
+              aria-label="Comparar com a imagem de partida"
+              className="surface-inset flex gap-1 self-center rounded-full p-1"
+            >
+              <Button
+                variant="tab"
+                size="sm"
+                aria-pressed={showBefore}
+                onClick={() => setShowBefore(true)}
+              >
+                Antes
+              </Button>
+              <Button
+                variant="tab"
+                size="sm"
+                aria-pressed={!showBefore}
+                onClick={() => setShowBefore(false)}
+              >
+                Depois
+              </Button>
             </div>
           )}
         </section>
@@ -260,34 +277,47 @@ function Editor({
             app={app}
             data={data}
             parent={selected ?? null}
-            onDone={(version) => {
-              refresh();
+            onDone={async (version) => {
+              await refresh();
               select(version.id);
             }}
           />
-          <Versions data={data} selectedId={selectedId} onSelect={select} />
-          <History app={app} data={data} onDone={refresh} />
+          <HistoryPanel
+            versions={
+              data.versions.length > 0 && (
+                <Versions
+                  app={app}
+                  data={data}
+                  selectedId={selectedId}
+                  onSelect={select}
+                  onDeleted={() => {
+                    select(null);
+                    refresh();
+                  }}
+                />
+              )
+            }
+            publications={
+              data.publications.length > 0 && (
+                <History app={app} data={data} onDone={refresh} />
+              )
+            }
+          />
         </div>
       </div>
     </div>
   );
 }
 
-function StillTile({
-  url,
-  sizeFactor,
-}: {
-  url: string | null;
-  sizeFactor: number;
-}) {
+/** Sized so the toolbar, a warning and the whole Still fit the viewport. */
+function StillTile({ url }: { url: string | null }) {
   return (
-    <div className="surface-inset relative mx-auto aspect-[4/5] w-full max-w-[calc(70dvh*0.8)] overflow-hidden">
+    <div className="surface-inset relative mx-auto aspect-[4/5] w-full max-w-[calc((100dvh-18rem)*0.8)] min-w-64 overflow-hidden">
       {url ? (
         <img
           src={url}
           alt=""
           className="absolute inset-0 size-full object-contain"
-          style={{ transform: `scale(${sizeFactor})` }}
         />
       ) : (
         <div className="flex size-full items-center justify-center text-sm text-muted-foreground">
@@ -303,30 +333,25 @@ function StillTile({
 function Outfit({
   top,
   bottom,
-  sizeFactor,
-  scaled,
 }: {
   top: string | null | undefined;
   bottom: string | null | undefined;
-  sizeFactor: number;
-  scaled: "top" | "bottom";
 }) {
-  const tile = (url: string | null | undefined, factor: number) => (
-    <div className="surface-inset relative mx-auto aspect-square w-full max-w-[34dvh] overflow-hidden">
+  const tile = (url: string | null | undefined) => (
+    <div className="surface-inset relative mx-auto aspect-square w-full max-w-[calc((100dvh-18rem)/2)] min-w-48 overflow-hidden">
       {url && (
         <img
           src={url}
           alt=""
           className="absolute inset-0 size-full object-cover"
-          style={{ transform: `scale(${factor})` }}
         />
       )}
     </div>
   );
   return (
     <div className="flex flex-col gap-2">
-      {tile(top, scaled === "top" ? sizeFactor : 1)}
-      {tile(bottom, scaled === "bottom" ? sizeFactor : 1)}
+      {tile(top)}
+      {tile(bottom)}
     </div>
   );
 }
@@ -335,13 +360,11 @@ function PublishButton({
   app,
   data,
   version,
-  sizeFactor,
   onDone,
 }: {
   app: App;
   data: Loaded;
   version: Version;
-  sizeFactor: number;
   onDone: () => void;
 }) {
   const publish = useMutation({
@@ -349,7 +372,6 @@ function PublishButton({
       callTool<Publication>(app, "still_publish", {
         productId: data.piece.productId,
         versionId: version.id,
-        sizeFactor,
         expectedStillId: data.piece.still?.imageId ?? null,
       }),
     onSuccess: (publication) => {
@@ -399,7 +421,8 @@ function Composer({
   app: App;
   data: Loaded;
   parent: Version | null;
-  onDone: (version: Version) => void;
+  /** Resolves once the new version is loaded, so progress shows until then. */
+  onDone: (version: Version) => Promise<void>;
 }) {
   const [request, setRequest] = useState("");
   const [model, setModel] = useState(data.defaultModel);
@@ -435,18 +458,29 @@ function Composer({
     onError: (error) => setFailure(describeError(error)),
   });
 
-  useQuery({
+  // After "done" the editor reloads the piece; progress stays until it has.
+  const [opening, setOpening] = useState(false);
+  const opened = useRef<string | null>(null);
+
+  const status = useQuery({
     queryKey: ["still_edit_status", jobId],
     enabled: jobId !== null,
-    refetchInterval: 3000,
+    refetchInterval: opening ? false : 3000,
     queryFn: async () => {
       const status = await callTool<EditStatus>(app, "still_edit_status", {
         jobId,
       });
       if (status.status === "done" && status.version) {
-        setJobId(null);
-        setRequest("");
-        onDone(status.version);
+        if (opened.current === jobId) return status;
+        opened.current = jobId;
+        setOpening(true);
+        try {
+          await onDone(status.version);
+        } finally {
+          setOpening(false);
+          setJobId(null);
+          setRequest("");
+        }
       } else if (status.status === "failed") {
         setJobId(null);
         setFailure(describeError(status.error));
@@ -457,7 +491,7 @@ function Composer({
 
   const running = start.isPending || jobId !== null;
   const base = parent
-    ? `Edita a versão de ${formatWhen(parent.createdAt)}`
+    ? "Edita a versão selecionada"
     : data.hasSource
       ? "Edita a geração original"
       : "Edita o Still atual";
@@ -481,10 +515,14 @@ function Composer({
         className="max-h-40 overflow-y-auto"
         disabled={running}
       />
-      <p className="text-meta">{base}</p>
+      {running ? (
+        <EditProgress status={status.data} opening={opening} />
+      ) : (
+        <p className="text-meta">{base}</p>
+      )}
       <div className="flex gap-2">
         <Select value={model} onValueChange={setModel} disabled={running}>
-          <SelectTrigger className="flex-1" aria-label="Modelo">
+          <SelectTrigger className="min-w-0 flex-1" aria-label="Modelo">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -504,7 +542,6 @@ function Composer({
           {running ? "Gerando" : "Gerar"}
         </Button>
       </div>
-      {running && <p className="text-meta">Leva até 2 minutos.</p>}
       {failure && (
         <Alert variant="destructive">
           <AlertDescription>{failure}</AlertDescription>
@@ -514,34 +551,150 @@ function Composer({
   );
 }
 
+/** The store's Still, then every version, newest first. The selected row
+ *  opens to what the edit asked for, and its removal. */
+/** Versions and publications in one card, so both stay in view: the card
+ *  takes the column's remaining height and its list scrolls. */
+function HistoryPanel({
+  versions,
+  publications,
+}: {
+  versions: React.ReactNode;
+  publications: React.ReactNode;
+}) {
+  const [tab, setTab] = useState<"versions" | "publications">("versions");
+  if (!versions && !publications) return null;
+  const shown =
+    tab === "publications" && publications
+      ? "publications"
+      : versions
+        ? "versions"
+        : "publications";
+  return (
+    <section className="surface flex min-h-0 flex-col overflow-hidden lg:max-h-[calc(100dvh-26rem)]">
+      <div className="flex h-12 shrink-0 items-center gap-1 border-b border-border/70 px-3">
+        {versions && (
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={shown === "versions"}
+            onClick={() => setTab("versions")}
+          >
+            Versões
+          </Button>
+        )}
+        {publications && (
+          <Button
+            variant="tab"
+            size="sm"
+            aria-pressed={shown === "publications"}
+            onClick={() => setTab("publications")}
+          >
+            Publicações
+          </Button>
+        )}
+      </div>
+      <div className="always-scrollbar min-h-0 flex-1 overflow-y-auto">
+        {shown === "versions" ? versions : publications}
+      </div>
+    </section>
+  );
+}
+
 function Versions({
+  app,
   data,
   selectedId,
   onSelect,
+  onDeleted,
 }: {
+  app: App;
   data: Loaded;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  onDeleted: () => void;
 }) {
-  if (data.versions.length === 0) return null;
-  const thumb = (
-    key: string,
-    id: string | null,
-    url: string | null,
-    caption: string,
-    flagged: boolean,
-  ) => (
+  return (
+    <ul className="divide-y divide-border/70">
+      <li>
+        <VersionRow
+          url={data.piece.still?.url ?? null}
+          selected={selectedId === null}
+          onSelect={() => onSelect(null)}
+        >
+          <span className="inline-flex items-center gap-1.5 text-sm text-foreground">
+            <span className="size-1.5 rounded-full bg-brand" />
+            Na loja
+          </span>
+          <span className="text-meta">{liveSince(data)}</span>
+        </VersionRow>
+      </li>
+      {data.versions.map((version) => (
+        <li key={version.id}>
+          <VersionRow
+            url={version.imageUrl}
+            selected={selectedId === version.id}
+            onSelect={() => onSelect(version.id)}
+          >
+            <span
+              className={cn(
+                "text-sm text-foreground",
+                selectedId !== version.id && "line-clamp-2",
+              )}
+            >
+              {version.prompt}
+            </span>
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-meta">{formatWhen(version.createdAt)}</span>
+              {!version.check.ok && (
+                <Badge variant="outline">Fora do padrão</Badge>
+              )}
+            </span>
+          </VersionRow>
+          {selectedId === version.id && (
+            <VersionDetails
+              app={app}
+              data={data}
+              version={version}
+              onDeleted={onDeleted}
+            />
+          )}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** When the live Still went up, from the latest publication that changed it. */
+function liveSince(data: Loaded): string {
+  const last = data.publications.find((p) => p.status === "published");
+  if (!last) return "Still original";
+  const verb = last.kind === "restore" ? "Restaurado" : "Publicado";
+  return `${verb} em ${formatWhen(last.at)} · ${firstName(last.author)}`;
+}
+
+function VersionRow({
+  url,
+  selected,
+  onSelect,
+  children,
+}: {
+  url: string | null;
+  selected: boolean;
+  onSelect: () => void;
+  children: React.ReactNode;
+}) {
+  return (
     <button
-      key={key}
       type="button"
-      aria-pressed={selectedId === id}
-      onClick={() => onSelect(id)}
+      aria-pressed={selected}
+      onClick={onSelect}
       className={cn(
-        "surface surface-interactive focus-ring flex flex-col gap-1.5 p-1.5 text-left",
-        selectedId === id && "outline-2 outline-offset-2 outline-primary",
+        "focus-ring flex w-full items-start gap-3 px-5 py-3 text-left transition-colors",
+        selected ? "bg-accent" : "hover:bg-accent/50",
       )}
     >
-      <div className="surface-inset relative aspect-[4/5] overflow-hidden">
+      <span className="surface-inset relative aspect-[4/5] w-12 shrink-0 overflow-hidden">
         {url && (
           <img
             src={url}
@@ -549,37 +702,88 @@ function Versions({
             className="absolute inset-0 size-full object-contain"
           />
         )}
-      </div>
-      <span className="text-meta truncate px-0.5">{caption}</span>
-      {flagged && (
-        <Badge variant="outline" className="mx-0.5 self-start">
-          Fora do padrão
-        </Badge>
-      )}
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col gap-1 py-0.5">
+        {children}
+      </span>
     </button>
   );
+}
+
+/** The facts the row leaves out — model, author, what the edit started
+ *  from — and the version's removal. */
+function VersionDetails({
+  app,
+  data,
+  version,
+  onDeleted,
+}: {
+  app: App;
+  data: Loaded;
+  version: Version;
+  onDeleted: () => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const remove = useMutation({
+    mutationFn: () =>
+      callTool<{ deleted: boolean }>(app, "still_version_delete", {
+        productId: data.piece.productId,
+        versionId: version.id,
+      }),
+    onSuccess: () => {
+      toast.success("Versão apagada");
+      onDeleted();
+    },
+    onError: (error) => toast.error(describeError(error)),
+  });
+  const parent = data.versions.find((v) => v.id === version.parentId);
+  const startedFrom =
+    version.base === "original"
+      ? "sobre a geração original"
+      : version.base === "store"
+        ? "sobre o Still da loja"
+        : version.parentId
+          ? parent
+            ? `sobre a versão de ${formatWhen(parent.createdAt)}`
+            : "sobre uma versão apagada"
+          : null;
+  const facts = [
+    modelName(version.model),
+    firstName(version.author),
+    startedFrom,
+  ].filter(Boolean);
+
   return (
-    <section className="surface flex flex-col gap-3 p-5">
-      <h2 className="text-sm font-medium text-foreground">Versões</h2>
-      <div className="grid grid-cols-3 gap-3">
-        {thumb(
-          "current",
-          null,
-          data.piece.still?.url ?? null,
-          "Na loja",
-          false,
-        )}
-        {data.versions.map((version) =>
-          thumb(
-            version.id,
-            version.id,
-            version.imageUrl,
-            formatWhen(version.createdAt),
-            !version.check.ok,
-          ),
-        )}
-      </div>
-    </section>
+    <div className="flex items-center justify-between gap-3 -mt-2 bg-accent pr-3 pb-2 pl-20">
+      <p className="text-meta min-w-0">{facts.join(" · ")}</p>
+      <IconButton
+        label="Apagar versão"
+        className="shrink-0"
+        disabled={remove.isPending}
+        onClick={() => setConfirming(true)}
+      >
+        {remove.isPending ? <Spinner size="2xs" /> : <Trash01 />}
+      </IconButton>
+      <AlertDialog open={confirming} onOpenChange={setConfirming}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apagar esta versão?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A imagem e o pedido saem do histórico. A loja não muda.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className={buttonVariants({ variant: "destructive" })}
+              onClick={() => remove.mutate()}
+            >
+              Apagar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   );
 }
 
@@ -609,68 +813,61 @@ function History({
     },
     onError: (error) => toast.error(describeError(error)),
   });
-  if (data.publications.length === 0) return null;
   const label = {
     publish: "Publicado",
     restore: "Restaurado",
   } as const;
   return (
-    <Collapsible className="surface p-5">
-      <CollapsibleTrigger className="focus-ring flex w-full items-center justify-between text-sm font-medium text-foreground">
-        Publicações
-        <ChevronDown className="size-4 text-muted-foreground" />
-      </CollapsibleTrigger>
-      <CollapsibleContent className="mt-3 flex flex-col divide-y divide-border">
-        {data.publications.map((publication) => (
-          <div
-            key={publication.id}
-            className="flex items-center justify-between gap-3 py-2"
-          >
-            <div className="min-w-0">
-              <p className="text-sm text-foreground">
-                {publication.status === "published"
-                  ? label[publication.kind]
-                  : "Desfeito, nada mudou"}
-              </p>
-              <p className="text-meta">
-                {formatWhen(publication.at)} · {firstName(publication.author)}
-              </p>
-            </div>
-            {publication.status === "published" && publication.before && (
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    disabled={restore.isPending}
+    <ul className="divide-y divide-border/70">
+      {data.publications.map((publication) => (
+        <li
+          key={publication.id}
+          className="flex items-center justify-between gap-3 px-5 py-3"
+        >
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <p className="text-sm text-foreground">
+              {publication.status === "published"
+                ? label[publication.kind]
+                : "Desfeito, nada mudou"}
+            </p>
+            <p className="text-meta">
+              {formatWhen(publication.at)} · {firstName(publication.author)}
+            </p>
+          </div>
+          {publication.status === "published" && publication.before && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="xs"
+                  disabled={restore.isPending}
+                >
+                  Restaurar
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    Restaurar o Still anterior?
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Volta o Still que esta publicação substituiu, nas{" "}
+                    {data.piece.variantCount} variantes.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => restore.mutate(publication.id)}
                   >
                     Restaurar
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>
-                      Restaurar o Still anterior?
-                    </AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Volta o Still que esta publicação substituiu, nas{" "}
-                      {data.piece.variantCount} variantes.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={() => restore.mutate(publication.id)}
-                    >
-                      Restaurar
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            )}
-          </div>
-        ))}
-      </CollapsibleContent>
-    </Collapsible>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </li>
+      ))}
+    </ul>
   );
 }
