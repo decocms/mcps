@@ -1,0 +1,24 @@
+{
+	"scopeName": "deco",
+	"name": "figma-file",
+	"friendlyName": "Figma File",
+	"description": "Lê arquivos do Figma exportados como .fig (web ou desktop): páginas, camadas, textos, estilos e componentes, sem API nem rate limit.",
+	"icon": "https://static.figma.com/app/icon/1/icon-192.png",
+	"connection": {
+		"type": "HTTP",
+		"url": "https://sites-figma-file.deco.site/api/mcp",
+		"configSchema": {
+			"type": "object",
+			"properties": {},
+			"required": []
+		}
+	},
+	"unlisted": true,
+	"metadata": {
+		"categories": ["Design", "Developer Tools"],
+		"official": false,
+		"tags": ["figma", "design", "fig", "design-to-code", "mcp-app"],
+		"short_description": "Importe um .fig do Figma e deixe o agente ler o arquivo inteiro",
+		"mesh_description": "Reads Figma files from a .fig export instead of the Figma API, so it works with any seat (including View-only) and has no rate limit. **Import** - figma_import opens a guided UI that shows how to export the file (File > Save local copy, on figma.com or the desktop app) and uploads only the document (a few MB; images stay on the user's machine). **Read** - figma_list_files, figma_get_pages, figma_get_node (all properties: fills, strokes, effects, auto-layout, text, component props), figma_search (by name, text, node type, subtree), figma_get_texts and figma_get_styles (shared styles and variables). Node ids accept the node-id from Figma URLs. **Storage** - imported documents are kept in the connected object storage. **Limits** - snapshot of the moment of export (re-import to refresh); no comments or image downloads yet."
+	}
+}

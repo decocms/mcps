@@ -557,5 +557,14 @@
       "still-editor/**",
       "shared/**"
     ]
+  },
+  "figma-file": {
+    "site": "figma-file",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "figma-file/**",
+      "shared/**"
+    ]
   }
 }
