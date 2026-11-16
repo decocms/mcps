@@ -5,80 +5,6 @@
  * Custom tools handle complex multi-step operations.
  */
 import type { Env } from "../types/env.ts";
-import {
-  brandTools,
-  categoryTools,
-  warehouseTools,
-  inventoryTools,
-  priceTools,
-  productTools,
-  skuTools,
-  orderTools,
-  collectionTools,
-  adsTools,
-  antifraudProviderTools,
-  audienceTools,
-  b2bBuyerDataTools,
-  b2bContactInformationTools,
-  b2bContractsTools,
-  budgetsTools,
-  buyerOrganizationsTools,
-  buyingPoliciesTools,
-  cardTokenVaultTools,
-  catalogSellerPortalTools,
-  checkoutTools,
-  customFieldsTools,
-  customerCreditTools,
-  checkoutCustomCardPaymentTools,
-  dataSubjectRightsTools,
-  defaultValuesTools,
-  deliveryPromiseNotificationTools,
-  giftcardTools,
-  giftcardHubTools,
-  giftcardProviderProtocolTools,
-  headlessCmsTools,
-  intelligentSearchTools,
-  intelligentSearchEventsTools,
-  legacyCmsPortalTools,
-  licenseManagerTools,
-  marketplaceTools,
-  marketplaceSentOffersTools,
-  marketplaceSuggestionsTools,
-  marketplaceProtocolMapperTools,
-  marketplaceProtocolOrdersTools,
-  marketplaceProtocolSellerFulfillmentTools,
-  marketplaceProtocolSellerMarketplaceTools,
-  masterDataV2Tools,
-  masterDataV1Tools,
-  messageCenterTools,
-  mtlsTools,
-  operationalCapacityTools,
-  ordersPiiTools,
-  organizationUnitsTools,
-  paymentProviderProtocolTools,
-  paymentsGatewayTools,
-  pickAndPackTools,
-  pickAndPackLastMileTools,
-  pickAndPackOrderChangesTools,
-  policiesSystemTools,
-  pricingHubTools,
-  profileSystemTools,
-  promotionsAndTaxesTools,
-  promotionsAndTaxesV2Tools,
-  punchoutTools,
-  recommendationsBffTools,
-  reviewsAndRatingsTools,
-  searchTools,
-  sessionManagerTools,
-  skuBindingsTools,
-  sslCertificatesTools,
-  storefrontPermissionsTools,
-  subscriptionsV3Tools,
-  trackingTools,
-  vtexDoTools,
-  vtexIdTools,
-  vtexShippingNetworkTools,
-} from "./registry.ts";
 
 // ── Custom tools ──────────────────────────────────────────────────────────────
 import { ordersTimeline } from "./custom/orders-timeline.ts";
@@ -99,81 +25,23 @@ import {
   getSalesPerformanceTrend,
 } from "./custom/sales-performance.ts";
 
-// ── Tool registry factories (env: Env) => Tool ────────────────────────────────
-const registryFactories = [
-  ...brandTools,
-  ...categoryTools,
-  ...warehouseTools,
-  ...inventoryTools,
-  ...priceTools,
-  ...productTools,
-  ...skuTools,
-  ...orderTools,
-  ...collectionTools,
-  ...adsTools,
-  ...antifraudProviderTools,
-  ...audienceTools,
-  ...b2bBuyerDataTools,
-  ...b2bContactInformationTools,
-  ...b2bContractsTools,
-  ...budgetsTools,
-  ...buyerOrganizationsTools,
-  ...buyingPoliciesTools,
-  ...cardTokenVaultTools,
-  ...catalogSellerPortalTools,
-  ...checkoutTools,
-  ...customFieldsTools,
-  ...customerCreditTools,
-  ...checkoutCustomCardPaymentTools,
-  ...dataSubjectRightsTools,
-  ...defaultValuesTools,
-  ...deliveryPromiseNotificationTools,
-  ...giftcardTools,
-  ...giftcardHubTools,
-  ...giftcardProviderProtocolTools,
-  ...headlessCmsTools,
-  ...intelligentSearchTools,
-  ...intelligentSearchEventsTools,
-  ...legacyCmsPortalTools,
-  ...licenseManagerTools,
-  ...marketplaceTools,
-  ...marketplaceSentOffersTools,
-  ...marketplaceSuggestionsTools,
-  ...marketplaceProtocolMapperTools,
-  ...marketplaceProtocolOrdersTools,
-  ...marketplaceProtocolSellerFulfillmentTools,
-  ...marketplaceProtocolSellerMarketplaceTools,
-  ...masterDataV2Tools,
-  ...masterDataV1Tools,
-  ...messageCenterTools,
-  ...mtlsTools,
-  ...operationalCapacityTools,
-  ...ordersPiiTools,
-  ...organizationUnitsTools,
-  ...paymentProviderProtocolTools,
-  ...paymentsGatewayTools,
-  ...pickAndPackTools,
-  ...pickAndPackLastMileTools,
-  ...pickAndPackOrderChangesTools,
-  ...policiesSystemTools,
-  ...pricingHubTools,
-  ...profileSystemTools,
-  ...promotionsAndTaxesTools,
-  ...promotionsAndTaxesV2Tools,
-  ...punchoutTools,
-  ...recommendationsBffTools,
-  ...reviewsAndRatingsTools,
-  ...searchTools,
-  ...sessionManagerTools,
-  ...skuBindingsTools,
-  ...sslCertificatesTools,
-  ...storefrontPermissionsTools,
-  ...subscriptionsV3Tools,
-  ...trackingTools,
-  ...vtexDoTools,
-  ...vtexIdTools,
-  ...vtexShippingNetworkTools,
-];
+/**
+ * Lazily load the ~704 generated registry tools on FIRST REQUEST, off the
+ * Worker startup path. A static `import` of registry.ts constructs every zod
+ * schema (zod.gen, ~260ms) at module-eval — during Worker startup — which blows
+ * Cloudflare's startup-CPU limit (error 10021). The deco runtime resolves tool
+ * factories once on the first request and caches them, and a factory may be
+ * async and return an array (see @decocms/runtime tools.ts), so this single
+ * dynamic-import factory stands in for the whole registry; the heavy zod work
+ * then runs in the request phase (generous CPU budget).
+ */
+const registryFactory = async (env: Env) => {
+  const registry = await import("./registry.ts");
+  return (Object.values(registry) as unknown[])
+    .filter((v): v is ((env: Env) => unknown)[] => Array.isArray(v))
+    .flat()
+    .map((factory) => factory(env));
+};
 
 const customFactories = [
   // Today's orders timeline chart (MCP App UI)
@@ -202,4 +70,4 @@ const customFactories = [
 ];
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const tools = [...registryFactories, ...customFactories] as any[];
+export const tools = [registryFactory, ...customFactories] as any[];
