@@ -89,6 +89,10 @@ jobs:
         run: bun run scripts/deploy.ts ${{ matrix.mcp }}
         env:
           DECO_DEPLOY_TOKEN: ${{ secrets.DECO_DEPLOY_TOKEN }}
+          # For MCPs that deploy straight to Cloudflare via wrangler (those that
+          # ship scripts/fix-cf-deploy.ts, e.g. vtex — too large for deco deploy).
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_GENAI_API_KEY: ${{ secrets.GOOGLE_GENAI_API_KEY }}
           NANOBANANA_API_KEY: ${{ secrets.NANOBANANA_API_KEY }}

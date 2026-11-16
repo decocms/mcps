@@ -82,6 +82,31 @@ try {
   console.log("🔨 Building...");
   await $`bun run build`;
 
+  // Opt-in direct-wrangler path: an MCP that ships `scripts/fix-cf-deploy.ts`
+  // deploys straight to Cloudflare with `wrangler` instead of `deco deploy`.
+  // `deco deploy` is dead: it calls HOSTING_APP_DEPLOY on api.decocms.com, which
+  // was removed (decocms/admin #1975) and has no DNS, so it fails "fetch failed"
+  // for every MCP. The fix script makes `dist/server` wrangler-deployable;
+  // wrangler reads CLOUDFLARE_API_TOKEN / _ACCOUNT_ID.
+  // ponytail: opt-in per MCP for now. Other CF MCPs pass worker secrets via
+  // deco deploy's --env; moving them needs `wrangler secret bulk` too.
+  const fixScript = join(mcpPath, "scripts", "fix-cf-deploy.ts");
+  if (existsSync(fixScript)) {
+    if (!process.env.CLOUDFLARE_API_TOKEN) {
+      console.error(
+        "❌ Error: CLOUDFLARE_API_TOKEN is required to deploy " +
+          `${mcpName} via wrangler`,
+      );
+      process.exit(1);
+    }
+    console.log("🔧 Preparing dist/server for wrangler...");
+    await $`bun run scripts/fix-cf-deploy.ts`;
+    console.log("🚀 Deploying to production (Cloudflare Workers, wrangler)...");
+    await $`bunx wrangler@4.163.0 deploy`;
+    console.log("\n✅ Deployed successfully!");
+    process.exit(0);
+  }
+
   const deployToken = process.env.DECO_DEPLOY_TOKEN;
   if (!deployToken) {
     console.error(

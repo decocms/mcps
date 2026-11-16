@@ -3663,7 +3663,7 @@
       "remotes": [
         {
           "type": "HTTP",
-          "url": "https://sites-vtex.deco.site/mcp",
+          "url": "https://vtex.deco-cx.workers.dev/mcp",
           "name": "vtex",
           "title": "VTEX Commerce APIs",
           "description": "MCP for interacting with VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory."
