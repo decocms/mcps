@@ -1,0 +1,16 @@
+#:schema node_modules/@decocms/runtime/config-schema.json
+name = "vtex"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = [ "nodejs_compat" ]
+scope = "deco"
+
+[deco]
+workspace = "deco"
+enable_workflows = false
+local = false
+
+[deco.integration]
+description = "MCP for interacting with VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory."
+icon = "https://decoims.com/decocms/f17166ef-59c9-4691-975b-c46461b3a782/vtex.png"
+friendlyName = "VTEX Commerce APIs"

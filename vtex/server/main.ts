@@ -3,7 +3,6 @@
  *
  * MCP for VTEX Commerce APIs - Catalog, Orders, and Logistics/Inventory.
  */
-import { serve } from "@decocms/mcps-shared/serve";
 import { withRuntime } from "@decocms/runtime";
 import {
   ordersSalesCardResource,
@@ -26,4 +25,5 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   resources: [ordersTimelineResource, ordersSalesCardResource],
 });
 
-serve(runtime.fetch);
+// Cloudflare Workers entry: the runtime IS the `{ fetch }` handler.
+export default runtime;

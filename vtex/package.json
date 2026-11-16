@@ -5,15 +5,13 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently -k -n api,web -c magenta,cyan \"bun run dev:api\" \"bun run dev:web\"",
-    "dev:api": "bun run --hot server/main.ts",
-    "dev:web": "bun run build:web && concurrently -n timeline,sales \"MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=false vite build --watch\" \"MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --watch\"",
+    "dev": "bun run build:web && deco dev --vite",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "npm run build && deco deploy ./dist/server",
+    "deploy": "bun run build && deco deploy ./dist/server",
     "check": "tsc --noEmit",
-    "build:web": "MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=true vite build && MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build",
-    "build:server": "NODE_ENV=production bun build server/main.ts --target=bun --outfile=dist/server/main.js",
+    "build:web": "MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=true vite build --config vite.config.web.ts && MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --config vite.config.web.ts",
+    "build:server": "vite build",
     "build": "bun run build:web && bun run build:server",
     "openapi": "openapi-ts",
     "generate": "bun run download-schemas && bun run openapi",
@@ -38,6 +36,7 @@
     "zod": "^4.0.0"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.4",
     "@cloudflare/workers-types": "^4.20260206.0",
     "@decocms/mcps-shared": "1.0.0",
     "@hey-api/client-fetch": "^0.8.0",
@@ -51,7 +50,8 @@
     "deco-cli": "^0.28.0",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
-    "vite-plugin-singlefile": "^2.3.0"
+    "vite-plugin-singlefile": "^2.3.0",
+    "wrangler": "^4.28.0"
   },
   "engines": {
     "node": ">=22.0.0"
