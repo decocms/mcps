@@ -1202,6 +1202,7 @@
         "zod": "^4.0.0",
       },
       "devDependencies": {
+        "@cloudflare/vite-plugin": "^1.13.4",
         "@cloudflare/workers-types": "^4.20260206.0",
         "@decocms/mcps-shared": "1.0.0",
         "@hey-api/client-fetch": "^0.8.0",
@@ -1216,6 +1217,7 @@
         "typescript": "^5.7.2",
         "vite": "^7.3.1",
         "vite-plugin-singlefile": "^2.3.0",
+        "wrangler": "^4.28.0",
       },
     },
     "vtex-docs": {

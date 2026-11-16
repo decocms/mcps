@@ -1,20 +1,18 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { createPublicResource } from "@decocms/runtime/tools";
 import type { Env } from "../types/env.ts";
 
 const RESOURCE_MIME_TYPE = "text/html;profile=mcp-app";
 
-function getHtmlPath(filename: string): string {
-  const projectRoot = join(import.meta.dir, "../..");
-  return join(projectRoot, "dist", "client", filename);
-}
-
+/**
+ * The built single-file HTML is inlined at build time (via a `?raw` import in
+ * resources/index.ts) and passed in as `html`. On Cloudflare Workers there is
+ * no filesystem to read it from at runtime.
+ */
 export function createMcpAppResource(options: {
   uri: string;
   name: string;
   description: string;
-  htmlFile: string;
+  html: string;
 }) {
   return (_env: Env) =>
     createPublicResource({
@@ -22,24 +20,10 @@ export function createMcpAppResource(options: {
       name: options.name,
       description: options.description,
       mimeType: RESOURCE_MIME_TYPE,
-      read: async () => {
-        const htmlPath = getHtmlPath(options.htmlFile);
-        try {
-          const html = await readFile(htmlPath, "utf-8");
-          return {
-            uri: options.uri,
-            mimeType: RESOURCE_MIME_TYPE,
-            text: html,
-          };
-        } catch (err) {
-          const message =
-            err instanceof Error && "code" in err && err.code === "ENOENT"
-              ? `MCP App bundle not found at ${htmlPath}. Run "bun run build:web" in the vtex folder (or "bun run dev" to build and watch).`
-              : err instanceof Error
-                ? err.message
-                : "Failed to read MCP App bundle";
-          throw new Error(message);
-        }
-      },
+      read: async () => ({
+        uri: options.uri,
+        mimeType: RESOURCE_MIME_TYPE,
+        text: options.html,
+      }),
     });
 }
