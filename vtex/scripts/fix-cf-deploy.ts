@@ -12,7 +12,9 @@
  *
  * This restores `index.js` and disables source-map upload so `wrangler deploy`
  * works with no manual steps. Idempotent. vtex deploys this way (not via
- * `deco deploy`) because its ~6.8MB worker trips the deco deploy backend.
+ * `deco deploy`) because `deco deploy` calls the legacy HOSTING_APP_DEPLOY tool
+ * on api.decocms.com, which was removed (decocms/admin #1975) and no longer
+ * resolves — every `deco deploy` fails with "fetch failed".
  */
 import { copyFileSync, existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";

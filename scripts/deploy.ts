@@ -84,9 +84,12 @@ try {
 
   // Opt-in direct-wrangler path: an MCP that ships `scripts/fix-cf-deploy.ts`
   // deploys straight to Cloudflare with `wrangler` instead of `deco deploy`.
-  // Used by MCPs the deco deploy backend can't take (e.g. vtex's ~6.8MB worker,
-  // which fails there with "fetch failed"). The fix script makes `dist/server`
-  // wrangler-deployable; wrangler reads CLOUDFLARE_API_TOKEN / _ACCOUNT_ID.
+  // `deco deploy` is dead: it calls HOSTING_APP_DEPLOY on api.decocms.com, which
+  // was removed (decocms/admin #1975) and has no DNS, so it fails "fetch failed"
+  // for every MCP. The fix script makes `dist/server` wrangler-deployable;
+  // wrangler reads CLOUDFLARE_API_TOKEN / _ACCOUNT_ID.
+  // ponytail: opt-in per MCP for now. Other CF MCPs pass worker secrets via
+  // deco deploy's --env; moving them needs `wrangler secret bulk` too.
   const fixScript = join(mcpPath, "scripts", "fix-cf-deploy.ts");
   if (existsSync(fixScript)) {
     if (!process.env.CLOUDFLARE_API_TOKEN) {
