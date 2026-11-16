@@ -82,6 +82,28 @@ try {
   console.log("🔨 Building...");
   await $`bun run build`;
 
+  // Opt-in direct-wrangler path: an MCP that ships `scripts/fix-cf-deploy.ts`
+  // deploys straight to Cloudflare with `wrangler` instead of `deco deploy`.
+  // Used by MCPs the deco deploy backend can't take (e.g. vtex's ~6.8MB worker,
+  // which fails there with "fetch failed"). The fix script makes `dist/server`
+  // wrangler-deployable; wrangler reads CLOUDFLARE_API_TOKEN / _ACCOUNT_ID.
+  const fixScript = join(mcpPath, "scripts", "fix-cf-deploy.ts");
+  if (existsSync(fixScript)) {
+    if (!process.env.CLOUDFLARE_API_TOKEN) {
+      console.error(
+        "❌ Error: CLOUDFLARE_API_TOKEN is required to deploy " +
+          `${mcpName} via wrangler`,
+      );
+      process.exit(1);
+    }
+    console.log("🔧 Preparing dist/server for wrangler...");
+    await $`bun run scripts/fix-cf-deploy.ts`;
+    console.log("🚀 Deploying to production (Cloudflare Workers, wrangler)...");
+    await $`bunx wrangler@4.163.0 deploy`;
+    console.log("\n✅ Deployed successfully!");
+    process.exit(0);
+  }
+
   const deployToken = process.env.DECO_DEPLOY_TOKEN;
   if (!deployToken) {
     console.error(

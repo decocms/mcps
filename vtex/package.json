@@ -8,7 +8,7 @@
     "dev": "bun run build:web && deco dev --vite",
     "configure": "deco configure",
     "gen": "deco gen --output=shared/deco.gen.ts",
-    "deploy": "bun run build && deco deploy ./dist/server",
+    "deploy": "bun run build && bun run scripts/fix-cf-deploy.ts && bunx wrangler@4.163.0 deploy",
     "check": "tsc --noEmit",
     "build:web": "MCP_APP_ENTRY=orders-timeline MCP_APP_EMPTY_OUTDIR=true vite build --config vite.config.web.ts && MCP_APP_ENTRY=orders-sales-card MCP_APP_EMPTY_OUTDIR=false vite build --config vite.config.web.ts",
     "build:server": "vite build",
