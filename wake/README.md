@@ -78,3 +78,5 @@ bun run build        # build server bundle
 The GraphQL fragments and queries are mirrored from the production-proven
 [deco.cx Wake app](https://github.com/deco-cx/apps/tree/main/wake) so they stay
 valid against the live Storefront API.
+
+<!-- preview fan-out smoke test (control-plane#365), do not merge -->
