@@ -46,6 +46,77 @@ For the `DY_ADMIN_*` tools:
    - 2FA/SSO accounts: instead, log in to adm.dynamicyield.com, copy the `RefreshToken` cookie (DevTools › Application › Cookies) into **adminSession**. It lasts 7 days from login.
 5. Set **sectionId** to the site's section id: the `redirectToSectionId` in the console URL. `DY_ADMIN_SECTIONS_LIST` lists the others, and every tool accepts a `sectionId` to switch sites.
 
+### Connecting directly (Claude Code, Claude Desktop, VS Code Copilot, Cursor)
+
+Without Studio, send the configuration as HTTP headers. All are optional; send only what the tools you use need:
+
+| Header | Same as |
+| --- | --- |
+| `Authorization: Bearer <key>` | DY server-side API key (public API tools) |
+| `x-dy-region` | `region` (`us` or `eu`) |
+| `x-dy-section-id` | `sectionId` |
+| `x-dy-admin-email` / `x-dy-admin-password` | `adminEmail` / `adminPassword` |
+| `x-dy-admin-session` | `adminSession` |
+| `x-dy-profile-anywhere-key` | `profileAnywhereKey` |
+
+**Claude Code**
+
+```sh
+claude mcp add --transport http --scope user dynamic-yield https://sites-dynamic-yield.deco.site/mcp \
+  --header "Authorization: Bearer $DY_API_KEY" \
+  --header "x-dy-section-id: 8795439" \
+  --header "x-dy-admin-email: $DY_EMAIL" \
+  --header "x-dy-admin-password: $DY_PASSWORD"
+```
+
+**VS Code (GitHub Copilot)**: `.vscode/mcp.json`. VS Code asks for the secrets once and keeps them in its secret storage.
+
+```json
+{
+  "inputs": [
+    { "type": "promptString", "id": "dy-api-key", "description": "DY API key", "password": true },
+    { "type": "promptString", "id": "dy-email", "description": "DY console email" },
+    { "type": "promptString", "id": "dy-password", "description": "DY console password", "password": true }
+  ],
+  "servers": {
+    "dynamic-yield": {
+      "type": "http",
+      "url": "https://sites-dynamic-yield.deco.site/mcp",
+      "headers": {
+        "Authorization": "Bearer ${input:dy-api-key}",
+        "x-dy-section-id": "8795439",
+        "x-dy-admin-email": "${input:dy-email}",
+        "x-dy-admin-password": "${input:dy-password}"
+      }
+    }
+  }
+}
+```
+
+**Claude Desktop**: its connectors UI only does OAuth, so bridge with `mcp-remote` in `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "dynamic-yield": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote", "https://sites-dynamic-yield.deco.site/mcp",
+        "--header", "Authorization:Bearer ${DY_API_KEY}",
+        "--header", "x-dy-section-id:8795439",
+        "--header", "x-dy-admin-email:${DY_EMAIL}",
+        "--header", "x-dy-admin-password:${DY_PASSWORD}"
+      ],
+      "env": { "DY_API_KEY": "...", "DY_EMAIL": "...", "DY_PASSWORD": "..." }
+    }
+  }
+}
+```
+
+**Cursor**: same `url` + `headers` as VS Code, in `~/.cursor/mcp.json`.
+
+claude.ai (web) custom connectors only support OAuth, so use it through Studio.
+
 The product feed must be set up in DY as **Sync via API** (Assets › Data Feeds); its numeric id is the `feedId`.
 
 ## Development
