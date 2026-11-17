@@ -1,3 +1,4 @@
+import { adminTools } from "./admin.ts";
 import { collectTools } from "./collect.ts";
 import { feedTools } from "./feed.ts";
 import { profileTools } from "./profile.ts";
@@ -8,4 +9,5 @@ export const tools = [
   ...collectTools,
   ...feedTools,
   ...profileTools,
+  ...adminTools,
 ];
