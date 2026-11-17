@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from "bun:test";
 import { FeedBulkInputSchema } from "../tools/feed.ts";
 import type { Env } from "../types/env.ts";
-import { baseUrl, dyFetch, getApiKey } from "./client.ts";
+import { adminFetch, baseUrl, dyFetch, getApiKey } from "./client.ts";
 
 const env = (authorization?: string, region?: "us" | "eu") =>
   ({
@@ -54,6 +54,36 @@ describe("client", () => {
       },
     );
     expect(result.items).toEqual([{ item: "sku-1", status: "success" }]);
+  });
+});
+
+describe("adminFetch", () => {
+  const adminEnv = (state: Record<string, string>) =>
+    ({ MESH_REQUEST_CONTEXT: { state } }) as unknown as Env;
+
+  it("sends the session cookie and section header, and flags expired sessions", async () => {
+    let seen: Request | undefined;
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      seen = new Request(url, init);
+      return new Response("OAuth flow failed.", { status: 401 });
+    }) as typeof fetch;
+    await expect(
+      adminFetch(adminEnv({ adminSession: "rt", sectionId: "1" }), "/x", {
+        sectionId: "2",
+      }),
+    ).rejects.toThrow("session expired");
+    expect(seen?.url).toBe("https://adm.dynamicyield.com/x");
+    expect(seen?.headers.get("Cookie")).toBe("RefreshToken=rt");
+    expect(seen?.headers.get("DY_SECTION_ID")).toBe("2");
+  });
+
+  it("requires a section and a login", async () => {
+    await expect(
+      adminFetch(adminEnv({ adminSession: "rt" }), "/x"),
+    ).rejects.toThrow("Missing sectionId");
+    await expect(
+      adminFetch(adminEnv({ sectionId: "1" }), "/x"),
+    ).rejects.toThrow("Missing DY console login");
   });
 });
 

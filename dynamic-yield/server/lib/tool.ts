@@ -1,6 +1,7 @@
-import { createPrivateTool } from "@decocms/runtime/tools";
+import { createTool } from "@decocms/runtime/tools";
 import type { z } from "zod";
 import type { Env } from "../types/env.ts";
+import { withHeaderConfig } from "./request-config.ts";
 
 interface ToolAnnotations {
   readOnlyHint?: boolean;
@@ -21,13 +22,18 @@ export function createDyTool<
     env: Env,
   ) => Promise<Record<string, unknown>>;
 }) {
+  // Not createPrivateTool: direct clients (Claude, Copilot) have no Studio token.
+  // The DY credentials themselves are the auth, see auth-exemptions.json.
   return (_env: Env) =>
-    createPrivateTool({
+    createTool({
       id: config.id,
       description: config.description,
       inputSchema: config.inputSchema,
       annotations: config.annotations,
       execute: async ({ context, runtimeContext }) =>
-        config.handler(context as z.infer<TSchema>, runtimeContext.env as Env),
+        config.handler(
+          context as z.infer<TSchema>,
+          withHeaderConfig(runtimeContext.env as Env),
+        ),
     });
 }

@@ -1502,13 +1502,13 @@
   {
     "id": "deco/dynamic-yield",
     "title": "Dynamic Yield",
-    "description": "Operate Dynamic Yield through its public APIs: QA campaigns and recommendations with the Experience API, report events, sync the product feed and read user profiles.",
+    "description": "Operate Dynamic Yield: QA campaigns and recommendations with the Experience API, report events, sync the product feed, read user profiles and, through the DY console, manage campaigns and read experiment reports.",
     "is_public": true,
     "_meta": {
       "mcp.mesh": {
         "verified": false,
         "friendly_name": "Dynamic Yield",
-        "short_description": "QA Dynamic Yield campaigns and recommendations, report events and sync the product feed.",
+        "short_description": "QA and manage Dynamic Yield campaigns, read experiment reports, report events and sync the product feed.",
         "owner": "deco",
         "has_remote": true,
         "has_oauth": false,
@@ -1519,18 +1519,20 @@
           "experience-api",
           "product-feed",
           "ab-testing",
-          "ecommerce"
+          "ecommerce",
+          "campaign-management",
+          "experiment-reports"
         ],
         "categories": [
           "E-commerce"
         ],
-        "readme": "The **Dynamic Yield** MCP wraps Dynamic Yield's public server-side APIs. **Serve**: DY_CHOOSE runs the Experience API choose call for a page context (HOMEPAGE, CATEGORY, PRODUCT, CART, OTHER) and returns campaign payloads, recommendation slots, decision ids and analytics metadata; it accepts dyApiPreview tokens to QA unpublished variations and does not count as a pageview by default. **Collect**: DY_TRACK_PAGEVIEW, DY_TRACK_EVENTS and DY_TRACK_ENGAGEMENT report real data, so use them with test users. **Product feed**: DY_FEED_BULK upserts, partially updates or deletes up to 100 products per call in an API-synced feed, and DY_FEED_TRANSACTION_STATUS checks the result. **Profiles**: DY_USER_PROFILE reads Profile Anywhere affinity data. **Authentication**: a server-side DY API key (Settings › API Keys) sent as the connection token, with the Experience API and Feed ACLs as needed; set the data center (US or EU) in the configuration. Dynamic Yield has no public API for managing campaigns or reports, so those remain in the DY console."
+        "readme": "The **Dynamic Yield** MCP wraps Dynamic Yield's public server-side APIs. **Serve**: DY_CHOOSE runs the Experience API choose call for a page context (HOMEPAGE, CATEGORY, PRODUCT, CART, OTHER) and returns campaign payloads, recommendation slots, decision ids and analytics metadata; it accepts dyApiPreview tokens to QA unpublished variations and does not count as a pageview by default. **Collect**: DY_TRACK_PAGEVIEW, DY_TRACK_EVENTS and DY_TRACK_ENGAGEMENT report real data, so use them with test users. **Product feed**: DY_FEED_BULK upserts, partially updates or deletes up to 100 products per call in an API-synced feed, and DY_FEED_TRANSACTION_STATUS checks the result. **Profiles**: DY_USER_PROFILE reads Profile Anywhere affinity data. **Authentication**: a server-side DY API key (Settings › API Keys) sent as the connection token, with the Experience API and Feed ACLs as needed; set the data center (US or EU) in the configuration. **Console (DY_ADMIN_*)**: Dynamic Yield has no public API for campaigns or reports, so these tools call the internal API of the DY console (adm.dynamicyield.com) with your console session: list sections, goals and data feeds and trigger a feed sync; get, create, update, pause, archive and delete campaigns; get, create, update and delete audiences (targeting conditions) and recommendation strategies (algorithm and filter rules); and read experiment reports per variation and metric. Set adminEmail and adminPassword (a console user with email + password login; the MCP logs in and renews the session itself) and sectionId in the configuration. 2FA/SSO accounts can paste the RefreshToken cookie into adminSession instead (valid 7 days). Saving a campaign publishes it immediately. This API is undocumented and may change."
       }
     },
     "server": {
       "name": "dynamic-yield",
       "title": "Dynamic Yield",
-      "description": "Operate Dynamic Yield through its public APIs: QA campaigns and recommendations with the Experience API, report events, sync the product feed and read user profiles.",
+      "description": "Operate Dynamic Yield: QA campaigns and recommendations with the Experience API, report events, sync the product feed, read user profiles and, through the DY console, manage campaigns and read experiment reports.",
       "icons": [
         {
           "src": "https://avatars.githubusercontent.com/u/12912945?s=256&v=4"
@@ -1542,7 +1544,7 @@
           "url": "https://sites-dynamic-yield.deco.site/mcp",
           "name": "dynamic-yield",
           "title": "Dynamic Yield",
-          "description": "Operate Dynamic Yield through its public APIs: QA campaigns and recommendations with the Experience API, report events, sync the product feed and read user profiles."
+          "description": "Operate Dynamic Yield: QA campaigns and recommendations with the Experience API, report events, sync the product feed, read user profiles and, through the DY console, manage campaigns and read experiment reports."
         }
       ]
     }

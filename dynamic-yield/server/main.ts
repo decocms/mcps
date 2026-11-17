@@ -1,5 +1,6 @@
 import { withRuntime } from "@decocms/runtime";
 import { serve } from "@decocms/mcps-shared/serve";
+import { withRequestHeaders } from "./lib/request-config.ts";
 import { tools } from "./tools/index.ts";
 import { type Env, StateSchema } from "./types/env.ts";
 
@@ -11,7 +12,13 @@ const runtime = withRuntime<Env, typeof StateSchema>({
   tools,
 });
 
-/** Served without `withAuth`: the Authorization header carries the user's DY API key. Tracked in `auth-exemptions.json`. */
-if (runtime.fetch) {
-  serve(runtime.fetch);
+/**
+ * Served without `withAuth`: the Authorization header carries the user's DY API key
+ * and x-dy-* headers the console login (see request-config.ts). Tracked in `auth-exemptions.json`.
+ */
+const runtimeFetch = runtime.fetch;
+if (runtimeFetch) {
+  serve((req, env, ctx) =>
+    withRequestHeaders(req.headers, () => runtimeFetch(req, env, ctx)),
+  );
 }
