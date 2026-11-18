@@ -73,6 +73,37 @@ const toBuffer = (bytes: Uint8Array): ArrayBuffer =>
     bytes.byteOffset + bytes.byteLength,
   ) as ArrayBuffer;
 
+/**
+ * A JPEG's size from its frame header, without decoding it; null for other
+ * formats or a header it cannot read.
+ */
+export function jpegSize(
+  bytes: Uint8Array,
+): { width: number; height: number } | null {
+  if (bytes[0] !== 0xff || bytes[1] !== 0xd8) return null;
+  let i = 2;
+  while (i + 9 < bytes.length) {
+    if (bytes[i] !== 0xff) return null;
+    const marker = bytes[i + 1];
+    const length = (bytes[i + 2] << 8) | bytes[i + 3];
+    // SOF0–SOF15 carry the size, except DHT (C4), JPG (C8) and DAC (CC).
+    if (
+      marker >= 0xc0 &&
+      marker <= 0xcf &&
+      marker !== 0xc4 &&
+      marker !== 0xc8 &&
+      marker !== 0xcc
+    ) {
+      return {
+        height: (bytes[i + 5] << 8) | bytes[i + 6],
+        width: (bytes[i + 7] << 8) | bytes[i + 8],
+      };
+    }
+    i += 2 + length;
+  }
+  return null;
+}
+
 /** Decodes a PNG or JPEG. */
 export async function decodeImage(bytes: Uint8Array): Promise<Pixels> {
   await initCodecs();
@@ -438,15 +469,84 @@ export async function composeAtWidth(
   targetWidth: number,
   sizeFactor = 1,
 ): Promise<Pixels> {
+  return compose(
+    half,
+    bg,
+    plate,
+    await scaleForWidth(half, bg, plate, targetWidth * sizeFactor),
+  );
+}
+
+/**
+ * The scale at which the garment of `half` is `targetWidth` wide on the plate,
+ * measured the way `stillBox` measures a published Still.
+ */
+export async function scaleForWidth(
+  half: Pixels,
+  bg: RGB,
+  plate: Pixels,
+  targetWidth: number,
+): Promise<number> {
   const box = pieceBox(half, bg);
   if (!box) throw new Error("No garment found in the generated image");
   const first = await compose(half, bg, plate, fitScale(box));
   const measured = stillBox(first, plate);
-  if (!measured) return first;
-  const scale =
-    fitScale(box) *
-    ((targetWidth * sizeFactor) / (measured.x1 - measured.x0 + 1));
-  return compose(half, bg, plate, scale);
+  if (!measured) return fitScale(box);
+  return fitScale(box) * (targetWidth / (measured.x1 - measured.x0 + 1));
+}
+
+/**
+ * Whether an image is a Still: the 4×5 frame with the plate around the
+ * garment, pixel for pixel. Every Still is composed on the same plate, which a
+ * photo shot on a beige backdrop does not reproduce.
+ */
+export function isOnPlate(image: Pixels, plate: Pixels): boolean {
+  if (image.width !== plate.width || image.height !== plate.height) {
+    return false;
+  }
+  const { width, height } = image;
+  let total = 0;
+  let count = 0;
+  const sample = (x: number, y: number) => {
+    const i = (y * width + x) * 4;
+    for (let c = 0; c < 3; c++) {
+      total += Math.abs(image.data[i + c] - plate.data[i + c]);
+    }
+    count += 3;
+  };
+  for (let x = 0; x < width; x += 8) {
+    sample(x, 10);
+    sample(x, height - 11);
+  }
+  for (let y = 0; y < height; y += 8) {
+    sample(10, y);
+    sample(width - 11, y);
+  }
+  return total / count < 6;
+}
+
+/**
+ * Share of the non-background pixels that are near white. A garment generated
+ * on white with a high share cannot be separated from the background, so it
+ * is generated again on grey. The threshold is low on purpose: an off-white
+ * garment differs from white by little.
+ */
+export function lightShare(image: Pixels): number {
+  const bg = borderColor(image);
+  const { data } = image;
+  let garment = 0;
+  let light = 0;
+  for (let i = 0; i < data.length; i += 4 * 3) {
+    if (diff(data, i, bg) <= 12) continue;
+    garment++;
+    const chroma =
+      Math.max(data[i], data[i + 1], data[i + 2]) -
+      Math.min(data[i], data[i + 1], data[i + 2]);
+    if (luminance(data[i], data[i + 1], data[i + 2]) > 200 && chroma < 30) {
+      light++;
+    }
+  }
+  return garment > 0 ? light / garment : 0;
 }
 
 const BACKDROP: RGB = [225, 216, 204];

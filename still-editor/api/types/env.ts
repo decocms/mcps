@@ -44,6 +44,12 @@ export const StateSchema = z.object({
     .describe(
       "Image models offered in the editor, OpenRouter ids. They run on the organization's OpenRouter key in Studio's AI providers.",
     ),
+  FACTS_MODEL: z
+    .string()
+    .default("anthropic/claude-opus-5.5")
+    .describe(
+      "Vision model (OpenRouter id) that reads a garment's photos into its product facts when the org's chat model cannot: it runs on the org's OpenRouter key in AI providers.",
+    ),
 });
 
 export type Env = DefaultEnv<typeof StateSchema>;

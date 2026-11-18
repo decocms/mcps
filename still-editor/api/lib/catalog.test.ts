@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { productIdFromLink } from "./catalog.ts";
+import { colorKey, productIdFromLink } from "./catalog.ts";
 
 describe("productIdFromLink", () => {
   it("reads the id at the end of a product link", () => {
@@ -21,5 +21,14 @@ describe("productIdFromLink", () => {
       productIdFromLink("https://www.example.com/colecao/biquinis"),
     ).toBeNull();
     expect(productIdFromLink("not a link")).toBeNull();
+  });
+});
+
+describe("colorKey", () => {
+  it("matches a Cor typed in any case, accent or padding", () => {
+    expect(colorKey("MOSTARDA      ")).toBe(colorKey("mostarda"));
+    expect(colorKey("Verde  Oliva")).toBe(colorKey("VERDE OLIVA"));
+    expect(colorKey("Marrom Braúna")).toBe(colorKey("MARROM BRAUNA"));
+    expect(colorKey("MOSTARDA")).not.toBe(colorKey("MARROM"));
   });
 });

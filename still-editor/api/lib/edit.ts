@@ -39,11 +39,13 @@ export interface PieceSource {
   facts?: Record<string, string>;
   /** The other garment generated with this one. */
   pairProductId?: number;
+  /** Garment width (px) on the plate when the Still was created here. */
+  targetWidth?: number | null;
 }
 
 /** What an edit started from: a previous version, the original generation or
- *  the live Still. */
-export type EditBase = "version" | "original" | "store";
+ *  the live Still; "created" is a Still generated from the product photos. */
+export type EditBase = "version" | "original" | "store" | "created";
 
 export interface Version {
   id: string;
@@ -58,6 +60,11 @@ export interface Version {
   background: Background;
   /** Garment width (px) the version was composed at: the current Still's. */
   targetWidth: number | null;
+  /** Created versions: the garment generated with this one. */
+  pairProductId?: number | null;
+  /** Created versions: the garment was reduced to fit the frame, so it is
+   *  smaller than the pair's Still would ask for. */
+  outOfPairScale?: boolean;
   check: StillCheck;
   author: { id: string; email: string; name: string | null };
   createdAt: string;
@@ -196,7 +203,9 @@ export async function runEdit(args: {
   const currentPixels = current?.url
     ? await decodeImage(await fetchBytes(current.url))
     : null;
-  const targetWidth = currentPixels
+  // A Still created here and not published yet has no live Still: its own
+  // width, kept on the version and on the source, stands in.
+  let targetWidth = currentPixels
     ? boxWidth(stillBox(currentPixels, plate))
     : null;
 
@@ -211,11 +220,13 @@ export async function runEdit(args: {
       `${base}/versions/${parentId}.json`,
     );
     if (!parent) throw new Error(`Version ${parentId} was not found`);
+    targetWidth ??= parent.targetWidth;
     background = parent.background;
     editUrl = await store.getUrl(`${base}/versions/${parentId}-model`);
     editBase = "version";
     before = await store.get(`${base}/versions/${parentId}.jpg`);
   } else if (source) {
+    targetWidth ??= source.targetWidth ?? null;
     background = source.background;
     const half = await sourceHalf(store, source);
     await store.put(
@@ -243,48 +254,13 @@ export async function runEdit(args: {
     facts: source?.facts,
     background,
   });
-  const isOpenAI = args.model.startsWith("openai/");
-  const request = {
-    // The org's own OpenRouter key, whatever its image tier is set to.
-    provider: "openrouter",
+  await args.onPhase?.("generating");
+  const output = await generateImage(env, {
     model: args.model,
     prompt,
-    referenceImages: [editUrl, ...piece.photos.slice(0, 2)].map((uri) => ({
-      uri,
-    })),
-    ...(isOpenAI
-      ? { size: "1536x1920", quality: "high", moderation: "low" }
-      : { aspectRatio: "4:5" }),
-  };
-  let generated: {
-    model: string;
-    images: { uri: string; mediaType: string }[];
-  };
-  await args.onPhase?.("generating");
-  for (let attempt = 0; ; attempt++) {
-    try {
-      // Image models take up to ~80 s, past the binding's 60 s default.
-      generated = (await callConnectionTool(
-        env,
-        "SELF",
-        "generate_image",
-        request,
-        280_000,
-      )) as typeof generated;
-      break;
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      if (attempt >= 1 || !isRefusal(message)) throw error;
-    }
-  }
-  // A Studio without model choice ignores `model` and runs the tier's.
-  if (generated.model !== args.model) {
-    throw new Error(
-      `Studio ran ${generated.model} instead of ${args.model}: it does not support choosing the image model yet`,
-    );
-  }
-  const output = generated.images[0];
-  if (!output) throw new Error("The image model returned no image");
+    references: [editUrl, ...piece.photos.slice(0, 2)],
+    shape: "4:5",
+  });
   await args.onPhase?.("composing");
   await keepGenerated(
     env,
@@ -325,11 +301,71 @@ export async function runEdit(args: {
   return version;
 }
 
+/** Output shapes: a single garment (4:5) or a top over a bottom (2:3). */
+const SIZES = {
+  "4:5": "1536x1920",
+  "2:3": "1536x2304",
+} as const;
+
+/**
+ * One image from Studio's generate_image on the org's OpenRouter key, with one
+ * retry when the model refuses (OpenAI's filter is erratic on swimwear).
+ */
+export async function generateImage(
+  env: Env,
+  args: {
+    model: string;
+    prompt: string;
+    references: string[];
+    shape: keyof typeof SIZES;
+  },
+): Promise<{ uri: string; mediaType: string }> {
+  const request = {
+    // The org's own OpenRouter key, whatever its image tier is set to.
+    provider: "openrouter",
+    model: args.model,
+    prompt: args.prompt,
+    referenceImages: args.references.map((uri) => ({ uri })),
+    ...(args.model.startsWith("openai/")
+      ? { size: SIZES[args.shape], quality: "high", moderation: "low" }
+      : { aspectRatio: args.shape }),
+  };
+  let generated: {
+    model: string;
+    images: { uri: string; mediaType: string }[];
+  };
+  for (let attempt = 0; ; attempt++) {
+    try {
+      // Image models take up to ~80 s, past the binding's 60 s default.
+      generated = (await callConnectionTool(
+        env,
+        "SELF",
+        "generate_image",
+        request,
+        280_000,
+      )) as typeof generated;
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (attempt >= 1 || !isRefusal(message)) throw error;
+    }
+  }
+  // A Studio without model choice ignores `model` and runs the tier's.
+  if (generated.model !== args.model) {
+    throw new Error(
+      `Studio ran ${generated.model} instead of ${args.model}: it does not support choosing the image model yet`,
+    );
+  }
+  const output = generated.images[0];
+  if (!output) throw new Error("The image model returned no image");
+  return output;
+}
+
 /**
  * Studio stores what generate_image returns in its own storage; the version
  * keeps a copy next to its other files and Studio's is removed.
  */
-async function keepGenerated(
+export async function keepGenerated(
   env: Env,
   store: Storage,
   image: { uri: string; mediaType: string },

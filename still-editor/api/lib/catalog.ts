@@ -20,10 +20,16 @@ export interface Piece {
   name: string;
   alias: string;
   type: PieceType | null;
+  /** The Cor attribute (the print/color name), trimmed. */
+  color: string | null;
+  /** SKU prefix of the pair the model wears in the photos (LookComplementar). */
+  lookComplementar: string | null;
   mainVariantId: number;
   /** Every variant, the main one included. */
   variantIds: number[];
   still: WakeImage | null;
+  /** Every image of the main variant, in Wake's order. */
+  images: WakeImage[];
   /** The model photos, in gallery order. */
   photos: string[];
 }
@@ -47,8 +53,34 @@ interface ProductNode {
   productVariantId: number;
   productName: string;
   alias: string;
+  sku?: string;
   mainVariant: boolean;
   productCategories?: { id: number }[];
+  attributes?: { name: string; value: string | null }[];
+}
+
+const attribute = (node: ProductNode, name: string): string | null =>
+  node.attributes?.find((a) => a.name === name)?.value?.trim() || null;
+
+/**
+ * A Cor value as Mix & Match groups it: the store types it in any case, with
+ * or without accents and padded with spaces ("MOSTARDA   ", "Mostarda").
+ */
+export const colorKey = (color: string | null) =>
+  (color ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
+function typeOf(env: Env, node: ProductNode): PieceType | null {
+  const { TOP_CATEGORY_IDS, BOTTOM_CATEGORY_IDS } = settings(env);
+  const categories = (node.productCategories ?? []).map((c) => Number(c.id));
+  if (categories.some((id) => BOTTOM_CATEGORY_IDS.includes(id))) {
+    return "bottom";
+  }
+  return categories.some((id) => TOP_CATEGORY_IDS.includes(id)) ? "top" : null;
 }
 
 async function listVariants(
@@ -98,7 +130,7 @@ export function stillOf(images: WakeImage[], stillOrder: number) {
 }
 
 export async function loadPiece(env: Env, productId: number): Promise<Piece> {
-  const { STILL_ORDER, TOP_CATEGORY_IDS, BOTTOM_CATEGORY_IDS } = settings(env);
+  const { STILL_ORDER } = settings(env);
   const [main, others] = await Promise.all([
     listVariants(env, productId, true),
     listVariants(env, productId, false),
@@ -107,19 +139,13 @@ export async function loadPiece(env: Env, productId: number): Promise<Piece> {
   if (!first)
     throw new Error(`Product ${productId} was not found in the store`);
   const images = await listVariantImages(env, first.productVariantId);
-  const categories = (first.productCategories ?? []).map((c) => Number(c.id));
-  const type: PieceType | null = categories.some((id) =>
-    BOTTOM_CATEGORY_IDS.includes(id),
-  )
-    ? "bottom"
-    : categories.some((id) => TOP_CATEGORY_IDS.includes(id))
-      ? "top"
-      : null;
   return {
     productId,
     name: first.productName.trim(),
     alias: first.alias,
-    type,
+    type: typeOf(env, first),
+    color: attribute(first, "Cor"),
+    lookComplementar: attribute(first, "LookComplementar"),
     mainVariantId: first.productVariantId,
     variantIds: [
       first.productVariantId,
@@ -128,6 +154,7 @@ export async function loadPiece(env: Env, productId: number): Promise<Piece> {
         .filter((id) => id !== first.productVariantId),
     ],
     still: stillOf(images, STILL_ORDER),
+    images,
     photos: images
       .filter(
         (image) => !image.isPrint && image.order !== STILL_ORDER && image.url,
@@ -135,4 +162,42 @@ export async function loadPiece(env: Env, productId: number): Promise<Piece> {
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
       .map((image) => image.url as string),
   };
+}
+
+export interface PairCandidate {
+  productId: number;
+  name: string;
+  /** The pair the model wears in the piece's photos (its Look complementar). */
+  isLook: boolean;
+}
+
+/**
+ * Garments of the other type in the same color, the piece's Look complementar
+ * first. Wake's attribute filter misses pieces, so this searches the color
+ * name and keeps the exact Cor matches.
+ */
+export async function findPairCandidates(
+  env: Env,
+  piece: Piece,
+): Promise<PairCandidate[]> {
+  if (!piece.color || !piece.type) return [];
+  const result = (await callConnectionTool(env, "WAKE", "WAKE_LIST_PRODUCTS", {
+    filters: { search: [piece.color], mainVariant: true, available: true },
+    first: 50,
+  })) as { products?: { nodes?: ProductNode[] } };
+  const look = piece.lookComplementar;
+  return (result.products?.nodes ?? [])
+    .filter(
+      (node) =>
+        node.productId !== piece.productId &&
+        colorKey(attribute(node, "Cor")) === colorKey(piece.color) &&
+        typeOf(env, node) !== null &&
+        typeOf(env, node) !== piece.type,
+    )
+    .map((node) => ({
+      productId: node.productId,
+      name: node.productName.trim(),
+      isLook: Boolean(look && node.sku?.trim().startsWith(look)),
+    }))
+    .sort((a, b) => Number(b.isLook) - Number(a.isLook));
 }

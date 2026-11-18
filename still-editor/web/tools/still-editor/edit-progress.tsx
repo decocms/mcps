@@ -3,6 +3,7 @@ import type { EditStatus } from "./api.ts";
 
 const PHASE_LABEL = {
   preparing: "Preparando",
+  facts: "Lendo as fotos da peça",
   generating: "Gerando a imagem",
   composing: "Montando o Still",
 } as const;
