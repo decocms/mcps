@@ -3,7 +3,7 @@ import type { Piece } from "./catalog.ts";
 import type { Storage } from "./storage.ts";
 
 const calls: Array<Record<string, unknown>> = [];
-let failing: "none" | "chat" | "both" = "none";
+let failing: "none" | "chat" | "empty-chat" | "both" = "none";
 
 mock.module("./connection.ts", () => ({
   callConnectionTool: async (
@@ -16,6 +16,10 @@ mock.module("./connection.ts", () => ({
     const onOpenRouter = args.provider === "openrouter";
     if (failing === "both" || (failing === "chat" && !onOpenRouter)) {
       throw new Error("SELF generate_text: unavailable");
+    }
+    // A Studio answering an unknown tool's call with an error object.
+    if (failing === "empty-chat" && !onOpenRouter) {
+      return { error: "Unknown tool: generate_text" };
     }
     return {
       text: `Here: ${JSON.stringify({
@@ -100,6 +104,17 @@ describe("garmentFacts", () => {
       "openrouter",
     ]);
     expect(calls[1]?.model).toBe("anthropic/claude-opus-5.5");
+    expect(facts?.model).toBe("anthropic/claude-opus-5.5");
+  });
+
+  it("falls back when the chat model answers without text", async () => {
+    failing = "empty-chat";
+    const facts = await garmentFacts(env, memoryStore().store, piece);
+
+    expect(calls.map((call) => call.provider ?? "chat")).toEqual([
+      "chat",
+      "openrouter",
+    ]);
     expect(facts?.model).toBe("anthropic/claude-opus-5.5");
   });
 

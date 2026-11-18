@@ -227,7 +227,11 @@ function Editor({
   const refresh = () =>
     queryClient.invalidateQueries({ queryKey: ["still_load", link] });
   // Something to edit: the live Still, a version, or a stored generation.
-  const canEdit = Boolean(data.piece.still || selected || data.hasSource);
+  // Not while a Still sits outside its order: publishing an edit would leave
+  // that one in the gallery next to the new one.
+  const canEdit =
+    Boolean(data.piece.still || selected || data.hasSource) &&
+    data.create?.block !== "still-moved";
   const before = showBefore ? (selected?.beforeUrl ?? null) : null;
   const shownUrl =
     before ?? selected?.imageUrl ?? data.piece.still?.url ?? null;

@@ -215,14 +215,19 @@ async function readPhotos(
     images: photos.map((url) => ({ uri: sized(url, 1024, 1024) })),
     maxOutputTokens: 4000,
   };
-  const call = (args: Record<string, unknown>) =>
-    callConnectionTool(
+  const call = async (args: Record<string, unknown>) => {
+    const result = (await callConnectionTool(
       env,
       "SELF",
       "generate_text",
       { ...request, ...args },
       180_000,
-    ) as Promise<GeneratedText>;
+    )) as Partial<GeneratedText> | null;
+    if (typeof result?.text !== "string") {
+      throw new Error("generate_text returned no text");
+    }
+    return result as GeneratedText;
+  };
   try {
     return await call({});
   } catch (error) {

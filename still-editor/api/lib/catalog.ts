@@ -62,6 +62,18 @@ interface ProductNode {
 const attribute = (node: ProductNode, name: string): string | null =>
   node.attributes?.find((a) => a.name === name)?.value?.trim() || null;
 
+/**
+ * A Cor value as Mix & Match groups it: the store types it in any case, with
+ * or without accents and padded with spaces ("MOSTARDA   ", "Mostarda").
+ */
+export const colorKey = (color: string | null) =>
+  (color ?? "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+
 function typeOf(env: Env, node: ProductNode): PieceType | null {
   const { TOP_CATEGORY_IDS, BOTTOM_CATEGORY_IDS } = settings(env);
   const categories = (node.productCategories ?? []).map((c) => Number(c.id));
@@ -178,7 +190,7 @@ export async function findPairCandidates(
     .filter(
       (node) =>
         node.productId !== piece.productId &&
-        attribute(node, "Cor") === piece.color &&
+        colorKey(attribute(node, "Cor")) === colorKey(piece.color) &&
         typeOf(env, node) !== null &&
         typeOf(env, node) !== piece.type,
     )
