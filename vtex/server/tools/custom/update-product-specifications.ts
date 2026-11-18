@@ -4,6 +4,7 @@ import {
   assertValidCredentials,
   resolveCredentials,
 } from "../../lib/client-factory.ts";
+import { assertWriteModeEnabled } from "../../lib/write-mode.ts";
 import type { Env } from "../../types/env.ts";
 
 const inputSchema = z.object({
@@ -53,6 +54,10 @@ export const updateProductSpecifications = (_env: Env) =>
       const env = runtimeContext.env as Env;
       const credentials = resolveCredentials(env.MESH_REQUEST_CONTEXT?.state);
       assertValidCredentials(credentials, "VTEX_UPDATE_PRODUCT_SPECIFICATIONS");
+      assertWriteModeEnabled(
+        env.MESH_REQUEST_CONTEXT?.state,
+        "VTEX_UPDATE_PRODUCT_SPECIFICATIONS",
+      );
       const url = `https://${credentials.accountName}.vtexcommercestable.com.br/api/catalog_system/pvt/products/${context.productId}/specification`;
       console.log("[VTEX] POST", url);
 
