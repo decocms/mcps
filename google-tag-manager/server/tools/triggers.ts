@@ -274,7 +274,7 @@ export const createUpdateTriggerTool = (env: Env) =>
   createPrivateTool({
     id: "update_trigger",
     description:
-      "Update an existing GTM trigger. All fields from the original trigger must be provided.",
+      "Update an existing GTM trigger. Only the fields you pass change; everything else (consent settings, folder, setup/teardown tags, schedule) is kept.",
     inputSchema: z.object({
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       containerId: z.string().describe("Container ID (e.g., '67890')"),
