@@ -214,9 +214,9 @@ function Editor({
                 app={app}
                 data={data}
                 version={selected}
-                onDone={() => {
+                onDone={async () => {
+                  await refresh();
                   select(null);
-                  refresh();
                 }}
               />
             )}
@@ -299,7 +299,14 @@ function Editor({
             }
             publications={
               data.publications.length > 0 && (
-                <History app={app} data={data} onDone={refresh} />
+                <History
+                  app={app}
+                  data={data}
+                  onDone={async () => {
+                    await refresh();
+                    select(null);
+                  }}
+                />
               )
             }
           />
@@ -356,6 +363,10 @@ function Outfit({
   );
 }
 
+/** The storefront caches product data for up to 4 h (s-maxage=14400), so
+ *  Mix & Match can show the previous Still that long. */
+const STORE_DELAY = "A loja pode levar até 4 horas para mostrar a mudança.";
+
 function PublishButton({
   app,
   data,
@@ -365,22 +376,27 @@ function PublishButton({
   app: App;
   data: Loaded;
   version: Version;
-  onDone: () => void;
+  /** Resolves once the piece is reloaded, so the button stays busy until then. */
+  onDone: () => Promise<void>;
 }) {
   const publish = useMutation({
-    mutationFn: () =>
-      callTool<Publication>(app, "still_publish", {
+    mutationFn: async () => {
+      const publication = await callTool<Publication>(app, "still_publish", {
         productId: data.piece.productId,
         versionId: version.id,
         expectedStillId: data.piece.still?.imageId ?? null,
-      }),
+      });
+      await onDone();
+      return publication;
+    },
     onSuccess: (publication) => {
       if (publication.status === "published") {
-        toast.success(`Publicado em ${publication.variants.length} variantes`);
+        toast.success(`Publicado em ${publication.variants.length} variantes`, {
+          description: STORE_DELAY,
+        });
       } else {
         toast.error(`Nada mudou na loja: ${publication.error}`);
       }
-      onDone();
     },
     onError: (error) => toast.error(describeError(error)),
   });
@@ -389,7 +405,7 @@ function PublishButton({
       <AlertDialogTrigger asChild>
         <Button size="sm" disabled={!version.check.ok || publish.isPending}>
           {publish.isPending && <Spinner size="2xs" />}
-          Publicar na loja
+          {publish.isPending ? "Publicando" : "Publicar na loja"}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
@@ -398,7 +414,7 @@ function PublishButton({
           <AlertDialogDescription>
             Ele substitui o Still atual nas {data.piece.variantCount} variantes
             de {data.piece.name}. O atual fica no histórico e pode ser
-            restaurado.
+            restaurado. {STORE_DELAY}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -794,22 +810,27 @@ function History({
 }: {
   app: App;
   data: Loaded;
-  onDone: () => void;
+  /** Resolves once the piece is reloaded, so the button stays busy until then. */
+  onDone: () => Promise<void>;
 }) {
   const restore = useMutation({
-    mutationFn: (publicationId: string) =>
-      callTool<Publication>(app, "still_restore", {
+    mutationFn: async (publicationId: string) => {
+      const publication = await callTool<Publication>(app, "still_restore", {
         productId: data.piece.productId,
         publicationId,
         expectedStillId: data.piece.still?.imageId ?? null,
-      }),
+      });
+      await onDone();
+      return publication;
+    },
     onSuccess: (publication) => {
       if (publication.status === "published") {
-        toast.success("Still anterior restaurado");
+        toast.success("Still anterior restaurado", {
+          description: STORE_DELAY,
+        });
       } else {
         toast.error(`Nada mudou na loja: ${publication.error}`);
       }
-      onDone();
     },
     onError: (error) => toast.error(describeError(error)),
   });
@@ -842,7 +863,13 @@ function History({
                   size="xs"
                   disabled={restore.isPending}
                 >
-                  Restaurar
+                  {restore.isPending &&
+                    restore.variables === publication.id && (
+                      <Spinner size="2xs" />
+                    )}
+                  {restore.isPending && restore.variables === publication.id
+                    ? "Restaurando"
+                    : "Restaurar"}
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
@@ -852,7 +879,7 @@ function History({
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     Volta o Still que esta publicação substituiu, nas{" "}
-                    {data.piece.variantCount} variantes.
+                    {data.piece.variantCount} variantes. {STORE_DELAY}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
