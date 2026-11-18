@@ -833,9 +833,8 @@ function FactsDetails({
       <div className="flex flex-col gap-3 pt-3">
         {!facts ? (
           <p className="text-meta">
-            {create.factsEnabled
-              ? "Os detalhes (cor, tecido, formato, reguladores) são lidos das fotos na primeira criação e aparecem aqui para corrigir."
-              : "Sem a conexão do OpenRouter, o Still é criado só a partir das fotos, sem os detalhes da peça."}
+            Os detalhes (cor, tecido, formato, reguladores) são lidos das fotos
+            na primeira criação e aparecem aqui para corrigir.
           </p>
         ) : (
           <>

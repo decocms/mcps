@@ -13,7 +13,7 @@ import {
   type Piece,
   type WakeImage,
 } from "./catalog.ts";
-import { callConnectionTool, hasBinding } from "./connection.ts";
+import { callConnectionTool } from "./connection.ts";
 import {
   type Background,
   generateImage,
@@ -193,39 +193,51 @@ function sized(url: string, width: number, height: number): string {
 
 const MAX_FACTS_PHOTOS = 8;
 
+/** Studio's generate_text answer. */
+interface GeneratedText {
+  text: string;
+  model: string;
+}
+
+/**
+ * Asks Studio's generate_text to read the photos: on the org's chat model
+ * first, the one the Studio chat uses and pays for; when that fails (Studio
+ * without generate_text yet, the org's AI allowance spent), on the org's
+ * OpenRouter key in AI providers, the one generate_image already runs on.
+ */
+async function readPhotos(
+  env: Env,
+  prompt: string,
+  photos: string[],
+): Promise<GeneratedText> {
+  const request = {
+    prompt,
+    images: photos.map((url) => ({ uri: sized(url, 1024, 1024) })),
+    maxOutputTokens: 4000,
+  };
+  const call = (args: Record<string, unknown>) =>
+    callConnectionTool(
+      env,
+      "SELF",
+      "generate_text",
+      { ...request, ...args },
+      180_000,
+    ) as Promise<GeneratedText>;
+  try {
+    return await call({});
+  } catch (error) {
+    console.warn("[still-editor] facts on the chat model failed", error);
+    return call({ provider: "openrouter", model: settings(env).FACTS_MODEL });
+  }
+}
+
 async function draftFacts(env: Env, piece: Piece): Promise<GarmentFacts> {
-  const { FACTS_MODEL } = settings(env);
   const photos = piece.photos.slice(0, MAX_FACTS_PHOTOS);
-  const result = (await callConnectionTool(
+  const { text, model } = await readPhotos(
     env,
-    "OPENROUTER",
-    "LLM_DO_GENERATE",
-    {
-      modelId: FACTS_MODEL,
-      callOptions: {
-        prompt: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: factsPrompt(piece, photos.length) },
-              ...photos.map((url) => ({
-                type: "file",
-                mediaType: "image/jpeg",
-                data: sized(url, 1024, 1024),
-              })),
-            ],
-          },
-        ],
-        temperature: 0,
-        responseFormat: { type: "json" },
-      },
-    },
-    180_000,
-  )) as { content?: { type: string; text?: string }[] };
-  const text = (result.content ?? [])
-    .filter((part) => part.type === "text")
-    .map((part) => part.text ?? "")
-    .join("");
+    factsPrompt(piece, photos.length),
+    photos,
+  );
   const json = text.match(/\{[\s\S]*\}/)?.[0];
   if (!json) throw new Error("The facts model did not return JSON");
   const facts = JSON.parse(json) as Partial<Record<string, unknown>>;
@@ -248,7 +260,7 @@ async function draftFacts(env: Env, piece: Piece): Promise<GarmentFacts> {
     shape: str(facts.shape),
     hardware: str(facts.hardware),
     wornWith: str(facts.wornWith),
-    model: FACTS_MODEL,
+    model,
     at: new Date().toISOString(),
   };
 }
@@ -263,9 +275,9 @@ export const writeFacts = (
 ) => store.putJson(factsPath(productId), facts);
 
 /**
- * The garment's facts: the stored ones, or a new draft when the OPENROUTER
- * connection is set. Null without it: the Still is then made from the photos
- * alone.
+ * The garment's facts: the stored ones, or a new draft. Null when neither
+ * model could read the photos: the Still is then made from the photos alone,
+ * as it would be without facts.
  */
 export async function garmentFacts(
   env: Env,
@@ -274,12 +286,15 @@ export async function garmentFacts(
 ): Promise<GarmentFacts | null> {
   const stored = await readFacts(store, piece.productId);
   if (stored) return stored;
-  if (!hasBinding(env, "OPENROUTER") || piece.photos.length === 0) {
+  if (piece.photos.length === 0) return null;
+  try {
+    const drafted = await draftFacts(env, piece);
+    await writeFacts(store, piece.productId, drafted);
+    return drafted;
+  } catch (error) {
+    console.warn("[still-editor] no facts for", piece.productId, error);
     return null;
   }
-  const drafted = await draftFacts(env, piece);
-  await writeFacts(store, piece.productId, drafted);
-  return drafted;
 }
 
 // ---------------------------------------------------------------------------

@@ -6,7 +6,6 @@ import {
   type Piece,
   productIdFromLink,
 } from "../lib/catalog.ts";
-import { hasBinding } from "../lib/connection.ts";
 import {
   createBlock,
   findMovedStill,
@@ -173,7 +172,6 @@ async function creation(env: Env, store: Storage, piece: Piece) {
     movedOrder: moved?.order ?? null,
     pairs,
     facts: facts ? factFields(facts) : null,
-    factsEnabled: hasBinding(env, "OPENROUTER"),
   };
 }
 

@@ -15,11 +15,6 @@ export const StateSchema = z.object({
   OBJECT_STORAGE: BindingOf("@deco/object-storage").describe(
     "Storage for edit versions, backups and the publication log.",
   ),
-  OPENROUTER: BindingOf("@deco/openrouter")
-    .optional()
-    .describe(
-      "OpenRouter connection for the product facts a new Still is generated from: a vision model reads the product photos. Without it, a Still is created from the photos alone.",
-    ),
   STILL_ORDER: z
     .number()
     .int()
@@ -53,7 +48,7 @@ export const StateSchema = z.object({
     .string()
     .default("anthropic/claude-opus-5.5")
     .describe(
-      "Vision model (OpenRouter id) that writes a garment's product facts from its photos, through the OPENROUTER connection.",
+      "Vision model (OpenRouter id) that reads a garment's photos into its product facts when the org's chat model cannot: it runs on the org's OpenRouter key in AI providers.",
     ),
 });
 
@@ -62,7 +57,6 @@ export type Env = DefaultEnv<typeof StateSchema>;
 const SettingsSchema = StateSchema.omit({
   WAKE: true,
   OBJECT_STORAGE: true,
-  OPENROUTER: true,
 });
 
 type Settings = z.infer<typeof SettingsSchema>;

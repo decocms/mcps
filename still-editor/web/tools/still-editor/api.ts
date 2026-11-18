@@ -61,8 +61,6 @@ export interface Creation {
   /** Garments of the other type in the same color, the Look complementar first. */
   pairs: { productId: number; name: string; isLook: boolean }[];
   facts: Facts | null;
-  /** The OPENROUTER connection is set, so facts are drafted from the photos. */
-  factsEnabled: boolean;
 }
 
 export interface Loaded {
