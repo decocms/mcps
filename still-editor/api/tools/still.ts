@@ -1,6 +1,21 @@
 import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { loadPiece, type Piece, productIdFromLink } from "../lib/catalog.ts";
+import {
+  findPairCandidates,
+  loadPiece,
+  type Piece,
+  productIdFromLink,
+} from "../lib/catalog.ts";
+import { hasBinding } from "../lib/connection.ts";
+import {
+  createBlock,
+  findMovedStill,
+  type GarmentFacts,
+  readFacts,
+  repositionStill,
+  runCreate,
+  writeFacts,
+} from "../lib/create.ts";
 import {
   composeVersion,
   loadPlate,
@@ -114,9 +129,12 @@ export const stillLoadTool = (_env: Env) =>
       const source = await store.getJson<PieceSource>(
         `pieces/${productId}/source.json`,
       );
+      const create = piece.still ? null : await creation(env, store, piece);
       const pairId = context.pairLink
         ? productIdFromLink(context.pairLink)
-        : (source?.pairProductId ?? null);
+        : (source?.pairProductId ??
+          create?.pairs.find((candidate) => candidate.isLook)?.productId ??
+          null);
       const pair = pairId
         ? await loadPiece(env, pairId).catch(() => null)
         : null;
@@ -137,7 +155,171 @@ export const stillLoadTool = (_env: Env) =>
         publications: publications.sort((a, b) => b.at.localeCompare(a.at)),
         models: MODELS,
         defaultModel: DEFAULT_MODEL,
+        create,
       };
+    },
+  });
+
+/** What the editor needs to create a Still for a piece without one. */
+async function creation(env: Env, store: Storage, piece: Piece) {
+  const moved = await findMovedStill(env, piece, await loadPlate(store));
+  const block = createBlock(piece, moved);
+  const [pairs, facts] = await Promise.all([
+    block ? [] : findPairCandidates(env, piece),
+    readFacts(store, piece.productId),
+  ]);
+  return {
+    block,
+    movedOrder: moved?.order ?? null,
+    pairs,
+    facts: facts ? factFields(facts) : null,
+    factsEnabled: hasBinding(env, "OPENROUTER"),
+  };
+}
+
+const factFields = (facts: GarmentFacts) => ({
+  color: facts.color,
+  fabric: facts.fabric,
+  shape: facts.shape,
+  hardware: facts.hardware,
+  edited: facts.edited ?? false,
+});
+
+export const stillCreateStartTool = (_env: Env) =>
+  createPrivateTool({
+    id: "still_create_start",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    description:
+      "Create a Still for a top or a bottom that has none, from its product photos, generated with its pair and composed at the pair's scale. Returns a job to poll with still_edit_status. The store is not changed until the version is published.",
+    inputSchema: z.object({
+      productId: z.number().int().positive(),
+      pairProductId: z
+        .number()
+        .int()
+        .positive()
+        .nullable()
+        .describe(
+          "The garment of the other type to generate with; null for none",
+        ),
+      model: z.string().optional(),
+    }),
+    outputSchema: z.object({ jobId: z.string(), versionId: z.string() }),
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
+      const user = currentUser(env);
+      const { MODELS, DEFAULT_MODEL } = settings(env);
+      const model = context.model ?? DEFAULT_MODEL;
+      if (!MODELS.includes(model)) {
+        throw new Error(`Model ${model} is not enabled for this editor`);
+      }
+      const store = storage(env);
+      const piece = await loadPiece(env, context.productId);
+      const moved = piece.still
+        ? null
+        : await findMovedStill(env, piece, await loadPlate(store));
+      const block = createBlock(piece, moved);
+      if (block) throw new Error(BLOCK_MESSAGE[block]);
+      const pair = context.pairProductId
+        ? await loadPiece(env, context.pairProductId)
+        : null;
+      if (pair && (!pair.type || pair.type === piece.type)) {
+        throw new Error(
+          `${pair.name} cannot be the pair: it must be a ${piece.type === "top" ? "bottom" : "top"}`,
+        );
+      }
+      const versionId = newId();
+      const job = await startJob(
+        store,
+        { id: newId(), productId: piece.productId, versionId },
+        (onPhase) =>
+          runCreate({
+            env,
+            store,
+            piece,
+            pair,
+            versionId,
+            model,
+            user,
+            onPhase,
+          }),
+      );
+      return { jobId: job.id, versionId };
+    },
+  });
+
+const BLOCK_MESSAGE = {
+  "has-still": "This product already has a Still: edit it instead",
+  "still-moved":
+    "This product's Still left its order: put it back instead of creating another",
+  "not-garment": "This product is not a top or a bottom",
+  "no-model-photos":
+    "This product has no model photos in Wake (every image is marked as print)",
+} as const;
+
+export const stillFactsSaveTool = (_env: Env) =>
+  createPrivateTool({
+    id: "still_facts_save",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
+    description:
+      "Save a garment's product facts (color, fabric, shape, hardware) as corrected by the user. The next Still created for it uses them.",
+    inputSchema: z.object({
+      productId: z.number().int().positive(),
+      color: z.string().max(2000),
+      fabric: z.string().max(2000),
+      shape: z.string().max(4000),
+      hardware: z.string().max(2000),
+    }),
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
+      currentUser(env);
+      const store = storage(env);
+      const { productId, ...fields } = context;
+      const stored = await readFacts(store, productId);
+      const facts: GarmentFacts = {
+        views: stored?.views ?? {},
+        wornWith: stored?.wornWith ?? "",
+        model: stored?.model ?? "manual",
+        ...fields,
+        edited: true,
+        at: new Date().toISOString(),
+      };
+      await writeFacts(store, productId, facts);
+      return factFields(facts);
+    },
+  });
+
+export const stillRepositionTool = (_env: Env) =>
+  createPrivateTool({
+    id: "still_reposition",
+    annotations: {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: true,
+    },
+    description:
+      "Put a Still that left the Still's order (the admin renumbers images when they are reordered) back on it, on every variant, and delete the copy left at the old order. Changes the live store.",
+    inputSchema: z.object({ productId: z.number().int().positive() }),
+    execute: async ({ context, runtimeContext }) => {
+      const env = runtimeContext.env as Env;
+      const user = currentUser(env);
+      return repositionStill({
+        env,
+        store: storage(env),
+        productId: context.productId,
+        publicationId: newId(),
+        user,
+      });
     },
   });
 
@@ -373,6 +555,9 @@ export const stillTools = [
   stillLoadTool,
   stillEditStartTool,
   stillEditStatusTool,
+  stillCreateStartTool,
+  stillFactsSaveTool,
+  stillRepositionTool,
   stillPublishTool,
   stillRestoreTool,
   stillVersionDeleteTool,

@@ -109,6 +109,7 @@ const runtime = withRuntime<Env, typeof StateSchema>({
       "OBJECT_STORAGE::GET_PRESIGNED_URL",
       "OBJECT_STORAGE::PUT_PRESIGNED_URL",
       "OBJECT_STORAGE::DELETE_OBJECT",
+      "OPENROUTER::LLM_DO_GENERATE",
     ],
   },
   tools,

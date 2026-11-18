@@ -9,7 +9,7 @@ import type { Storage } from "./storage.ts";
 const INTERRUPTED_AFTER_MS = 7 * 60 * 1000;
 
 /** Where a running edit is, so the editor can show it is moving. */
-export type JobPhase = "preparing" | "generating" | "composing";
+export type JobPhase = "preparing" | "facts" | "generating" | "composing";
 
 export interface Job {
   id: string;

@@ -20,8 +20,10 @@ export interface VariantResult {
 export interface Publication {
   id: string;
   productId: number;
-  kind: "publish" | "restore";
-  /** The version published (publish) or the publication undone (restore). */
+  /** reposition: a Still that left its order, put back on it. */
+  kind: "publish" | "restore" | "reposition";
+  /** The version published (publish), the publication undone (restore) or
+   *  the image moved back (reposition). */
   from: string;
   sizeFactor: number;
   /** The Still this publication replaced, kept to restore it. */
