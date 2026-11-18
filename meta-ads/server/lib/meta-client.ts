@@ -1058,10 +1058,21 @@ export class MetaAdsClient {
   ): Promise<PaginatedResponse<InsightData>> {
     // Use objectId as-is: account IDs should already have "act_" prefix,
     // campaign/adset/ad IDs don't need any prefix
+    // At a level below the account, each row says which object it is (the tool output already maps these
+    // fields; without asking for them every row came back unnamed).
+    const levelFields =
+      params.level === "campaign"
+        ? ",campaign_id,campaign_name"
+        : params.level === "adset"
+          ? ",campaign_id,campaign_name,adset_id,adset_name"
+          : params.level === "ad"
+            ? ",campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name"
+            : "";
     const queryParams: Record<string, string> = {
       fields:
         params.fields?.join(",") ||
-        "impressions,reach,frequency,clicks,unique_clicks,ctr,unique_ctr,cpc,cpm,cpp,spend,cost_per_unique_click,actions,action_values,conversions,cost_per_action_type,date_start,date_stop",
+        "impressions,reach,frequency,clicks,unique_clicks,ctr,unique_ctr,cpc,cpm,cpp,spend,cost_per_unique_click,actions,action_values,conversions,cost_per_action_type,date_start,date_stop" +
+          levelFields,
       limit: (params.limit || 100).toString(),
     };
 
