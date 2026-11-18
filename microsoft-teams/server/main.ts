@@ -17,6 +17,7 @@ import type { Registry } from "@decocms/mcps-shared/registry";
 import { tools } from "./tools/index.ts";
 import { StateSchema, type Env } from "./types/env.ts";
 import { exchangeAuthCode, exchangeRefreshToken, SCOPES } from "./lib/oauth.ts";
+import { assertAllowedRedirectUri } from "./lib/redirect-allowlist.ts";
 import { setKvNamespace } from "./lib/kv.ts";
 import { app as webhookRouter } from "./router.ts";
 
@@ -57,6 +58,8 @@ function getRuntime(): Runtime {
         authorizationServer: "https://login.microsoftonline.com",
 
         authorizationUrl: (callbackUrl) => {
+          assertAllowedRedirectUri(callbackUrl);
+
           const { tenantId, clientId } = getOAuthCredentials();
           const callbackUrlObj = new URL(callbackUrl);
           const state = callbackUrlObj.searchParams.get("state");
@@ -78,6 +81,8 @@ function getRuntime(): Runtime {
         },
 
         exchangeCode: async ({ code, code_verifier, redirect_uri }) => {
+          assertAllowedRedirectUri(redirect_uri ?? "");
+
           const { tenantId, clientId, clientSecret } = getOAuthCredentials();
           const tokens = await exchangeAuthCode(
             tenantId,
