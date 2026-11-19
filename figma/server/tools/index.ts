@@ -1,6 +1,6 @@
 import { createPrivateTool, createPrompt } from "@decocms/runtime/tools";
 import { z } from "zod";
-import { figmaFetch, tokenFrom } from "../lib/figma.ts";
+import { figmaFetch, parseFigmaRef, tokenFrom } from "../lib/figma.ts";
 import {
   addCodeConnectMapTool,
   getCodeConnectMapTool,
@@ -18,6 +18,7 @@ import {
   getVariableDefsTool,
 } from "./design.ts";
 import { getLibrariesTool, searchDesignSystemTool } from "./library.ts";
+import { fileKeySchema } from "./shared.ts";
 
 const whoamiTool = createPrivateTool({
   id: "whoami",
@@ -32,6 +33,45 @@ const whoamiTool = createPrivateTool({
       img_url: string;
     }>(tokenFrom(runtimeContext), "/v1/me");
     return { id: me.id, handle: me.handle, email: me.email };
+  },
+});
+
+const getFileMetaTool = createPrivateTool({
+  id: "get_file_meta",
+  description:
+    "Name, thumbnail, last modified time and link of a file, without reading its content. " +
+    "Cheap (Tier 3, file_metadata:read): use it to check whether a file changed since you last read it.",
+  inputSchema: z.object({ fileKey: fileKeySchema }),
+  outputSchema: z.object({
+    fileKey: z.string(),
+    name: z.string(),
+    lastModified: z.string(),
+    thumbnailUrl: z.string().optional(),
+    url: z.string().optional(),
+    editorType: z.string().optional(),
+    version: z.string().optional(),
+  }),
+  execute: async ({ context, runtimeContext }) => {
+    const { fileKey } = parseFigmaRef(context.fileKey);
+    const { file } = await figmaFetch<{
+      file: {
+        name: string;
+        last_touched_at: string;
+        thumbnail_url?: string;
+        url?: string;
+        editorType?: string;
+        version?: string;
+      };
+    }>(tokenFrom(runtimeContext), `/v1/files/${fileKey}/meta`);
+    return {
+      fileKey,
+      name: file.name,
+      lastModified: file.last_touched_at,
+      thumbnailUrl: file.thumbnail_url,
+      url: file.url,
+      editorType: file.editorType,
+      version: file.version,
+    };
   },
 });
 
@@ -50,6 +90,7 @@ export const tools = [
   addCodeConnectMapTool,
   getCodeConnectSuggestionsTool,
   getContextForCodeConnectTool,
+  getFileMetaTool,
   whoamiTool,
 ];
 
