@@ -17,6 +17,10 @@ import { getPublicationWeek, sleep, generateContentHash } from "./utils.ts";
 // Apify API configuration
 const APIFY_API_URL = "https://api.apify.com/v2";
 const LINKEDIN_ACTOR_ID = "harvestapi~linkedin-profile-posts";
+const JOHNVC_LINKEDIN_ACTOR_ID = "johnvc~linkedin-posts-api";
+
+/** Opt-in Actor choice. Default stays harvestapi. */
+export type LinkedInActorChoice = "harvestapi" | "johnvc";
 
 // Rate limiting
 const DELAY_BETWEEN_POSTS = 300;
@@ -116,25 +120,15 @@ async function createLinkedInContent(
 }
 
 /**
- * Fetch LinkedIn posts via Apify
+ * Start an Apify Actor run, poll until SUCCEEDED, and return dataset items.
  */
-async function fetchLinkedInPosts(
-  profileUrl: string,
+async function runApifyActorAndFetchItems(
+  actorId: string,
+  input: Record<string, unknown>,
   apifyToken: string,
-  maxPosts = 5,
-): Promise<LinkedInRawPost[]> {
-  const input = {
-    targetUrls: [profileUrl],
-    maxPosts,
-    includeReposts: true,
-    includeQuotePosts: true,
-    scrapeComments: false,
-    scrapeReactions: false,
-  };
-
-  // Start Actor run
+): Promise<unknown[]> {
   const runResponse = await fetch(
-    `${APIFY_API_URL}/acts/${LINKEDIN_ACTOR_ID}/runs?token=${apifyToken}`,
+    `${APIFY_API_URL}/acts/${actorId}/runs?token=${apifyToken}`,
     {
       method: "POST",
       headers: {
@@ -152,9 +146,8 @@ async function fetchLinkedInPosts(
   const runData = (await runResponse.json()) as { data: { id: string } };
   const runId = runData.data.id;
 
-  console.log(`[LinkedIn] Started Apify run: ${runId}`);
+  console.log(`[LinkedIn] Started Apify run: ${runId} (${actorId})`);
 
-  // Poll for completion
   let status = "RUNNING";
   let attempts = 0;
   const maxAttempts = 60;
@@ -185,7 +178,6 @@ async function fetchLinkedInPosts(
     throw new Error(`Apify run failed with status: ${status}`);
   }
 
-  // Fetch dataset results
   const datasetResponse = await fetch(
     `${APIFY_API_URL}/actor-runs/${runId}/dataset/items?token=${apifyToken}`,
   );
@@ -195,7 +187,134 @@ async function fetchLinkedInPosts(
   }
 
   const posts = await datasetResponse.json();
+  return posts as unknown[];
+}
+
+/**
+ * Public identifier from a LinkedIn profile URL path segment.
+ */
+function publicIdentifierFromUrl(url: string | undefined): string {
+  if (!url || typeof url !== "string") return "";
+  try {
+    const parts = new URL(url).pathname.split("/").filter(Boolean);
+    const idx = parts.findIndex((p) => p === "in" || p === "company");
+    if (idx >= 0 && parts[idx + 1]) return parts[idx + 1];
+    return parts[0] ?? "";
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Map a johnvc/linkedin-posts-api row onto LinkedInRawPost so processLinkedInPost
+ * stays unchanged. Share counts are 0 (Actor does not return them). Avatar unset.
+ */
+export function mapJohnvcPostToRaw(
+  row: Record<string, unknown>,
+): LinkedInRawPost | null {
+  const resultType = row.resultType ?? row.result_type;
+  if (resultType && resultType !== "post") return null;
+
+  const postId = String(row.postId ?? row.id ?? "");
+  if (!postId) return null;
+
+  const datePosted =
+    typeof row.datePosted === "string"
+      ? row.datePosted
+      : typeof row.fetchedAt === "string"
+        ? row.fetchedAt
+        : new Date().toISOString();
+  const timestamp = Date.parse(datePosted);
+  const authorUrl =
+    typeof row.authorUrl === "string" ? row.authorUrl : undefined;
+  const authorName = typeof row.authorName === "string" ? row.authorName : "";
+
+  const images = Array.isArray(row.images)
+    ? (row.images as unknown[])
+        .map((img) => {
+          if (typeof img === "string") return { url: img };
+          if (img && typeof img === "object" && "url" in img) {
+            return { url: String((img as { url: unknown }).url) };
+          }
+          return null;
+        })
+        .filter((x): x is { url: string } => x !== null)
+    : undefined;
+
+  const raw: LinkedInRawPost = {
+    type: typeof row.postType === "string" ? row.postType : "post",
+    id: postId,
+    linkedinUrl: String(row.postUrl ?? row.linkedinUrl ?? ""),
+    content: String(row.text ?? row.content ?? ""),
+    author: {
+      name: authorName,
+      publicIdentifier: publicIdentifierFromUrl(authorUrl),
+      linkedinUrl: authorUrl ?? "",
+      info:
+        typeof row.authorHeadline === "string" ? row.authorHeadline : undefined,
+    },
+    postedAt: {
+      timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+      date: datePosted,
+    },
+    engagement: {
+      likes: typeof row.numLikes === "number" ? row.numLikes : 0,
+      comments: typeof row.numComments === "number" ? row.numComments : 0,
+      shares: 0,
+    },
+  };
+  if (images && images.length > 0) raw.postImages = images;
+  return raw;
+}
+
+/**
+ * Fetch LinkedIn posts via the default HarvestAPI Actor.
+ */
+async function fetchLinkedInPosts(
+  profileUrl: string,
+  apifyToken: string,
+  maxPosts = 5,
+): Promise<LinkedInRawPost[]> {
+  const input = {
+    targetUrls: [profileUrl],
+    maxPosts,
+    includeReposts: true,
+    includeQuotePosts: true,
+    scrapeComments: false,
+    scrapeReactions: false,
+  };
+  const posts = await runApifyActorAndFetchItems(
+    LINKEDIN_ACTOR_ID,
+    input,
+    apifyToken,
+  );
   return posts as LinkedInRawPost[];
+}
+
+/**
+ * Fetch LinkedIn posts via johnvc/linkedin-posts-api and map to LinkedInRawPost.
+ */
+async function fetchLinkedInPostsJohnvc(
+  profileUrl: string,
+  apifyToken: string,
+  maxPosts = 5,
+): Promise<LinkedInRawPost[]> {
+  const input = {
+    profileUrls: [profileUrl],
+    maxPostsPerProfile: maxPosts,
+  };
+  const rows = await runApifyActorAndFetchItems(
+    JOHNVC_LINKEDIN_ACTOR_ID,
+    input,
+    apifyToken,
+  );
+  const out: LinkedInRawPost[] = [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object" || Array.isArray(row)) continue;
+    const mapped = mapJohnvcPostToRaw(row as Record<string, unknown>);
+    if (mapped) out.push(mapped);
+  }
+  return out;
 }
 
 /**
@@ -336,9 +455,11 @@ export async function scrapeLinkedInProfile(
   profileUrl: string,
   authorAuthority = 0.7,
   maxPosts = 5,
+  linkedinActor: LinkedInActorChoice = "harvestapi",
 ): Promise<ScrapeResult> {
   console.log(`[LinkedIn] Fetching posts from: ${profileUrl}`);
   console.log(`    Authority: ${(authorAuthority * 100).toFixed(0)}%`);
+  console.log(`    Actor: ${linkedinActor}`);
 
   const ctx: LinkedInScraperContext = {
     dbClient,
@@ -346,8 +467,10 @@ export async function scrapeLinkedInProfile(
     apifyApiToken,
   };
 
-  // Fetch posts via Apify
-  const posts = await fetchLinkedInPosts(profileUrl, apifyApiToken, maxPosts);
+  const posts =
+    linkedinActor === "johnvc"
+      ? await fetchLinkedInPostsJohnvc(profileUrl, apifyApiToken, maxPosts)
+      : await fetchLinkedInPosts(profileUrl, apifyApiToken, maxPosts);
 
   if (posts.length === 0) {
     console.log("    ⚠ No posts found");
@@ -406,6 +529,7 @@ export async function scrapeAllLinkedInSources(
   openrouterApiKey: string,
   apifyApiToken: string,
   maxPosts = 5,
+  linkedinActor: LinkedInActorChoice = "harvestapi",
 ): Promise<ScrapeResult[]> {
   console.log("=".repeat(60));
   console.log("LinkedIn Scraper - Scraping All Sources");
@@ -434,6 +558,7 @@ export async function scrapeAllLinkedInSources(
         source.profile_url,
         source.authority,
         maxPosts,
+        linkedinActor,
       );
       results.push(result);
       console.log(
