@@ -9,7 +9,7 @@ import { StateSchema } from "./types/env.ts";
  * Grain's public API, live, with the caller's own key: list, get, transcript,
  * summary. No index, no webhooks, no state. Searching what was said across
  * deco's calls, transcripts in a database and call events live in
- * decocms/grain-indexer.
+ * decocms/channels/apps/grain.
  */
 const runtime = withRuntime<Env, typeof StateSchema>({
   configuration: { state: StateSchema },

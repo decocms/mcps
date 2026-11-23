@@ -10,7 +10,7 @@ Grain with the key of the connection that made it.
 
 > **Searching what was said across deco's calls, transcripts in a database,
 > call events and the account map** live in
-> [decocms/grain-indexer](https://github.com/decocms/grain-indexer) — the
+> [decocms/channels/apps/grain](https://github.com/decocms/channels/tree/main/apps/grain) — the
 > index this MCP used to keep (a `grain_meeting_recordings` table fed by
 > webhooks) moved there, with full transcripts, privacy rules and signed
 > webhooks.
