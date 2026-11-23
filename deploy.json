@@ -251,6 +251,15 @@
       "shared/**"
     ]
   },
+  "google-firestore": {
+    "site": "google-firestore",
+    "entrypoint": "./dist/server/main.js",
+    "platformName": "kubernetes-bun",
+    "watch": [
+      "google-firestore/**",
+      "shared/**"
+    ]
+  },
   "google-forms": {
     "site": "google-forms",
     "entrypoint": "./dist/server/main.js",

@@ -1,0 +1,19 @@
+{
+  "scopeName": "deco",
+  "name": "google-firestore",
+  "friendlyName": "Google Firestore (Firebase)",
+  "connection": {
+    "type": "HTTP",
+    "url": "https://sites-google-firestore.deco.site/mcp"
+  },
+  "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts.",
+  "icon": "https://firebase.google.com/static/images/brand-guidelines/logo-logomark.png",
+  "unlisted": false,
+  "metadata": {
+    "categories": ["Data Analysis"],
+    "official": false,
+    "tags": ["google", "firebase", "firestore", "nosql", "database", "cloud"],
+    "short_description": "Read Cloud Firestore (Firebase) databases: collections, documents, queries and counts.",
+    "mesh_description": "The Google Firestore MCP connects agents to Cloud Firestore, the document database behind Firebase apps, using the Google account of whoever connects it. It discovers the Firebase projects and databases that account can reach, lists root collections and subcollections, reads documents by path, pages through collections, runs structured queries with filters, ordering, field selection and collection-group scope, and computes counts, sums and averages without downloading the documents. Values are returned as plain JSON (timestamps as ISO strings, references as document paths). The toolset is read-only, and Firestore IAM on the project decides what each person can see."
+  }
+}

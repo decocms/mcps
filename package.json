@@ -49,6 +49,7 @@
     "google-calendar-sa",
     "google-docs",
     "google-drive",
+    "google-firestore",
     "google-forms",
     "google-gemini",
     "google-gmail",
