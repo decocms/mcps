@@ -30,7 +30,7 @@
         "@decocms/bindings": "1.0.7",
         "@decocms/runtime": "1.1.3",
         "@types/bun": "^1.2.14",
-        "vite": "7.2.0",
+        "vite": "7.3.7",
         "zod": "^4.0.0"
     }
 }
