@@ -34,18 +34,21 @@ variant; the toolset and IAM are what keep it read-only.
 
 ## Setup
 
-Environment (see `.env.example`):
+Deployed as a Cloudflare Worker (`wrangler.toml`, custom domain
+`google-firestore-mcp.decocms.com`) by `.github/workflows/deploy-google-firestore.yml`
+on every push to `main` that touches this folder. Worker secrets (see `.env.example`),
+set once with `bunx wrangler secret put <NAME>` from this folder:
 
 - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`: the shared Google OAuth client.
   Its authorized redirect URIs must include
-  `https://sites-google-firestore.deco.site/oauth/callback`, and the consent
+  `https://google-firestore-mcp.decocms.com/oauth/callback`, and the consent
   screen must list `datastore` and `cloud-platform.read-only`.
 - `OAUTH_STATE_SECRET`: required, `openssl rand -hex 32`.
 - `EXTRA_ALLOWED_REDIRECT_HOSTS`: optional, for self-hosted Mesh.
 
 ```bash
 cd google-firestore
-bun run dev     # local server
+bun run dev     # wrangler dev; put the secrets in .dev.vars
 bun test        # unit tests for value conversion and query building
 bun run check   # tsc
 ```
