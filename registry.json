@@ -2063,7 +2063,7 @@
       "remotes": [
         {
           "type": "HTTP",
-          "url": "https://sites-google-firestore.deco.site/mcp",
+          "url": "https://google-firestore-mcp.decocms.com/mcp",
           "name": "google-firestore",
           "title": "Google Firestore (Firebase)",
           "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts."

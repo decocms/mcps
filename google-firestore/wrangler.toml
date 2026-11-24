@@ -1,0 +1,20 @@
+name = "google-firestore-mcp"
+main = "server/main.ts"
+compatibility_date = "2025-06-17"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "google-firestore-mcp.decocms.com", custom_domain = true },
+]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+invocation_logs = true
+
+# Secrets (set once, not committed):
+#   bunx wrangler secret put GOOGLE_CLIENT_ID
+#   bunx wrangler secret put GOOGLE_CLIENT_SECRET
+#   bunx wrangler secret put OAUTH_STATE_SECRET   # openssl rand -hex 32

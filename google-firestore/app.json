@@ -4,7 +4,7 @@
   "friendlyName": "Google Firestore (Firebase)",
   "connection": {
     "type": "HTTP",
-    "url": "https://sites-google-firestore.deco.site/mcp"
+    "url": "https://google-firestore-mcp.decocms.com/mcp"
   },
   "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts.",
   "icon": "https://firebase.google.com/static/images/brand-guidelines/logo-logomark.png",
