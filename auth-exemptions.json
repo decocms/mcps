@@ -70,6 +70,9 @@
     "google-drive": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },
+    "google-firestore": {
+      "reason": "OAuth MCP: the Authorization header carries the caller's own Google access token and every tool forwards it to firestore.googleapis.com / firebase.googleapis.com, so there is no shared secret to check and no server-side credential exposed. OAuth state/code are sealed with OAUTH_STATE_SECRET and redirect hosts are pinned to decocms.com. Re-add withAuth once Mesh forwards the connection secret on a separate header."
+    },
     "google-forms": {
       "reason": "Predates the withAuth requirement — 2 findings pending remediation."
     },

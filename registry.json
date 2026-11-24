@@ -2025,6 +2025,53 @@
     }
   },
   {
+    "id": "deco/google-firestore",
+    "title": "Google Firestore (Firebase)",
+    "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts.",
+    "is_public": true,
+    "_meta": {
+      "mcp.mesh": {
+        "verified": false,
+        "friendly_name": "Google Firestore (Firebase)",
+        "short_description": "Read Cloud Firestore (Firebase) databases: collections, documents, queries and counts.",
+        "owner": "deco",
+        "has_remote": true,
+        "has_oauth": false,
+        "tags": [
+          "google",
+          "firebase",
+          "firestore",
+          "nosql",
+          "database",
+          "cloud"
+        ],
+        "categories": [
+          "Data Analysis"
+        ],
+        "readme": "The Google Firestore MCP connects agents to Cloud Firestore, the document database behind Firebase apps, using the Google account of whoever connects it. It discovers the Firebase projects and databases that account can reach, lists root collections and subcollections, reads documents by path, pages through collections, runs structured queries with filters, ordering, field selection and collection-group scope, and computes counts, sums and averages without downloading the documents. Values are returned as plain JSON (timestamps as ISO strings, references as document paths). The toolset is read-only, and Firestore IAM on the project decides what each person can see."
+      }
+    },
+    "server": {
+      "name": "google-firestore",
+      "title": "Google Firestore (Firebase)",
+      "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts.",
+      "icons": [
+        {
+          "src": "https://firebase.google.com/static/images/brand-guidelines/logo-logomark.png"
+        }
+      ],
+      "remotes": [
+        {
+          "type": "HTTP",
+          "url": "https://sites-google-firestore.deco.site/mcp",
+          "name": "google-firestore",
+          "title": "Google Firestore (Firebase)",
+          "description": "Read Cloud Firestore (Firebase) databases with your Google account: list projects, collections and documents, run filtered queries and counts."
+        }
+      ]
+    }
+  },
+  {
     "id": "deco/google-forms",
     "title": "Google Forms",
     "description": "Integrate and manage Google Forms. Create forms, add questions, and collect responses.",
