@@ -8,7 +8,7 @@ import { createPrivateTool } from "@decocms/runtime/tools";
 import { z } from "zod";
 import type { Env } from "../main.ts";
 import { GTMClient, getAccessToken } from "../lib/gtm-client.ts";
-import type { Parameter } from "../lib/types.ts";
+import type { Parameter, TagConsentSetting } from "../lib/types.ts";
 
 // ============================================================================
 // Schema Definitions
@@ -31,6 +31,11 @@ const ParameterSchema: z.ZodTypeAny = z.lazy(() =>
     isWeakReference: z.boolean().optional(),
   }),
 );
+
+const ConsentSettingsSchema = z.object({
+  consentStatus: z.enum(["notSet", "notNeeded", "needed"]).optional(),
+  consentType: ParameterSchema.optional(),
+});
 
 const TagSchema = z.object({
   path: z.string().describe("Tag path"),
@@ -71,6 +76,9 @@ const TagSchema = z.object({
   tagManagerUrl: z.string().describe("Tag Manager URL for this tag"),
   parentFolderId: z.string().optional().describe("Parent folder ID"),
   paused: z.boolean().optional().describe("Whether tag is paused"),
+  consentSettings: ConsentSettingsSchema.optional().describe(
+    "Additional consent checks (consentStatus needed + consentType list)",
+  ),
 });
 
 // ============================================================================
@@ -131,6 +139,7 @@ export const createListTagsTool = (env: Env) =>
           tagManagerUrl: tag.tagManagerUrl,
           parentFolderId: tag.parentFolderId,
           paused: tag.paused,
+          consentSettings: tag.consentSettings,
         })),
         nextPageToken: response.nextPageToken,
       };
@@ -187,6 +196,7 @@ export const createGetTagTool = (env: Env) =>
           tagManagerUrl: tag.tagManagerUrl,
           parentFolderId: tag.parentFolderId,
           paused: tag.paused,
+          consentSettings: tag.consentSettings,
         },
       };
     },
@@ -276,6 +286,7 @@ export const createCreateTagTool = (env: Env) =>
           tagManagerUrl: tag.tagManagerUrl,
           parentFolderId: tag.parentFolderId,
           paused: tag.paused,
+          consentSettings: tag.consentSettings,
         },
       };
     },
@@ -289,7 +300,7 @@ export const createUpdateTagTool = (env: Env) =>
   createPrivateTool({
     id: "update_tag",
     description:
-      "Update an existing GTM tag. All fields from the original tag must be provided.",
+      "Update an existing GTM tag. Only the fields you pass change; everything else (consent settings, folder, setup/teardown tags, schedule) is kept.",
     inputSchema: z.object({
       accountId: z.string().describe("Account ID (e.g., '12345')"),
       containerId: z.string().describe("Container ID (e.g., '67890')"),
@@ -318,6 +329,10 @@ export const createUpdateTagTool = (env: Env) =>
         .optional()
         .describe("Whether tag only fires in live mode"),
       paused: z.boolean().optional().describe("Whether tag is paused"),
+      parentFolderId: z.string().optional().describe("Parent folder ID"),
+      consentSettings: ConsentSettingsSchema.optional().describe(
+        "Additional consent checks; omit to keep the current ones",
+      ),
     }),
     outputSchema: z.object({
       tag: TagSchema.describe("Updated tag"),
@@ -343,6 +358,10 @@ export const createUpdateTagTool = (env: Env) =>
           notes: context.notes,
           liveOnly: context.liveOnly,
           paused: context.paused,
+          parentFolderId: context.parentFolderId,
+          consentSettings: context.consentSettings as
+            | TagConsentSetting
+            | undefined,
         },
       );
 
@@ -367,6 +386,7 @@ export const createUpdateTagTool = (env: Env) =>
           tagManagerUrl: tag.tagManagerUrl,
           parentFolderId: tag.parentFolderId,
           paused: tag.paused,
+          consentSettings: tag.consentSettings,
         },
       };
     },
