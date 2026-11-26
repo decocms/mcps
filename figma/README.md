@@ -25,6 +25,7 @@ Served at `https://sites-figma-mcp.deco.site/mcp` (kubernetes-bun, see `deploy.j
 | `add_code_connect_map` | Save component → code links (writes Figma dev resources). |
 | `get_code_connect_suggestions` | Components that still lack a mapping. |
 | `get_context_for_code_connect` | Props, variants and layers of one component, for mapping it to code. |
+| `get_file_meta` | Name, thumbnail, last modified and link of a file (cheap, no content read). |
 | `whoami` | The connected Figma account. |
 
 Prompt: `create_design_system_rules` writes repo rules for implementing Figma designs.
