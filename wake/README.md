@@ -48,10 +48,33 @@ The Admin API is served from `https://api.fbits.net`.
 
 | Tool | Description |
 | --- | --- |
-| `WAKE_LIST_ORDERS` | List store orders by date range, status, payment method, customer or SKU; paginated. |
+| `WAKE_LIST_ORDERS` | List store orders by date range, status, payment method, customer, SKU or a list of ids; paginated, with `total` and `hasMore`. `fields: "analytics"` returns the orders without personal data. |
 | `WAKE_GET_ORDER` | Full detail of a single order by id. |
 | `WAKE_GET_ORDER_STATUS_HISTORY` | Status change history (timeline) of an order. |
 | `WAKE_LIST_ORDER_STATUSES` | All order statuses configured in the store (to map ids before filtering). |
+| `WAKE_LIST_PAYMENT_METHODS` | The store's payment methods, to name an order's `formaPagamentoId`. |
+| `WAKE_LIST_ORDER_ORIGINS` | The store's order origins (Site, App, PDV…), to name an order's `origemPedido`. |
+| `WAKE_DASHBOARD` | Store-wide aggregates for a period in one call: revenue, orders and average ticket per hour/day (captados, pagos, enviados, cancelados), payment methods, best sellers, abandoned carts. |
+| `WAKE_LIST_DISTRIBUTION_CENTERS` | Distribution centers; order items name the one that fulfilled them. |
+| `WAKE_LIST_PHYSICAL_STORES` | Physical stores with their distribution center; an order's `retiradaLojaId` is one of them. |
+
+Orders, in short:
+
+- **Dates are the store's local time**, with no offset, in what Wake returns and in the filters. A bare day (`2026-11-25`) means the whole day.
+- **The list already returns complete orders.** For several known orders use `listaPedidosIds` (up to 50) instead of `WAKE_GET_ORDER` in a loop.
+- **Paging stops at page 199** (at most 10,000 orders per query): split long periods into days or hours.
+- **`DataAlteracao`** in `enumTipoFiltroData` lists the orders changed in a window, for incremental reads.
+- **`fields: "analytics"`** keeps status, dates, totals, coupon, channel, fulfilling distribution centers, pickup store, city/state, items with their promotions, payment group and brand, and UTMs and other non-personal metadata. It drops the buyer, documents, phones, street address, card data, Pix QR code and free-text notes.
+
+### Rate limit
+
+Wake allows 120 requests per minute per Admin token and answers 429 with `Retry-After` past that. **A token that keeps calling after a 429 is blocked for an hour**, together with every integration that shares it. So every admin call goes through a per-token gate:
+
+- **Pacing:** at most `WAKE_ADMIN_MAX_PER_MINUTE` calls per minute (default 100) per token, per process. A call waits up to 15 s for a free slot.
+- **After a 429:** the token is refused locally until `Retry-After` has passed, without reaching Wake.
+- **No retries:** a refusal fails with a message that starts with `[wake-rate-limited]` and ends with `retry-after=<seconds>`, so callers can back off.
+
+Give each heavy consumer its own Admin token (Wake admin › Extensões e Integrações › Tokens), with only the GET permissions it reads.
 
 ### Admin (product variant images) — requires `apiToken` with product image permission
 

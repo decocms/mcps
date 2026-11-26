@@ -3,15 +3,35 @@
  *
  * Authenticates with the Admin API token as an HTTP Basic credential
  * (`Authorization: Basic <token>`). Used by the admin tools (orders, product
- * images).
+ * images). Every request goes through a per-token rate gate (rate-gate.ts):
+ * Wake blocks a token for an hour when it keeps calling past its limit.
  */
 import type { Env } from "../types/env.ts";
+import {
+  createRateGate,
+  parseRetryAfter,
+  RateLimitedError,
+} from "./rate-gate.ts";
 
 const ADMIN_BASE = "https://api.fbits.net";
 const REQUEST_TIMEOUT_MS = 30_000;
 
+/** Wake allows 120/min per token and endpoint group; stay under it across groups. */
+const MAX_PER_MINUTE = Number(process.env.WAKE_ADMIN_MAX_PER_MINUTE) || 100;
+const gate = createRateGate({ perMinute: MAX_PER_MINUTE, maxWaitMs: 15_000 });
+
+/** A page of a list endpoint, with Wake's `x-total-count` when it sends one. */
+export interface AdminPage<T> {
+  data: T;
+  total: number | null;
+}
+
 export interface AdminClient {
   get<T = unknown>(path: string, query?: Record<string, unknown>): Promise<T>;
+  getPage<T = unknown>(
+    path: string,
+    query?: Record<string, unknown>,
+  ): Promise<AdminPage<T>>;
   post<T = unknown>(
     path: string,
     body: unknown,
@@ -50,14 +70,24 @@ export function getApiToken(env: Env): string {
   return token;
 }
 
-function buildQueryString(query: Record<string, unknown>): string {
+/** Arrays become repeated keys (`a=1&a=2`), as Wake's array parameters expect. */
+export function buildQueryString(query: Record<string, unknown>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
-    if (value === undefined || value === null || value === "") continue;
-    params.set(key, String(value));
+    for (const item of Array.isArray(value) ? value : [value]) {
+      if (item === undefined || item === null || item === "") continue;
+      params.append(key, String(item));
+    }
   }
   const encoded = params.toString();
   return encoded ? `?${encoded}` : "";
+}
+
+/** REST list endpoints return arrays; wrap them so tools always return an object. */
+export function asResult(data: unknown): Record<string, unknown> {
+  if (Array.isArray(data)) return { items: data, count: data.length };
+  if (data && typeof data === "object") return data as Record<string, unknown>;
+  return { result: data };
 }
 
 export function createAdminClient(env: Env): AdminClient {
@@ -68,7 +98,9 @@ export function createAdminClient(env: Env): AdminClient {
     path: string,
     query: Record<string, unknown> = {},
     body?: unknown,
-  ): Promise<T> {
+  ): Promise<AdminPage<T>> {
+    await gate.acquire(token);
+
     const url = `${ADMIN_BASE}${path}${buildQueryString(query)}`;
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -96,23 +128,45 @@ export function createAdminClient(env: Env): AdminClient {
       clearTimeout(timeout);
     }
 
+    if (response.status === 429) {
+      const seconds = parseRetryAfter(response.headers.get("retry-after"));
+      gate.block(token, seconds);
+      throw new RateLimitedError(
+        seconds,
+        "Wake Admin API answered 429 (too many requests).",
+      );
+    }
+
     const text = await response.text().catch(() => "");
     if (!response.ok) {
       throw new Error(
         adminErrorMessage(response.status, response.statusText, text),
       );
     }
-    if (!text) return null as T;
+    const totalHeader = response.headers.get("x-total-count")?.trim();
+    const total =
+      totalHeader && Number.isFinite(Number(totalHeader))
+        ? Number(totalHeader)
+        : null;
+    if (!text) return { data: null as T, total };
     try {
-      return JSON.parse(text) as T;
+      return { data: JSON.parse(text) as T, total };
     } catch {
-      return text as T;
+      return { data: text as T, total };
     }
   }
 
   return {
-    get: (path, query) => request("GET", path, query),
-    post: (path, body, query) => request("POST", path, query, body),
-    delete: (path, query) => request("DELETE", path, query),
+    get: async <T>(path: string, query?: Record<string, unknown>) =>
+      (await request<T>("GET", path, query)).data,
+    getPage: <T>(path: string, query?: Record<string, unknown>) =>
+      request<T>("GET", path, query),
+    post: async <T>(
+      path: string,
+      body: unknown,
+      query?: Record<string, unknown>,
+    ) => (await request<T>("POST", path, query, body)).data,
+    delete: async <T>(path: string, query?: Record<string, unknown>) =>
+      (await request<T>("DELETE", path, query)).data,
   };
 }
