@@ -79,12 +79,12 @@ export const listOrdersTool = createWakeAdminTool({
       .enum(DATE_FILTER_KINDS)
       .optional()
       .describe(
-        "Which date the range filters and sorts on (default DataPedido). DataAlteracao returns orders changed in the range: use it for incremental reads.",
+        "Which date the range filters on (default DataPedido). DataAlteracao returns the orders changed in the range: use it for incremental reads. Rows are always sorted by the order date (data), whatever this filter.",
       ),
     direcaoOrdenacao: z
       .enum(["ASC", "DESC"])
       .optional()
-      .describe("Sort direction on that date (default DESC)."),
+      .describe("Sort direction on the order date (default DESC)."),
     situacoesPedido: z
       .string()
       .optional()
