@@ -54,7 +54,7 @@ The Admin API is served from `https://api.fbits.net`.
 | `WAKE_LIST_ORDER_STATUSES` | All order statuses configured in the store (to map ids before filtering). |
 | `WAKE_LIST_PAYMENT_METHODS` | The store's payment methods, to name an order's `formaPagamentoId`. |
 | `WAKE_LIST_ORDER_ORIGINS` | The store's order origins (Site, App, PDV…), to name an order's `origemPedido`. |
-| `WAKE_DASHBOARD` | Store-wide aggregates for a period in one call: revenue, orders and average ticket per hour/day (captados, pagos, enviados, cancelados), payment methods, best sellers, abandoned carts. |
+| `WAKE_DASHBOARD` | Store-wide aggregates for a period in one call: revenue, orders and average ticket per hour/day, payment methods, best sellers, abandoned carts. Only `captados` is by order date (it matches `WAKE_LIST_ORDERS`); `pagos`, `enviados` and `cancelados` count the orders that reached that state in the bucket. `faturamento` compares with the same number of days just before unless told otherwise. |
 | `WAKE_LIST_DISTRIBUTION_CENTERS` | Distribution centers; order items name the one that fulfilled them. |
 | `WAKE_LIST_PHYSICAL_STORES` | Physical stores with their distribution center; an order's `retiradaLojaId` is one of them. |
 
@@ -63,7 +63,7 @@ Orders, in short:
 - **Dates are the store's local time**, with no offset, in what Wake returns and in the filters. A bare day (`2026-11-25`) means the whole day.
 - **The list already returns complete orders.** For several known orders use `listaPedidosIds` (up to 50) instead of `WAKE_GET_ORDER` in a loop.
 - **Paging stops at page 199** (at most 10,000 orders per query): split long periods into days or hours.
-- **`DataAlteracao`** in `enumTipoFiltroData` lists the orders changed in a window, for incremental reads.
+- **`DataAlteracao`** in `enumTipoFiltroData` lists the orders changed in a window, for incremental reads. Whatever the filter, rows are sorted by the order date (`data`).
 - **`fields: "analytics"`** keeps status, dates, totals, coupon, channel, fulfilling distribution centers, pickup store, city/state, items with their promotions, payment group and brand, and UTMs and other non-personal metadata. It drops the buyer, documents, phones, street address, card data, Pix QR code and free-text notes.
 
 ### Rate limit
